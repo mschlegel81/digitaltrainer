@@ -1,29 +1,32 @@
 object DigitaltrainerMainForm: TDigitaltrainerMainForm
-  Left = 397
+  Left = 284
   Height = 497
-  Top = 279
+  Top = 282
   Width = 729
   Caption = 'Digitaltrainer'
-  ClientHeight = 497
+  ClientHeight = 472
   ClientWidth = 729
   DesignTimePPI = 120
+  Menu = MainMenu
   OnCreate = FormCreate
   OnResize = FormResize
   LCLVersion = '2.0.12.0'
   object ScrollBox1: TScrollBox
+    Cursor = crCross
     Left = 219
-    Height = 497
+    Height = 472
     Top = 0
     Width = 510
     HorzScrollBar.Page = 113
     VertScrollBar.Page = 113
     Align = alClient
-    ClientHeight = 493
+    ClientHeight = 468
     ClientWidth = 506
     TabOrder = 0
     object WireImage: TImage
+      Cursor = crCross
       Left = 0
-      Height = 493
+      Height = 468
       Top = 0
       Width = 506
       Align = alClient
@@ -33,27 +36,28 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   end
   object Panel1: TPanel
     Left = 0
-    Height = 497
+    Height = 472
     Top = 0
     Width = 213
     Align = alLeft
     BevelOuter = bvNone
-    ClientHeight = 497
+    ClientHeight = 472
     ClientWidth = 213
     TabOrder = 1
     object GroupBox1: TGroupBox
       Left = 0
-      Height = 131
-      Top = 0
+      Height = 118
+      Top = 193
       Width = 213
       Align = alTop
+      AutoSize = True
       Caption = 'Basis'
-      ClientHeight = 106
+      ClientHeight = 93
       ClientWidth = 209
       TabOrder = 0
       object FlowPanel1: TFlowPanel
         Left = 0
-        Height = 106
+        Height = 93
         Top = 0
         Width = 209
         Align = alClient
@@ -172,7 +176,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     object GroupBox2: TGroupBox
       Left = 0
       Height = 56
-      Top = 131
+      Top = 311
       Width = 213
       Align = alTop
       AutoSize = True
@@ -187,7 +191,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         Width = 209
         Min = 1
         OnChange = ZoomTrackBarChange
-        Position = 1
+        Position = 4
         Align = alClient
         TabOrder = 0
       end
@@ -195,7 +199,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     object DeleteButton: TButton
       Left = 0
       Height = 31
-      Top = 187
+      Top = 367
       Width = 213
       Align = alTop
       Caption = '🗑'
@@ -209,10 +213,113 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       ParentFont = False
       TabOrder = 2
     end
+    object GroupBox3: TGroupBox
+      Left = 0
+      Height = 56
+      Top = 137
+      Width = 213
+      Align = alTop
+      AutoSize = True
+      Caption = 'Anschlüsse'
+      ClientHeight = 31
+      ClientWidth = 209
+      TabOrder = 3
+      object FlowPanel2: TFlowPanel
+        Left = 0
+        Height = 31
+        Top = 0
+        Width = 209
+        Align = alClient
+        BevelOuter = bvNone
+        ControlList = <        
+          item
+            Control = ToggleBoxConnectIn
+            WrapAfter = waAuto
+            Index = 0
+          end        
+          item
+            Control = ToggleBoxConnectOut
+            WrapAfter = waAuto
+            Index = 1
+          end        
+          item
+            Control = ToggleBoxJunctionPoint
+            WrapAfter = waAuto
+            Index = 2
+          end>
+        FlowLayout = tlTop
+        FlowStyle = fsLeftRightTopBottom
+        TabOrder = 0
+        object ToggleBoxConnectIn: TToggleBox
+          Left = 0
+          Height = 31
+          Top = 0
+          Width = 60
+          Anchors = []
+          Caption = 'in'
+          TabOrder = 0
+        end
+        object ToggleBoxConnectOut: TToggleBox
+          Left = 60
+          Height = 31
+          Top = 0
+          Width = 60
+          Anchors = []
+          Caption = 'out'
+          TabOrder = 1
+        end
+        object ToggleBoxJunctionPoint: TToggleBox
+          Left = 120
+          Height = 31
+          Top = 0
+          Width = 60
+          Anchors = []
+          Caption = '•'
+          TabOrder = 2
+        end
+      end
+    end
+    object GroupBox4: TGroupBox
+      Left = 0
+      Height = 131
+      Top = 0
+      Width = 213
+      Align = alTop
+      Caption = 'Name und Beschreibung'
+      ClientHeight = 106
+      ClientWidth = 209
+      TabOrder = 4
+      object captionEdit: TEdit
+        Left = 0
+        Height = 28
+        Top = 0
+        Width = 209
+        Align = alTop
+        TabOrder = 0
+        Text = 'unbenannt'
+      end
+      object descriptionMemo: TMemo
+        Left = 0
+        Height = 78
+        Top = 28
+        Width = 209
+        Align = alClient
+        TabOrder = 1
+      end
+    end
+    object Splitter2: TSplitter
+      Cursor = crVSplit
+      Left = 0
+      Height = 6
+      Top = 131
+      Width = 213
+      Align = alTop
+      ResizeAnchor = akTop
+    end
   end
   object Splitter1: TSplitter
     Left = 213
-    Height = 497
+    Height = 472
     Top = 0
     Width = 6
   end
@@ -221,5 +328,24 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     OnTimer = SimTimerTimer
     Left = 45
     Top = 211
+  end
+  object MainMenu: TMainMenu
+    Left = 165
+    Top = 15
+    object MenuItem1: TMenuItem
+      Caption = 'Datei'
+      object MenuItem2: TMenuItem
+        Caption = '&Laden'
+      end
+      object MenuItem3: TMenuItem
+        Caption = '&Speichern'
+      end
+      object MenuItem4: TMenuItem
+        Caption = '&Importieren'
+      end
+      object MenuItem5: TMenuItem
+        Caption = '&Beenden'
+      end
+    end
   end
 end

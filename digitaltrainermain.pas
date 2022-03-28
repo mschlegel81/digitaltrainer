@@ -6,7 +6,7 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
-  StdCtrls, Buttons,baseGate;
+  StdCtrls, Buttons, Menus,baseGate;
 
 TYPE
 
@@ -14,10 +14,25 @@ TYPE
 
   TDigitaltrainerMainForm = class(TForm)
     DeleteButton: TButton;
+    captionEdit: TEdit;
     FlowPanel1: TFlowPanel;
+    FlowPanel2: TFlowPanel;
     GroupBox1: TGroupBox;
     GroupBox2: TGroupBox;
+    GroupBox3: TGroupBox;
+    GroupBox4: TGroupBox;
+    descriptionMemo: TMemo;
+    MainMenu: TMainMenu;
+    MenuItem1: TMenuItem;
+    MenuItem2: TMenuItem;
+    MenuItem3: TMenuItem;
+    MenuItem4: TMenuItem;
+    MenuItem5: TMenuItem;
     SimTimer: TTimer;
+    Splitter2: TSplitter;
+    ToggleBoxConnectIn: TToggleBox;
+    ToggleBoxConnectOut: TToggleBox;
+    ToggleBoxJunctionPoint: TToggleBox;
     WireImage: TImage;
     Panel1: TPanel;
     ScrollBox1: TScrollBox;
@@ -39,9 +54,8 @@ TYPE
     PROCEDURE WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE ZoomTrackBarChange(Sender: TObject);
   private
-    gates:array of P_abstractGate;
+    workspace:T_workspace;
     toggleButtons:array of TToggleBox;
-    paintContext:T_paintContext;
     PROCEDURE gateMarked(CONST gate:P_abstractGate);
   public
   end;
@@ -57,9 +71,6 @@ IMPLEMENTATION
 
 PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
   begin
-    paintContext.container:=ScrollBox1;
-    paintContext.zoom:=3;
-    paintContext.gateMarked:=@gateMarked;
     setLength(toggleButtons,7);
     toggleButtons[0]:=ToggleBoxBgNAND;
     toggleButtons[1]:=ToggleBoxBgOr  ;
@@ -68,35 +79,23 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     toggleButtons[4]:=ToggleBoxBgNor ;
     toggleButtons[5]:=ToggleBoxBgXor ;
     toggleButtons[6]:=ToggleBoxBgNxor;
+    workspace.create;
+    workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,WireImage);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.DeleteButtonClick(Sender: TObject);
-  VAR i:longint;
-      j:longint=0;
   begin
-    for i:=0 to length(gates)-1 do begin
-      if gates[i]^.marked
-      then dispose(gates[i],destroy)
-      else begin
-        gates[j]:=gates[i];
-        inc(j);
-      end;
-    end;
-    setLength(gates,j);
+    workspace.currentBoard^.deleteMarkedGate;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
-  VAR gate:P_abstractGate;
   begin
-    for gate in gates do gate^.Repaint(paintContext);
+    workspace.currentBoard^.Repaint(paintContext);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.SimTimerTimer(Sender: TObject);
-  VAR gate:P_abstractGate;
   begin
-    for gate in gates do begin
-      gate^.simulateStep;
-    end;
+    workspace.currentBoard^.simulateStep;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ToggleBoxBgANDClick(Sender: TObject);
@@ -113,38 +112,24 @@ PROCEDURE TDigitaltrainerMainForm.WireImageClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR x0,y0:longint;
-      newGate:P_abstractGate=nil;
+      toAdd:T_gateType=gt_compound;
   begin
-    x0:=round(x/paintContext.zoom/8)*paintContext.zoom;
-    y0:=round(y/paintContext.zoom/8)*paintContext.zoom;
+    x0:=round(x/ZoomTrackBar.position);
+    y0:=round(y/ZoomTrackBar.position);
+    if ToggleBoxBGNot .checked then toAdd:=gt_notGate else
+    if ToggleBoxBgAND .checked then toAdd:=gt_andGate else
+    if ToggleBoxBgOr  .checked then toAdd:=gt_orGate else
+    if ToggleBoxBgXor .checked then toAdd:=gt_xorGate else
+    if ToggleBoxBgNAND.checked then toAdd:=gt_nandGate else
+    if ToggleBoxBgNOr .checked then toAdd:=gt_norGate else
+    if ToggleBoxBgNXor.checked then toAdd:=gt_nxorGate;
 
-    if ToggleBoxBGNot .checked then new(P_notGate (newGate),create(x0,y0,paintContext)) else
-    if ToggleBoxBgAND .checked then new(P_andGate (newGate),create(x0,y0,paintContext)) else
-    if ToggleBoxBgOr  .checked then new(P_orGate  (newGate),create(x0,y0,paintContext)) else
-    if ToggleBoxBgXor .checked then new(P_xorGate (newGate),create(x0,y0,paintContext)) else
-    if ToggleBoxBgNAND.checked then new(P_nandGate(newGate),create(x0,y0,paintContext)) else
-    if ToggleBoxBgNOr .checked then new(P_norGate (newGate),create(x0,y0,paintContext)) else
-    if ToggleBoxBgNXor.checked then new(P_nxorGate(newGate),create(x0,y0,paintContext));
-
-    if newGate<>nil then begin
-      setLength(gates,length(gates)+1);
-      gates[length(gates)-1]:=newGate;
-      newGate^.Repaint(paintContext);
-    end;
-
+    workspace.addBaseGate(toAdd,x0,y0);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ZoomTrackBarChange(Sender: TObject);
-  VAR gate:P_abstractGate;
   begin
-    paintContext.zoom:=ZoomTrackBar.position;
-    for gate in gates do gate^.Repaint(paintContext);
-  end;
-
-PROCEDURE TDigitaltrainerMainForm.gateMarked(CONST gate: P_abstractGate);
-  VAR otherGate:P_abstractGate;
-  begin
-    for otherGate in gates do if (otherGate<>gate) then otherGate^.marked:=false;
+    workspace.currentBoard^.setZoom(ZoomTrackBar.position);
   end;
 
 end.
