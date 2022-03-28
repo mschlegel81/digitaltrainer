@@ -1,0 +1,225 @@
+object DigitaltrainerMainForm: TDigitaltrainerMainForm
+  Left = 397
+  Height = 497
+  Top = 279
+  Width = 729
+  Caption = 'Digitaltrainer'
+  ClientHeight = 497
+  ClientWidth = 729
+  DesignTimePPI = 120
+  OnCreate = FormCreate
+  OnResize = FormResize
+  LCLVersion = '2.0.12.0'
+  object ScrollBox1: TScrollBox
+    Left = 219
+    Height = 497
+    Top = 0
+    Width = 510
+    HorzScrollBar.Page = 113
+    VertScrollBar.Page = 113
+    Align = alClient
+    ClientHeight = 493
+    ClientWidth = 506
+    TabOrder = 0
+    object WireImage: TImage
+      Left = 0
+      Height = 493
+      Top = 0
+      Width = 506
+      Align = alClient
+      OnClick = WireImageClick
+      OnMouseDown = WireImageMouseDown
+    end
+  end
+  object Panel1: TPanel
+    Left = 0
+    Height = 497
+    Top = 0
+    Width = 213
+    Align = alLeft
+    BevelOuter = bvNone
+    ClientHeight = 497
+    ClientWidth = 213
+    TabOrder = 1
+    object GroupBox1: TGroupBox
+      Left = 0
+      Height = 131
+      Top = 0
+      Width = 213
+      Align = alTop
+      Caption = 'Basis'
+      ClientHeight = 106
+      ClientWidth = 209
+      TabOrder = 0
+      object FlowPanel1: TFlowPanel
+        Left = 0
+        Height = 106
+        Top = 0
+        Width = 209
+        Align = alClient
+        BevelOuter = bvNone
+        ControlList = <        
+          item
+            Control = ToggleBoxBGNot
+            WrapAfter = waAuto
+            Index = 0
+          end        
+          item
+            Control = ToggleBoxBgAND
+            WrapAfter = waAuto
+            Index = 1
+          end        
+          item
+            Control = ToggleBoxBgOr
+            WrapAfter = waAuto
+            Index = 2
+          end        
+          item
+            Control = ToggleBoxBgXor
+            WrapAfter = waAuto
+            Index = 3
+          end        
+          item
+            Control = ToggleBoxBgNAND
+            WrapAfter = waAuto
+            Index = 4
+          end        
+          item
+            Control = ToggleBoxBgNor
+            WrapAfter = waAuto
+            Index = 5
+          end        
+          item
+            Control = ToggleBoxBgNxor
+            WrapAfter = waAuto
+            Index = 6
+          end>
+        FlowLayout = tlTop
+        FlowStyle = fsLeftRightTopBottom
+        TabOrder = 0
+        object ToggleBoxBGNot: TToggleBox
+          Left = 0
+          Height = 31
+          Top = 0
+          Width = 60
+          Anchors = []
+          Caption = 'NOT'
+          OnClick = ToggleBoxBgANDClick
+          TabOrder = 0
+        end
+        object ToggleBoxBgAND: TToggleBox
+          Left = 60
+          Height = 31
+          Top = 0
+          Width = 60
+          Anchors = []
+          Caption = 'AND'
+          OnClick = ToggleBoxBgANDClick
+          TabOrder = 1
+        end
+        object ToggleBoxBgOr: TToggleBox
+          Left = 120
+          Height = 31
+          Top = 0
+          Width = 60
+          Anchors = []
+          Caption = 'OR'
+          OnClick = ToggleBoxBgANDClick
+          TabOrder = 2
+        end
+        object ToggleBoxBgXor: TToggleBox
+          Left = 0
+          Height = 31
+          Top = 31
+          Width = 60
+          Anchors = []
+          Caption = 'XOR'
+          OnClick = ToggleBoxBgANDClick
+          TabOrder = 3
+        end
+        object ToggleBoxBgNAND: TToggleBox
+          Left = 60
+          Height = 31
+          Top = 31
+          Width = 60
+          Anchors = []
+          Caption = 'NAND'
+          OnClick = ToggleBoxBgANDClick
+          TabOrder = 4
+        end
+        object ToggleBoxBgNor: TToggleBox
+          Left = 120
+          Height = 31
+          Top = 31
+          Width = 60
+          Anchors = []
+          Caption = 'NOR'
+          OnClick = ToggleBoxBgANDClick
+          TabOrder = 5
+        end
+        object ToggleBoxBgNxor: TToggleBox
+          Left = 0
+          Height = 31
+          Top = 62
+          Width = 60
+          Anchors = []
+          Caption = 'NXOR'
+          OnClick = ToggleBoxBgANDClick
+          TabOrder = 6
+        end
+      end
+    end
+    object GroupBox2: TGroupBox
+      Left = 0
+      Height = 56
+      Top = 131
+      Width = 213
+      Align = alTop
+      AutoSize = True
+      Caption = 'Zoom'
+      ClientHeight = 31
+      ClientWidth = 209
+      TabOrder = 1
+      object ZoomTrackBar: TTrackBar
+        Left = 0
+        Height = 31
+        Top = 0
+        Width = 209
+        Min = 1
+        OnChange = ZoomTrackBarChange
+        Position = 1
+        Align = alClient
+        TabOrder = 0
+      end
+    end
+    object DeleteButton: TButton
+      Left = 0
+      Height = 31
+      Top = 187
+      Width = 213
+      Align = alTop
+      Caption = '🗑'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clBlack
+      Font.Height = -27
+      Font.Name = 'Segoe UI'
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      OnClick = DeleteButtonClick
+      ParentFont = False
+      TabOrder = 2
+    end
+  end
+  object Splitter1: TSplitter
+    Left = 213
+    Height = 497
+    Top = 0
+    Width = 6
+  end
+  object SimTimer: TTimer
+    Interval = 100
+    OnTimer = SimTimerTimer
+    Left = 45
+    Top = 211
+  end
+end
