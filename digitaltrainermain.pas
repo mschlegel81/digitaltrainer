@@ -56,7 +56,6 @@ TYPE
   private
     workspace:T_workspace;
     toggleButtons:array of TToggleBox;
-    PROCEDURE gateMarked(CONST gate:P_abstractGate);
   public
   end;
 
@@ -90,7 +89,7 @@ PROCEDURE TDigitaltrainerMainForm.DeleteButtonClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
   begin
-    workspace.currentBoard^.Repaint(paintContext);
+    workspace.currentBoard^.Repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.SimTimerTimer(Sender: TObject);

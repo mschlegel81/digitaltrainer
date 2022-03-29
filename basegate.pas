@@ -4,8 +4,14 @@ UNIT baseGate;
 
 INTERFACE
 USES ExtCtrls,Classes,Controls,StdCtrls;
-CONST GRID_SIZE=8;
-      BOARD_MAX_SIZE_IN_GRID_ENTRIES=2000;
+CONST BOARD_MAX_SIZE_IN_GRID_ENTRIES=2000;
+
+TYPE T_wireDirection=(wd_left,wd_leftDown,wd_down,wd_rightDown,wd_right,wd_rightUp,wd_up,wd_leftUp);
+     T_wireDirectionSet=bitpacked set of T_wireDirection;
+CONST WIRE_DELTA:array[T_wireDirection,0..1] of shortint=((-1,0),(-1,1),(0,1),(1,1),(1,0),(1,-1),(0,-1),(-1,-1));
+      OppositeDirection:array[T_wireDirection] of T_wireDirection=(wd_right,wd_rightUp,wd_up,wd_leftUp,wd_left,wd_leftDown,wd_down,wd_rightDown);
+      AllDirections=[wd_left..wd_leftUp];
+      DirectionCost:array[T_wireDirection] of byte=(2,3,2,3,2,3,2,3);
 TYPE
   T_gateType=(gt_notGate,
               gt_andGate,
@@ -27,7 +33,7 @@ TYPE
   T_abstractGate=object
   private
     x0,y0:longint;
-    zoom1Width,zoom1Height:longint;
+    baseWidth,baseHeight:longint;
 
     board:P_circuitBoard;
     //visual
@@ -35,7 +41,9 @@ TYPE
     shapes:array of TShape;
     //mouse interaction
     dragX,dragY:longint;
-    dragging,marked_:boolean;
+    dragging:(none,gate,wire);
+    wireDragOutputIndex:longint;
+    marked_:boolean;
     PROCEDURE setMarked(CONST value:boolean);
 
   public
@@ -53,9 +61,11 @@ TYPE
     PROCEDURE setInput(CONST index:longint; CONST value:byte); virtual;
     FUNCTION  getInput(CONST index:longint):byte;              virtual; abstract;
 
-    FUNCTION getInputPositionInZoom1(CONST index:longint):TPoint;
-    FUNCTION getOutputPositionInZoom1(CONST index:longint):TPoint;
-    PROCEDURE Repaint;
+    FUNCTION getInputPositionInGridSize (CONST index:longint):TPoint;
+    FUNCTION getOutputPositionInGridSize(CONST index:longint):TPoint;
+    PROCEDURE Repaint; virtual;
+    FUNCTION getInputPoint(CONST index:longint):TPoint;
+    FUNCTION getOutputPoint(CONST index:longint):TPoint;
 
     PROPERTY marked:boolean read marked_ write setMarked;
   protected
@@ -66,9 +76,10 @@ TYPE
     PROCEDURE mainShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE mainShapeMouseMove(Sender: TObject; Shift: TShiftState; X,Y: integer);
     PROCEDURE mainShapeMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE outputMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE outputMouseMove(Sender: TObject; Shift: TShiftState; X,Y: integer);
+    PROCEDURE outputMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   end;
-
-  { T_palette }
 
   { T_workspace }
 
@@ -84,7 +95,9 @@ TYPE
 
   { T_circuitBoard }
 
-  T_circuitBoard=object
+  T_wirePath=array of TPoint;
+
+  T_circuitBoard=object(T_abstractGate)
     GUI:record
       zoom:longint;
       container:TWinControl;
@@ -94,22 +107,56 @@ TYPE
     name:string;
     description:string;
     gates:array of P_abstractGate;
+
     logicWires:array of record
       source,sink:record
         gate:P_abstractGate;
         index:longint;
       end;
-      visual:array of array of record x,y:longint; end;
+      visual: array of record x,y:longint; end;
+    end;
+
+    wireInProgress:record
+      source:record
+        gate:P_abstractGate;
+        index:longint;
+      end;
+      xEnd,yEnd:longint;
+      visual: array of record x,y:longint; end;
+    end;
+
+    wireGraph:record
+      ready:boolean;
+      data:bitpacked array [0..BOARD_MAX_SIZE_IN_GRID_ENTRIES-1,
+                            0..BOARD_MAX_SIZE_IN_GRID_ENTRIES-1] of T_wireDirectionSet;
     end;
 
     CONSTRUCTOR create;
-    DESTRUCTOR destroy;
+    DESTRUCTOR destroy;  virtual;
     FUNCTION cloneAsGate(CONST x0_,y0_:longint; CONST targetBoard:P_circuitBoard):P_circuitBoard;
 
     PROCEDURE attachGUI(CONST zoom:longint; CONST container:TWinControl; CONST wireImage:TImage);
-    PROCEDURE gateMarked(CONST marked:P_abstractGate);
+    PROCEDURE gateMarked(CONST markedGate:P_abstractGate);
     FUNCTION positionNewGate(CONST gateToAdd:P_abstractGate):boolean;
     PROCEDURE deleteMarkedGate;
+    PROCEDURE setZoom(CONST zoom:longint);
+
+    FUNCTION  caption:string;          virtual;
+    FUNCTION  numberOfInputs :longint; virtual;
+    FUNCTION  numberOfOutputs:longint; virtual;
+    FUNCTION  gateType:T_gateType; virtual;
+
+    PROCEDURE simulateStep;                                    virtual;
+    FUNCTION  getOutput(CONST index:longint):byte;             virtual;
+    PROCEDURE setInput(CONST index:longint; CONST value:byte); virtual;
+    FUNCTION  getInput(CONST index:longint):byte;              virtual;
+
+    PROCEDURE Repaint; virtual;
+
+    PROCEDURE ensureWireGraph;
+
+    FUNCTION findWirePath(CONST x1,y1,x2,y2:longint):T_wirePath;
+    PROCEDURE drawTempWire(CONST path:T_wirePath);
   end;
 
   { T_notGate }
@@ -238,23 +285,25 @@ DESTRUCTOR T_workspace.destroy;
 PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType; CONST x0,y0:longint);
   VAR gateToAdd:P_abstractGate=nil;
   begin
-
     case gateType of
-      gt_notGate : new(P_notGate (gateToAdd),create(x0,y0,@self));
-      gt_andGate : new(P_andGate (gateToAdd),create(x0,y0,@self));
-      gt_orGate  : new(P_orGate  (gateToAdd),create(x0,y0,@self));
-      gt_xorGate : new(P_xorGate (gateToAdd),create(x0,y0,@self));
-      gt_nandGate: new(P_nandGate(gateToAdd),create(x0,y0,@self));
-      gt_norGate : new(P_norGate (gateToAdd),create(x0,y0,@self));
-      gt_nxorGate: new(P_nxorGate(gateToAdd),create(x0,y0,@self));
+      gt_notGate : new(P_notGate (gateToAdd),create(x0,y0,currentBoard));
+      gt_andGate : new(P_andGate (gateToAdd),create(x0,y0,currentBoard));
+      gt_orGate  : new(P_orGate  (gateToAdd),create(x0,y0,currentBoard));
+      gt_xorGate : new(P_xorGate (gateToAdd),create(x0,y0,currentBoard));
+      gt_nandGate: new(P_nandGate(gateToAdd),create(x0,y0,currentBoard));
+      gt_norGate : new(P_norGate (gateToAdd),create(x0,y0,currentBoard));
+      gt_nxorGate: new(P_nxorGate(gateToAdd),create(x0,y0,currentBoard));
       //TODO:
       //  gt_input
       //  gt_output
       //  gt_junctionDot
-      //  gt_compound
     end;
 
-    if gateToAdd<>nil then currentBoard^.positionNewGate(gateToAdd);
+    if gateToAdd<>nil then begin
+      if not currentBoard^.positionNewGate(gateToAdd)
+      then dispose(gateToAdd,destroy);
+      //TODO: Issue error message
+    end;
   end;
 
 PROCEDURE T_workspace.addCustomGate(CONST index: longint; CONST x0, y0: longint);
@@ -266,16 +315,17 @@ PROCEDURE T_workspace.addCustomGate(CONST index: longint; CONST x0, y0: longint)
 
 CONSTRUCTOR T_circuitBoard.create;
   begin
-
+    inherited create(0,0,nil);
   end;
 
 DESTRUCTOR T_circuitBoard.destroy;
   begin
-
+    inherited;
   end;
 
 FUNCTION T_circuitBoard.cloneAsGate(CONST x0_, y0_: longint; CONST targetBoard: P_circuitBoard): P_circuitBoard;
   begin
+    //TODO: Implement me!
 
   end;
 
@@ -286,45 +336,46 @@ PROCEDURE T_circuitBoard.attachGUI(CONST zoom: longint; CONST container: TWinCon
     GUI.wireImage:=wireImage;
   end;
 
-PROCEDURE T_circuitBoard.gateMarked(CONST marked: P_abstractGate);
+PROCEDURE T_circuitBoard.gateMarked(CONST markedGate: P_abstractGate);
+  VAR gate:P_abstractGate;
   begin
-
+    for gate in gates do if (gate<>markedGate) then gate^.setMarked(false);
   end;
 
-FUNCTION T_circuitBoard.positionNewGate(CONST gateToAdd: P_abstractGate):boolean;
+FUNCTION T_circuitBoard.positionNewGate(CONST gateToAdd: P_abstractGate): boolean;
   FUNCTION isBoxFree(CONST x0,y0,x1,y1:longint):boolean;
-    VAR i:longint;
-        gate:P_abstractGate;
+    VAR gate:P_abstractGate;
     begin
       result:=true;
       for gate in gates do
-      if (x1>=gate^.x0) and (x0<=gate^.x0+gate^.zoom1Width) and
-         (y1>=gate^.y0) and (y0<=gate^.y0+gate^.zoom1Height)
+      if (x1>=gate^.x0-1) and (x0<gate^.x0+gate^.baseWidth +1) and
+         (y1>=gate^.y0-1) and (y0<gate^.y0+gate^.baseHeight+1)
       then exit(false);
-      //TODO: Check wires!
     end;
 
-  VAR px,py,width,height,x0,y0:longint;
+  VAR px,py,width,height,newX0,newY0:longint;
       radius:longint=0;
   begin
-    x0:=round(gateToAdd^.x0/GRID_SIZE);
-    y0:=round(gateToAdd^.y0/GRID_SIZE);
-    width :=gateToAdd^.zoom1Width div GRID_SIZE;
-    height:=gateToAdd^.zoom1Height div GRID_SIZE;
+    width :=gateToAdd^.baseWidth;
+    height:=gateToAdd^.baseHeight;
+    newX0:=gateToAdd^.x0-width div 2;
+    newY0:=gateToAdd^.y0-height div 2;
 
     repeat
-      for px:=max(GRID_SIZE,x0-radius) to min(x0+radius,BOARD_MAX_SIZE_IN_GRID_ENTRIES-width-2) do
-      for py:=max(GRID_SIZE,y0-radius) to min(y0+radius,BOARD_MAX_SIZE_IN_GRID_ENTRIES-height-2) do
+      for px:=max(1,newX0-radius) to min(newX0+radius,BOARD_MAX_SIZE_IN_GRID_ENTRIES-width -2) do
+      for py:=max(1,newY0-radius) to min(newY0+radius,BOARD_MAX_SIZE_IN_GRID_ENTRIES-height-2) do
       if max(abs(px),abs(py))=radius then begin
-        if isBoxFree((px-1)*GRID_SIZE,
-                     (py-1)*GRID_SIZE,
-                     (px+width)*GRID_SIZE,
-                     (py+height)*GRID_SIZE)
+        if isBoxFree((px         ),
+                     (py         ),
+                     (px+width-1 ),
+                     (py+height-1))
         then begin
-          gateToAdd^.x0:=px*GRID_SIZE;
-          gateToAdd^.y0:=py*GRID_SIZE;
+          gateToAdd^.x0:=px;
+          gateToAdd^.y0:=py;
           setLength(gates,length(gates)+1);
           gates[length(gates)-1]:=gateToAdd;
+          gateToAdd^.Repaint;
+          wireGraph.ready:=false;
           exit(true);
         end;
       end;
@@ -348,10 +399,146 @@ PROCEDURE T_circuitBoard.deleteMarkedGate;
     setLength(gates,j);
   end;
 
+PROCEDURE T_circuitBoard.setZoom(CONST zoom: longint);
+  begin
+    GUI.zoom:=zoom;
+    Repaint;
+  end;
+
+FUNCTION T_circuitBoard.caption: string;
+  begin
+    result:=name;
+  end;
+
+FUNCTION T_circuitBoard.numberOfInputs: longint;
+  VAR gate:P_abstractGate;
+  begin
+    result:=0;
+    for gate in gates do if gate^.gateType=gt_input then inc(result);
+  end;
+
+FUNCTION T_circuitBoard.numberOfOutputs: longint;
+  VAR gate:P_abstractGate;
+  begin
+    result:=0;
+    for gate in gates do if gate^.gateType=gt_output then inc(result);
+  end;
+
+FUNCTION T_circuitBoard.gateType: T_gateType;
+  begin
+    result:=gt_compound;
+  end;
+
+PROCEDURE T_circuitBoard.simulateStep;
+  VAR gate:P_abstractGate;
+  begin
+    for gate in gates do gate^.simulateStep;
+    //TODO: Wires!!
+  end;
+
+FUNCTION T_circuitBoard.getOutput(CONST index: longint): byte;
+  //VAR gate:P_abstractGate;
+  begin
+    //for gate in gates do if (gate^.gateType=gt_output) and ...
+    result:=0;
+  end;
+
+PROCEDURE T_circuitBoard.setInput(CONST index: longint; CONST value: byte);
+  begin
+    inherited;
+    //TODO: ...
+  end;
+
+FUNCTION T_circuitBoard.getInput(CONST index: longint): byte;
+  begin
+    //TODO...
+  end;
+
+PROCEDURE T_circuitBoard.Repaint;
+  VAR gate:P_abstractGate;
+  begin
+    if (gui.container=nil) then inherited else begin
+      for gate in gates do gate^.Repaint;
+    end;
+  end;
+
+PROCEDURE T_circuitBoard.ensureWireGraph;
+  PROCEDURE dropNode(CONST ix,iy:longint);
+    VAR dir:T_wireDirection;
+        jx,jy:longint;
+    begin
+      with wireGraph do begin
+        data[ix,iy]:=[];
+        for dir in T_wireDirection do begin
+          jx:=ix+WIRE_DELTA[dir,0];
+          jy:=iy+WIRE_DELTA[dir,1];
+          Exclude(data[jx,jy],OppositeDirection[dir]);;
+        end;
+      end;
+    end;
+
+  VAR x,y:longint;
+      gate:P_abstractGate;
+  begin
+    //Primary setup...
+    with wireGraph do begin
+      for x:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do
+      for y:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do data[x,y]:=AllDirections;
+      y:=BOARD_MAX_SIZE_IN_GRID_ENTRIES-1;
+      for x:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do begin
+        data[x,0]-=[wd_up  ,wd_leftUp  ,wd_rightUp  ];
+        data[x,y]-=[wd_down,wd_leftDown,wd_rightDown];
+      end;
+      for y:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do
+        data[0,y]-=[wd_left ,wd_leftUp ,wd_leftDown ];
+      x:=BOARD_MAX_SIZE_IN_GRID_ENTRIES-1;
+      for y:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do
+        data[x,y]-=[wd_right,wd_rightUp,wd_rightDown];
+    end;
+
+    for gate in gates do
+    for x:=gate^.x0 to gate^.baseWidth do
+    for y:=gate^.y0 to gate^.baseHeight do dropNode(x,y);
+
+    wireGraph.ready:=true;
+  end;
+
+FUNCTION T_circuitBoard.findWirePath(CONST x1, y1, x2, y2: longint): T_wirePath;
+  VAR x,y,n:longint;
+  begin
+    ensureWireGraph;
+    //for n:=0 to 7 do
+    //if (byte(n+8-initialDirection) in [0,1,2,6,7]) and ((wireGraph.data[x1,y1] and WIRE_DIRECTIONS[n])>0)
+    //then begin
+    //  openSet
+    //
+    //
+    //end;
+
+  end;
+
+PROCEDURE T_circuitBoard.drawTempWire(CONST path: T_wirePath);
+  VAR x,y,i:longint;
+  begin
+    if gui.wireImage=nil then exit;
+    gui.wireImage.Canvas.Brush.color:=clBtnFace;
+    gui.wireImage.Canvas.clear;
+    GUI.wireImage.Canvas.Pen.color:=clRed;
+  //  x:=path[0]*GUI.zoom;
+  //  y:=path[1]*GUI.zoom;
+  //  GUI.wireImage.Canvas.MoveTo(x,y);
+  //  for i:=2 to length(path)-1 do begin
+  //    if odd(i)
+  //    then y:=path[i]*GUI.zoom
+  //    else x:=path[i]*GUI.zoom;
+  //    GUI.wireImage.Canvas.LineTo(x,y);
+  //  end;
+
+  end;
+
 { T_nxorGate }
 
-CONSTRUCTOR T_nxorGate.create(CONST x0_, y0_: longint;
-  CONST board_: P_circuitBoard);
+CONSTRUCTOR T_nxorGate.create(CONST x0_, y0_: longint; CONST board_: P_circuitBoard);
   begin
     inherited;
   end;
@@ -579,20 +766,21 @@ FUNCTION T_notGate.getInput(CONST index: longint): byte;
 
 { T_abstractGate }
 
-CONSTRUCTOR T_abstractGate.create(CONST x0_, y0_: longint; CONST board_:P_circuitBoard);
+CONSTRUCTOR T_abstractGate.create(CONST x0_, y0_: longint;
+  CONST board_: P_circuitBoard);
   VAR shapeIndex:longint=1;
-      k,yCenter:longint;
+      k:longint;
   begin
     x0:=x0_;
     y0:=y0_;
-    zoom1Width:=32;
-    zoom1Height:=max(32,16*max(numberOfInputs,numberOfInputs));
+    baseWidth:=4;
+    baseHeight:=max(2,2*max(numberOfInputs,numberOfInputs));
 
-    dragging:=false;
+    dragging:=none;
     marked  :=false;
     board   :=board_;
 
-    if board^.GUI.container<>nil then begin
+    if (board<>nil) and (board^.GUI.container<>nil) then begin
       setLength(shapes,1+numberOfInputs+numberOfOutputs);
       shapes[0]:=TShape.create(board^.GUI.container);
       shapes[0].parent:=board^.GUI.container;
@@ -623,6 +811,9 @@ CONSTRUCTOR T_abstractGate.create(CONST x0_, y0_: longint; CONST board_:P_circui
         shapes[shapeIndex]:=TShape.create(board^.GUI.container);
         shapes[shapeIndex].Shape:=stCircle;
         shapes[shapeIndex].Tag:=k;
+        shapes[shapeIndex].OnMouseDown:=@outputMouseDown;
+        shapes[shapeIndex].OnMouseMove:=@outputMouseMove;
+        shapes[shapeIndex].OnMouseUp  :=@outputMouseUp;
         shapes[shapeIndex].parent:=board^.GUI.container;
         inc(shapeIndex);
       end;
@@ -645,29 +836,29 @@ PROCEDURE T_abstractGate.setInput(CONST index: longint; CONST value: byte);
     end;
   end;
 
-FUNCTION T_abstractGate.getInputPositionInZoom1(CONST index: longint): TPoint;
+FUNCTION T_abstractGate.getInputPositionInGridSize(CONST index: longint): TPoint;
   begin
     result.X:=x0;
-    result.Y:=(index*GRID_SIZE*2-(numberOfInputs-1)*GRID_SIZE)+zoom1Height div 2+y0;
+    result.Y:=(index*2-(numberOfInputs-1))+baseHeight div 2+y0;
   end;
 
-FUNCTION T_abstractGate.getOutputPositionInZoom1(CONST index: longint): TPoint;
+FUNCTION T_abstractGate.getOutputPositionInGridSize(CONST index: longint): TPoint;
   begin
-    result.X:=x0+zoom1Width;
-    result.Y:=(index*GRID_SIZE*2-(numberOfOutputs-1)*GRID_SIZE)+zoom1Height div 2+y0;
+    result.X:=x0+baseWidth;
+    result.Y:=(index*2-(numberOfOutputs-1))+baseHeight div 2+y0;
   end;
 
 PROCEDURE T_abstractGate.Repaint;
-  VAR shape:TShape;
-      k,yCenter,
+  VAR k,yCenter,
       newFontSize:longint;
       shapeIndex :longint=1;
+      p:TPoint;
   begin
     if length(shapes)=0 then exit;
-    shapes[0].Left  :=x0*board^.GUI.zoom;
-    shapes[0].top   :=y0*board^.GUI.zoom;
-    shapes[0].width :=zoom1Width*board^.GUI.zoom;
-    shapes[0].height:=zoom1Height*board^.GUI.zoom;
+    shapes[0].Left  :=x0        *board^.GUI.zoom;
+    shapes[0].top   :=y0        *board^.GUI.zoom;
+    shapes[0].width :=baseWidth *board^.GUI.zoom;
+    shapes[0].height:=baseHeight*board^.GUI.zoom;
 
     gatelabel.top :=shapes[0].top +(shapes[0].height-gateLabel.height) div 2;
     gatelabel.Left:=shapes[0].Left+(shapes[0].width -gateLabel.width) div 2 ;
@@ -677,22 +868,34 @@ PROCEDURE T_abstractGate.Repaint;
     gatelabel.Left:=shapes[0].Left+(shapes[0].width -gateLabel.width) div 2 ;
 
     for k:=0 to numberOfInputs-1 do begin
-      shapes[shapeIndex].Left:=(x0-(GRID_SIZE shr 1))*board^.GUI.zoom;
-      yCenter:=(k*GRID_SIZE*2-(numberOfInputs-1)*GRID_SIZE)*board^.GUI.zoom+shapes[0].height div 2+y0*board^.GUI.zoom;
-      shapes[shapeIndex].top:=yCenter-(GRID_SIZE shr 1)*board^.GUI.zoom;
-      shapes[shapeIndex].width :=GRID_SIZE*board^.GUI.zoom;
-      shapes[shapeIndex].height:=GRID_SIZE*board^.GUI.zoom;
+      p:=getInputPositionInGridSize(k);
+      shapes[shapeIndex].Left  :=round((p.x-0.5)*board^.GUI.zoom);
+      shapes[shapeIndex].top   :=round((p.y-0.5)*board^.GUI.zoom);
+      shapes[shapeIndex].width :=board^.GUI.zoom;
+      shapes[shapeIndex].height:=board^.GUI.zoom;
       inc(shapeIndex);
     end;
 
     for k:=0 to numberOfOutputs-1 do begin
-      shapes[shapeIndex].Left:=shapes[0].width+(x0-(GRID_SIZE shr 1))*board^.GUI.zoom;
-      yCenter:=(k*GRID_SIZE*2-(numberOfOutputs-1)*GRID_SIZE)*board^.GUI.zoom+shapes[0].height div 2+y0*board^.GUI.zoom;
-      shapes[shapeIndex].top:=yCenter-(GRID_SIZE shr 1)*board^.GUI.zoom;
-      shapes[shapeIndex].width :=GRID_SIZE*board^.GUI.zoom;
-      shapes[shapeIndex].height:=GRID_SIZE*board^.GUI.zoom;
+      p:=getOutputPositionInGridSize(k);
+      shapes[shapeIndex].Left  :=round((p.x-0.5)*board^.GUI.zoom);
+      shapes[shapeIndex].top   :=round((p.y-0.5)*board^.GUI.zoom);
+      shapes[shapeIndex].width :=board^.GUI.zoom;
+      shapes[shapeIndex].height:=board^.GUI.zoom;
       inc(shapeIndex);
     end;
+  end;
+
+FUNCTION T_abstractGate.getInputPoint(CONST index: longint): TPoint;
+  begin
+    result.X:=x0*board^.GUI.zoom;
+    result.Y:=(index*2-(numberOfInputs-1))*board^.GUI.zoom+(y0+baseHeight div 2)*board^.GUI.zoom;
+  end;
+
+FUNCTION T_abstractGate.getOutputPoint(CONST index: longint): TPoint;
+  begin
+    result.X:=(x0+baseWidth)*board^.GUI.zoom;
+    result.Y:=(index*2-(numberOfOutputs-1))*board^.GUI.zoom+(y0+baseHeight div 2)*board^.GUI.zoom;
   end;
 
 PROCEDURE T_abstractGate.setOutput(CONST index: longint; CONST value: byte);
@@ -704,7 +907,7 @@ PROCEDURE T_abstractGate.setOutput(CONST index: longint; CONST value: byte);
     end;
   end;
 
-PROCEDURE T_abstractGate.setMarked(CONST value:boolean);
+PROCEDURE T_abstractGate.setMarked(CONST value: boolean);
   begin
     if marked_=value then exit;
     marked_:=value;
@@ -721,10 +924,38 @@ PROCEDURE T_abstractGate.inputClick(Sender: TObject);
     setInput(k,not getInput(k));
   end;
 
-PROCEDURE T_abstractGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE T_abstractGate.outputMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  VAR p:TPoint;
+  begin
+    //TODO: Implement me! (wire drag)
+    if (button=mbLeft) then begin
+      dragging:=wire;
+      wireDragOutputIndex:=TShape(Sender).Tag;
+      p:=getOutputPoint(wireDragOutputIndex);
+      dragX:=round(p.X/board^.GUI.zoom);
+      dragY:=round(p.Y/board^.GUI.zoom);
+    end;
+  end;
+
+PROCEDURE T_abstractGate.outputMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
+  begin
+    if dragging=wire then begin
+      board^.drawTempWire(board^.findWirePath(dragX,dragY,
+      dragX+round(x/board^.GUI.zoom),
+      dragY+round(y/board^.GUI.zoom)));
+    end;
+  end;
+
+PROCEDURE T_abstractGate.outputMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  begin
+    dragging:=none;
+  end;
+
+PROCEDURE T_abstractGate.mainShapeMouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     if (button=mbLeft) then begin
-      dragging:=true;
+      dragging:=gate;
       marked:=true;
       board^.gateMarked(@self);
       shapes[0].Pen.style:=psDash;
@@ -737,13 +968,14 @@ PROCEDURE T_abstractGate.mainShapeMouseMove(Sender: TObject; Shift: TShiftState;
   VAR newX0,newY0:longint;
       dx,dy:longint;
   begin
-    if dragging then begin
+    if dragging=gate then begin
       dx:=x-dragX;
       dy:=y-dragY;
-      newX0:=x0+round(dx/(GRID_SIZE*board^.GUI.zoom))*GRID_SIZE; if newX0<0 then newX0:=0;
-      newY0:=y0+round(dy/(GRID_SIZE*board^.GUI.zoom))*GRID_SIZE; if newY0<0 then newY0:=0;
+      newX0:=x0+round(dx/board^.GUI.zoom); if newX0<0 then newX0:=0;
+      newY0:=y0+round(dy/board^.GUI.zoom); if newY0<0 then newY0:=0;
       if (newX0<>x0) or (newY0<>y0)
       then begin
+        board^.wireGraph.ready:=false;
         x0:=newX0;
         y0:=newY0;
         Repaint;
@@ -751,10 +983,11 @@ PROCEDURE T_abstractGate.mainShapeMouseMove(Sender: TObject; Shift: TShiftState;
     end;
   end;
 
-PROCEDURE T_abstractGate.mainShapeMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE T_abstractGate.mainShapeMouseUp(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     if (button=mbLeft) then begin
-      dragging:=false;
+      dragging:=none;
       shapes[0].Pen.style:=psSolid;
       Repaint;
     end;

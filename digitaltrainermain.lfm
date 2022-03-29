@@ -189,9 +189,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         Height = 31
         Top = 0
         Width = 209
+        Max = 80
         Min = 1
         OnChange = ZoomTrackBarChange
-        Position = 4
+        Position = 30
         Align = alClient
         TabOrder = 0
       end
