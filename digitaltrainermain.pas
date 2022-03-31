@@ -33,7 +33,7 @@ TYPE
     ToggleBoxConnectIn: TToggleBox;
     ToggleBoxConnectOut: TToggleBox;
     ToggleBoxJunctionPoint: TToggleBox;
-    WireImage: TImage;
+    wireImage: TImage;
     Panel1: TPanel;
     ScrollBox1: TScrollBox;
     Splitter1: TSplitter;
@@ -46,6 +46,7 @@ TYPE
     ToggleBoxBgNxor: TToggleBox;
     ZoomTrackBar: TTrackBar;
     PROCEDURE DeleteButtonClick(Sender: TObject);
+    PROCEDURE FormClose(Sender: TObject; VAR CloseAction: TCloseAction);
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE FormResize(Sender: TObject);
     PROCEDURE SimTimerTimer(Sender: TObject);
@@ -79,12 +80,17 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     toggleButtons[5]:=ToggleBoxBgXor ;
     toggleButtons[6]:=ToggleBoxBgNxor;
     workspace.create;
-    workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,WireImage);
+    workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.DeleteButtonClick(Sender: TObject);
   begin
     workspace.currentBoard^.deleteMarkedGate;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.FormClose(Sender: TObject; VAR CloseAction: TCloseAction);
+  begin
+    workspace.destroy;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
@@ -120,8 +126,8 @@ PROCEDURE TDigitaltrainerMainForm.WireImageMouseDown(Sender: TObject; button: TM
     if ToggleBoxBgOr  .checked then toAdd:=gt_orGate else
     if ToggleBoxBgXor .checked then toAdd:=gt_xorGate else
     if ToggleBoxBgNAND.checked then toAdd:=gt_nandGate else
-    if ToggleBoxBgNOr .checked then toAdd:=gt_norGate else
-    if ToggleBoxBgNXor.checked then toAdd:=gt_nxorGate;
+    if ToggleBoxBgNor .checked then toAdd:=gt_norGate else
+    if ToggleBoxBgNxor.checked then toAdd:=gt_nxorGate;
 
     workspace.addBaseGate(toAdd,x0,y0);
   end;

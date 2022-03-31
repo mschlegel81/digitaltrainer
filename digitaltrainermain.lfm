@@ -8,6 +8,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   ClientWidth = 729
   DesignTimePPI = 120
   Menu = MainMenu
+  OnClose = FormClose
   OnCreate = FormCreate
   OnResize = FormResize
   LCLVersion = '2.0.12.0'
