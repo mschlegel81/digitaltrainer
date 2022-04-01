@@ -32,7 +32,6 @@ TYPE
     Splitter2: TSplitter;
     ToggleBoxConnectIn: TToggleBox;
     ToggleBoxConnectOut: TToggleBox;
-    ToggleBoxJunctionPoint: TToggleBox;
     wireImage: TImage;
     Panel1: TPanel;
     ScrollBox1: TScrollBox;
@@ -52,7 +51,6 @@ TYPE
     PROCEDURE FormResize(Sender: TObject);
     PROCEDURE SimTimerTimer(Sender: TObject);
     PROCEDURE ToggleBoxBgANDClick(Sender: TObject);
-    PROCEDURE WireImageClick(Sender: TObject);
     PROCEDURE WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE ZoomTrackBarChange(Sender: TObject);
   private
@@ -72,7 +70,7 @@ IMPLEMENTATION
 
 PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
   begin
-    setLength(toggleButtons,7);
+    setLength(toggleButtons,9);
     toggleButtons[0]:=ToggleBoxBgNAND;
     toggleButtons[1]:=ToggleBoxBgOr  ;
     toggleButtons[2]:=ToggleBoxBGNot ;
@@ -80,6 +78,8 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     toggleButtons[4]:=ToggleBoxBgNor ;
     toggleButtons[5]:=ToggleBoxBgXor ;
     toggleButtons[6]:=ToggleBoxBgNxor;
+    toggleButtons[7]:=ToggleBoxConnectIn;
+    toggleButtons[8]:=ToggleBoxConnectOut;
     workspace.create;
     workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage);
   end;
@@ -115,25 +115,21 @@ PROCEDURE TDigitaltrainerMainForm.ToggleBoxBgANDClick(Sender: TObject);
     otherToggle.checked:=false;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.WireImageClick(Sender: TObject);
-  begin
-
-  end;
-
 PROCEDURE TDigitaltrainerMainForm.WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR x0,y0:longint;
       toAdd:T_gateType=gt_compound;
   begin
     x0:=round(x/ZoomTrackBar.position);
     y0:=round(y/ZoomTrackBar.position);
-    if ToggleBoxBGNot .checked then toAdd:=gt_notGate else
-    if ToggleBoxBgAND .checked then toAdd:=gt_andGate else
-    if ToggleBoxBgOr  .checked then toAdd:=gt_orGate else
-    if ToggleBoxBgXor .checked then toAdd:=gt_xorGate else
-    if ToggleBoxBgNAND.checked then toAdd:=gt_nandGate else
-    if ToggleBoxBgNor .checked then toAdd:=gt_norGate else
-    if ToggleBoxBgNxor.checked then toAdd:=gt_nxorGate;
-
+    if ToggleBoxBGNot     .checked then toAdd:=gt_notGate else
+    if ToggleBoxBgAND     .checked then toAdd:=gt_andGate else
+    if ToggleBoxBgOr      .checked then toAdd:=gt_orGate else
+    if ToggleBoxBgXor     .checked then toAdd:=gt_xorGate else
+    if ToggleBoxBgNAND    .checked then toAdd:=gt_nandGate else
+    if ToggleBoxBgNor     .checked then toAdd:=gt_norGate else
+    if ToggleBoxBgNxor    .checked then toAdd:=gt_nxorGate else
+    if ToggleBoxConnectIn .checked then toAdd:=gt_input else
+    if ToggleBoxConnectOut.checked then toAdd:=gt_output;
     workspace.addBaseGate(toAdd,x0,y0);
   end;
 

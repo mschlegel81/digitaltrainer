@@ -32,7 +32,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       Top = 0
       Width = 506
       Align = alClient
-      OnClick = WireImageClick
       OnMouseDown = WireImageMouseDown
     end
   end
@@ -244,11 +243,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
             Control = ToggleBoxConnectOut
             WrapAfter = waAuto
             Index = 1
-          end        
-          item
-            Control = ToggleBoxJunctionPoint
-            WrapAfter = waAuto
-            Index = 2
           end>
         FlowLayout = tlTop
         FlowStyle = fsLeftRightTopBottom
@@ -260,6 +254,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           Width = 60
           Anchors = []
           Caption = 'in'
+          OnClick = ToggleBoxBgANDClick
           TabOrder = 0
         end
         object ToggleBoxConnectOut: TToggleBox
@@ -269,16 +264,8 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           Width = 60
           Anchors = []
           Caption = 'out'
+          OnClick = ToggleBoxBgANDClick
           TabOrder = 1
-        end
-        object ToggleBoxJunctionPoint: TToggleBox
-          Left = 120
-          Height = 31
-          Top = 0
-          Width = 60
-          Anchors = []
-          Caption = '•'
-          TabOrder = 2
         end
       end
     end

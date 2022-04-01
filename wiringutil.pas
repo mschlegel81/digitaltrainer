@@ -3,6 +3,7 @@ UNIT wiringUtil;
 {$mode objfpc}{$H+}
 
 INTERFACE
+USES serializationUtil;
 CONST BOARD_MAX_SIZE_IN_GRID_ENTRIES=200;
 TYPE T_wireDirection=(wd_left,wd_leftDown,wd_down,wd_rightDown,wd_right,wd_rightUp,wd_up,wd_leftUp);
      T_wireDirectionSet=bitpacked set of T_wireDirection;
@@ -58,6 +59,8 @@ OPERATOR -(CONST x:T_point; CONST y:T_wireDirection):T_point;
 OPERATOR =(CONST x,y:T_point):boolean;
 OPERATOR +(CONST x:T_wirePath; CONST y:T_point):T_wirePath;
 
+PROCEDURE writePointToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST p:T_point);
+FUNCTION readPoint(VAR stream: T_bufferedInputStreamWrapper):T_point;
 IMPLEMENTATION
 USES math,sysutils;
 TYPE
@@ -153,6 +156,18 @@ OPERATOR +(CONST x:T_wirePath; CONST y:T_point):T_wirePath;
     setLength(result,length(x)+1);
     for i:=0 to length(x)-1 do result[i]:=x[i];
     result[length(x)]:=y;
+  end;
+
+PROCEDURE writePointToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST p: T_point);
+  begin
+    stream.writeLongint(p[0]);
+    stream.writeLongint(p[1]);
+  end;
+
+FUNCTION readPoint(VAR stream: T_bufferedInputStreamWrapper): T_point;
+  begin
+    result[0]:=stream.readLongint;
+    result[1]:=stream.readLongint;
   end;
 
 FUNCTION maxNormDistance(CONST x,y:T_point):longint;

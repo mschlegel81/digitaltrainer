@@ -8,6 +8,7 @@ USES ExtCtrls,Classes,Controls,StdCtrls,wiringUtil,serializationUtil,logicGates;
 TYPE
   P_abstractGate=^T_abstractGate;
   P_circuitBoard=^T_circuitBoard;
+  P_workspace=^T_workspace;
   { T_abstractGate }
   P_visualGate=^T_visualGate;
 
@@ -55,7 +56,7 @@ TYPE
 
   { T_workspace }
 
-  T_workspace=object
+  T_workspace=object(T_serializable)
     paletteEntries:array of P_circuitBoard;
     currentBoard:P_circuitBoard;
 
@@ -63,6 +64,10 @@ TYPE
     DESTRUCTOR destroy;
     PROCEDURE addBaseGate(CONST gateType:T_gateType; CONST x0,y0:longint);
     PROCEDURE addCustomGate(CONST index:longint; CONST x0,y0:longint);
+
+    FUNCTION getSerialVersion:dword; virtual;
+    FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
+    PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
   end;
 
   T_repositionOutput=(ro_positionUnchanged,ro_positionFound,ro_noPositionFound);
@@ -94,7 +99,7 @@ TYPE
     FUNCTION  getInput(CONST index:longint):boolean;              virtual;
   end;
 
-  T_circuitBoard=object
+  T_circuitBoard=object(T_serializable)
     private
       GUI:record
         zoom:longint;
@@ -143,31 +148,10 @@ TYPE
       PROCEDURE deleteMarkedGate;
       PROCEDURE Repaint;
       PROCEDURE simulateStep;
+
+      FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
+      PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
   end;
-
-  { T_notGate }
-
-//
-//  P_inputConnector=^T_inputConnector;
-//  T_inputConnector=object(T_abstractGate)
-//    private
-//      inputIndex:longint;
-//      inputState:byte;
-//    public
-//      CONSTRUCTOR create(CONST x0_,y0_:longint; CONST paintContext:T_paintContext);
-//
-//      FUNCTION  caption:string;          virtual;
-//      FUNCTION  numberOfInputs :longint; virtual;
-//      FUNCTION  numberOfOutputs:longint; virtual;
-//
-//      PROCEDURE simulateStep;                                    virtual;
-//      FUNCTION  getOutput(CONST index:longint):byte;             virtual;
-//      PROCEDURE setInput(CONST index:longint; CONST value:byte); virtual;
-//      FUNCTION  getInput(CONST index:longint):byte;              virtual;
-//  end;
-//
-
-  { T_binaryBaseGate }
 
 IMPLEMENTATION
 USES sysutils,math,Graphics,myGenerics;
@@ -192,7 +176,7 @@ CONSTRUCTOR T_visualGate.create(CONST origin_: T_point; CONST gateToWrap: P_abst
     board   :=board_;
 
     if (board<>nil) and (board^.GUI.container<>nil) then begin
-      setLength(shapes,1+numberOfInputs+numberOfOutputs);
+      setLength(shapes,1+gateToWrap^.numberOfInputs+gateToWrap^.numberOfOutputs);
       shapes[0]:=TShape.create(board^.GUI.container);
       shapes[0].parent:=board^.GUI.container;
       shapes[0].Shape :=stRectangle;
@@ -209,7 +193,7 @@ CONSTRUCTOR T_visualGate.create(CONST origin_: T_point; CONST gateToWrap: P_abst
       gatelabel.OnMouseMove:=@mainShapeMouseMove;
       gatelabel.OnMouseUp  :=@mainShapeMouseUp;
 
-      for k:=0 to numberOfInputs-1 do begin
+      for k:=0 to gateToWrap^.numberOfInputs-1 do begin
         shapes[shapeIndex]:=TShape.create(board^.GUI.container);
         shapes[shapeIndex].Shape:=stCircle;
         shapes[shapeIndex].Tag:=k;
@@ -218,7 +202,7 @@ CONSTRUCTOR T_visualGate.create(CONST origin_: T_point; CONST gateToWrap: P_abst
         inc(shapeIndex);
       end;
 
-      for k:=0 to numberOfOutputs-1 do begin
+      for k:=0 to gateToWrap^.numberOfOutputs-1 do begin
         shapes[shapeIndex]:=TShape.create(board^.GUI.container);
         shapes[shapeIndex].Shape:=stCircle;
         shapes[shapeIndex].Tag:=k;
@@ -377,19 +361,21 @@ PROCEDURE T_visualGate.Repaint;
   end;
 
 PROCEDURE T_visualGate.updateIoVisuals;
-  VAR inputs,outputs,i:longint;
-
+  VAR shapeIndex:longint=1;
+      i:longint;
   begin
-    inputs :=numberOfOutputs;
-    outputs:=numberOfOutputs;
-    for i:=0 to inputs-1 do if behavior^.getInput(i)
-    then shapes[i+1].Brush.color:=clLime
-    else shapes[i+1].Brush.color:=clGray;
-
-    for i:=0 to outputs-1 do if behavior^.getOutput(i)
-    then shapes[i+inputs+1].Brush.color:=clLime
-    else shapes[i+inputs+1].Brush.color:=clGray;
-
+    for i:=0 to numberOfInputs-1 do begin
+      if behavior^.getInput(i)
+      then shapes[shapeIndex].Brush.color:=clLime
+      else shapes[shapeIndex].Brush.color:=clGray;
+      inc(shapeIndex);
+    end;
+    for i:=0 to numberOfOutputs-1 do begin
+      if behavior^.getOutput(i)
+      then shapes[shapeIndex].Brush.color:=clLime
+      else shapes[shapeIndex].Brush.color:=clGray;
+      inc(shapeIndex);
+    end;
   end;
 
 FUNCTION T_visualGate.numberOfInputs: longint;
@@ -572,6 +558,37 @@ PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType; CONST x0,y0:longint
 PROCEDURE T_workspace.addCustomGate(CONST index: longint; CONST x0, y0: longint);
   begin
 
+  end;
+
+FUNCTION T_workspace.getSerialVersion: dword;
+  begin
+    result:=0;
+  end;
+
+FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
+  VAR i:longint;
+      count: qword;
+  begin
+    if not(inherited) then exit;
+    currentBoard^.loadFromStream(stream);
+    count:=stream.readNaturalNumber;
+    if (count<maxLongint) then begin
+      setLength(paletteEntries,count);
+      for i:=0 to count-1 do begin
+        new(paletteEntries[i],create);
+        paletteEntries[i]^.loadFromStream(stream);
+      end;
+    end else exit(false);
+    result:=stream.allOkay;
+  end;
+
+PROCEDURE T_workspace.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
+  VAR i:longint;
+  begin
+    inherited;
+    currentBoard^.saveToStream(stream);
+    stream.writeNaturalNumber(length(paletteEntries));
+    for i:=0 to length(paletteEntries)-1 do paletteEntries[i]^.saveToStream(stream);
   end;
 
 { T_circuitBoard }
