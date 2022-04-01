@@ -6,7 +6,7 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
-  StdCtrls, Buttons, Menus,baseGate;
+  StdCtrls, Buttons, Menus,baseGate,logicGates;
 
 TYPE
 

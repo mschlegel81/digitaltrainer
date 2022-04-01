@@ -31,7 +31,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="4">
+    <Units Count="5">
       <Unit0>
         <Filename Value="digitaltrainer.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -54,6 +54,11 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="wiringUtil"/>
       </Unit3>
+      <Unit4>
+        <Filename Value="logicgates.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="logicGates"/>
+      </Unit4>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
