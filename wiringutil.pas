@@ -3,7 +3,7 @@ UNIT wiringUtil;
 {$mode objfpc}{$H+}
 
 INTERFACE
-CONST BOARD_MAX_SIZE_IN_GRID_ENTRIES=2000;
+CONST BOARD_MAX_SIZE_IN_GRID_ENTRIES=200;
 TYPE T_wireDirection=(wd_left,wd_leftDown,wd_down,wd_rightDown,wd_right,wd_rightUp,wd_up,wd_leftUp);
      T_wireDirectionSet=bitpacked set of T_wireDirection;
      T_point=array[0..1] of longint;
@@ -20,7 +20,6 @@ CONST WIRE_DELTA:array[T_wireDirection] of T_point=(
       {wd_leftUp   } (-1,-1));
       OppositeDirection:array[T_wireDirection] of T_wireDirection=(wd_right,wd_rightUp,wd_up,wd_leftUp,wd_left,wd_leftDown,wd_down,wd_rightDown);
       AllDirections=[wd_left..wd_leftUp];
-      DirectionCost:array[T_wireDirection] of byte=(2,3,2,3,2,3,2,3);
 
       allowedSuccessiveDirection:array[T_wireDirection] of T_wireDirectionSet=
           {wd_left     }([wd_left,wd_leftDown,wd_down             ,                    wd_up,wd_leftUp],
@@ -344,28 +343,25 @@ PROCEDURE T_wireGraph.dropWire(CONST path:T_wirePath);
   end;
 
 FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
+  CONST DirectionCost:array[T_wireDirection] of double=(1,sqrt(2),1,sqrt(2),1,sqrt(2),1,sqrt(2));
+        ChangeDirectionPenalty=0.5;
   FUNCTION distance(CONST p:T_point):double;
     begin
       //Multiplied with 2 to match direction cost
-      result:=2*sqrt(sqr(p[0]-endPoint[0])+sqr(p[1]-endPoint[1]));
+      result:=sqrt(sqr(p[0]-endPoint[0])+sqr(p[1]-endPoint[1]));
     end;
   VAR nodeMap:T_nodeMap;
 
   PROCEDURE simplifyPath(VAR wirePath:T_wirePath);
     VAR i:longint=1;
         j:longint=1;
-        p:T_point;
-        dir,newDir:T_wireDirection;
+        dir:T_wireDirection;
     begin
       if length(wirePath)<=2 then exit;
       dir:=directionBetween(wirePath[0],wirePath[1]);
-      write('Path before'); for i:=0 to length(wirePath)-1 do write(' - ',wirePath[i,0],',',wirePath[i,1]); writeln;
       i:=1;
       while (i<length(wirePath)-1) do begin
-        while (i<length(wirePath)-1) and (directionBetween(wirePath[i],wirePath[i+1])=dir) do begin
-          writeln('Direction between ',wirePath[i,0],',',wirePath[i,1],' and ',wirePath[i+1,0],',',wirePath[i+1,1],' is ',directionBetween(wirePath[i],wirePath[i+1]));
-          inc(i);
-        end;
+        while (i<length(wirePath)-1) and (directionBetween(wirePath[i],wirePath[i+1])=dir) do inc(i);
         wirePath[j]:=wirePath[i];
         inc(j);
         if i<length(wirePath)-1 then begin
@@ -376,7 +372,6 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
       wirePath[j]:=wirePath[i];
       inc(j);
       setLength(wirePath,j);
-      write('Path after'); for i:=0 to length(wirePath)-1 do write(' - ',wirePath[i,0],',',wirePath[i,1]); writeln;
     end;
 
   VAR openSet:T_priorityQueue;
@@ -385,26 +380,25 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
       dir:T_wireDirection;
       score:double;
   begin
-    writeln('Find path ',startPoint[0],',',startPoint[1],' - ',endPoint[0],',',endPoint[1]);
     nodeMap.create;
     openSet.create;
     setLength(result,1);
     result[0]:=startPoint;
     openSet.add(result,distance(startPoint));
+    //TODO: Is there a plausible earlier exit?!?
     while not openSet.isEmpty do begin
       result:=openSet.ExtractMin;
       n:=result[length(result)-1];
       if n=endPoint then begin
-        simplifyPath(result);
         openSet.destroy;
         nodeMap.destroy;
+        simplifyPath(result);
         exit(result);
       end;
       for dir in allowedDirectionsPerPoint[n[0],n[1]] do begin
         score:=DirectionCost[dir];
-        // if nodeMap.containsKey(n,entry) and entry.cameFrom<>dir then score+=2;
+        if nodeMap.containsKey(n,entry) and (entry.cameFrom<>dir) then score+=ChangeDirectionPenalty;
         neighbor:=n+dir;
-        writeln('Examining point ',neighbor[0],',',neighbor[1],' (Coming from ',n[0],',',n[1],' via ',dir,')');
         if not(nodeMap.containsKey(neighbor,entry)) or (score<entry.gScore) then begin
           entry.p:=neighbor;
           entry.cameFrom:=dir;
