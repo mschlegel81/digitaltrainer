@@ -48,6 +48,7 @@ TYPE
     PROCEDURE DeleteButtonClick(Sender: TObject);
     PROCEDURE FormClose(Sender: TObject; VAR CloseAction: TCloseAction);
     PROCEDURE FormCreate(Sender: TObject);
+    PROCEDURE FormDestroy(Sender: TObject);
     PROCEDURE FormResize(Sender: TObject);
     PROCEDURE SimTimerTimer(Sender: TObject);
     PROCEDURE ToggleBoxBgANDClick(Sender: TObject);
@@ -83,6 +84,11 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage);
   end;
 
+PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
+  begin
+    workspace.destroy;
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.DeleteButtonClick(Sender: TObject);
   begin
     workspace.currentBoard^.deleteMarkedGate;
@@ -90,7 +96,6 @@ PROCEDURE TDigitaltrainerMainForm.DeleteButtonClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.FormClose(Sender: TObject; VAR CloseAction: TCloseAction);
   begin
-    workspace.destroy;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);

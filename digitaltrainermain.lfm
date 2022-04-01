@@ -10,6 +10,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   Menu = MainMenu
   OnClose = FormClose
   OnCreate = FormCreate
+  OnDestroy = FormDestroy
   OnResize = FormResize
   LCLVersion = '2.0.12.0'
   object ScrollBox1: TScrollBox

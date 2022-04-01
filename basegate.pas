@@ -68,6 +68,7 @@ TYPE
     PROCEDURE mainShapeMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE outputMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE outputMouseMove(Sender: TObject; Shift: TShiftState; X,Y: integer);
+    PROCEDURE outputMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   end;
 
   { T_workspace }
@@ -82,6 +83,11 @@ TYPE
     PROCEDURE addCustomGate(CONST index:longint; CONST x0,y0:longint);
   end;
 
+  T_gateConnector=record
+    gate:P_abstractGate;
+    index:longint;
+  end;
+
   { T_circuitBoard }
   T_circuitBoard=object(T_abstractGate)
     GUI:record
@@ -94,14 +100,20 @@ TYPE
     description:string;
     gates:array of P_abstractGate;
 
+    //One source can be associated with many sinks
     logicWires:array of record
-      source,sink:record
-        gate:P_abstractGate;
-        index:longint;
+      source:T_gateConnector;
+      wires:array of record
+        sink:T_gateConnector;
+        visual: T_wirePath;
       end;
-      visual: array of record x,y:longint; end;
     end;
-    draggingWire:boolean;
+
+    incompleteWire:record
+      dragging:boolean;
+      source:T_gateConnector;
+      sourcePoint:T_point;
+    end;
     wireGraph:P_wireGraph;
 
     CONSTRUCTOR create;
@@ -128,14 +140,14 @@ TYPE
 
     FUNCTION isInputConnected(CONST gate:P_abstractGate; CONST inputIndex:longint):boolean;
 
-    PROCEDURE inputMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
 
     PROCEDURE drawAllWires;
-    FUNCTION findWirePath(CONST x1,y1,x2,y2:longint):T_wirePath;
-    PROCEDURE drawTempWire(CONST x1,y1,x2,y2:longint);
+    FUNCTION findWirePath(CONST start:T_gateConnector; CONST endPoint:T_point):T_wirePath;
+    PROCEDURE drawTempWire(CONST targetPoint:T_point);
     PROCEDURE gateMoved(CONST gate:P_abstractGate);
 
+    PROCEDURE finishWireDrag(CONST targetPoint:T_point);
   end;
 
   { T_notGate }
@@ -248,6 +260,10 @@ TYPE
 
 IMPLEMENTATION
 USES math,Graphics,myGenerics;
+OPERATOR =(CONST x,y:T_gateConnector):boolean;
+  begin
+    result:=(x.gate=y.gate) and (x.index=y.index);
+  end;
 
 { T_workspace }
 
@@ -298,7 +314,7 @@ PROCEDURE T_workspace.addCustomGate(CONST index: longint; CONST x0, y0: longint)
 CONSTRUCTOR T_circuitBoard.create;
   begin
     inherited create(0,0,nil);
-    draggingWire:=false;
+    incompleteWire.dragging:=false;
     wireGraph:=nil;
   end;
 
@@ -310,6 +326,7 @@ DESTRUCTOR T_circuitBoard.destroy;
     setLength(gates,0);
     setLength(logicWires,0);
     if wireGraph<>nil then dispose(wireGraph,destroy);
+    wireGraph:=nil;
   end;
 
 FUNCTION T_circuitBoard.cloneAsGate(CONST x0_, y0_: longint; CONST targetBoard: P_circuitBoard): P_circuitBoard;
@@ -332,8 +349,7 @@ PROCEDURE T_circuitBoard.gateMarked(CONST markedGate: P_abstractGate);
     for gate in gates do if (gate<>markedGate) then gate^.setMarked(false);
   end;
 
-FUNCTION T_circuitBoard.positionNewGate(CONST gateToAdd: P_abstractGate
-  ): boolean;
+FUNCTION T_circuitBoard.positionNewGate(CONST gateToAdd: P_abstractGate): boolean;
   FUNCTION isBoxFree(CONST x0,y0,x1,y1:longint):boolean;
     VAR gate:P_abstractGate;
     begin
@@ -376,18 +392,44 @@ FUNCTION T_circuitBoard.positionNewGate(CONST gateToAdd: P_abstractGate
   end;
 
 PROCEDURE T_circuitBoard.deleteMarkedGate;
+  PROCEDURE removeAssociatedWires(CONST gateToDelete:P_abstractGate);
+    VAR i:longint;
+        j:longint=0;
+        i_,j_:longint;
+    begin
+      for i:=0 to length(logicWires)-1 do begin
+        if logicWires[i].source.gate<>gateToDelete then begin
+          logicWires[j]:=logicWires[i];
+          with logicWires[i] do begin
+            j_:=0;
+            for i_:=0 to length(wires)-1 do begin
+              if wires[i_].sink.gate<>gateToDelete then begin
+                wires[j_]:=wires[i_];
+              end;
+            end;
+            setLength(wires,j_);
+          end;
+        end;
+      end;
+      setLength(logicWires,j);
+    end;
+
   VAR i:longint;
       j:longint=0;
   begin
     for i:=0 to length(gates)-1 do begin
       if gates[i]^.marked
-      then dispose(gates[i],destroy)
+      then begin
+        removeAssociatedWires(gates[i]);
+        dispose(gates[i],destroy)
+      end
       else begin
         gates[j]:=gates[i];
         inc(j);
       end;
     end;
     setLength(gates,j);
+    Repaint;
   end;
 
 PROCEDURE T_circuitBoard.setZoom(CONST zoom: longint);
@@ -422,9 +464,15 @@ FUNCTION T_circuitBoard.gateType: T_gateType;
 
 PROCEDURE T_circuitBoard.simulateStep;
   VAR gate:P_abstractGate;
+      i,j:longint;
+      output:boolean;
   begin
     for gate in gates do gate^.simulateStep;
-    //TODO: Wires!!
+    for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
+      output:=source.gate^.getOutput(source.index);
+      for j:=0 to length(wires)-1 do
+        wires[j].sink.gate^.setInput(wires[j].sink.index,output);
+    end;
   end;
 
 FUNCTION T_circuitBoard.getOutput(CONST index: longint): boolean;
@@ -450,47 +498,58 @@ PROCEDURE T_circuitBoard.Repaint;
   begin
     if (GUI.container=nil) then inherited else begin
       for gate in gates do gate^.Repaint;
+      drawAllWires;
     end;
   end;
 
-FUNCTION T_circuitBoard.isInputConnected(CONST gate: P_abstractGate;
-  CONST inputIndex: longint): boolean;
-  VAR i:longint;
+FUNCTION T_circuitBoard.isInputConnected(CONST gate: P_abstractGate; CONST inputIndex: longint): boolean;
+  VAR i,j:longint;
   begin
     result:=false;
     for i:=0 to length(logicWires)-1 do
-    if (logicWires[i].sink.gate =gate) and
-       (logicWires[i].sink.index=inputIndex)
-    then exit(true);
+      with logicWires[i] do
+        for j:=0 to length(wires)-1 do
+          if (wires[j].sink.gate=gate) and
+             (wires[j].sink.index=inputIndex)
+          then exit(true);
   end;
 
-PROCEDURE T_circuitBoard.inputMouseUp(Sender: TObject; button: TMouseButton;
-  Shift: TShiftState; X, Y: integer);
+PROCEDURE T_circuitBoard.anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
-    //TODO: Implement me!
-
-  end;
-
-PROCEDURE T_circuitBoard.anyMouseUp(Sender: TObject; button: TMouseButton;
-  Shift: TShiftState; X, Y: integer);
-  begin
-    //TODO: Implement me!
+    dispose(wireGraph,destroy);
+    incompleteWire.dragging:=false;
+    drawAllWires;
   end;
 
 PROCEDURE T_circuitBoard.drawAllWires;
+  PROCEDURE drawWires(CONST index:longint);
+    VAR j,k:longint;
+    begin for j:=0 to length(logicWires[index].wires)-1 do with logicWires[index].wires[j] do begin
+      GUI.wireImage.Canvas.MoveTo(visual[0,0]*GUI.zoom,visual[0,1]*GUI.zoom);
+      for k:=1 to length(visual)-1 do
+      GUI.wireImage.Canvas.LineTo(visual[k,0]*GUI.zoom,visual[k,1]*GUI.zoom);
+    end; end;
+
+  VAR i:longint;
   begin
     if GUI.wireImage=nil then exit;
     with GUI.wireImage.Canvas do begin
       Brush.color:=clBtnFace;
       clear;
-      //TODO: Implement me!
+      for i:=0 to length(logicWires)-1 do begin
+        Pen.color:=clBtnFace; Pen.width:=max(1,round(GUI.zoom*0.7));
+        drawWires(i);
+        Pen.color:=clBlack; Pen.width:=max(1,round(GUI.zoom*0.3));
+        drawWires(i);
+      end;
     end;
   end;
 
-FUNCTION T_circuitBoard.findWirePath(CONST x1,y1,x2,y2:longint):T_wirePath;
+FUNCTION T_circuitBoard.findWirePath(CONST start: T_gateConnector;
+  CONST endPoint: T_point): T_wirePath;
   PROCEDURE initWireGraph;
     VAR gate:P_abstractGate;
-        x,y,i:longint;
+        x,y,i,j:longint;
     begin
       new(wireGraph,create);
       for gate in gates do begin
@@ -500,28 +559,35 @@ FUNCTION T_circuitBoard.findWirePath(CONST x1,y1,x2,y2:longint):T_wirePath;
 
         for i:=0 to gate^.numberOfInputs-1
         do wireGraph^.addUnidirectionalEdge(gate^.getInputPositionInGridSize(i)+wd_left,wd_right);
+
+        if gate=start.gate then
         for i:=0 to gate^.numberOfOutputs-1
         do wireGraph^.addUnidirectionalEdge(gate^.getOutputPositionInGridSize(i),wd_right);
       end;
+
+      for i:=0 to length(logicWires)-1 do
+      if (logicWires[i].source<>start) then with logicWires[i] do
+        for j:=0 to length(wires)-1 do wireGraph^.dropWire(wires[j].visual);
     end;
 
   begin
     if wireGraph=nil then initWireGraph;
-    if wireGraph^.anyEdgeLeadsTo(pointOf(x2,y2))
-    then result:=wireGraph^.findPath(pointOf(x1,y1),pointOf(x2,y2))
+    if wireGraph^.anyEdgeLeadsTo(endPoint)
+    then result:=wireGraph^.findPath(start.gate^.getOutputPositionInGridSize(start.index),endPoint)
     else setLength(result,0);
   end;
 
-PROCEDURE T_circuitBoard.drawTempWire(CONST x1, y1, x2, y2: longint);
+PROCEDURE T_circuitBoard.drawTempWire(CONST targetPoint: T_point);
   VAR wire:T_wirePath;
       i:longint;
   begin
     if GUI.wireImage=nil then exit;
-    wire:=findWirePath(x1,y1,x2,y2);
+    wire:=findWirePath(incompleteWire.source,targetPoint);
     if length(wire)<=0 then exit;
     drawAllWires;
     with GUI.wireImage.Canvas do begin
       Pen.color:=clRed;
+      Pen.width:=GUI.zoom;
       MoveTo(wire[0,0]*GUI.zoom,wire[0,1]*GUI.zoom);
       for i:=1 to length(wire)-1 do LineTo(wire[i,0]*GUI.zoom,wire[i,1]*GUI.zoom);
     end;
@@ -533,6 +599,40 @@ PROCEDURE T_circuitBoard.gateMoved(CONST gate: P_abstractGate);
     dispose(wireGraph,destroy);
     wireGraph:=nil;
     //TODO: If gate is wired, rewire...
+  end;
+
+PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint:T_point);
+  VAR i:longint=0;
+      j:longint;
+      gate:P_abstractGate;
+      connector:T_gateConnector;
+  begin
+    if not(incompleteWire.dragging) then exit;
+    connector.gate:=nil;
+    for gate in gates do
+    for j:=0 to gate^.numberOfInputs-1 do
+    if gate^.getInputPositionInGridSize(j)=targetPoint then begin
+      connector.gate:=gate;
+      connector.index:=j;
+      break;
+    end;
+    if connector.gate=nil then exit;
+    if not(isInputConnected(connector.gate,connector.index)) then begin
+      i:=0;
+      while (i<length(logicWires)) and (logicWires[i].source<>incompleteWire.source) do inc(i);
+      if i>=length(logicWires) then setLength(logicWires,i+1);
+      with logicWires[i] do begin
+        source:=incompleteWire.source;
+        j:=length(wires);
+        setLength(wires,j+1);
+        wires[j].sink:=connector;
+        wires[j].visual:=findWirePath(incompleteWire.source,targetPoint);
+      end;
+    end;
+    drawAllWires;
+    dispose(wireGraph,destroy);
+    wireGraph:=nil;
+    incompleteWire.dragging:=false;
   end;
 
 { T_nxorGate }
@@ -800,7 +900,6 @@ CONSTRUCTOR T_abstractGate.create(CONST x0_, y0_: longint;
         shapes[shapeIndex].Shape:=stCircle;
         shapes[shapeIndex].Tag:=k;
         shapes[shapeIndex].OnClick  :=@inputClick;
-        shapes[shapeIndex].OnMouseUp:=@board^.inputMouseUp;
         shapes[shapeIndex].parent:=board^.GUI.container;
         inc(shapeIndex);
       end;
@@ -811,7 +910,7 @@ CONSTRUCTOR T_abstractGate.create(CONST x0_, y0_: longint;
         shapes[shapeIndex].Tag:=k;
         shapes[shapeIndex].OnMouseDown:=@outputMouseDown;
         shapes[shapeIndex].OnMouseMove:=@outputMouseMove;
-        shapes[shapeIndex].OnMouseUp  :=@board^.anyMouseUp;
+        shapes[shapeIndex].OnMouseUp  :=@outputMouseUp;
         shapes[shapeIndex].parent:=board^.GUI.container;
         inc(shapeIndex);
       end;
@@ -910,14 +1009,31 @@ PROCEDURE T_abstractGate.inputClick(Sender: TObject);
     setInput(k,not getInput(k));
   end;
 
+//PROCEDURE T_abstractGate.inputMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+//  begin
+//    if board=nil then exit;
+//    board^.finishWireDrag(@self,TShape(Sender).Tag);
+//  end;
+
+PROCEDURE T_abstractGate.outputMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  begin
+    if board=nil then exit;
+    board^.finishWireDrag(pointOf(dragX+floor(x/board^.GUI.zoom),
+                                  dragY+floor(y/board^.GUI.zoom)));
+  end;
+
 PROCEDURE T_abstractGate.outputMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR p:T_point;
   begin
-    //TODO: Implement me! (wire drag)
     if (button=mbLeft) then begin
-      board^.draggingWire:=true;
       wireDragOutputIndex:=TShape(Sender).Tag;
       p:=getOutputPositionInGridSize(wireDragOutputIndex);
+      with board^.incompleteWire do begin
+        dragging:=true;
+        source.gate:=@self;
+        source.index:=wireDragOutputIndex;
+        sourcePoint:=p;
+      end;
       dragX:=p[0];
       dragY:=p[1];
       writeln('Starting wire drag: ',dragX,',',dragY);
@@ -926,11 +1042,9 @@ PROCEDURE T_abstractGate.outputMouseDown(Sender: TObject; button: TMouseButton; 
 
 PROCEDURE T_abstractGate.outputMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
   begin
-    if board^.draggingWire then begin
-      board^.drawTempWire(dragX,dragY,
-      dragX+round(x/board^.GUI.zoom),
-      dragY+round(y/board^.GUI.zoom));
-    end;
+    if board^.incompleteWire.dragging
+    then board^.drawTempWire(pointOf(dragX+floor(x/board^.GUI.zoom),
+                                     dragY+floor(y/board^.GUI.zoom)));
   end;
 
 PROCEDURE T_abstractGate.mainShapeMouseDown(Sender: TObject;
@@ -965,12 +1079,11 @@ PROCEDURE T_abstractGate.mainShapeMouseMove(Sender: TObject; Shift: TShiftState;
     end;
   end;
 
-PROCEDURE T_abstractGate.mainShapeMouseUp(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE T_abstractGate.mainShapeMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     if (button=mbLeft) then begin
       dragging:=false;
-      board^.draggingWire:=false;
+      board^.incompleteWire.dragging:=false;
       shapes[0].Pen.style:=psSolid;
       Repaint;
     end;

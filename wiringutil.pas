@@ -46,6 +46,7 @@ TYPE
       PROCEDURE dropNode(CONST i:T_point);
       PROCEDURE addUnidirectionalEdge(CONST from:T_point; CONST dir:T_wireDirection);
       PROCEDURE dropWireSection(CONST a,b:T_point);
+      PROCEDURE dropWire(CONST path:T_wirePath);
       FUNCTION findPath(CONST startPoint,endPoint:T_point):T_wirePath;
       FUNCTION anyEdgeLeadsTo(CONST endPoint:T_point):boolean;
   end;
@@ -336,6 +337,12 @@ PROCEDURE T_wireGraph.dropWireSection(CONST a, b: T_point);
     end;
   end;
 
+PROCEDURE T_wireGraph.dropWire(CONST path:T_wirePath);
+  VAR i:longint;
+  begin
+    for i:=0 to length(path)-2 do dropWireSection(path[i],path[i+1]);
+  end;
+
 FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
   FUNCTION distance(CONST p:T_point):double;
     begin
@@ -343,37 +350,33 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
       result:=2*sqrt(sqr(p[0]-endPoint[0])+sqr(p[1]-endPoint[1]));
     end;
   VAR nodeMap:T_nodeMap;
-  FUNCTION reconstructPath(CONST p:T_point):T_wirePath;
-    VAR prev:T_point;
-        x:T_point;
-        entry:T_aStarNodeInfo;
-        reversedResult:T_wirePath;
-        i:longint;
-    begin
-      setLength(reversedResult,1);
-      reversedResult[0]:=p;
-      prev:=p;
-      while prev<>startPoint do begin
-        if nodeMap.containsKey(prev,entry) then begin
-          x:=prev-entry.cameFrom;
-          writeln('Reconstruct: ',prev[0],',',prev[1],' came from ',x[0],',',x[1],' via ',entry.cameFrom);
-          prev-=entry.cameFrom;
-          setLength(reversedResult,length(reversedResult)+1);
-          reversedResult[length(reversedResult)-1]:=prev;
-        end else raise Exception.create('Path reconstruction failed!');
-      end;
-      setLength(result,length(reversedResult));
-      for i:=0 to length(result)-1 do result[i]:=reversedResult[length(reversedResult)-1-i];
-      setLength(reversedResult,0);
-    end;
 
   PROCEDURE simplifyPath(VAR wirePath:T_wirePath);
-    VAR i:longint;
+    VAR i:longint=1;
         j:longint=1;
         p:T_point;
         dir,newDir:T_wireDirection;
     begin
       if length(wirePath)<=2 then exit;
+      dir:=directionBetween(wirePath[0],wirePath[1]);
+      write('Path before'); for i:=0 to length(wirePath)-1 do write(' - ',wirePath[i,0],',',wirePath[i,1]); writeln;
+      i:=1;
+      while (i<length(wirePath)-1) do begin
+        while (i<length(wirePath)-1) and (directionBetween(wirePath[i],wirePath[i+1])=dir) do begin
+          writeln('Direction between ',wirePath[i,0],',',wirePath[i,1],' and ',wirePath[i+1,0],',',wirePath[i+1,1],' is ',directionBetween(wirePath[i],wirePath[i+1]));
+          inc(i);
+        end;
+        wirePath[j]:=wirePath[i];
+        inc(j);
+        if i<length(wirePath)-1 then begin
+          dir:=directionBetween(wirePath[i],wirePath[i+1]);
+          inc(i);
+        end;
+      end;
+      wirePath[j]:=wirePath[i];
+      inc(j);
+      setLength(wirePath,j);
+      write('Path after'); for i:=0 to length(wirePath)-1 do write(' - ',wirePath[i,0],',',wirePath[i,1]); writeln;
     end;
 
   VAR openSet:T_priorityQueue;
@@ -392,8 +395,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
       result:=openSet.ExtractMin;
       n:=result[length(result)-1];
       if n=endPoint then begin
-//        result:=reconstructPath(endPoint);
-//        simplifyPath(result);
+        simplifyPath(result);
         openSet.destroy;
         nodeMap.destroy;
         exit(result);
