@@ -28,6 +28,9 @@ TYPE
       wireDragOutputIndex:longint;
       marked_:boolean;
     protected
+      PROCEDURE ensureGuiElements;
+      PROCEDURE disposeGuiElements;
+
       CONSTRUCTOR create(CONST origin_:T_point; CONST gateToWrap:P_abstractGate; CONST board_:P_circuitBoard);
       DESTRUCTOR destroy;
     private
@@ -143,6 +146,7 @@ TYPE
       CONSTRUCTOR create;
       DESTRUCTOR destroy;  virtual;
       PROCEDURE attachGUI(CONST zoom:longint; CONST container:TWinControl; CONST wireImage:TImage);
+      PROCEDURE detachGUI;
       PROCEDURE gateMoved(CONST gate:P_visualGate);
       PROCEDURE gateMarked(CONST markedGate: P_visualGate);
       PROCEDURE anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -181,22 +185,12 @@ PROCEDURE T_visualGateConnector.saveToStream(CONST board: P_circuitBoard; VAR st
     stream.writeNaturalNumber(index);
   end;
 
-{ T_visualGate }
-
-CONSTRUCTOR T_visualGate.create(CONST origin_: T_point; CONST gateToWrap: P_abstractGate; CONST board_: P_circuitBoard);
+PROCEDURE T_visualGate.ensureGuiElements;
   VAR shapeIndex:longint=1;
       k:longint;
   begin
-    origin:=origin_;
-    behavior:=gateToWrap;
-    size:=pointOf(4,max(2,2*max(numberOfInputs,numberOfInputs)));
-
-    dragging:=false;
-    marked  :=false;
-    board   :=board_;
-
-    if (board<>nil) and (board^.GUI.container<>nil) then begin
-      setLength(shapes,1+gateToWrap^.numberOfInputs+gateToWrap^.numberOfOutputs);
+    if (length(shapes)=0) and (board<>nil) and (board^.GUI.container<>nil) then begin
+      setLength(shapes,1+behavior^.numberOfInputs+behavior^.numberOfOutputs);
       shapes[0]:=TShape.create(board^.GUI.container);
       shapes[0].parent:=board^.GUI.container;
       shapes[0].Shape :=stRectangle;
@@ -213,7 +207,7 @@ CONSTRUCTOR T_visualGate.create(CONST origin_: T_point; CONST gateToWrap: P_abst
       gatelabel.OnMouseMove:=@mainShapeMouseMove;
       gatelabel.OnMouseUp  :=@mainShapeMouseUp;
 
-      for k:=0 to gateToWrap^.numberOfInputs-1 do begin
+      for k:=0 to behavior^.numberOfInputs-1 do begin
         shapes[shapeIndex]:=TShape.create(board^.GUI.container);
         shapes[shapeIndex].Shape:=stCircle;
         shapes[shapeIndex].Tag:=k;
@@ -222,7 +216,7 @@ CONSTRUCTOR T_visualGate.create(CONST origin_: T_point; CONST gateToWrap: P_abst
         inc(shapeIndex);
       end;
 
-      for k:=0 to gateToWrap^.numberOfOutputs-1 do begin
+      for k:=0 to behavior^.numberOfOutputs-1 do begin
         shapes[shapeIndex]:=TShape.create(board^.GUI.container);
         shapes[shapeIndex].Shape:=stCircle;
         shapes[shapeIndex].Tag:=k;
@@ -232,15 +226,35 @@ CONSTRUCTOR T_visualGate.create(CONST origin_: T_point; CONST gateToWrap: P_abst
         shapes[shapeIndex].parent:=board^.GUI.container;
         inc(shapeIndex);
       end;
-    end else setLength(shapes,0);
+    end;
+  end;
+
+PROCEDURE T_visualGate.disposeGuiElements;
+  VAR i:longint;
+  begin
+    if length(shapes)>0 then begin
+      for i:=0 to length(shapes)-1 do shapes[i].free;
+      gatelabel.free;
+    end;
+  end;
+
+CONSTRUCTOR T_visualGate.create(CONST origin_: T_point; CONST gateToWrap: P_abstractGate; CONST board_: P_circuitBoard);
+  begin
+    origin:=origin_;
+    behavior:=gateToWrap;
+    size:=pointOf(4,max(2,2*max(numberOfInputs,numberOfInputs)));
+
+    dragging:=false;
+    marked  :=false;
+    board   :=board_;
+
+    setLength(shapes,0);
   end;
 
 DESTRUCTOR T_visualGate.destroy;
-  VAR i:longint;
   begin
     dispose(behavior,destroy);
-    for i:=0 to length(shapes)-1 do shapes[i].free;
-    gatelabel.free;
+    disposeGuiElements;
   end;
 
 PROCEDURE T_visualGate.setMarked(CONST value: boolean);
@@ -269,8 +283,7 @@ PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton;
         updateIoVisuals;
       end;
       dragging:=true;
-      marked:=true;
-      board^.gateMarked(@self);
+      //board^.gateMarked(@self);
       shapes[0].Pen.style:=psDash;
       dragX:=x;
       dragY:=y;
@@ -620,11 +633,11 @@ FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): b
       count: qword;
       board:P_circuitBoard;
   begin
-    if not(inherited) then exit;
+    if not(inherited) then exit(false);
     count:=stream.readNaturalNumber;
     if (count<maxLongint) then begin
       result:=true;
-      for i:=0 to count-1 do begin
+      for i:=0 to longint(count)-1 do begin
         new(board,create);
         if board^.loadFromStream(@self,stream) then begin
           setLength(paletteEntries,i+1);
@@ -680,6 +693,17 @@ PROCEDURE T_circuitBoard.attachGUI(CONST zoom: longint;
     GUI.zoom:=zoom;
     GUI.container:=container;
     GUI.wireImage:=wireImage;
+    for gate in gates do gate^.ensureGuiElements;
+    rewire;
+  end;
+
+PROCEDURE T_circuitBoard.detachGUI;
+  VAR gate:P_visualGate;
+  begin
+    for gate in gates do gate^.disposeGuiElements;
+    GUI.zoom:=1;
+    GUI.container:=nil;
+    GUI.wireImage:=nil;
   end;
 
 PROCEDURE T_circuitBoard.gateMarked(CONST markedGate: P_visualGate);

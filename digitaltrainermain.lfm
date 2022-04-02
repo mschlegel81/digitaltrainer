@@ -1,10 +1,10 @@
 object DigitaltrainerMainForm: TDigitaltrainerMainForm
-  Left = 284
-  Height = 497
-  Top = 282
+  Left = 415
+  Height = 711
+  Top = 136
   Width = 729
   Caption = 'Digitaltrainer'
-  ClientHeight = 472
+  ClientHeight = 686
   ClientWidth = 729
   DesignTimePPI = 120
   Menu = MainMenu
@@ -16,175 +16,45 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   object ScrollBox1: TScrollBox
     Cursor = crCross
     Left = 219
-    Height = 472
+    Height = 686
     Top = 0
     Width = 510
     HorzScrollBar.Page = 113
     VertScrollBar.Page = 113
     Align = alClient
-    ClientHeight = 468
+    ClientHeight = 682
     ClientWidth = 506
     TabOrder = 0
     object WireImage: TImage
       Cursor = crCross
       Left = 0
-      Height = 468
+      Height = 682
       Top = 0
       Width = 506
       Align = alClient
-      OnMouseDown = WireImageMouseDown
     end
   end
   object Panel1: TPanel
     Left = 0
-    Height = 472
+    Height = 686
     Top = 0
     Width = 213
     Align = alLeft
     BevelOuter = bvNone
-    ClientHeight = 472
+    ClientHeight = 686
     ClientWidth = 213
     TabOrder = 1
-    object GroupBox1: TGroupBox
-      Left = 0
-      Height = 118
-      Top = 193
-      Width = 213
-      Align = alTop
-      AutoSize = True
-      Caption = 'Basis'
-      ClientHeight = 93
-      ClientWidth = 209
-      TabOrder = 0
-      object FlowPanel1: TFlowPanel
-        Left = 0
-        Height = 93
-        Top = 0
-        Width = 209
-        Align = alClient
-        BevelOuter = bvNone
-        ControlList = <        
-          item
-            Control = ToggleBoxBGNot
-            WrapAfter = waAuto
-            Index = 0
-          end        
-          item
-            Control = ToggleBoxBgAND
-            WrapAfter = waAuto
-            Index = 1
-          end        
-          item
-            Control = ToggleBoxBgOr
-            WrapAfter = waAuto
-            Index = 2
-          end        
-          item
-            Control = ToggleBoxBgXor
-            WrapAfter = waAuto
-            Index = 3
-          end        
-          item
-            Control = ToggleBoxBgNAND
-            WrapAfter = waAuto
-            Index = 4
-          end        
-          item
-            Control = ToggleBoxBgNor
-            WrapAfter = waAuto
-            Index = 5
-          end        
-          item
-            Control = ToggleBoxBgNxor
-            WrapAfter = waAuto
-            Index = 6
-          end>
-        FlowLayout = tlTop
-        FlowStyle = fsLeftRightTopBottom
-        TabOrder = 0
-        object ToggleBoxBGNot: TToggleBox
-          Left = 0
-          Height = 31
-          Top = 0
-          Width = 60
-          Anchors = []
-          Caption = 'NOT'
-          OnClick = ToggleBoxBgANDClick
-          TabOrder = 0
-        end
-        object ToggleBoxBgAND: TToggleBox
-          Left = 60
-          Height = 31
-          Top = 0
-          Width = 60
-          Anchors = []
-          Caption = 'AND'
-          OnClick = ToggleBoxBgANDClick
-          TabOrder = 1
-        end
-        object ToggleBoxBgOr: TToggleBox
-          Left = 120
-          Height = 31
-          Top = 0
-          Width = 60
-          Anchors = []
-          Caption = 'OR'
-          OnClick = ToggleBoxBgANDClick
-          TabOrder = 2
-        end
-        object ToggleBoxBgXor: TToggleBox
-          Left = 0
-          Height = 31
-          Top = 31
-          Width = 60
-          Anchors = []
-          Caption = 'XOR'
-          OnClick = ToggleBoxBgANDClick
-          TabOrder = 3
-        end
-        object ToggleBoxBgNAND: TToggleBox
-          Left = 60
-          Height = 31
-          Top = 31
-          Width = 60
-          Anchors = []
-          Caption = 'NAND'
-          OnClick = ToggleBoxBgANDClick
-          TabOrder = 4
-        end
-        object ToggleBoxBgNor: TToggleBox
-          Left = 120
-          Height = 31
-          Top = 31
-          Width = 60
-          Anchors = []
-          Caption = 'NOR'
-          OnClick = ToggleBoxBgANDClick
-          TabOrder = 5
-        end
-        object ToggleBoxBgNxor: TToggleBox
-          Left = 0
-          Height = 31
-          Top = 62
-          Width = 60
-          Anchors = []
-          Caption = 'NXOR'
-          OnClick = ToggleBoxBgANDClick
-          TabOrder = 6
-        end
-      end
-    end
     object GroupBox2: TGroupBox
       Left = 0
       Height = 56
-      Top = 311
+      Top = 137
       Width = 213
       Align = alTop
       AutoSize = True
       Caption = 'Zoom'
       ClientHeight = 31
       ClientWidth = 209
-      TabOrder = 1
+      TabOrder = 0
       object ZoomTrackBar: TTrackBar
         Left = 0
         Height = 31
@@ -201,7 +71,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     object DeleteButton: TButton
       Left = 0
       Height = 31
-      Top = 367
+      Top = 193
       Width = 213
       Align = alTop
       Caption = '🗑'
@@ -213,61 +83,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       Font.Quality = fqDraft
       OnClick = DeleteButtonClick
       ParentFont = False
-      TabOrder = 2
-    end
-    object GroupBox3: TGroupBox
-      Left = 0
-      Height = 56
-      Top = 137
-      Width = 213
-      Align = alTop
-      AutoSize = True
-      Caption = 'Anschlüsse'
-      ClientHeight = 31
-      ClientWidth = 209
-      TabOrder = 3
-      object FlowPanel2: TFlowPanel
-        Left = 0
-        Height = 31
-        Top = 0
-        Width = 209
-        Align = alClient
-        BevelOuter = bvNone
-        ControlList = <        
-          item
-            Control = ToggleBoxConnectIn
-            WrapAfter = waAuto
-            Index = 0
-          end        
-          item
-            Control = ToggleBoxConnectOut
-            WrapAfter = waAuto
-            Index = 1
-          end>
-        FlowLayout = tlTop
-        FlowStyle = fsLeftRightTopBottom
-        TabOrder = 0
-        object ToggleBoxConnectIn: TToggleBox
-          Left = 0
-          Height = 31
-          Top = 0
-          Width = 60
-          Anchors = []
-          Caption = 'in'
-          OnClick = ToggleBoxBgANDClick
-          TabOrder = 0
-        end
-        object ToggleBoxConnectOut: TToggleBox
-          Left = 60
-          Height = 31
-          Top = 0
-          Width = 60
-          Anchors = []
-          Caption = 'out'
-          OnClick = ToggleBoxBgANDClick
-          TabOrder = 1
-        end
-      end
+      TabOrder = 1
     end
     object GroupBox4: TGroupBox
       Left = 0
@@ -278,7 +94,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       Caption = 'Name und Beschreibung'
       ClientHeight = 106
       ClientWidth = 209
-      TabOrder = 4
+      TabOrder = 2
       object captionEdit: TEdit
         Left = 0
         Height = 28
@@ -306,18 +122,196 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       Align = alTop
       ResizeAnchor = akTop
     end
+    object GroupBox5: TGroupBox
+      Left = 0
+      Height = 288
+      Top = 224
+      Width = 213
+      Align = alTop
+      Caption = 'Gatter hinzufügen...'
+      ClientHeight = 263
+      ClientWidth = 209
+      TabOrder = 4
+      object CustomGateListBox: TListBox
+        Left = 0
+        Height = 139
+        Top = 124
+        Width = 209
+        Align = alClient
+        ItemHeight = 0
+        TabOrder = 0
+      end
+      object FlowPanel1: TFlowPanel
+        Left = 0
+        Height = 93
+        Top = 0
+        Width = 209
+        Align = alTop
+        AutoSize = True
+        BevelOuter = bvNone
+        ControlList = <        
+          item
+            Control = ButtonAddInput
+            WrapAfter = waAuto
+            Index = 0
+          end        
+          item
+            Control = ButtonAddOutput
+            WrapAfter = waAuto
+            Index = 1
+          end        
+          item
+            Control = ButtonAddAnd
+            WrapAfter = waAuto
+            Index = 2
+          end        
+          item
+            Control = ButtonAddOr
+            WrapAfter = waAuto
+            Index = 3
+          end        
+          item
+            Control = ButtonAddNot
+            WrapAfter = waAuto
+            Index = 4
+          end        
+          item
+            Control = ButtonAddXor
+            WrapAfter = waAuto
+            Index = 5
+          end        
+          item
+            Control = ButtonAddNand
+            WrapAfter = waAuto
+            Index = 6
+          end        
+          item
+            Control = ButtonAddNor
+            WrapAfter = waAuto
+            Index = 7
+          end        
+          item
+            Control = ButtonAddNxor
+            WrapAfter = waAuto
+            Index = 8
+          end>
+        FlowLayout = tlTop
+        FlowStyle = fsLeftRightTopBottom
+        TabOrder = 1
+        object ButtonAddInput: TButton
+          Left = 0
+          Height = 31
+          Top = 0
+          Width = 60
+          Anchors = []
+          Caption = 'input'
+          OnClick = ButtonAddInputClick
+          TabOrder = 0
+        end
+        object ButtonAddOutput: TButton
+          Left = 60
+          Height = 31
+          Top = 0
+          Width = 60
+          Anchors = []
+          Caption = 'output'
+          OnClick = ButtonAddOutputClick
+          TabOrder = 1
+        end
+        object ButtonAddAnd: TButton
+          Left = 120
+          Height = 31
+          Top = 0
+          Width = 60
+          Anchors = []
+          Caption = 'and'
+          OnClick = ButtonAddAndClick
+          TabOrder = 2
+        end
+        object ButtonAddOr: TButton
+          Left = 0
+          Height = 31
+          Top = 31
+          Width = 60
+          Anchors = []
+          Caption = 'or'
+          OnClick = ButtonAddOrClick
+          TabOrder = 3
+        end
+        object ButtonAddNot: TButton
+          Left = 60
+          Height = 31
+          Top = 31
+          Width = 60
+          Anchors = []
+          Caption = 'not'
+          OnClick = ButtonAddNotClick
+          TabOrder = 4
+        end
+        object ButtonAddXor: TButton
+          Left = 120
+          Height = 31
+          Top = 31
+          Width = 60
+          Anchors = []
+          Caption = 'xor'
+          OnClick = ButtonAddXorClick
+          TabOrder = 5
+        end
+        object ButtonAddNand: TButton
+          Left = 0
+          Height = 31
+          Top = 62
+          Width = 60
+          Anchors = []
+          Caption = 'nand'
+          OnClick = ButtonAddNandClick
+          TabOrder = 6
+        end
+        object ButtonAddNor: TButton
+          Left = 60
+          Height = 31
+          Top = 62
+          Width = 60
+          Anchors = []
+          Caption = 'nor'
+          OnClick = ButtonAddNorClick
+          TabOrder = 7
+        end
+        object ButtonAddNxor: TButton
+          Left = 120
+          Height = 31
+          Top = 62
+          Width = 60
+          Anchors = []
+          Caption = 'nxor'
+          OnClick = ButtonAddNxorClick
+          TabOrder = 8
+        end
+      end
+      object ButtonAddCustom: TButton
+        Left = 0
+        Height = 31
+        Top = 93
+        Width = 209
+        Align = alTop
+        Caption = 'benutzerdefiniert'
+        OnClick = ButtonAddCustomClick
+        TabOrder = 2
+      end
+    end
   end
   object Splitter1: TSplitter
     Left = 213
-    Height = 472
+    Height = 686
     Top = 0
     Width = 6
   end
   object SimTimer: TTimer
     Interval = 100
     OnTimer = SimTimerTimer
-    Left = 45
-    Top = 211
+    Left = 56
+    Top = 520
   end
   object MainMenu: TMainMenu
     Left = 165
@@ -330,11 +324,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       object MenuItem3: TMenuItem
         Caption = '&Speichern'
       end
-      object MenuItem4: TMenuItem
-        Caption = '&Importieren'
-      end
       object MenuItem5: TMenuItem
         Caption = '&Beenden'
+      end
+    end
+    object MenuItem4: TMenuItem
+      Caption = 'Aktuelle Schaltung'
+      object MenuItem6: TMenuItem
+        Caption = 'Zur Palette hinzufügen'
       end
     end
   end

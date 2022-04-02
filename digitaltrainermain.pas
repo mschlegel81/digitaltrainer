@@ -13,49 +13,57 @@ TYPE
   { TDigitaltrainerMainForm }
 
   TDigitaltrainerMainForm = class(TForm)
+    ButtonAddCustom: TButton;
+    ButtonAddNxor: TButton;
+    ButtonAddNor: TButton;
+    ButtonAddNand: TButton;
+    ButtonAddXor: TButton;
+    ButtonAddNot: TButton;
+    ButtonAddOr: TButton;
+    ButtonAddAnd: TButton;
+    ButtonAddOutput: TButton;
+    ButtonAddInput: TButton;
     DeleteButton: TButton;
     captionEdit: TEdit;
     FlowPanel1: TFlowPanel;
-    FlowPanel2: TFlowPanel;
-    GroupBox1: TGroupBox;
     GroupBox2: TGroupBox;
-    GroupBox3: TGroupBox;
     GroupBox4: TGroupBox;
     descriptionMemo: TMemo;
+    GroupBox5: TGroupBox;
+    CustomGateListBox: TListBox;
     MainMenu: TMainMenu;
     MenuItem1: TMenuItem;
     MenuItem2: TMenuItem;
     MenuItem3: TMenuItem;
     MenuItem4: TMenuItem;
     MenuItem5: TMenuItem;
+    MenuItem6: TMenuItem;
     SimTimer: TTimer;
     Splitter2: TSplitter;
-    ToggleBoxConnectIn: TToggleBox;
-    ToggleBoxConnectOut: TToggleBox;
     wireImage: TImage;
     Panel1: TPanel;
     ScrollBox1: TScrollBox;
     Splitter1: TSplitter;
-    ToggleBoxBgNAND: TToggleBox;
-    ToggleBoxBgOr: TToggleBox;
-    ToggleBoxBGNot: TToggleBox;
-    ToggleBoxBgAND: TToggleBox;
-    ToggleBoxBgNor: TToggleBox;
-    ToggleBoxBgXor: TToggleBox;
-    ToggleBoxBgNxor: TToggleBox;
     ZoomTrackBar: TTrackBar;
+    PROCEDURE ButtonAddCustomClick(Sender: TObject);
+    PROCEDURE ButtonAddAndClick(Sender: TObject);
+    PROCEDURE ButtonAddInputClick(Sender: TObject);
+    PROCEDURE ButtonAddNandClick(Sender: TObject);
+    PROCEDURE ButtonAddNorClick(Sender: TObject);
+    PROCEDURE ButtonAddNotClick(Sender: TObject);
+    PROCEDURE ButtonAddNxorClick(Sender: TObject);
+    PROCEDURE ButtonAddOrClick(Sender: TObject);
+    PROCEDURE ButtonAddOutputClick(Sender: TObject);
+    PROCEDURE ButtonAddXorClick(Sender: TObject);
     PROCEDURE DeleteButtonClick(Sender: TObject);
     PROCEDURE FormClose(Sender: TObject; VAR CloseAction: TCloseAction);
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE FormDestroy(Sender: TObject);
     PROCEDURE FormResize(Sender: TObject);
     PROCEDURE SimTimerTimer(Sender: TObject);
-    PROCEDURE ToggleBoxBgANDClick(Sender: TObject);
-    PROCEDURE WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE ZoomTrackBarChange(Sender: TObject);
   private
     workspace:T_workspace;
-    toggleButtons:array of TToggleBox;
   public
   end;
 
@@ -68,24 +76,21 @@ IMPLEMENTATION
 
 { TDigitaltrainerMainForm }
 
+FUNCTION workspaceFilename:string;
+  begin
+    result:=ChangeFileExt(paramStr(0),'.workspace');
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
   begin
-    setLength(toggleButtons,9);
-    toggleButtons[0]:=ToggleBoxBgNAND;
-    toggleButtons[1]:=ToggleBoxBgOr  ;
-    toggleButtons[2]:=ToggleBoxBGNot ;
-    toggleButtons[3]:=ToggleBoxBgAND ;
-    toggleButtons[4]:=ToggleBoxBgNor ;
-    toggleButtons[5]:=ToggleBoxBgXor ;
-    toggleButtons[6]:=ToggleBoxBgNxor;
-    toggleButtons[7]:=ToggleBoxConnectIn;
-    toggleButtons[8]:=ToggleBoxConnectOut;
     workspace.create;
+    workspace.loadFromFile(workspaceFilename);
     workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
   begin
+    workspace.saveToFile(workspaceFilename);
     workspace.destroy;
   end;
 
@@ -93,6 +98,36 @@ PROCEDURE TDigitaltrainerMainForm.DeleteButtonClick(Sender: TObject);
   begin
     workspace.currentBoard^.deleteMarkedGate;
   end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddInputClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_input,0,0);end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddNandClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_nandGate,0,0);end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddNorClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_orGate,0,0);end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddNotClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_notGate,0,0);end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddNxorClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_nxorGate,0,0);end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddOrClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_orGate,0,0);end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddAndClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_andGate,0,0);end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddCustomClick(Sender: TObject);
+  begin workspace.addCustomGate(CustomGateListBox.ItemIndex,0,0); end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddOutputClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_output,0,0);end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddXorClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_xorGate,0,0);end;
 
 PROCEDURE TDigitaltrainerMainForm.FormClose(Sender: TObject; VAR CloseAction: TCloseAction);
   begin
@@ -106,31 +141,6 @@ PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.SimTimerTimer(Sender: TObject);
   begin
     workspace.currentBoard^.simulateStep;
-  end;
-
-PROCEDURE TDigitaltrainerMainForm.ToggleBoxBgANDClick(Sender: TObject);
-  VAR otherToggle:TToggleBox;
-  begin
-    for otherToggle in toggleButtons do if otherToggle<>Sender then
-    otherToggle.checked:=false;
-  end;
-
-PROCEDURE TDigitaltrainerMainForm.WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
-  VAR x0,y0:longint;
-      toAdd:T_gateType=gt_compound;
-  begin
-    x0:=round(x/ZoomTrackBar.position);
-    y0:=round(y/ZoomTrackBar.position);
-    if ToggleBoxBGNot     .checked then toAdd:=gt_notGate else
-    if ToggleBoxBgAND     .checked then toAdd:=gt_andGate else
-    if ToggleBoxBgOr      .checked then toAdd:=gt_orGate else
-    if ToggleBoxBgXor     .checked then toAdd:=gt_xorGate else
-    if ToggleBoxBgNAND    .checked then toAdd:=gt_nandGate else
-    if ToggleBoxBgNor     .checked then toAdd:=gt_norGate else
-    if ToggleBoxBgNxor    .checked then toAdd:=gt_nxorGate else
-    if ToggleBoxConnectIn .checked then toAdd:=gt_input else
-    if ToggleBoxConnectOut.checked then toAdd:=gt_output;
-    workspace.addBaseGate(toAdd,x0,y0);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ZoomTrackBarChange(Sender: TObject);
