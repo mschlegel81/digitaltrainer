@@ -61,20 +61,11 @@ OPERATOR +(CONST x:T_wirePath; CONST y:T_point):T_wirePath;
 
 PROCEDURE writePointToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST p:T_point);
 FUNCTION readPoint(VAR stream: T_bufferedInputStreamWrapper):T_point;
+FUNCTION maxNormDistance(CONST x,y:T_point):longint;
+FUNCTION directionBetween(CONST x,y:T_point):T_wireDirection;
 IMPLEMENTATION
 USES math,sysutils;
 TYPE
-  PP_node = ^P_node;
-  P_node = ^T_node;
-
-  T_node = record
-    point:T_point;
-    cost:double;
-    degree: integer;
-    parent, child, Left, Right: P_node;
-    mark: boolean;
-  end;
-
   T_aStarNodeInfo=record
     p:T_point;
     cameFrom:T_wireDirection;
@@ -339,6 +330,7 @@ PROCEDURE T_wireGraph.dropWireSection(CONST a, b: T_point);
   {wd_rightUp  }[wd_left,wd_leftDown,wd_down,             wd_right,wd_rightUp,wd_up          ],
   {wd_up       }[        wd_leftDown,wd_down,wd_rightDown,         wd_rightUp,wd_up,wd_leftUp],
   {wd_leftUp   }[wd_left,            wd_down,wd_rightDown,wd_right,           wd_up,wd_leftUp]);
+
   VAR dir:T_wireDirection;
       len,i:longint;
   begin
@@ -358,8 +350,8 @@ PROCEDURE T_wireGraph.dropWire(CONST path:T_wirePath);
   end;
 
 FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
-  CONST DirectionCost:array[T_wireDirection] of double=(1,sqrt(2),1,sqrt(2),1,sqrt(2),1,sqrt(2));
-        ChangeDirectionPenalty=0.5;
+  CONST DirectionCost:array[T_wireDirection] of double=(1,1.41,1,1.41,1,1.41,1,1.41);
+        ChangeDirectionPenalty=0.8;
   FUNCTION distance(CONST p:T_point):double;
     begin
       //Multiplied with 2 to match direction cost

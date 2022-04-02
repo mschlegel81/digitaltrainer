@@ -54,7 +54,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       Caption = 'Zoom'
       ClientHeight = 31
       ClientWidth = 209
-      TabOrder = 0
+      TabOrder = 1
       object ZoomTrackBar: TTrackBar
         Left = 0
         Height = 31
@@ -71,7 +71,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     object DeleteButton: TButton
       Left = 0
       Height = 31
-      Top = 193
+      Top = 249
       Width = 213
       Align = alTop
       Caption = '🗑'
@@ -83,7 +83,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       Font.Quality = fqDraft
       OnClick = DeleteButtonClick
       ParentFont = False
-      TabOrder = 1
+      TabOrder = 3
     end
     object GroupBox4: TGroupBox
       Left = 0
@@ -94,13 +94,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       Caption = 'Name und Beschreibung'
       ClientHeight = 106
       ClientWidth = 209
-      TabOrder = 2
+      TabOrder = 0
       object captionEdit: TEdit
         Left = 0
         Height = 28
         Top = 0
         Width = 209
         Align = alTop
+        OnEditingDone = captionEditEditingDone
         TabOrder = 0
         Text = 'unbenannt'
       end
@@ -110,6 +111,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         Top = 28
         Width = 209
         Align = alClient
+        OnEditingDone = descriptionMemoEditingDone
         TabOrder = 1
       end
     end
@@ -125,7 +127,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     object GroupBox5: TGroupBox
       Left = 0
       Height = 288
-      Top = 224
+      Top = 280
       Width = 213
       Align = alTop
       Caption = 'Gatter hinzufügen...'
@@ -139,6 +141,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         Width = 209
         Align = alClient
         ItemHeight = 0
+        OnSelectionChange = CustomGateListBoxSelectionChange
+        ParentShowHint = False
+        PopupMenu = PopupMenu1
+        ShowHint = True
         TabOrder = 0
       end
       object FlowPanel1: TFlowPanel
@@ -300,6 +306,29 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         TabOrder = 2
       end
     end
+    object GroupBox3: TGroupBox
+      Left = 0
+      Height = 56
+      Top = 193
+      Width = 213
+      Align = alTop
+      AutoSize = True
+      Caption = 'Geschwindigkeit'
+      ClientHeight = 31
+      ClientWidth = 209
+      TabOrder = 2
+      object SpeedTrackBar: TTrackBar
+        Left = 0
+        Height = 31
+        Top = 0
+        Width = 209
+        Max = 100
+        OnChange = SpeedTrackBarChange
+        Position = 10
+        Align = alClient
+        TabOrder = 0
+      end
+    end
   end
   object Splitter1: TSplitter
     Left = 213
@@ -318,21 +347,68 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Top = 15
     object MenuItem1: TMenuItem
       Caption = 'Datei'
-      object MenuItem2: TMenuItem
+      object miNew: TMenuItem
+        Caption = '&Neu'
+        ShortCut = 16462
+        OnClick = miNewClick
+      end
+      object miAddToPalette: TMenuItem
+        Caption = 'Aktuelle Schaltung zur &Palette hinzufügen'
+        OnClick = miAddToPaletteClick
+      end
+      object miLoad: TMenuItem
         Caption = '&Laden'
+        ShortCut = 16463
+        OnClick = miLoadClick
       end
-      object MenuItem3: TMenuItem
+      object miSave: TMenuItem
         Caption = '&Speichern'
+        ShortCut = 16467
+        OnClick = miSaveClick
       end
-      object MenuItem5: TMenuItem
+      object miQuit: TMenuItem
         Caption = '&Beenden'
+        OnClick = miQuitClick
       end
     end
-    object MenuItem4: TMenuItem
-      Caption = 'Aktuelle Schaltung'
-      object MenuItem6: TMenuItem
-        Caption = 'Zur Palette hinzufügen'
+    object MenuItem7: TMenuItem
+      Caption = 'Bearbeiten'
+      object miSelectAll: TMenuItem
+        Caption = 'Alle auswählen'
+        ShortCut = 16449
+        OnClick = miSelectAllClick
       end
+      object miDeselectAll: TMenuItem
+        Caption = 'Alle abwählen'
+        ShortCut = 24641
+        OnClick = miDeselectAllClick
+      end
+      object miDelete: TMenuItem
+        Caption = 'Ausgewählte löschen'
+        OnClick = miDeleteClick
+      end
+    end
+  end
+  object SaveDialog1: TSaveDialog
+    Filter = 'Workspaces|*.workspace'
+    Left = 423
+    Top = 213
+  end
+  object OpenDialog1: TOpenDialog
+    Filter = 'Workspaces|*.workspace'
+    Left = 336
+    Top = 163
+  end
+  object PopupMenu1: TPopupMenu
+    Left = 299
+    Top = 304
+    object MenuItem2: TMenuItem
+      Caption = 'Eintrag löschen'
+      OnClick = MenuItem2Click
+    end
+    object MenuItem3: TMenuItem
+      Caption = 'Bearbeiten'
+      OnClick = MenuItem3Click
     end
   end
 end

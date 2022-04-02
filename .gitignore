@@ -3,3 +3,4 @@
 /digitaltrainer.lps
 *.res
 /lib/*
+*.workspace

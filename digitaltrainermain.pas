@@ -27,6 +27,7 @@ TYPE
     captionEdit: TEdit;
     FlowPanel1: TFlowPanel;
     GroupBox2: TGroupBox;
+    GroupBox3: TGroupBox;
     GroupBox4: TGroupBox;
     descriptionMemo: TMemo;
     GroupBox5: TGroupBox;
@@ -35,9 +36,18 @@ TYPE
     MenuItem1: TMenuItem;
     MenuItem2: TMenuItem;
     MenuItem3: TMenuItem;
-    MenuItem4: TMenuItem;
-    MenuItem5: TMenuItem;
-    MenuItem6: TMenuItem;
+    miDelete: TMenuItem;
+    miLoad: TMenuItem;
+    miSave: TMenuItem;
+    miAddToPalette: TMenuItem;
+    miQuit: TMenuItem;
+    miNew: TMenuItem;
+    MenuItem7: TMenuItem;
+    miSelectAll: TMenuItem;
+    miDeselectAll: TMenuItem;
+    OpenDialog1: TOpenDialog;
+    PopupMenu1: TPopupMenu;
+    SaveDialog1: TSaveDialog;
     SimTimer: TTimer;
     Splitter2: TSplitter;
     wireImage: TImage;
@@ -45,6 +55,7 @@ TYPE
     ScrollBox1: TScrollBox;
     Splitter1: TSplitter;
     ZoomTrackBar: TTrackBar;
+    speedTrackBar: TTrackBar;
     PROCEDURE ButtonAddCustomClick(Sender: TObject);
     PROCEDURE ButtonAddAndClick(Sender: TObject);
     PROCEDURE ButtonAddInputClick(Sender: TObject);
@@ -55,15 +66,30 @@ TYPE
     PROCEDURE ButtonAddOrClick(Sender: TObject);
     PROCEDURE ButtonAddOutputClick(Sender: TObject);
     PROCEDURE ButtonAddXorClick(Sender: TObject);
+    PROCEDURE captionEditEditingDone(Sender: TObject);
+    PROCEDURE CustomGateListBoxSelectionChange(Sender: TObject; user: boolean);
     PROCEDURE DeleteButtonClick(Sender: TObject);
+    PROCEDURE descriptionMemoEditingDone(Sender: TObject);
     PROCEDURE FormClose(Sender: TObject; VAR CloseAction: TCloseAction);
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE FormDestroy(Sender: TObject);
     PROCEDURE FormResize(Sender: TObject);
+    PROCEDURE MenuItem2Click(Sender: TObject);
+    PROCEDURE MenuItem3Click(Sender: TObject);
+    PROCEDURE miAddToPaletteClick(Sender: TObject);
+    PROCEDURE miDeleteClick(Sender: TObject);
+    PROCEDURE miDeselectAllClick(Sender: TObject);
+    PROCEDURE miLoadClick(Sender: TObject);
+    PROCEDURE miNewClick(Sender: TObject);
+    PROCEDURE miQuitClick(Sender: TObject);
+    PROCEDURE miSaveClick(Sender: TObject);
+    PROCEDURE miSelectAllClick(Sender: TObject);
     PROCEDURE SimTimerTimer(Sender: TObject);
+    PROCEDURE speedTrackBarChange(Sender: TObject);
     PROCEDURE ZoomTrackBarChange(Sender: TObject);
   private
     workspace:T_workspace;
+    PROCEDURE updateSidebar;
   public
   end;
 
@@ -86,6 +112,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     workspace.create;
     workspace.loadFromFile(workspaceFilename);
     workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage);
+    updateSidebar;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
@@ -96,7 +123,12 @@ PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.DeleteButtonClick(Sender: TObject);
   begin
-    workspace.currentBoard^.deleteMarkedGate;
+    workspace.currentBoard^.deleteMarkedElements;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.descriptionMemoEditingDone(Sender: TObject);
+  begin
+    workspace.currentBoard^.description:=descriptionMemo.text;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddInputClick(Sender: TObject);
@@ -129,7 +161,23 @@ PROCEDURE TDigitaltrainerMainForm.ButtonAddOutputClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.ButtonAddXorClick(Sender: TObject);
   begin workspace.addBaseGate(gt_xorGate,0,0);end;
 
-PROCEDURE TDigitaltrainerMainForm.FormClose(Sender: TObject; VAR CloseAction: TCloseAction);
+PROCEDURE TDigitaltrainerMainForm.captionEditEditingDone(Sender: TObject);
+  begin
+    workspace.currentBoard^.name:=captionEdit.text;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.CustomGateListBoxSelectionChange(Sender: TObject; user: boolean);
+  VAR i:longint;
+  begin
+    i:=CustomGateListBox.ItemIndex;
+    if (i>=0) and (i<length(workspace.paletteEntries)) then begin
+      CustomGateListBox.Hint:=workspace.paletteEntries[i]^.description;
+      ButtonAddCustom.enabled:=true;
+    end else ButtonAddCustom.enabled:=false;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.FormClose(Sender: TObject;
+  VAR CloseAction: TCloseAction);
   begin
   end;
 
@@ -138,14 +186,104 @@ PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
     workspace.currentBoard^.Repaint;
   end;
 
+PROCEDURE TDigitaltrainerMainForm.MenuItem2Click(Sender: TObject);
+  begin
+    if QuestionDlg('Löschen?','Soll der Eintrag wirklich endgültig gelöscht werden?',TMsgDlgType.mtConfirmation,[mrYes, 'Ja', mrNo, 'Nein', 'IsDefault'],'')=mrNo then exit;
+    workspace.removePaletteEntry(CustomGateListBox.ItemIndex);
+    updateSidebar;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.MenuItem3Click(Sender: TObject);
+  begin
+    workspace.editPaletteEntry(CustomGateListBox.ItemIndex);
+    updateSidebar;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
+  begin
+    workspace.addCurrentBoardToPalette;
+    updateSidebar;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miDeleteClick(Sender: TObject);
+  begin
+    workspace.currentBoard^.deleteMarkedElements;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miDeselectAllClick(Sender: TObject);
+  begin
+    workspace.currentBoard^.setSelectForAll(false);
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
+  VAR temp:T_workspace;
+  begin
+    if OpenDialog1.execute then begin
+      temp.create;
+      if temp.loadFromFile(OpenDialog1.fileName) then begin
+        workspace.destroy;
+        workspace.create;
+        workspace.loadFromFile(OpenDialog1.fileName);
+        workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage);
+        updateSidebar;
+      end;
+      temp.destroy;
+    end;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miNewClick(Sender: TObject);
+  begin
+    workspace.currentBoard^.clear;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miQuitClick(Sender: TObject);
+  begin
+    close;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miSaveClick(Sender: TObject);
+  begin
+    if SaveDialog1.execute then workspace.saveToFile(SaveDialog1.fileName);
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miSelectAllClick(Sender: TObject);
+  begin
+    workspace.currentBoard^.setSelectForAll(true);
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.SimTimerTimer(Sender: TObject);
   begin
     workspace.currentBoard^.simulateStep;
   end;
 
+PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);
+  begin
+    if speedTrackBar.position=0
+    then SimTimer.enabled:=false
+    else begin
+      SimTimer.enabled:=true;
+      SimTimer.interval:=round(1000*exp(ln(5/1000)*(speedTrackBar.position-1)/(speedTrackBar.max-1)));
+    end;
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.ZoomTrackBarChange(Sender: TObject);
   begin
     workspace.currentBoard^.setZoom(ZoomTrackBar.position);
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.updateSidebar;
+  VAR i:longint;
+  begin
+    descriptionMemo.text:=workspace.currentBoard^.description;
+    captionEdit    .text:=workspace.currentBoard^.name;
+
+    CustomGateListBox.items.clear;
+    for i:=0 to length(workspace.paletteEntries)-1 do
+    if (workspace.currentBoard^.paletteIndex=-1) or
+       (workspace.currentBoard^.paletteIndex>i)
+    then CustomGateListBox.items.add(workspace.paletteEntries[i]^.name);
+
+    if (CustomGateListBox.items.count=0) then ButtonAddCustom.enabled:=false;
   end;
 
 end.
