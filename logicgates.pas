@@ -167,6 +167,7 @@ T_gateType=(gt_notGate,
 FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
 OPERATOR =(CONST x,y:T_gateConnector):boolean;
 IMPLEMENTATION
+USES sysutils;
 OPERATOR =(CONST x,y:T_gateConnector):boolean;
   begin
     result:=(x.gate=y.gate) and (x.index=y.index);
@@ -194,7 +195,7 @@ CONSTRUCTOR T_outputGate.create;
   begin inherited; end;
 
 FUNCTION T_outputGate.caption: string;
-  begin result:='out'; end;
+  begin result:='out '+intToStr(ioIndex); end;
 
 FUNCTION T_outputGate.numberOfInputs: longint;
   begin result:=1; end;
@@ -211,7 +212,7 @@ CONSTRUCTOR T_inputGate.create;
   begin inherited; end;
 
 FUNCTION T_inputGate.caption: string;
-  begin result:='in'; end;
+  begin result:='in '+intToStr(ioIndex) end;
 
 FUNCTION T_inputGate.numberOfInputs: longint;
   begin result:=0; end;

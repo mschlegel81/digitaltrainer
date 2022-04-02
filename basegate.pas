@@ -6,7 +6,6 @@ INTERFACE
 USES ExtCtrls,Classes,Controls,StdCtrls,wiringUtil,serializationUtil,logicGates;
 
 TYPE
-  P_abstractGate=^T_abstractGate;
   P_circuitBoard=^T_circuitBoard;
   P_workspace=^T_workspace;
   { T_abstractGate }
@@ -52,6 +51,8 @@ TYPE
   T_visualGateConnector=object
     gate:P_visualGate;
     index:longint;
+    FUNCTION loadFromStream(CONST board:P_circuitBoard; VAR stream:T_bufferedInputStreamWrapper):boolean;
+    PROCEDURE saveToStream(CONST board:P_circuitBoard; VAR stream:T_bufferedOutputStreamWrapper);
   end;
 
   { T_workspace }
@@ -97,6 +98,7 @@ TYPE
     FUNCTION  getOutput(CONST index:longint):boolean;             virtual;
     PROCEDURE setInput(CONST index:longint; CONST value:boolean); virtual;
     FUNCTION  getInput(CONST index:longint):boolean;              virtual;
+    FUNCTION  clone:P_abstractGate; virtual;
   end;
 
   T_circuitBoard=object(T_serializable)
@@ -106,6 +108,8 @@ TYPE
         container:TWinControl;
         wireImage:TImage;
       end;
+
+      paletteIndex:longint;
 
       name       :string;
       description:string;
@@ -138,8 +142,6 @@ TYPE
     public
       CONSTRUCTOR create;
       DESTRUCTOR destroy;  virtual;
-      FUNCTION cloneAsGate(CONST x0_,y0_:longint; CONST targetBoard:P_circuitBoard):P_customGate;
-
       PROCEDURE attachGUI(CONST zoom:longint; CONST container:TWinControl; CONST wireImage:TImage);
       PROCEDURE gateMoved(CONST gate:P_visualGate);
       PROCEDURE gateMarked(CONST markedGate: P_visualGate);
@@ -149,8 +151,8 @@ TYPE
       PROCEDURE Repaint;
       PROCEDURE simulateStep;
 
-      FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
-      PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+      FUNCTION loadFromStream(CONST workspace:P_workspace; VAR stream:T_bufferedInputStreamWrapper):boolean;
+      PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper);
   end;
 
 IMPLEMENTATION
@@ -159,6 +161,24 @@ USES sysutils,math,Graphics,myGenerics;
 OPERATOR =(CONST x,y:T_visualGateConnector):boolean;
   begin
     result:=(x.gate=y.gate) and (x.index=y.index);
+  end;
+
+FUNCTION T_visualGateConnector.loadFromStream(CONST board: P_circuitBoard; VAR stream: T_bufferedInputStreamWrapper): boolean;
+  VAR gateIndex:longint;
+  begin
+    gateIndex:=stream.readNaturalNumber;
+    if gateIndex>length(board^.gates) then exit(false);
+    gate:=board^.gates[gateIndex];
+    index:=stream.readNaturalNumber;
+    result:=stream.allOkay and ((index<gate^.numberOfInputs) or (index<gate^.numberOfOutputs));
+  end;
+
+PROCEDURE T_visualGateConnector.saveToStream(CONST board: P_circuitBoard; VAR stream: T_bufferedOutputStreamWrapper);
+  VAR gateIndex:longint=0;
+  begin
+    while (gateIndex<length(board^.gates)) and (gate<>board^.gates[gateIndex]) do inc(gateIndex);
+    stream.writeNaturalNumber(gateIndex);
+    stream.writeNaturalNumber(index);
   end;
 
 { T_visualGate }
@@ -244,6 +264,10 @@ PROCEDURE T_visualGate.inputClick(Sender: TObject);
 PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     if (button=mbLeft) then begin
+      if behavior^.gateType=gt_input then begin
+        behavior^.setInput(0,not behavior^.getInput(0));
+        updateIoVisuals;
+      end;
       dragging:=true;
       marked:=true;
       board^.gateMarked(@self);
@@ -323,8 +347,7 @@ FUNCTION T_visualGate.getOutputPositionInGridSize(CONST index: longint): T_point
   end;
 
 PROCEDURE T_visualGate.Repaint;
-  VAR k,yCenter,
-      newFontSize:longint;
+  VAR k,newFontSize:longint;
       shapeIndex :longint=1;
       p:T_point;
   begin
@@ -336,7 +359,8 @@ PROCEDURE T_visualGate.Repaint;
 
     gatelabel.top :=shapes[0].top +(shapes[0].height-gatelabel.height) div 2;
     gatelabel.Left:=shapes[0].Left+(shapes[0].width -gatelabel.width) div 2 ;
-    newFontSize:=round(gatelabel.Font.size*shapes[0].width*0.75/gatelabel.width);
+    newFontSize:=min(round(gatelabel.Font.size*shapes[0].width *0.75/gatelabel.width),
+                     round(gatelabel.Font.size*shapes[0].height*0.5 /gatelabel.height));
     if abs(newFontSize-gatelabel.Font.size)>1 then gatelabel.Font.size:=newFontSize;
     gatelabel.top :=shapes[0].top +(shapes[0].height-gatelabel.height) div 2;
     gatelabel.Left:=shapes[0].Left+(shapes[0].width -gatelabel.width) div 2 ;
@@ -528,6 +552,11 @@ FUNCTION T_customGate.getInput(CONST index: longint): boolean;
     result:=inputConnections[index].value;
   end;
 
+FUNCTION T_customGate.clone: P_abstractGate;
+  begin
+    new(P_customGate(result),create(prototype));
+  end;
+
 { T_workspace }
 
 CONSTRUCTOR T_workspace.create;
@@ -544,11 +573,25 @@ DESTRUCTOR T_workspace.destroy;
   end;
 
 PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType; CONST x0,y0:longint);
+  FUNCTION numberOf(CONST gateType:T_gateType):longint;
+    VAR gate:P_visualGate;
+    begin
+      result:=0;
+      for gate in currentBoard^.gates do
+      if gate^.behavior^.gateType=gateType
+      then inc(result);
+    end;
+
   VAR gateToAdd:P_abstractGate=nil;
       visual:P_visualGate;
   begin
     gateToAdd:=newBaseGate(gateType);
     if gateToAdd<>nil then begin
+      case gateToAdd^.gateType of
+        gt_input:  P_inputGate (gateToAdd)^.ioIndex:=numberOf(gt_input);
+        gt_output: P_outputGate(gateToAdd)^.ioIndex:=numberOf(gt_output);
+      end;
+
       new(visual,create(pointOf(x0,y0),gateToAdd,currentBoard));
       if not currentBoard^.positionNewGate(visual)
       then dispose(visual,destroy);
@@ -556,8 +599,15 @@ PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType; CONST x0,y0:longint
   end;
 
 PROCEDURE T_workspace.addCustomGate(CONST index: longint; CONST x0, y0: longint);
+  VAR visual:P_visualGate;
+      gateToAdd:P_customGate;
   begin
-
+    if (index>=0) and (index<length(paletteEntries)) then begin
+      new(gateToAdd,create(paletteEntries[index]));
+      new(visual,create(pointOf(x0,y0),gateToAdd,currentBoard));
+      if not currentBoard^.positionNewGate(visual)
+      then dispose(visual,destroy);
+    end;
   end;
 
 FUNCTION T_workspace.getSerialVersion: dword;
@@ -568,35 +618,50 @@ FUNCTION T_workspace.getSerialVersion: dword;
 FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i:longint;
       count: qword;
+      board:P_circuitBoard;
   begin
     if not(inherited) then exit;
-    currentBoard^.loadFromStream(stream);
     count:=stream.readNaturalNumber;
     if (count<maxLongint) then begin
-      setLength(paletteEntries,count);
+      result:=true;
       for i:=0 to count-1 do begin
-        new(paletteEntries[i],create);
-        paletteEntries[i]^.loadFromStream(stream);
+        new(board,create);
+        if board^.loadFromStream(@self,stream) then begin
+          setLength(paletteEntries,i+1);
+          paletteEntries[i]:=board;
+          board^.paletteIndex:=i;
+        end else begin
+          dispose(board,destroy);
+          exit(false);
+        end;
       end;
     end else exit(false);
-    result:=stream.allOkay;
+    result:=result and currentBoard^.loadFromStream(@self,stream) and stream.allOkay;
   end;
 
 PROCEDURE T_workspace.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
   VAR i:longint;
   begin
     inherited;
-    currentBoard^.saveToStream(stream);
     stream.writeNaturalNumber(length(paletteEntries));
     for i:=0 to length(paletteEntries)-1 do paletteEntries[i]^.saveToStream(stream);
+    currentBoard^.saveToStream(stream);
   end;
 
 { T_circuitBoard }
 
 CONSTRUCTOR T_circuitBoard.create;
   begin
-    incompleteWire.dragging:=false;
-    wireGraph:=nil;
+    with GUI do begin
+      zoom:=1;
+      container:=nil;
+      wireImage:=nil;
+    end;
+    paletteIndex:=-1;
+    name:='unbenannt';
+    description:='';
+    setLength(gates,0);
+    setLength(logicWires,0);
   end;
 
 DESTRUCTOR T_circuitBoard.destroy;
@@ -607,13 +672,6 @@ DESTRUCTOR T_circuitBoard.destroy;
     setLength(logicWires,0);
     if wireGraph<>nil then dispose(wireGraph,destroy);
     wireGraph:=nil;
-  end;
-
-FUNCTION T_circuitBoard.cloneAsGate(CONST x0_, y0_: longint; CONST targetBoard: P_circuitBoard): P_customGate;
-  begin
-    //new(result,create...);
-    //TODO: Implement me!
-
   end;
 
 PROCEDURE T_circuitBoard.attachGUI(CONST zoom: longint;
@@ -765,6 +823,61 @@ PROCEDURE T_circuitBoard.simulateStep;
         wires[j].sink.gate^.behavior^.setInput(wires[j].sink.index,output);
     end;
     for gate in gates do gate^.updateIoVisuals;
+  end;
+
+FUNCTION T_circuitBoard.loadFromStream(CONST workspace:P_workspace; VAR stream: T_bufferedInputStreamWrapper): boolean;
+  VAR i:longint;
+      gateType: T_gateType;
+      k:longint;
+      origin: T_point;
+      behavior: P_abstractGate;
+  begin
+    name:=stream.readAnsiString;
+    description:=stream.readAnsiString;
+    if not(stream.allOkay) then exit(false);
+    setLength(gates,stream.readNaturalNumber);
+    for i:=0 to length(gates)-1 do begin
+      gateType:=T_gateType(stream.readByte([byte(low(T_gateType))..byte(high(T_gateType))]));
+      if gateType=gt_compound then begin
+        k:=stream.readNaturalNumber;
+        //TODO: This provokes later NPEs!
+        if k>=length(workspace^.paletteEntries) then exit(false);
+        new(P_customGate(behavior),create(workspace^.paletteEntries[k]));
+      end else behavior:=newBaseGate(gateType);
+      origin:=readPoint(stream);
+      new(gates[i],create(origin,behavior,@self));
+    end;
+
+    setLength(logicWires,stream.readNaturalNumber);
+    for i:=0 to length(logicWires)-1 do begin
+      logicWires[i].source.loadFromStream(@self,stream);
+      setLength(logicWires[i].wires,stream.readNaturalNumber);
+      for k:=0 to length(logicWires[i].wires)-1 do begin
+        logicWires[i].wires[k].sink.loadFromStream(@self,stream);
+        setLength(logicWires[i].wires[k].visual,0);
+      end;
+    end;
+  end;
+
+PROCEDURE T_circuitBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
+  VAR i,k:longint;
+  begin
+    stream.writeAnsiString(name);
+    stream.writeAnsiString(description);
+    stream.writeNaturalNumber(length(gates));
+    for i:=0 to length(gates)-1 do begin
+      stream.writeByte(byte(gates[i]^.behavior^.gateType));
+      if gates[i]^.behavior^.gateType=gt_compound then stream.writeNaturalNumber(P_customGate(gates[i]^.behavior)^.prototype^.paletteIndex);
+      writePointToStream(stream,gates[i]^.origin);
+    end;
+    stream.writeNaturalNumber(length(logicWires));
+    for i:=0 to length(logicWires)-1 do begin
+      logicWires[i].source.saveToStream(@self,stream);
+      stream.writeNaturalNumber(length(logicWires[i].wires));
+      for k:=0 to length(logicWires[i].wires)-1 do begin
+        logicWires[i].wires[k].sink.saveToStream(@self,stream);
+      end;
+    end;
   end;
 
 PROCEDURE T_circuitBoard.Repaint;
