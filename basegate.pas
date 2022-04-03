@@ -793,6 +793,8 @@ PROCEDURE T_circuitBoard.clear;
     setLength(logicWires,0);
     if wireGraph<>nil then dispose(wireGraph,destroy);
     wireGraph:=nil;
+    paletteIndex:=-1;
+    Repaint;
   end;
 
 PROCEDURE T_circuitBoard.setSelectForAll(CONST doSelect: boolean);
@@ -867,7 +869,7 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
       for i:=0 to length(logicWires)-1 do begin
         if logicWires[i].source.gate<>gateToDelete then begin
           logicWires[j]:=logicWires[i];
-          with logicWires[i] do begin
+          with logicWires[j] do begin
             j_:=0;
             for i_:=0 to length(wires)-1 do begin
               if wires[i_].sink.gate<>gateToDelete then begin
@@ -883,12 +885,34 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
       setLength(logicWires,j);
     end;
 
+  PROCEDURE enumerateIo;
+    VAR gate:P_visualGate;
+        inputIndex:longint=0;
+        outputIndex:longint=0;
+    begin
+      for gate in gates do
+      case gate^.behavior^.gateType of
+        gt_input: begin
+          P_inputGate(gate^.behavior)^.ioIndex:=inputIndex;
+          gate^.gatelabel.caption:=gate^.behavior^.caption;
+          inc(inputIndex);
+        end;
+        gt_output: begin
+          P_outputGate(gate^.behavior)^.ioIndex:=inputIndex;
+          gate^.gatelabel.caption:=gate^.behavior^.caption;
+          inc(outputIndex);
+        end;
+      end;
+    end;
+
   VAR k,i:longint;
       j:longint=0;
+      ioDeleted:boolean=false;
   begin
     for i:=0 to length(gates)-1 do begin
       if gates[i]^.marked
       then begin
+        ioDeleted:=ioDeleted or (gates[i]^.behavior^.gateType in [gt_input,gt_output]);
         removeAssociatedWires(gates[i]);
         dispose(gates[i],destroy)
       end
@@ -898,6 +922,8 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
       end;
     end;
     setLength(gates,j);
+
+    if ioDeleted then enumerateIo;
 
     for k:=0 to length(logicWires)-1 do with logicWires[k] do begin
       j:=0;
@@ -909,12 +935,15 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
       end;
       setLength(wires,j);
     end;
+
     j:=0;
     for i:=0 to length(logicWires)-1 do
     if length(logicWires[i].wires)>0 then begin
       logicWires[j]:=logicWires[i];
       inc(j);
     end;
+
+    rewire;
     Repaint;
   end;
 
@@ -1187,6 +1216,7 @@ PROCEDURE T_circuitBoard.rewire;
   VAR connector:T_visualGateConnector;
       i,j:longint;
   begin
+    //TODO: Maybe move wiring to separate thread
     if wireGraph<>nil then dispose(wireGraph,destroy);
     connector.gate:=nil;
     connector.index:=0;
@@ -1201,8 +1231,7 @@ PROCEDURE T_circuitBoard.rewire;
     fixWireImageSize;
   end;
 
-PROCEDURE T_circuitBoard.WireImageMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE T_circuitBoard.WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   FUNCTION wireHitsPoint(CONST p:T_point; CONST wire:T_wirePath):boolean;
     VAR i,j,len:longint;
         a,b,pointBetween:T_point;
@@ -1229,7 +1258,7 @@ PROCEDURE T_circuitBoard.WireImageMouseDown(Sender: TObject;
       anyChange:boolean=false;
   begin
     if (button=mbLeft) and ((ssShift in Shift) or (ssCtrl in Shift)) then begin
-      p:=pointOf(x div GUI.zoom,y div GUI.zoom);
+      p:=pointOf(round(x / GUI.zoom),round(y / GUI.zoom));
       for i:=0 to length(logicWires         )-1 do
       for j:=0 to length(logicWires[i].wires)-1 do
       with logicWires[i].wires[j] do
@@ -1299,6 +1328,7 @@ PROCEDURE T_workspace.editPaletteEntry(CONST index:longint);
       previous^.GUI.wireImage);
     currentBoard^.rewire;
     dispose(previous,destroy);
+    currentBoard^.Repaint;
   end;
 
 end.

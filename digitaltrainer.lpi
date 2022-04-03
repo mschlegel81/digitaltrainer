@@ -113,6 +113,7 @@
     <Linking>
       <Debugging>
         <UseHeaptrc Value="True"/>
+        <TrashVariables Value="True"/>
       </Debugging>
     </Linking>
   </CompilerOptions>

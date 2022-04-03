@@ -234,6 +234,7 @@ PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miNewClick(Sender: TObject);
   begin
     workspace.currentBoard^.clear;
+    updateSidebar;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miQuitClick(Sender: TObject);
