@@ -66,11 +66,12 @@ FUNCTION directionBetween(CONST x,y:T_point):T_wireDirection;
 IMPLEMENTATION
 USES math,sysutils;
 TYPE
+  P_aStarNodeInfo=^T_aStarNodeInfo;
   T_aStarNodeInfo=record
     p:T_point;
     cameFrom:T_wireDirection;
-    gScore:double;
-    fScore:double;
+    costToGetThere:double;
+    estimatedCostToGoal:double;
   end;
 
   { T_nodeMap }
@@ -80,7 +81,7 @@ TYPE
     //efficiently by a "sparse array".
     //X-Dimension: - allocate all up to needed
     //Y-Dimension: - allocate needed number; maybe retain sorting?!?
-    map:array of array of T_aStarNodeInfo;
+    map:array of array of P_aStarNodeInfo;
 
     CONSTRUCTOR create;
     DESTRUCTOR destroy;
@@ -90,7 +91,7 @@ TYPE
 
   T_priorityQueueElement=record
     path:T_wirePath;
-    fScore:double;
+    estimatedCostToGoal:double;
   end;
 
   { T_priorityQueue }
@@ -103,7 +104,7 @@ TYPE
     DESTRUCTOR destroy;
     PROCEDURE add(CONST path:T_wirePath; CONST fScore:double);
     FUNCTION isEmpty:boolean;
-    FUNCTION ExtractMin:T_wirePath;
+    FUNCTION ExtractMin(OUT fScore:double):T_wirePath;
   end;
 
 FUNCTION pointOf(CONST x,y:longint):T_point;
@@ -210,17 +211,17 @@ DESTRUCTOR T_priorityQueue.destroy;
 PROCEDURE T_priorityQueue.add(CONST path: T_wirePath; CONST fScore: double);
   VAR k:longint;
   begin
-    if (length(sortedEntries)=0) or (fScore<sortedEntries[length(sortedEntries)-1].fScore)
+    if (length(sortedEntries)=0) or (fScore<sortedEntries[length(sortedEntries)-1].estimatedCostToGoal)
     then begin
       k:=length(sortedEntries);
       setLength(sortedEntries,k+1);
       sortedEntries[k].path  :=path;
-      sortedEntries[k].fScore:=fScore;
+      sortedEntries[k].estimatedCostToGoal:=fScore;
     end else begin
       k:=length(unsortedEntries);
       setLength(unsortedEntries,k+1);
       unsortedEntries[k].path  :=path;
-      unsortedEntries[k].fScore:=fScore;
+      unsortedEntries[k].estimatedCostToGoal:=fScore;
     end;
   end;
 
@@ -230,7 +231,7 @@ FUNCTION T_priorityQueue.isEmpty: boolean;
           (length(unsortedEntries)=0)
   end;
 
-FUNCTION T_priorityQueue.ExtractMin: T_wirePath;
+FUNCTION T_priorityQueue.ExtractMin(OUT fScore:double): T_wirePath;
   PROCEDURE cleanup;
     VAR tmp:T_priorityQueueElement;
         i,j,k:longint;
@@ -238,7 +239,7 @@ FUNCTION T_priorityQueue.ExtractMin: T_wirePath;
     begin
       //Bubblesort unsorted...
       for j:=1 to length(unsortedEntries)-1 do for i:=0 to j-1 do
-      if unsortedEntries[i].fScore<unsortedEntries[j].fScore
+      if unsortedEntries[i].estimatedCostToGoal<unsortedEntries[j].estimatedCostToGoal
       then begin
         tmp               :=unsortedEntries[i];
         unsortedEntries[i]:=unsortedEntries[j];
@@ -252,7 +253,7 @@ FUNCTION T_priorityQueue.ExtractMin: T_wirePath;
       k:=0;
       setLength(sortedEntries,length(copyOfSorted)+length(unsortedEntries));
       while (i<length(copyOfSorted)) and (j<length(unsortedEntries)) do
-        if copyOfSorted[i].fScore>=unsortedEntries[j].fScore
+        if copyOfSorted[i].estimatedCostToGoal>=unsortedEntries[j].estimatedCostToGoal
         then begin sortedEntries[k]:=copyOfSorted   [i]; inc(k); inc(i); end
         else begin sortedEntries[k]:=unsortedEntries[j]; inc(k); inc(j); end;
       while (i<length(copyOfSorted   )) do begin sortedEntries[k]:=copyOfSorted   [i]; inc(k); inc(i); end;
@@ -266,6 +267,7 @@ FUNCTION T_priorityQueue.ExtractMin: T_wirePath;
     cleanup;
     k:=length(sortedEntries)-1;
     result:=sortedEntries[k].path;
+    fScore:=sortedEntries[k].estimatedCostToGoal;
     setLength(sortedEntries,k);
   end;
 
@@ -350,11 +352,13 @@ PROCEDURE T_wireGraph.dropWire(CONST path:T_wirePath);
   end;
 
 FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
-  CONST DirectionCost:array[T_wireDirection] of double=(1,1.41,1,1.41,1,1.41,1,1.41);
-        ChangeDirectionPenalty=0.8;
+  CONST DirectionCost:array[T_wireDirection] of double=(1,1.8,
+                                                        1,1.8,
+                                                        1,1.8,
+                                                        1,1.8);
+        ChangeDirectionPenalty=1;
   FUNCTION distance(CONST p:T_point):double;
     begin
-      //Multiplied with 2 to match direction cost
       result:=sqrt(sqr(p[0]-endPoint[0])+sqr(p[1]-endPoint[1]));
     end;
   VAR nodeMap:T_nodeMap;
@@ -386,6 +390,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
       n,neighbor:T_point;
       dir:T_wireDirection;
       score:double;
+      scoreBasis:double;
   begin
     nodeMap.create;
     openSet.create;
@@ -394,7 +399,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
     openSet.add(result,distance(startPoint));
     //TODO: Is there a plausible earlier exit?!?
     while not openSet.isEmpty do begin
-      result:=openSet.ExtractMin;
+      result:=openSet.ExtractMin(scoreBasis);
       n:=result[length(result)-1];
       if n=endPoint then begin
         openSet.destroy;
@@ -402,17 +407,18 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
         simplifyPath(result);
         exit(result);
       end;
+      scoreBasis-=distance(n);
       for dir in allowedDirectionsPerPoint[n[0],n[1]] do begin
-        score:=DirectionCost[dir];
+        score:=scoreBasis+DirectionCost[dir];
         if nodeMap.containsKey(n,entry) and (entry.cameFrom<>dir) then score+=ChangeDirectionPenalty;
         neighbor:=n+dir;
-        if not(nodeMap.containsKey(neighbor,entry)) or (score<entry.gScore) then begin
+        if not(nodeMap.containsKey(neighbor,entry)) or (score<entry.costToGetThere) then begin
           entry.p:=neighbor;
           entry.cameFrom:=dir;
-          entry.gScore:=score;
-          entry.fScore:=score+distance(neighbor);
+          entry.costToGetThere:=score;
+          entry.estimatedCostToGoal:=score+distance(neighbor);
           nodeMap.put(entry);
-          openSet.add(result+neighbor,entry.fScore);
+          openSet.add(result+neighbor,entry.estimatedCostToGoal);
         end;
       end;
     end;
@@ -442,41 +448,46 @@ CONSTRUCTOR T_nodeMap.create;
   end;
 
 DESTRUCTOR T_nodeMap.destroy;
-  VAR i:longint;
+  VAR i,j:longint;
   begin
-    for i:=0 to length(map)-1 do setLength(map[i],0);
+    for i:=0 to length(map)-1 do begin
+      for j:=0 to length(map[i])-1 do if map[i,j]<>nil then freeMem(map[i,j],sizeOf(T_aStarNodeInfo));
+      setLength(map[i],0);
+    end;
     setLength(map,0);
   end;
 
 FUNCTION T_nodeMap.containsKey(CONST p: T_point; OUT value: T_aStarNodeInfo): boolean;
-  VAR info:T_aStarNodeInfo;
+  VAR info:P_aStarNodeInfo;
   begin
-    if length(map)<p[0]+1 then exit(false);
-    for info in map[p[0]] do if info.p[1]=p[1] then begin
-      value:=info;
-      exit(true);
+    if length(map      )<=p[0] then exit(false);
+    if length(map[p[0]])<=p[1] then exit(false);
+    info:=map[p[0],p[1]];
+    if info=nil
+    then exit(false)
+    else begin
+      value:=info^;
+      result:=true;
     end;
-    result:=false;
   end;
 
 PROCEDURE T_nodeMap.put(CONST value: T_aStarNodeInfo);
-  VAR i0,i:longint;
+  VAR i0,i,j0,j:longint;
   begin
     if length(map)<=value.p[0] then begin
       i0:=length(map);
       setLength(map,value.p[0]+1);
       for i:=i0 to length(map)-1 do setLength(map[i],0);
     end;
-    i:=0;
-    while i<length(map[value.p[0]]) do begin
-      if map[value.p[0],i].p[1]=value.p[1]
-      then begin
-        map[value.p[0],i]:=value;
-        exit;
-      end else inc(i);
+    i:=value.p[0];
+    if length(map[i])<=value.p[1] then begin
+      j0:=length(map[i]);
+      setLength(map[i],value.p[1]+1);
+      for j:=j0 to length(map[i])-1 do map[i,j]:=nil;
     end;
-    setLength(map[value.p[0]],i+1);
-    map[value.p[0],i]:=value;
+    j:=value.p[1];
+    if map[i,j]=nil then getMem(map[i,j],sizeOf(T_aStarNodeInfo));
+    map[i,j]^:=value;
   end;
 
 end.
