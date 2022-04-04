@@ -1160,15 +1160,21 @@ PROCEDURE T_circuitBoard.initWireGraph(CONST start: T_visualGateConnector;
   begin
     new(wireGraph,create);
     for gate in gates do begin
+      //Points within the gate cannot be reached
       for x:=gate^.origin[0] to gate^.origin[0]+gate^.size[0] do
       for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do
       wireGraph^.dropNode(pointOf(x,y));
-
+      //Input connections:
       for i:=0 to gate^.numberOfInputs-1
       do wireGraph^.addUnidirectionalEdge(gate^.getInputPositionInGridSize(i)+wd_left,wd_right);
-
+      //Output connections:
       for i:=0 to gate^.numberOfOutputs-1
       do wireGraph^.addUnidirectionalEdge(gate^.getOutputPositionInGridSize(i),wd_right);
+      //No diagonals right left and right of the gate (to prevent blocking of I/O)
+      x:=gate^.origin[0]-1;
+      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do wireGraph^.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
+      x:=gate^.origin[1]+1;
+      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do wireGraph^.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
     end;
     if includeWires then
     for i:=0 to length(logicWires)-1 do
