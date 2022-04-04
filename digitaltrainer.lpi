@@ -55,7 +55,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="5">
+    <Units Count="7">
       <Unit0>
         <Filename Value="digitaltrainer.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -83,6 +83,19 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="logicGates"/>
       </Unit4>
+      <Unit5>
+        <Filename Value="gateproperties.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="gateProperties"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="propertydialog.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="gatePropertyDialog"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="propertyDialog"/>
+      </Unit6>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

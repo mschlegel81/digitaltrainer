@@ -4,16 +4,16 @@ UNIT logicGates;
 
 INTERFACE
 TYPE
-T_gateType=(gt_notGate,
-            gt_andGate,
-            gt_orGate,
-            gt_xorGate,
-            gt_nandGate,
-            gt_norGate,
-            gt_nxorGate,
-            gt_input,
-            gt_output,
-            gt_compound);
+  T_gateType=(gt_notGate,
+              gt_andGate,
+              gt_orGate,
+              gt_xorGate,
+              gt_nandGate,
+              gt_norGate,
+              gt_nxorGate,
+              gt_input,
+              gt_output,
+              gt_compound);
 
   T_tristatevalue=(tsv_false,tsv_undetermined,tsv_true);
 
@@ -27,6 +27,7 @@ T_gateType=(gt_notGate,
       DESTRUCTOR destroy; virtual;
       FUNCTION  clone:P_abstractGate;    virtual; abstract;
       FUNCTION  caption:string;          virtual; abstract;
+      FUNCTION  getDescription:string;   virtual;
       FUNCTION  numberOfInputs :longint; virtual; abstract;
       FUNCTION  numberOfOutputs:longint; virtual; abstract;
       FUNCTION  gateType:T_gateType;     virtual; abstract;
@@ -66,6 +67,7 @@ T_gateType=(gt_notGate,
     private
       io:T_tristatevalue;
     public
+      ioLabel:string;
       ioIndex:longint;
       CONSTRUCTOR create;
       FUNCTION  clone:P_abstractGate;    virtual;
@@ -197,7 +199,11 @@ CONSTRUCTOR T_outputGate.create;
   begin inherited; end;
 
 FUNCTION T_outputGate.caption: string;
-  begin result:='out '+intToStr(ioIndex); end;
+  begin
+    if ioLabel=''
+    then result:='out '+intToStr(ioIndex)
+    else result:=ioLabel;
+  end;
 
 FUNCTION T_outputGate.numberOfInputs: longint;
   begin result:=1; end;
@@ -211,10 +217,14 @@ FUNCTION T_outputGate.gateType: T_gateType;
 { T_inputGate }
 
 CONSTRUCTOR T_inputGate.create;
-  begin inherited; io:=tsv_true; end;
+  begin inherited; io:=tsv_true; ioLabel:=''; end;
 
 FUNCTION T_inputGate.caption: string;
-  begin result:='in '+intToStr(ioIndex) end;
+  begin
+    if ioLabel=''
+    then result:='in '+intToStr(ioIndex)
+    else result:=ioLabel;
+  end;
 
 FUNCTION T_inputGate.numberOfInputs: longint;
   begin result:=0; end;
@@ -242,10 +252,13 @@ FUNCTION T_inputGate.getInput(CONST index: longint): T_tristatevalue;
 { T_abstractGate }
 
 CONSTRUCTOR T_abstractGate.create;
-  begin end; //ro forma
+  begin end; //pro forma
 
 DESTRUCTOR T_abstractGate.destroy;
   begin end; //pro forma
+
+FUNCTION T_abstractGate.getDescription:string;
+  begin result:=''; end; //plausible default
 
 FUNCTION T_gateConnector.getOutputValue: T_tristatevalue;
   begin

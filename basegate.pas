@@ -4,7 +4,7 @@ UNIT baseGate;
 
 INTERFACE
 USES ExtCtrls, Classes, Controls, StdCtrls, UITypes, wiringUtil,
-  serializationUtil, logicGates;
+  serializationUtil, logicGates,Menus;
 
 CONST defaultBoardCaption='unbenannt';
 
@@ -13,9 +13,6 @@ TYPE
   P_workspace=^T_workspace;
   { T_abstractGate }
   P_visualGate=^T_visualGate;
-
-  { T_visualGate }
-
   T_visualGate=object
     private
       behavior:P_abstractGate;
@@ -48,11 +45,13 @@ TYPE
       PROCEDURE outputMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
       FUNCTION getInputPositionInGridSize (CONST index:longint):T_point;
       FUNCTION getOutputPositionInGridSize(CONST index:longint):T_point;
-      PROCEDURE Repaint;
       PROPERTY marked:boolean read marked_ write setMarked;
       PROCEDURE updateIoVisuals;
       FUNCTION numberOfInputs:longint;
       FUNCTION numberOfOutputs:longint;
+    public
+      PROCEDURE Repaint;
+      PROPERTY getBehavior:P_abstractGate read behavior;
   end;
 
   T_visualGateConnector=object
@@ -124,6 +123,9 @@ TYPE
         zoom:longint;
         container:TWinControl;
         wireImage:TImage;
+        gateContextMenu:TPopupMenu;
+
+        lastClickedGate:P_visualGate;
       end;
 
       gates      :array of P_visualGate;
@@ -162,7 +164,7 @@ TYPE
       DESTRUCTOR destroy;  virtual;
       PROCEDURE clear;
       PROCEDURE setSelectForAll(CONST doSelect:boolean);
-      PROCEDURE attachGUI(CONST zoom:longint; CONST container:TWinControl; CONST wireImage:TImage);
+      PROCEDURE attachGUI(CONST zoom:longint; CONST container:TWinControl; CONST wireImage:TImage; CONST gatePopup:TPopupMenu);
       PROCEDURE detachGUI;
       PROCEDURE gateMoved(CONST gate:P_visualGate; CONST doneDragging:boolean);
       PROCEDURE anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -174,6 +176,8 @@ TYPE
 
       FUNCTION loadFromStream(CONST workspace:P_workspace; VAR stream:T_bufferedInputStreamWrapper):boolean;
       PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper);
+
+      PROPERTY lastClickedGate:P_visualGate read GUI.lastClickedGate;
   end;
 
 IMPLEMENTATION
@@ -214,6 +218,7 @@ PROCEDURE T_visualGate.ensureGuiElements;
       shapes[0].OnMouseDown:=@mainShapeMouseDown;
       shapes[0].OnMouseMove:=@mainShapeMouseMove;
       shapes[0].OnMouseUp  :=@mainShapeMouseUp;
+      shapes[0].PopupMenu  :=board^.GUI.gateContextMenu;
 
       gatelabel:=TLabel.create(board^.GUI.container);
       gatelabel.caption:=behavior^.caption;
@@ -223,6 +228,7 @@ PROCEDURE T_visualGate.ensureGuiElements;
       gatelabel.OnMouseDown:=@mainShapeMouseDown;
       gatelabel.OnMouseMove:=@mainShapeMouseMove;
       gatelabel.OnMouseUp  :=@mainShapeMouseUp;
+      gatelabel.PopupMenu  :=board^.GUI.gateContextMenu;
 
       for k:=0 to behavior^.numberOfInputs-1 do begin
         shapes[shapeIndex]:=TShape.create(board^.GUI.container);
@@ -308,6 +314,8 @@ PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton;
       shapes[0].Pen.style:=psDash;
       dragX:=x;
       dragY:=y;
+    end else if (button=mbRight) then begin
+      board^.GUI.lastClickedGate:=@self;
     end;
   end;
 
@@ -393,6 +401,7 @@ PROCEDURE T_visualGate.Repaint;
     shapes[0].width :=size  [0]*board^.GUI.zoom;
     shapes[0].height:=size  [1]*board^.GUI.zoom;
 
+    gatelabel.caption:=behavior^.caption;
     gatelabel.top :=shapes[0].top +(shapes[0].height-gatelabel.height) div 2;
     gatelabel.Left:=shapes[0].Left+(shapes[0].width -gatelabel.width) div 2 ;
     newFontSize:=min(round(gatelabel.Font.size*shapes[0].width *0.75/gatelabel.width),
@@ -686,7 +695,7 @@ PROCEDURE T_workspace.addCustomGate(CONST index: longint; CONST x0, y0: longint)
 
 FUNCTION T_workspace.getSerialVersion: dword;
   begin
-    result:=0;
+    result:=1;
   end;
 
 FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
@@ -764,7 +773,8 @@ PROCEDURE T_workspace.addCurrentBoardToPalette;
     currentBoard^.attachGUI(
       newPaletteEntry^.GUI.zoom,
       newPaletteEntry^.GUI.container,
-      newPaletteEntry^.GUI.wireImage);
+      newPaletteEntry^.GUI.wireImage,
+      newPaletteEntry^.GUI.gateContextMenu);
     newPaletteEntry^.detachGUI;
 
     if doReplace=mrYes then begin
@@ -803,13 +813,13 @@ DESTRUCTOR T_circuitBoard.destroy;
     clear;
   end;
 
-PROCEDURE T_circuitBoard.attachGUI(CONST zoom: longint;
-  CONST container: TWinControl; CONST wireImage: TImage);
+PROCEDURE T_circuitBoard.attachGUI(CONST zoom: longint; CONST container: TWinControl; CONST wireImage: TImage; CONST gatePopup:TPopupMenu);
   VAR gate:P_visualGate;
   begin
     GUI.zoom:=zoom;
     GUI.container:=container;
     GUI.wireImage:=wireImage;
+    GUI.gateContextMenu:=gatePopup;
     wireImage.OnMouseDown:=@WireImageMouseDown;
     for gate in gates do gate^.ensureGuiElements;
     rewire;
@@ -822,6 +832,7 @@ PROCEDURE T_circuitBoard.detachGUI;
     GUI.zoom:=1;
     GUI.container:=nil;
     GUI.wireImage:=nil;
+    GUI.gateContextMenu:=nil;
   end;
 
 PROCEDURE T_circuitBoard.clear;
@@ -950,6 +961,7 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
       j:longint=0;
       ioDeleted:boolean=false;
   begin
+    GUI.lastClickedGate:=nil;
     for i:=0 to length(gates)-1 do begin
       if gates[i]^.marked
       then begin
@@ -1036,8 +1048,7 @@ PROCEDURE T_circuitBoard.simulateStep;
     for gate in gates do gate^.updateIoVisuals;
   end;
 
-FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace;
-  VAR stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i:longint;
       gateType: T_gateType;
       k:longint;
@@ -1058,8 +1069,14 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace;
       end else begin
         behavior:=newBaseGate(gateType);
         case gateType of
-          gt_input : P_inputGate (behavior)^.ioIndex:=stream.readNaturalNumber;
-          gt_output: P_outputGate(behavior)^.ioIndex:=stream.readNaturalNumber;
+          gt_input : begin
+            P_inputGate (behavior)^.ioIndex:=stream.readNaturalNumber;
+            P_inputGate (behavior)^.ioLabel:=stream.readAnsiString;
+          end;
+          gt_output: begin
+            P_outputGate(behavior)^.ioIndex:=stream.readNaturalNumber;
+            P_outputGate (behavior)^.ioLabel:=stream.readAnsiString;
+          end;
         end;
       end;
       origin:=readPoint(stream);
@@ -1086,8 +1103,14 @@ PROCEDURE T_circuitBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper)
     for i:=0 to length(gates)-1 do begin
       stream.writeByte(byte(gates[i]^.behavior^.gateType));
       case gates[i]^.behavior^.gateType of
-        gt_input   : stream.writeNaturalNumber(P_inputGate (gates[i]^.behavior)^.ioIndex);
-        gt_output  : stream.writeNaturalNumber(P_outputGate(gates[i]^.behavior)^.ioIndex);
+        gt_input   : begin
+          stream.writeNaturalNumber(P_inputGate (gates[i]^.behavior)^.ioIndex);
+          stream.writeAnsiString   (P_inputGate (gates[i]^.behavior)^.ioLabel);
+        end;
+        gt_output  : begin
+          stream.writeNaturalNumber(P_outputGate(gates[i]^.behavior)^.ioIndex);
+          stream.writeAnsiString   (P_outputGate(gates[i]^.behavior)^.ioLabel);
+        end;
         gt_compound: stream.writeNaturalNumber(P_customGate(gates[i]^.behavior)^.prototype^.paletteIndex);
       end;
 
@@ -1388,7 +1411,8 @@ PROCEDURE T_workspace.editPaletteEntry(CONST index:longint);
     currentBoard^.attachGUI(
       previous^.GUI.zoom,
       previous^.GUI.container,
-      previous^.GUI.wireImage);
+      previous^.GUI.wireImage,
+      previous^.GUI.gateContextMenu);
     currentBoard^.rewire;
     dispose(previous,destroy);
     currentBoard^.Repaint;

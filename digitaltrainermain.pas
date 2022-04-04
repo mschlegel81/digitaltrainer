@@ -6,7 +6,7 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
-  StdCtrls, Buttons, Menus,baseGate,logicGates;
+  StdCtrls, Buttons, Menus,baseGate,logicGates,propertyDialog;
 
 TYPE
 
@@ -36,17 +36,19 @@ TYPE
     MenuItem1: TMenuItem;
     MenuItem2: TMenuItem;
     MenuItem3: TMenuItem;
-    miDelete: TMenuItem;
-    miLoad: TMenuItem;
-    miSave: TMenuItem;
-    miAddToPalette: TMenuItem;
-    miQuit: TMenuItem;
-    miNew: TMenuItem;
+    miGateProperties: TMenuItem;
     MenuItem7: TMenuItem;
-    miSelectAll: TMenuItem;
+    miAddToPalette: TMenuItem;
+    miDelete: TMenuItem;
     miDeselectAll: TMenuItem;
+    miLoad: TMenuItem;
+    miNew: TMenuItem;
+    miQuit: TMenuItem;
+    miSave: TMenuItem;
+    miSelectAll: TMenuItem;
     OpenDialog1: TOpenDialog;
-    PopupMenu1: TPopupMenu;
+    GateListBoxPopupMenu: TPopupMenu;
+    AnyGatePopupMenu: TPopupMenu;
     SaveDialog1: TSaveDialog;
     SimTimer: TTimer;
     Splitter2: TSplitter;
@@ -56,6 +58,7 @@ TYPE
     Splitter1: TSplitter;
     ZoomTrackBar: TTrackBar;
     speedTrackBar: TTrackBar;
+    PROCEDURE AnyGatePopupMenuPopup(Sender: TObject);
     PROCEDURE ButtonAddCustomClick(Sender: TObject);
     PROCEDURE ButtonAddAndClick(Sender: TObject);
     PROCEDURE ButtonAddInputClick(Sender: TObject);
@@ -79,6 +82,7 @@ TYPE
     PROCEDURE miAddToPaletteClick(Sender: TObject);
     PROCEDURE miDeleteClick(Sender: TObject);
     PROCEDURE miDeselectAllClick(Sender: TObject);
+    PROCEDURE miGatePropertiesClick(Sender: TObject);
     PROCEDURE miLoadClick(Sender: TObject);
     PROCEDURE miNewClick(Sender: TObject);
     PROCEDURE miQuitClick(Sender: TObject);
@@ -89,6 +93,7 @@ TYPE
     PROCEDURE ZoomTrackBarChange(Sender: TObject);
   private
     workspace:T_workspace;
+    visualGateForContextPopup:P_visualGate;
     PROCEDURE updateSidebar;
   public
   end;
@@ -111,7 +116,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
   begin
     workspace.create;
     workspace.loadFromFile(workspaceFilename);
-    workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage);
+    workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu);
     updateSidebar;
   end;
 
@@ -154,6 +159,11 @@ PROCEDURE TDigitaltrainerMainForm.ButtonAddAndClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddCustomClick(Sender: TObject);
   begin workspace.addCustomGate(CustomGateListBox.ItemIndex,0,0); end;
+
+PROCEDURE TDigitaltrainerMainForm.AnyGatePopupMenuPopup(Sender: TObject);
+  begin
+    visualGateForContextPopup:=workspace.currentBoard^.lastClickedGate;
+  end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddOutputClick(Sender: TObject);
   begin workspace.addBaseGate(gt_output,0,0);end;
@@ -215,6 +225,13 @@ PROCEDURE TDigitaltrainerMainForm.miDeselectAllClick(Sender: TObject);
     workspace.currentBoard^.setSelectForAll(false);
   end;
 
+PROCEDURE TDigitaltrainerMainForm.miGatePropertiesClick(Sender: TObject);
+  begin
+    if visualGateForContextPopup=nil then exit;
+    gatePropertyDialog.showForGate(visualGateForContextPopup^.getBehavior);
+    visualGateForContextPopup^.Repaint;
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
   VAR temp:T_workspace;
   begin
@@ -224,7 +241,7 @@ PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
         workspace.destroy;
         workspace.create;
         workspace.loadFromFile(OpenDialog1.fileName);
-        workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage);
+        workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu);
         workspace.currentBoard^.Repaint;
         updateSidebar;
       end;

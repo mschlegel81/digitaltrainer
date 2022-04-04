@@ -1,7 +1,7 @@
 object DigitaltrainerMainForm: TDigitaltrainerMainForm
-  Left = 415
+  Left = 1151
   Height = 711
-  Top = 136
+  Top = 244
   Width = 729
   Caption = 'Digitaltrainer'
   ClientHeight = 686
@@ -143,7 +143,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         ItemHeight = 0
         OnSelectionChange = CustomGateListBoxSelectionChange
         ParentShowHint = False
-        PopupMenu = PopupMenu1
+        PopupMenu = GateListBoxPopupMenu
         ShowHint = True
         TabOrder = 0
       end
@@ -342,6 +342,28 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Left = 56
     Top = 520
   end
+  object SaveDialog1: TSaveDialog
+    Filter = 'Workspaces|*.workspace'
+    Left = 423
+    Top = 213
+  end
+  object OpenDialog1: TOpenDialog
+    Filter = 'Workspaces|*.workspace'
+    Left = 336
+    Top = 163
+  end
+  object GateListBoxPopupMenu: TPopupMenu
+    Left = 299
+    Top = 304
+    object MenuItem2: TMenuItem
+      Caption = 'Eintrag löschen'
+      OnClick = MenuItem2Click
+    end
+    object MenuItem3: TMenuItem
+      Caption = 'Bearbeiten'
+      OnClick = MenuItem3Click
+    end
+  end
   object MainMenu: TMainMenu
     Left = 165
     Top = 15
@@ -389,26 +411,13 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
     end
   end
-  object SaveDialog1: TSaveDialog
-    Filter = 'Workspaces|*.workspace'
-    Left = 423
-    Top = 213
-  end
-  object OpenDialog1: TOpenDialog
-    Filter = 'Workspaces|*.workspace'
-    Left = 336
-    Top = 163
-  end
-  object PopupMenu1: TPopupMenu
-    Left = 299
-    Top = 304
-    object MenuItem2: TMenuItem
-      Caption = 'Eintrag löschen'
-      OnClick = MenuItem2Click
-    end
-    object MenuItem3: TMenuItem
-      Caption = 'Bearbeiten'
-      OnClick = MenuItem3Click
+  object AnyGatePopupMenu: TPopupMenu
+    OnPopup = AnyGatePopupMenuPopup
+    Left = 350
+    Top = 448
+    object miGateProperties: TMenuItem
+      Caption = 'Eigenschaften...'
+      OnClick = miGatePropertiesClick
     end
   end
 end
