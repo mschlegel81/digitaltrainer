@@ -57,7 +57,6 @@ OPERATOR -(CONST x,y:T_point):T_point;
 OPERATOR +(CONST x:T_point; CONST y:T_wireDirection):T_point;
 OPERATOR -(CONST x:T_point; CONST y:T_wireDirection):T_point;
 OPERATOR =(CONST x,y:T_point):boolean;
-OPERATOR +(CONST x:T_wirePath; CONST y:T_point):T_wirePath;
 OPERATOR *(CONST x:T_point; CONST y:longint):T_point;
 
 PROCEDURE writePointToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST p:T_point);
@@ -147,14 +146,6 @@ OPERATOR *(CONST x:T_point; CONST y:longint):T_point;
 OPERATOR=(CONST x, y: T_point): boolean;
   begin
     result:=(x[0]=y[0]) and (x[1]=y[1]);
-  end;
-
-OPERATOR +(CONST x:T_wirePath; CONST y:T_point):T_wirePath;
-  VAR i:longint;
-  begin
-    setLength(result,length(x)+1);
-    for i:=0 to length(x)-1 do result[i]:=x[i];
-    result[length(x)]:=y;
   end;
 
 PROCEDURE writePointToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST p: T_point);
@@ -370,26 +361,18 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
     end;
   VAR nodeMap:T_nodeMap;
 
-  PROCEDURE simplifyPath(VAR wirePath:T_wirePath);
-    VAR i:longint=1;
-        j:longint=1;
-        dir:T_wireDirection;
+  FUNCTION continuePath(CONST previous:T_wirePath; CONST newPoint:T_point; CONST directionChanged:boolean):T_wirePath;
+    VAR i:longint;
     begin
-      if length(wirePath)<=2 then exit;
-      dir:=directionBetween(wirePath[0],wirePath[1]);
-      i:=1;
-      while (i<length(wirePath)-1) do begin
-        while (i<length(wirePath)-1) and (directionBetween(wirePath[i],wirePath[i+1])=dir) do inc(i);
-        wirePath[j]:=wirePath[i];
-        inc(j);
-        if i<length(wirePath)-1 then begin
-          dir:=directionBetween(wirePath[i],wirePath[i+1]);
-          inc(i);
-        end;
+      if directionChanged or (length(previous)<=1) then begin
+        setLength(result,length(previous)+1);
+        for i:=0 to length(previous)-1 do result[i]:=previous[i];
+        result[length(result)-1]:=newPoint;
+      end else begin
+        setLength(result,length(previous));
+        for i:=0 to length(previous)-2 do result[i]:=previous[i];
+        result[length(result)-1]:=newPoint;
       end;
-      wirePath[j]:=wirePath[i];
-      inc(j);
-      setLength(wirePath,j);
     end;
 
   VAR openSet:T_priorityQueue;
@@ -398,7 +381,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
       dir:T_wireDirection;
       score:double;
       scoreBasis:double;
-
+      directionChanged:boolean;
       resultCandidate:record
         path:T_wirePath;
         score:double;
@@ -428,11 +411,10 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
       end;
       with resultCandidate do begin
         if found then inc(stepCount);
-        if stepCount>3 then begin
+        if stepCount>10 then begin
           openSet.destroy;
           nodeMap.destroy;
           result:=path;
-          simplifyPath(result);
           exit(result);
         end;
       end;
@@ -440,7 +422,10 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
       scoreBasis-=distance(n);
       for dir in allowedDirectionsPerPoint[n[0],n[1]] do begin
         score:=scoreBasis+DirectionCost[dir];
-        if nodeMap.containsKey(n,entry) and (entry.cameFrom<>dir) then score+=ChangeDirectionPenalty;
+        if nodeMap.containsKey(n,entry) and (entry.cameFrom<>dir) then begin
+          score+=ChangeDirectionPenalty;
+          directionChanged:=true;
+        end else directionChanged:=false;
         neighbor:=n+dir;
         if not(nodeMap.containsKey(neighbor,entry)) or (score<entry.costToGetThere) then begin
           entry.p:=neighbor;
@@ -448,16 +433,16 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
           entry.costToGetThere:=score;
           entry.estimatedCostToGoal:=score+distance(neighbor);
           nodeMap.put(entry);
-          openSet.add(result+neighbor,entry.estimatedCostToGoal);
+          openSet.add(continuePath(result,neighbor,directionChanged),entry.estimatedCostToGoal);
         end;
       end;
     end;
     openSet.destroy;
     nodeMap.destroy;
-    with resultCandidate do if found then begin
-      result:=path;
-      simplifyPath(result);
-    end else setLength(result,0);
+    with resultCandidate do
+    if found
+    then result:=path
+    else setLength(result,0);
   end;
 
 FUNCTION T_wireGraph.anyEdgeLeadsTo(CONST endPoint:T_point):boolean;
