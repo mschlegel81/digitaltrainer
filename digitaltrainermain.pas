@@ -138,7 +138,7 @@ PROCEDURE TDigitaltrainerMainForm.ButtonAddNandClick(Sender: TObject);
   begin workspace.addBaseGate(gt_nandGate,0,0);end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddNorClick(Sender: TObject);
-  begin workspace.addBaseGate(gt_orGate,0,0);end;
+  begin workspace.addBaseGate(gt_norGate,0,0);end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddNotClick(Sender: TObject);
   begin workspace.addBaseGate(gt_notGate,0,0);end;
@@ -225,6 +225,7 @@ PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
         workspace.create;
         workspace.loadFromFile(OpenDialog1.fileName);
         workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage);
+        workspace.currentBoard^.Repaint;
         updateSidebar;
       end;
       temp.destroy;

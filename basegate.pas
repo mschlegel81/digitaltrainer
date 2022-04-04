@@ -258,7 +258,7 @@ CONSTRUCTOR T_visualGate.create(CONST origin_: T_point; CONST gateToWrap: P_abst
   begin
     origin:=origin_;
     behavior:=gateToWrap;
-    size:=pointOf(4,max(2,2*max(numberOfInputs,numberOfInputs)));
+    size:=pointOf(4,max(2,2*max(numberOfInputs,numberOfOutputs)));
 
     dragging:=false;
     marked  :=false;
@@ -794,6 +794,8 @@ PROCEDURE T_circuitBoard.clear;
     if wireGraph<>nil then dispose(wireGraph,destroy);
     wireGraph:=nil;
     paletteIndex:=-1;
+    description:='';
+    name:=defaultBoardCaption;
     Repaint;
   end;
 
