@@ -162,7 +162,7 @@ TYPE
         lastPreviewTarget:T_point;
       end;
       wireGraph:P_wireGraph;
-      FUNCTION repositionGate(CONST gateToCheck:P_visualGate):T_repositionOutput;
+      FUNCTION repositionGate(CONST gateToCheck:P_visualGate; CONST considerWires:boolean):T_repositionOutput;
       FUNCTION positionNewGate(CONST gateToAdd:P_visualGate):boolean;
       FUNCTION isInputConnected(CONST gate:P_visualGate; CONST inputIndex:longint):boolean;
       PROCEDURE initWireGraph(CONST start: T_visualGateConnector; CONST includeWires:boolean=true);
@@ -939,10 +939,12 @@ PROCEDURE T_circuitBoard.setSelectForAll(CONST doSelect: boolean);
     drawAllWires;
   end;
 
-FUNCTION T_circuitBoard.repositionGate(CONST gateToCheck: P_visualGate
-  ): T_repositionOutput;
+FUNCTION T_circuitBoard.repositionGate(CONST gateToCheck: P_visualGate; CONST considerWires:boolean): T_repositionOutput;
   FUNCTION isOriginValid(CONST o:T_point):boolean;
     VAR gate:P_visualGate;
+        i,j,k,run:longint;
+        p:T_point;
+        direction:T_wireDirection;
     begin
       if (o[0]<5) or (o[0]+gateToCheck^.size[0]>=BOARD_MAX_SIZE_IN_GRID_ENTRIES-5) or
          (o[1]<5) or (o[1]+gateToCheck^.size[1]>=BOARD_MAX_SIZE_IN_GRID_ENTRIES-5)
@@ -953,6 +955,21 @@ FUNCTION T_circuitBoard.repositionGate(CONST gateToCheck: P_visualGate
          (o[0]+gateToCheck^.size[0]>gate^.origin[0]) and (o[0]<gate^.origin[0]+gate^.size[0]) and
          (o[1]+gateToCheck^.size[1]>gate^.origin[1]) and (o[1]<gate^.origin[1]+gate^.size[1])
       then exit(false);
+
+      if considerWires then
+      for i:=0 to length(logicWires)-1 do
+      for j:=0 to length(logicWires[i].wires)-1 do
+      with logicWires[i].wires[j] do begin
+        for k:=0 to length(visual)-2 do begin
+          p:=visual[k];
+          direction:=directionBetween  (p,visual[k+1]);
+          for run:=0 to maxNormDistance(p,visual[k+1]) do begin
+            if (p[0]>=o[0]-1) and (p[0]<=o[0]+gateToCheck^.size[0]+1) and
+               (p[1]>=o[1]-1) and (p[1]<=o[1]+gateToCheck^.size[1]+1) then exit(false);
+            p+=direction;
+          end;
+        end;
+      end;
     end;
 
   VAR newOrigin:T_point;
@@ -981,11 +998,10 @@ FUNCTION T_circuitBoard.repositionGate(CONST gateToCheck: P_visualGate
 
 FUNCTION T_circuitBoard.positionNewGate(CONST gateToAdd: P_visualGate): boolean;
   begin
-    if repositionGate(gateToAdd)<>ro_noPositionFound then begin
+    if repositionGate(gateToAdd,true)<>ro_noPositionFound then begin
       setLength(gates,length(gates)+1);
       gates[length(gates)-1]:=gateToAdd;
       gateToAdd^.Repaint;
-      gateMoved(gateToAdd,true);
       result:=true;
     end else result:=false;
   end;
@@ -1271,8 +1287,7 @@ PROCEDURE T_circuitBoard.drawAllWires;
     end;
   end;
 
-PROCEDURE T_circuitBoard.initWireGraph(CONST start: T_visualGateConnector;
-  CONST includeWires: boolean);
+PROCEDURE T_circuitBoard.initWireGraph(CONST start: T_visualGateConnector; CONST includeWires: boolean);
   VAR gate:P_visualGate;
       x,y,i,j:longint;
   begin
@@ -1289,10 +1304,10 @@ PROCEDURE T_circuitBoard.initWireGraph(CONST start: T_visualGateConnector;
       for i:=0 to gate^.numberOfOutputs-1
       do wireGraph^.addUnidirectionalEdge(gate^.getOutputPositionInGridSize(i),wd_right);
       //No diagonals right left and right of the gate (to prevent blocking of I/O)
-      x:=gate^.origin[0]-1;
-      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do wireGraph^.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
+      x:=gate^.origin[0];
+      for y:=gate^.origin[1]+1 to gate^.origin[1]+gate^.size[1]-1 do wireGraph^.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
       x:=gate^.origin[1]+1;
-      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do wireGraph^.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
+      for y:=gate^.origin[1]+1 to gate^.origin[1]+gate^.size[1]-1 do wireGraph^.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
     end;
     if includeWires then
     for i:=0 to length(logicWires)-1 do
@@ -1326,10 +1341,9 @@ PROCEDURE T_circuitBoard.drawTempWire(CONST targetPoint: T_point);
     end;
   end;
 
-PROCEDURE T_circuitBoard.gateMoved(CONST gate: P_visualGate;
-  CONST doneDragging: boolean);
+PROCEDURE T_circuitBoard.gateMoved(CONST gate: P_visualGate; CONST doneDragging: boolean);
   begin
-    repositionGate(gate);
+    repositionGate(gate,false);
     if doneDragging then rewire;
     Repaint;
   end;
@@ -1386,7 +1400,6 @@ PROCEDURE T_circuitBoard.rewire;
       i,j:longint;
       sourcePoint,targetPoint:T_point;
   begin
-    //TODO: Maybe move wiring to separate thread
     if wireGraph<>nil then dispose(wireGraph,destroy);
     connector.gate:=nil;
     connector.index:=0;

@@ -350,11 +350,11 @@ PROCEDURE T_wireGraph.dropWire(CONST path:T_wirePath);
   end;
 
 FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
-  CONST DirectionCost:array[T_wireDirection] of double=(1,1.8,
-                                                        1,1.8,
-                                                        1,1.8,
-                                                        1,1.8);
-        ChangeDirectionPenalty=1;
+  CONST DirectionCost:array[T_wireDirection] of double=(1,1.42,
+                                                        1,1.42,
+                                                        1,1.42,
+                                                        1,1.42);
+        ChangeDirectionPenalty=0.8;
   FUNCTION distance(CONST p:T_point):double;
     begin
       result:=sqrt(sqr(p[0]-endPoint[0])+sqr(p[1]-endPoint[1]));
@@ -383,7 +383,17 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
       scoreBasis:double;
       directionChanged:boolean;
 
+      potentialResult:record
+        path:T_wirePath;
+        score:double;
+        seen:longint;
+        found:boolean;
+      end;
+
   begin
+    potentialResult.seen:=0;
+    potentialResult.score:=Infinity;
+    potentialResult.found:=false;
     nodeMap.create;
     openSet.create;
     setLength(result,1);
@@ -393,10 +403,18 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
     while not openSet.isEmpty do begin
       result:=openSet.ExtractMin(scoreBasis);
       n:=result[length(result)-1];
-      if n=endPoint then begin
-        openSet.destroy;
-        nodeMap.destroy;
-        exit(result);
+      if (n=endPoint) and (scoreBasis<potentialResult.score) then begin
+        potentialResult.found:=true;
+        potentialResult.score:=scoreBasis;
+        potentialResult.path :=result;
+      end;
+      with potentialResult do begin
+        if found then inc(seen);
+        if seen>length(path) then begin
+          openSet.destroy;
+          nodeMap.destroy;
+          exit(path);
+        end;
       end;
       scoreBasis-=distance(n);
       for dir in allowedDirectionsPerPoint[n[0],n[1]] do begin
@@ -418,6 +436,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
     end;
     openSet.destroy;
     nodeMap.destroy;
+    with potentialResult do if found then exit(path);
     setLength(result,0);
   end;
 
