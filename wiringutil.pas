@@ -382,17 +382,8 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
       score:double;
       scoreBasis:double;
       directionChanged:boolean;
-      resultCandidate:record
-        path:T_wirePath;
-        score:double;
-        found:boolean;
-        stepCount:longint;
-      end;
 
   begin
-    resultCandidate.found:=false;
-    resultCandidate.stepCount:=0;
-
     nodeMap.create;
     openSet.create;
     setLength(result,1);
@@ -403,22 +394,10 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
       result:=openSet.ExtractMin(scoreBasis);
       n:=result[length(result)-1];
       if n=endPoint then begin
-        if not(resultCandidate.found) or (scoreBasis<resultCandidate.score) then begin
-          resultCandidate.found:=true;
-          resultCandidate.path :=result;
-          resultCandidate.score:=scoreBasis;
-        end;
+        openSet.destroy;
+        nodeMap.destroy;
+        exit(result);
       end;
-      with resultCandidate do begin
-        if found then inc(stepCount);
-        if stepCount>10 then begin
-          openSet.destroy;
-          nodeMap.destroy;
-          result:=path;
-          exit(result);
-        end;
-      end;
-
       scoreBasis-=distance(n);
       for dir in allowedDirectionsPerPoint[n[0],n[1]] do begin
         score:=scoreBasis+DirectionCost[dir];
@@ -439,10 +418,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
     end;
     openSet.destroy;
     nodeMap.destroy;
-    with resultCandidate do
-    if found
-    then result:=path
-    else setLength(result,0);
+    setLength(result,0);
   end;
 
 FUNCTION T_wireGraph.anyEdgeLeadsTo(CONST endPoint:T_point):boolean;
