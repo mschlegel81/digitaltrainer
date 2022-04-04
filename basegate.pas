@@ -93,7 +93,7 @@ TYPE
     name       :string;
     connections:array of record source,sink:T_gateConnector end;
     inputConnections :array of record
-                        value:boolean;
+                        value:T_tristatevalue;
                         goesTo:array of T_gateConnector;
                       end;
     outputConnections:array of T_gateConnector;
@@ -105,9 +105,9 @@ TYPE
     FUNCTION  numberOfOutputs:longint; virtual;
     FUNCTION  gateType:T_gateType; virtual;
     PROCEDURE simulateStep;                                       virtual;
-    FUNCTION  getOutput(CONST index:longint):boolean;             virtual;
-    PROCEDURE setInput(CONST index:longint; CONST value:boolean); virtual;
-    FUNCTION  getInput(CONST index:longint):boolean;              virtual;
+    FUNCTION  getOutput(CONST index:longint):T_tristatevalue;             virtual;
+    PROCEDURE setInput(CONST index:longint; CONST value:T_tristatevalue); virtual;
+    FUNCTION  getInput(CONST index:longint):T_tristatevalue;              virtual;
     FUNCTION  clone:P_abstractGate; virtual;
   end;
 
@@ -283,11 +283,13 @@ PROCEDURE T_visualGate.setMarked(CONST value: boolean);
     else shapes[0].Brush.color:=clWhite;
   end;
 
+CONST TRI_STATE_NOT:array[T_tristatevalue] of T_tristatevalue=(tsv_true,tsv_false,tsv_false);
+
 PROCEDURE T_visualGate.inputClick(Sender: TObject);
   VAR k:longint;
   begin
     k:=TShape(Sender).Tag;
-    behavior^.setInput(k,not behavior^.getInput(k));
+    behavior^.setInput(k,TRI_STATE_NOT[behavior^.getInput(k)]);
     updateIoVisuals;
   end;
 
@@ -295,7 +297,7 @@ PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton;
   begin
     if (button=mbLeft) then begin
       if behavior^.gateType=gt_input then begin
-        behavior^.setInput(0,not behavior^.getInput(0));
+        behavior^.setInput(0,TRI_STATE_NOT[behavior^.getInput(0)]);
         updateIoVisuals;
       end;
       dragging:=true;
@@ -360,8 +362,8 @@ PROCEDURE T_visualGate.outputMouseMove(Sender: TObject; Shift: TShiftState; X, Y
 PROCEDURE T_visualGate.outputMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     if board=nil then exit;
-    board^.finishWireDrag(pointOf(dragX+floor(x/board^.GUI.zoom),
-                                  dragY+floor(y/board^.GUI.zoom)));
+    board^.finishWireDrag(pointOf(dragX+round(x/board^.GUI.zoom),
+                                  dragY+round(y/board^.GUI.zoom)));
   end;
 
 FUNCTION T_visualGate.getInputPositionInGridSize(CONST index: longint): T_point;
@@ -423,15 +425,19 @@ PROCEDURE T_visualGate.updateIoVisuals;
       Repaint;
     end;
     for i:=0 to numberOfInputs-1 do begin
-      if behavior^.getInput(i)
-      then shapes[shapeIndex].Brush.color:=clLime
-      else shapes[shapeIndex].Brush.color:=clGray;
+      case behavior^.getInput(i) of
+        tsv_true        : shapes[shapeIndex].Brush.color:=clLime;
+        tsv_false       : shapes[shapeIndex].Brush.color:=clGray;
+        tsv_undetermined: shapes[shapeIndex].Brush.color:=clBtnFace;
+      end;
       inc(shapeIndex);
     end;
     for i:=0 to numberOfOutputs-1 do begin
-      if behavior^.getOutput(i)
-      then shapes[shapeIndex].Brush.color:=clLime
-      else shapes[shapeIndex].Brush.color:=clGray;
+      case behavior^.getOutput(i) of
+        tsv_true        : shapes[shapeIndex].Brush.color:=clLime;
+        tsv_false       : shapes[shapeIndex].Brush.color:=clGray;
+        tsv_undetermined: shapes[shapeIndex].Brush.color:=clBtnFace;
+      end;
       inc(shapeIndex);
     end;
   end;
@@ -473,7 +479,7 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
           setLength(inputConnections,ioIdx+1);
           while k<length(inputConnections) do begin
             setLength(inputConnections[k].goesTo,0);
-            inputConnections[k].value:=random>0.5;
+            inputConnections[k].value:=tsv_true;
             inc(k);
           end;
         end;
@@ -497,6 +503,15 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
         connections[k].source:=src;
         connections[k].sink  :=tgt;
       end;
+    end;
+
+  FUNCTION anyOutputUndetermined:boolean;
+    VAR k:longint;
+    begin
+      for k:=0 to numberOfOutputs-1 do
+      if getOutput(k)=tsv_undetermined
+      then exit(True);
+      result:=false;
     end;
 
   VAR i,j:longint;
@@ -530,6 +545,16 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
       inc(j);
     end;
     setLength(gates,j);
+
+    //simulate some steps to arrive at valid state...
+    i:=0;
+    while anyOutputUndetermined and (i<1000) do begin
+      for j:=0 to numberOfInputs-1 do if random>0.5
+      then setInput(j,tsv_true)
+      else setInput(j,tsv_false);
+      for j:=0 to 3 do simulateStep;
+      inc(i);
+    end;
   end;
 
 DESTRUCTOR T_customGate.destroy;
@@ -572,17 +597,17 @@ PROCEDURE T_customGate.simulateStep;
     for i:=0 to length(connections)-1 do with connections[i] do sink.setInputValue(source.getOutputValue);
   end;
 
-FUNCTION T_customGate.getOutput(CONST index: longint): boolean;
+FUNCTION T_customGate.getOutput(CONST index: longint): T_tristatevalue;
   begin
     result:=outputConnections[index].getOutputValue;
   end;
 
-PROCEDURE T_customGate.setInput(CONST index: longint; CONST value: boolean);
+PROCEDURE T_customGate.setInput(CONST index: longint; CONST value: T_tristatevalue);
   begin
     inputConnections[index].value:=value;
   end;
 
-FUNCTION T_customGate.getInput(CONST index: longint): boolean;
+FUNCTION T_customGate.getInput(CONST index: longint): T_tristatevalue;
   begin
     result:=inputConnections[index].value;
   end;
@@ -986,7 +1011,7 @@ PROCEDURE T_circuitBoard.setZoom(CONST zoom: longint);
 PROCEDURE T_circuitBoard.simulateStep;
   VAR gate:P_visualGate;
       i,j:longint;
-      output:boolean;
+      output:T_tristatevalue;
   begin
     for gate in gates do gate^.behavior^.simulateStep;
     for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
