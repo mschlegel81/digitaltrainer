@@ -28,6 +28,7 @@ TYPE
       //mouse interaction
       dragX,dragY:longint;
       dragging:boolean;
+      movedDuringDrag:boolean;
       wireDragOutputIndex:longint;
       marked_:boolean;
     protected
@@ -302,6 +303,7 @@ PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton;
         updateIoVisuals;
       end;
       dragging:=true;
+      movedDuringDrag:=false;
       if (ssShift in Shift) or (ssCtrl in Shift) then marked:=not(marked);
       shapes[0].Pen.style:=psDash;
       dragX:=x;
@@ -318,6 +320,7 @@ PROCEDURE T_visualGate.mainShapeMouseMove(Sender: TObject; Shift: TShiftState; X
       dy:=y-dragY;
       newOrigin:=origin+pointOf(round(dx/board^.GUI.zoom),round(dy/board^.GUI.zoom));
       if newOrigin<>origin then begin
+        movedDuringDrag:=true;
         origin:=newOrigin;
         board^.gateMoved(@self,false);
         Repaint;
@@ -331,7 +334,7 @@ PROCEDURE T_visualGate.mainShapeMouseUp(Sender: TObject; button: TMouseButton; S
       dragging:=false;
       board^.incompleteWire.dragging:=false;
       shapes[0].Pen.style:=psSolid;
-      board^.gateMoved(@self,true);
+      if movedDuringDrag then board^.gateMoved(@self,true);
       Repaint;
     end;
   end;
@@ -1257,6 +1260,7 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point);
 PROCEDURE T_circuitBoard.rewire;
   VAR connector:T_visualGateConnector;
       i,j:longint;
+      sourcePoint,targetPoint:T_point;
   begin
     //TODO: Maybe move wiring to separate thread
     if wireGraph<>nil then dispose(wireGraph,destroy);
@@ -1264,10 +1268,11 @@ PROCEDURE T_circuitBoard.rewire;
     connector.index:=0;
     initWireGraph(connector,false);
     for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
-      for j:=0 to length(wires)-1 do
-        wires[j].visual:=
-          wireGraph^.findPath(source       .gate^.getOutputPositionInGridSize(source       .index),
-                              wires[j].sink.gate^.getInputPositionInGridSize (wires[j].sink.index));
+      for j:=0 to length(wires)-1 do begin
+        sourcePoint:=source       .gate^.getOutputPositionInGridSize(source       .index);
+        targetPoint:=wires[j].sink.gate^.getInputPositionInGridSize (wires[j].sink.index);
+        wires[j].visual:=wireGraph^.findPath(sourcePoint,targetPoint);
+      end;
       for j:=0 to length(wires)-1 do wireGraph^.dropWire(wires[j].visual);
     end;
     fixWireImageSize;
