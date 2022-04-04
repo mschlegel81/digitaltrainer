@@ -595,11 +595,20 @@ FUNCTION T_customGate.simulateStep:boolean;
   VAR gate:P_abstractGate;
       i:longint;
       tgt:T_gateConnector;
+      v:T_tristatevalue;
   begin
     result:=false;
-    for i:=0 to length(inputConnections)-1 do for tgt in inputConnections[i].goesTo do tgt.setInputValue(inputConnections[i].value);
+    for i:=0 to length(inputConnections)-1 do for tgt in inputConnections[i].goesTo do begin
+      v:=inputConnections[i].value;
+      if v<>tsv_undetermined
+      then tgt.setInputValue(v);
+    end;
     for gate in gates do if gate^.simulateStep then result:=true;
-    for i:=0 to length(connections)-1 do with connections[i] do sink.setInputValue(source.getOutputValue);
+    for i:=0 to length(connections)-1 do with connections[i] do begin
+      v:=source.getOutputValue;
+      if v<>tsv_undetermined
+      then sink.setInputValue(v);
+    end;
   end;
 
 FUNCTION T_customGate.getOutput(CONST index: longint): T_tristatevalue;
@@ -1021,7 +1030,7 @@ PROCEDURE T_circuitBoard.simulateStep;
     for gate in gates do gate^.behavior^.simulateStep;
     for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
       output:=source.gate^.behavior^.getOutput(source.index);
-      for j:=0 to length(wires)-1 do
+      if output<>tsv_undetermined then for j:=0 to length(wires)-1 do
         wires[j].sink.gate^.behavior^.setInput(wires[j].sink.index,output);
     end;
     for gate in gates do gate^.updateIoVisuals;
