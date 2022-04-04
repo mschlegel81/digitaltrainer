@@ -141,6 +141,7 @@ TYPE
         dragging:boolean;
         source:T_visualGateConnector;
         sourcePoint:T_point;
+        lastPreviewTarget:T_point;
       end;
       wireGraph:P_wireGraph;
       FUNCTION repositionGate(CONST gateToCheck:P_visualGate):T_repositionOutput;
@@ -346,24 +347,24 @@ PROCEDURE T_visualGate.outputMouseDown(Sender: TObject; button: TMouseButton; Sh
         source.gate:=@self;
         source.index:=wireDragOutputIndex;
         sourcePoint:=p;
+        lastPreviewTarget:=p;
       end;
-      dragX:=p[0];
-      dragY:=p[1];
+      dragX:=x+TShape(Sender).Left;
+      dragY:=y+TShape(Sender).top;
     end;
   end;
 
 PROCEDURE T_visualGate.outputMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
   begin
     if board^.incompleteWire.dragging
-    then board^.drawTempWire(pointOf(dragX+floor(x/board^.GUI.zoom),
-                                     dragY+floor(y/board^.GUI.zoom)));
+    then board^.drawTempWire(pointOf(round((dragX+x)/board^.GUI.zoom),
+                                     round((dragY+y)/board^.GUI.zoom)));
   end;
 
 PROCEDURE T_visualGate.outputMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     if board=nil then exit;
-    board^.finishWireDrag(pointOf(dragX+round(x/board^.GUI.zoom),
-                                  dragY+round(y/board^.GUI.zoom)));
+    board^.finishWireDrag(pointOf(dragX+x,dragY+y));
   end;
 
 FUNCTION T_visualGate.getInputPositionInGridSize(CONST index: longint): T_point;
@@ -510,7 +511,7 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
     begin
       for k:=0 to numberOfOutputs-1 do
       if getOutput(k)=tsv_undetermined
-      then exit(True);
+      then exit(true);
       result:=false;
     end;
 
@@ -1184,7 +1185,8 @@ PROCEDURE T_circuitBoard.drawTempWire(CONST targetPoint: T_point);
   VAR wire:T_wirePath;
       i:longint;
   begin
-    if GUI.wireImage=nil then exit;
+    if (GUI.wireImage=nil) or (incompleteWire.lastPreviewTarget=targetPoint) then exit;
+    incompleteWire.lastPreviewTarget:=targetPoint;
     wire:=findWirePath(incompleteWire.source,targetPoint);
     if length(wire)<=0 then exit;
     drawAllWires;
@@ -1205,21 +1207,37 @@ PROCEDURE T_circuitBoard.gateMoved(CONST gate: P_visualGate;
   end;
 
 PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point);
+  PROCEDURE cleanup;
+    begin
+      fixWireImageSize;
+      drawAllWires;
+      dispose(wireGraph,destroy);
+      wireGraph:=nil;
+      incompleteWire.dragging:=false;
+    end;
+
   VAR i:longint=0;
       j:longint;
       gate:P_visualGate;
+
       connector:T_visualGateConnector;
+
+      distanceToConnector:longint=maxLongint;
+      newDistance:longint;
   begin
     if not(incompleteWire.dragging) then exit;
     connector.gate:=nil;
     for gate in gates do
-    for j:=0 to gate^.numberOfInputs-1 do
-    if gate^.getInputPositionInGridSize(j)=targetPoint then begin
-      connector.gate:=gate;
-      connector.index:=j;
-      break;
+    for j:=0 to gate^.numberOfInputs-1 do begin
+      newDistance:=maxNormDistance(gate^.getInputPositionInGridSize(j)*GUI.zoom,targetPoint);
+      if newDistance<distanceToConnector then begin
+        connector.gate:=gate;
+        connector.index:=j;
+        distanceToConnector:=newDistance;
+      end;
     end;
-    if connector.gate=nil then exit;
+
+    if (connector.gate=nil) or (distanceToConnector>1.5*GUI.zoom) then begin cleanup; exit; end;
     if not(isInputConnected(connector.gate,connector.index)) then begin
       i:=0;
       while (i<length(logicWires)) and (logicWires[i].source<>incompleteWire.source) do inc(i);
@@ -1229,14 +1247,10 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point);
         j:=length(wires);
         setLength(wires,j+1);
         wires[j].sink:=connector;
-        wires[j].visual:=findWirePath(incompleteWire.source,targetPoint);
+        wires[j].visual:=findWirePath(incompleteWire.source,connector.gate^.getInputPositionInGridSize(connector.index));
       end;
     end;
-    fixWireImageSize;
-    drawAllWires;
-    dispose(wireGraph,destroy);
-    wireGraph:=nil;
-    incompleteWire.dragging:=false;
+    cleanup;
   end;
 
 PROCEDURE T_circuitBoard.rewire;
@@ -1271,8 +1285,9 @@ PROCEDURE T_circuitBoard.WireImageMouseDown(Sender: TObject; button: TMouseButto
         len:=maxNormDistance(a,b);
         if len>1 then begin
           dir:=directionBetween(a,b);
+          pointBetween:=a;
           for j:=1 to len-1 do begin
-            pointBetween:=a+dir;
+            pointBetween+=dir;
             if p=pointBetween then exit(true);
           end;
         end;

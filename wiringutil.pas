@@ -58,6 +58,7 @@ OPERATOR +(CONST x:T_point; CONST y:T_wireDirection):T_point;
 OPERATOR -(CONST x:T_point; CONST y:T_wireDirection):T_point;
 OPERATOR =(CONST x,y:T_point):boolean;
 OPERATOR +(CONST x:T_wirePath; CONST y:T_point):T_wirePath;
+OPERATOR *(CONST x:T_point; CONST y:longint):T_point;
 
 PROCEDURE writePointToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST p:T_point);
 FUNCTION readPoint(VAR stream: T_bufferedInputStreamWrapper):T_point;
@@ -135,6 +136,12 @@ OPERATOR -(CONST x: T_point; CONST y: T_wireDirection): T_point;
   begin
     result[0]:=x[0]-WIRE_DELTA[y,0];
     result[1]:=x[1]-WIRE_DELTA[y,1];
+  end;
+
+OPERATOR *(CONST x:T_point; CONST y:longint):T_point;
+  begin
+    result[0]:=x[0]*y;
+    result[1]:=x[1]*y;
   end;
 
 OPERATOR=(CONST x, y: T_point): boolean;
