@@ -427,8 +427,8 @@ FUNCTION T_nandGate  .clone:P_abstractGate; begin new(P_nandGate(result),create)
 FUNCTION T_xorGate   .clone:P_abstractGate; begin new(P_xorGate (result),create); end;
 FUNCTION T_orGate    .clone:P_abstractGate; begin new(P_orGate  (result),create); end;
 FUNCTION T_andGate   .clone:P_abstractGate; begin new(P_andGate (result),create); end;
-FUNCTION T_inputGate .clone:P_abstractGate; begin new(P_inputGate (result),create); P_inputGate (result)^.ioIndex:=ioIndex; end;
-FUNCTION T_outputGate.clone:P_abstractGate; begin new(P_outputGate(result),create); P_outputGate(result)^.ioIndex:=ioIndex; end;
+FUNCTION T_inputGate .clone:P_abstractGate; begin new(P_inputGate (result),create); P_inputGate (result)^.ioIndex:=ioIndex; P_inputGate (result)^.ioLabel:=ioLabel; end;
+FUNCTION T_outputGate.clone:P_abstractGate; begin new(P_outputGate(result),create); P_outputGate(result)^.ioIndex:=ioIndex; P_outputGate(result)^.ioLabel:=ioLabel; end;
 
 end.
 

@@ -20,7 +20,7 @@ TYPE
       origin,size:T_point;
       board:P_circuitBoard;
       //visual
-      gatelabel:TLabel;
+      labels:array of TLabel;
       shapes:array of TShape;
       //mouse interaction
       dragX,dragY:longint;
@@ -29,11 +29,11 @@ TYPE
       wireDragOutputIndex:longint;
       marked_:boolean;
     protected
-      PROCEDURE ensureGuiElements;
+      PROCEDURE ensureGuiElements;  virtual;
       PROCEDURE disposeGuiElements;
 
       CONSTRUCTOR create(CONST origin_:T_point; CONST gateToWrap:P_abstractGate; CONST board_:P_circuitBoard);
-      DESTRUCTOR destroy;
+      DESTRUCTOR destroy; virtual;
     private
       PROCEDURE setMarked(CONST value:boolean);
       PROCEDURE inputClick(Sender: TObject);
@@ -50,8 +50,19 @@ TYPE
       FUNCTION numberOfInputs:longint;
       FUNCTION numberOfOutputs:longint;
     public
-      PROCEDURE Repaint;
+      PROCEDURE Repaint; virtual;
       PROPERTY getBehavior:P_abstractGate read behavior;
+  end;
+
+  { T_visualGateForCustom }
+  P_visualGateForCustom=^T_visualGateForCustom;
+  T_visualGateForCustom=object(T_visualGate)
+  protected
+    PROCEDURE ensureGuiElements; virtual;
+
+    CONSTRUCTOR create(CONST origin_:T_point; CONST gateToWrap:P_abstractGate; CONST board_:P_circuitBoard);
+  public
+    PROCEDURE Repaint; virtual;
   end;
 
   T_visualGateConnector=object
@@ -93,10 +104,14 @@ TYPE
     name       :string;
     connections:array of record source,sink:T_gateConnector end;
     inputConnections :array of record
+                        caption:string;
                         value:T_tristatevalue;
                         goesTo:array of T_gateConnector;
                       end;
-    outputConnections:array of T_gateConnector;
+    outputConnections:array of record
+                        caption:string;
+                        comesFrom:T_gateConnector;
+                      end;
 
     CONSTRUCTOR create(CONST origin:P_circuitBoard);
     DESTRUCTOR destroy; virtual;
@@ -157,7 +172,7 @@ TYPE
       PROCEDURE finishWireDrag(CONST targetPoint:T_point);
       PROCEDURE rewire;
       PROCEDURE WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
-
+      FUNCTION wrapGate(CONST origin:T_point;CONST g:P_abstractGate):P_visualGate;
       FUNCTION clone:P_circuitBoard;
     public
       CONSTRUCTOR create;
@@ -187,6 +202,9 @@ OPERATOR =(CONST x,y:T_visualGateConnector):boolean;
   begin
     result:=(x.gate=y.gate) and (x.index=y.index);
   end;
+
+CONSTRUCTOR T_visualGateForCustom.create(CONST origin_: T_point; CONST gateToWrap: P_abstractGate; CONST board_: P_circuitBoard);
+  begin inherited; end;
 
 FUNCTION T_visualGateConnector.loadFromStream(CONST board: P_circuitBoard; VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR gateIndex:longint;
@@ -219,16 +237,17 @@ PROCEDURE T_visualGate.ensureGuiElements;
       shapes[0].OnMouseMove:=@mainShapeMouseMove;
       shapes[0].OnMouseUp  :=@mainShapeMouseUp;
       shapes[0].PopupMenu  :=board^.GUI.gateContextMenu;
+      setLength(labels,1);
 
-      gatelabel:=TLabel.create(board^.GUI.container);
-      gatelabel.caption:=behavior^.caption;
-      gatelabel.AutoSize:=true;
-      gatelabel.Font.size:=6;
-      gatelabel.parent:=board^.GUI.container;
-      gatelabel.OnMouseDown:=@mainShapeMouseDown;
-      gatelabel.OnMouseMove:=@mainShapeMouseMove;
-      gatelabel.OnMouseUp  :=@mainShapeMouseUp;
-      gatelabel.PopupMenu  :=board^.GUI.gateContextMenu;
+      labels[0]:=TLabel.create(board^.GUI.container);
+      labels[0].caption:=behavior^.caption;
+      labels[0].AutoSize:=true;
+      labels[0].Font.size:=6;
+      labels[0].parent:=board^.GUI.container;
+      labels[0].OnMouseDown:=@mainShapeMouseDown;
+      labels[0].OnMouseMove:=@mainShapeMouseMove;
+      labels[0].OnMouseUp  :=@mainShapeMouseUp;
+      labels[0].PopupMenu  :=board^.GUI.gateContextMenu;
 
       for k:=0 to behavior^.numberOfInputs-1 do begin
         shapes[shapeIndex]:=TShape.create(board^.GUI.container);
@@ -252,12 +271,39 @@ PROCEDURE T_visualGate.ensureGuiElements;
     end;
   end;
 
+PROCEDURE T_visualGateForCustom.ensureGuiElements;
+  VAR shapeIndex:longint=1;
+      k:longint;
+  begin
+    if (length(shapes)=0) and (board<>nil) and (board^.GUI.container<>nil) then begin
+      inherited;
+      setLength(labels,length(shapes));
+      for k:=0 to behavior^.numberOfInputs-1 do begin
+        labels[shapeIndex]:=TLabel.create(board^.GUI.container);
+        labels[shapeIndex].parent:=board^.GUI.container;
+        labels[shapeIndex].caption:=P_customGate(behavior)^.inputConnections[k].caption;
+        labels[shapeIndex].OnClick:=@inputClick;
+        inc(shapeIndex);
+      end;
+      for k:=0 to behavior^.numberOfOutputs-1 do begin
+        labels[shapeIndex]:=TLabel.create(board^.GUI.container);
+        labels[shapeIndex].parent:=board^.GUI.container;
+        labels[shapeIndex].caption:=P_customGate(behavior)^.outputConnections[k].caption;
+        labels[shapeIndex].OnMouseDown:=@outputMouseDown;
+        labels[shapeIndex].OnMouseMove:=@outputMouseMove;
+        labels[shapeIndex].OnMouseUp  :=@outputMouseUp;
+        inc(shapeIndex);
+      end;
+    end;
+  end;
+
 PROCEDURE T_visualGate.disposeGuiElements;
   VAR i:longint;
   begin
     if length(shapes)>0 then begin
       for i:=0 to length(shapes)-1 do shapes[i].free;
-      gatelabel.free;
+      for i:=0 to length(labels)-1 do labels[i].free;
+      setLength(labels,0);
       setLength(shapes,0);
     end;
   end;
@@ -296,7 +342,7 @@ CONST TRI_STATE_NOT:array[T_tristatevalue] of T_tristatevalue=(tsv_true,tsv_fals
 PROCEDURE T_visualGate.inputClick(Sender: TObject);
   VAR k:longint;
   begin
-    k:=TShape(Sender).Tag;
+    k:=TControl(Sender).Tag;
     behavior^.setInput(k,TRI_STATE_NOT[behavior^.getInput(k)]);
     updateIoVisuals;
   end;
@@ -351,7 +397,7 @@ PROCEDURE T_visualGate.outputMouseDown(Sender: TObject; button: TMouseButton; Sh
   VAR p:T_point;
   begin
     if (button=mbLeft) then begin
-      wireDragOutputIndex:=TShape(Sender).Tag;
+      wireDragOutputIndex:=TControl(Sender).Tag;
       p:=getOutputPositionInGridSize(wireDragOutputIndex);
       with board^.incompleteWire do begin
         dragging:=true;
@@ -360,8 +406,8 @@ PROCEDURE T_visualGate.outputMouseDown(Sender: TObject; button: TMouseButton; Sh
         sourcePoint:=p;
         lastPreviewTarget:=p;
       end;
-      dragX:=x+TShape(Sender).Left;
-      dragY:=y+TShape(Sender).top;
+      dragX:=x+TControl(Sender).Left;
+      dragY:=y+TControl(Sender).top;
     end;
   end;
 
@@ -401,14 +447,14 @@ PROCEDURE T_visualGate.Repaint;
     shapes[0].width :=size  [0]*board^.GUI.zoom;
     shapes[0].height:=size  [1]*board^.GUI.zoom;
 
-    gatelabel.caption:=behavior^.caption;
-    gatelabel.top :=shapes[0].top +(shapes[0].height-gatelabel.height) div 2;
-    gatelabel.Left:=shapes[0].Left+(shapes[0].width -gatelabel.width) div 2 ;
-    newFontSize:=min(round(gatelabel.Font.size*shapes[0].width *0.75/gatelabel.width),
-                     round(gatelabel.Font.size*shapes[0].height*0.5 /gatelabel.height));
-    if abs(newFontSize-gatelabel.Font.size)>1 then gatelabel.Font.size:=newFontSize;
-    gatelabel.top :=shapes[0].top +(shapes[0].height-gatelabel.height) div 2;
-    gatelabel.Left:=shapes[0].Left+(shapes[0].width -gatelabel.width) div 2 ;
+    labels[0].caption:=behavior^.caption;
+    labels[0].top :=shapes[0].top +(shapes[0].height-labels[0].height) div 2;
+    labels[0].Left:=shapes[0].Left+(shapes[0].width -labels[0].width) div 2 ;
+    newFontSize:=min(round(labels[0].Font.size*shapes[0].width  *0.75/labels[0].width),
+                     round(labels[0].Font.size*shapes[0].height *0.5 /labels[0].height));
+    if abs(newFontSize-labels[0].Font.size)>1 then labels[0].Font.size:=newFontSize;
+    labels[0].top :=shapes[0].top +(shapes[0].height-labels[0].height) div 2;
+    labels[0].Left:=shapes[0].Left+(shapes[0].width -labels[0].width) div 2 ;
 
     for k:=0 to numberOfInputs-1 do begin
       p:=getInputPositionInGridSize(k);
@@ -425,6 +471,36 @@ PROCEDURE T_visualGate.Repaint;
       shapes[shapeIndex].top   :=round((p[1]-0.5)*board^.GUI.zoom);
       shapes[shapeIndex].width :=board^.GUI.zoom;
       shapes[shapeIndex].height:=board^.GUI.zoom;
+      inc(shapeIndex);
+    end;
+  end;
+
+PROCEDURE T_visualGateForCustom.Repaint;
+  VAR shapeIndex:longint=1;
+      k:longint;
+      ioLabelFontSize:longint;
+  begin
+    if length(shapes)=0 then exit;
+    inherited;
+    ioLabelFontSize:=round(board^.GUI.zoom*0.2);
+    if ioLabelFontSize<3 then begin
+      for k:=1 to length(labels)-1 do labels[k].visible:=false;
+      exit;
+    end;
+
+    for k:=0 to numberOfInputs-1 do begin
+      labels[shapeIndex].visible:=true;
+      labels[shapeIndex].Font.size:=ioLabelFontSize;
+      labels[shapeIndex].Left:=shapes[shapeIndex].Left+(shapes[shapeIndex].width -labels[shapeIndex].width ) div 2;
+      labels[shapeIndex].top :=shapes[shapeIndex].top +(shapes[shapeIndex].height-labels[shapeIndex].height) div 2;
+      inc(shapeIndex);
+    end;
+
+    for k:=0 to numberOfOutputs-1 do begin
+      labels[shapeIndex].visible:=true;
+      labels[shapeIndex].Font.size:=ioLabelFontSize;
+      labels[shapeIndex].Left:=shapes[shapeIndex].Left+(shapes[shapeIndex].width -labels[shapeIndex].width ) div 2;
+      labels[shapeIndex].top :=shapes[shapeIndex].top +(shapes[shapeIndex].height-labels[shapeIndex].height) div 2;
       inc(shapeIndex);
     end;
   end;
@@ -499,17 +575,19 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
         k:=length(inputConnections[ioIdx].goesTo);
         setLength(inputConnections[ioIdx].goesTo,k+1);
         inputConnections[ioIdx].goesTo[k]:=tgt;
+        inputConnections[ioIdx].caption:=P_inputGate(src.gate)^.caption;
       end else if tgt.gate^.gateType=gt_output then begin
         ioIdx:=P_outputGate(tgt.gate)^.ioIndex;
         if length(outputConnections)<=ioIdx then begin
           k:=length(outputConnections);
           setLength(outputConnections,ioIdx+1);
           while k<length(outputConnections) do begin
-            outputConnections[k].gate:=nil;
+            outputConnections[k].comesFrom.gate:=nil;
             inc(k);
           end;
         end;
-        outputConnections[ioIdx]:=src;
+        outputConnections[ioIdx].comesFrom:=src;
+        outputConnections[ioIdx].caption:=P_outputGate(tgt.gate)^.caption;
       end else begin
         k:=length(connections);
         setLength(connections,k+1);
@@ -622,7 +700,7 @@ FUNCTION T_customGate.simulateStep:boolean;
 
 FUNCTION T_customGate.getOutput(CONST index: longint): T_tristatevalue;
   begin
-    result:=outputConnections[index].getOutputValue;
+    result:=outputConnections[index].comesFrom.getOutputValue;
   end;
 
 PROCEDURE T_customGate.setInput(CONST index: longint; CONST value: T_tristatevalue);
@@ -687,7 +765,7 @@ PROCEDURE T_workspace.addCustomGate(CONST index: longint; CONST x0, y0: longint)
   begin
     if (index>=0) and (index<length(paletteEntries)) then begin
       new(gateToAdd,create(paletteEntries[index]));
-      new(visual,create(pointOf(x0,y0),gateToAdd,currentBoard));
+      visual:=currentBoard^.wrapGate(pointOf(x0,y0),gateToAdd);
       if not currentBoard^.positionNewGate(visual)
       then dispose(visual,destroy);
     end;
@@ -946,12 +1024,12 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
       case gate^.behavior^.gateType of
         gt_input: begin
           P_inputGate(gate^.behavior)^.ioIndex:=inputIndex;
-          gate^.gatelabel.caption:=gate^.behavior^.caption;
+          gate^.labels[0].caption:=gate^.behavior^.caption;
           inc(inputIndex);
         end;
         gt_output: begin
           P_outputGate(gate^.behavior)^.ioIndex:=inputIndex;
-          gate^.gatelabel.caption:=gate^.behavior^.caption;
+          gate^.labels[0].caption:=gate^.behavior^.caption;
           inc(outputIndex);
         end;
       end;
@@ -1048,6 +1126,14 @@ PROCEDURE T_circuitBoard.simulateStep;
     for gate in gates do gate^.updateIoVisuals;
   end;
 
+FUNCTION T_circuitBoard.wrapGate(CONST origin:T_point; CONST g:P_abstractGate):P_visualGate;
+  begin
+    case g^.gateType of
+      gt_compound: new(P_visualGateForCustom(result),create(origin,g,@self));
+      else new(result,create(origin,g,@self));
+    end;
+  end;
+
 FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i:longint;
       gateType: T_gateType;
@@ -1080,7 +1166,7 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream:
         end;
       end;
       origin:=readPoint(stream);
-      new(gates[i],create(origin,behavior,@self));
+      gates[i]:=wrapGate(origin,behavior);
     end;
 
     setLength(logicWires,stream.readNaturalNumber);
