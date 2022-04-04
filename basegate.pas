@@ -104,7 +104,7 @@ TYPE
     FUNCTION  numberOfInputs :longint; virtual;
     FUNCTION  numberOfOutputs:longint; virtual;
     FUNCTION  gateType:T_gateType; virtual;
-    PROCEDURE simulateStep;                                       virtual;
+    FUNCTION  simulateStep:boolean;                                       virtual;
     FUNCTION  getOutput(CONST index:longint):T_tristatevalue;             virtual;
     PROCEDURE setInput(CONST index:longint; CONST value:T_tristatevalue); virtual;
     FUNCTION  getInput(CONST index:longint):T_tristatevalue;              virtual;
@@ -588,13 +588,14 @@ FUNCTION T_customGate.gateType: T_gateType;
     result:=gt_compound;
   end;
 
-PROCEDURE T_customGate.simulateStep;
+FUNCTION T_customGate.simulateStep:boolean;
   VAR gate:P_abstractGate;
       i:longint;
       tgt:T_gateConnector;
   begin
+    result:=false;
     for i:=0 to length(inputConnections)-1 do for tgt in inputConnections[i].goesTo do tgt.setInputValue(inputConnections[i].value);
-    for gate in gates do gate^.simulateStep;
+    for gate in gates do if gate^.simulateStep then result:=true;
     for i:=0 to length(connections)-1 do with connections[i] do sink.setInputValue(source.getOutputValue);
   end;
 

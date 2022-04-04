@@ -25,12 +25,12 @@ T_gateType=(gt_notGate,
     public
       CONSTRUCTOR create;
       DESTRUCTOR destroy; virtual;
-      FUNCTION  clone:P_abstractGate; virtual; abstract;
+      FUNCTION  clone:P_abstractGate;    virtual; abstract;
       FUNCTION  caption:string;          virtual; abstract;
       FUNCTION  numberOfInputs :longint; virtual; abstract;
       FUNCTION  numberOfOutputs:longint; virtual; abstract;
       FUNCTION  gateType:T_gateType;     virtual; abstract;
-      PROCEDURE simulateStep;                                               virtual; abstract;
+      FUNCTION  simulateStep:boolean;    virtual; abstract;
       FUNCTION  getOutput(CONST index:longint):T_tristatevalue;             virtual; abstract;
       PROCEDURE setInput(CONST index:longint; CONST value:T_tristatevalue); virtual; abstract;
       FUNCTION  getInput(CONST index:longint):T_tristatevalue;              virtual; abstract;
@@ -54,7 +54,7 @@ T_gateType=(gt_notGate,
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
-      PROCEDURE simulateStep;            virtual;
+      FUNCTION  simulateStep:boolean;    virtual;
       FUNCTION  getOutput(CONST index:longint):T_tristatevalue;             virtual;
       PROCEDURE setInput(CONST index:longint; CONST value:T_tristatevalue); virtual;
       FUNCTION  getInput(CONST index:longint):T_tristatevalue;              virtual;
@@ -73,7 +73,7 @@ T_gateType=(gt_notGate,
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
-      PROCEDURE simulateStep;            virtual;
+      FUNCTION  simulateStep:boolean;    virtual;
       FUNCTION  getOutput(CONST index:longint):T_tristatevalue;             virtual;
       PROCEDURE setInput(CONST index:longint; CONST value:T_tristatevalue); virtual;
       FUNCTION  getInput(CONST index:longint):T_tristatevalue;              virtual;
@@ -112,7 +112,7 @@ T_gateType=(gt_notGate,
      CONSTRUCTOR create;
      FUNCTION  clone:P_abstractGate;    virtual;
      FUNCTION  caption:string; virtual;
-     PROCEDURE simulateStep; virtual;
+     FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
    end;
 
@@ -122,7 +122,7 @@ T_gateType=(gt_notGate,
      CONSTRUCTOR create;
      FUNCTION  clone:P_abstractGate;    virtual;
      FUNCTION  caption:string; virtual;
-     PROCEDURE simulateStep; virtual;
+     FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
    end;
 
@@ -132,7 +132,7 @@ T_gateType=(gt_notGate,
      CONSTRUCTOR create;
      FUNCTION  clone:P_abstractGate;    virtual;
      FUNCTION  caption:string; virtual;
-     PROCEDURE simulateStep; virtual;
+     FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
    end;
 
@@ -142,7 +142,7 @@ T_gateType=(gt_notGate,
      CONSTRUCTOR create;
      FUNCTION  clone:P_abstractGate;    virtual;
      FUNCTION  caption:string; virtual;
-     PROCEDURE simulateStep; virtual;
+     FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
    end;
 
@@ -152,7 +152,7 @@ T_gateType=(gt_notGate,
      CONSTRUCTOR create;
      FUNCTION  clone:P_abstractGate;    virtual;
      FUNCTION  caption:string; virtual;
-     PROCEDURE simulateStep; virtual;
+     FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
    end;
 
@@ -162,7 +162,7 @@ T_gateType=(gt_notGate,
      CONSTRUCTOR create;
      FUNCTION  clone:P_abstractGate;    virtual;
      FUNCTION  caption:string; virtual;
-     PROCEDURE simulateStep; virtual;
+     FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
    end;
 
@@ -225,8 +225,10 @@ FUNCTION T_inputGate.numberOfOutputs: longint;
 FUNCTION T_inputGate.gateType: T_gateType;
   begin result:=gt_input; end;
 
-PROCEDURE T_inputGate.simulateStep;
-  begin end;
+FUNCTION T_inputGate.simulateStep:boolean;
+  begin
+    result:=false;
+  end;
 
 FUNCTION T_inputGate.getOutput(CONST index: longint): T_tristatevalue;
   begin result:=io; end;
@@ -270,9 +272,14 @@ FUNCTION T_notGate.numberOfOutputs: longint;
 FUNCTION T_notGate.gateType: T_gateType;
   begin result:=gt_notGate; end;
 
-PROCEDURE T_notGate.simulateStep;
+FUNCTION T_notGate.simulateStep:boolean;
   CONST F:array[T_tristatevalue] of T_tristatevalue=(tsv_true,tsv_undetermined,tsv_false);
-  begin output:=F[input]; end;
+  VAR previous:T_tristatevalue;
+  begin
+    previous:=output;
+    output:=F[input];
+    result:=output<>previous;
+  end;
 
 FUNCTION T_notGate.getOutput(CONST index: longint): T_tristatevalue;
   begin result:=output; end;
@@ -315,53 +322,83 @@ FUNCTION T_xorGate .caption: string; begin result:='XOR';  end;
 FUNCTION T_orGate  .caption: string; begin result:='OR';   end;
 FUNCTION T_andGate .caption: string; begin result:='AND';  end;
 
-PROCEDURE T_nxorGate.simulateStep;
+FUNCTION T_nxorGate.simulateStep:boolean;
   CONST F:array[T_tristatevalue,T_tristatevalue] of T_tristatevalue=
           //0                ?                1
        {0}((tsv_true        ,tsv_undetermined,tsv_false       ),
        {?} (tsv_undetermined,tsv_undetermined,tsv_undetermined),
        {1} (tsv_false       ,tsv_undetermined,tsv_true        ));
-  begin output:=F[input[0],input[1]]; end;
+  VAR previous:T_tristatevalue;
+  begin
+    previous:=output;
+    output:=F[input[0],input[1]];
+    result:=output<>previous;
+  end;
 
-PROCEDURE T_norGate .simulateStep;
+FUNCTION T_norGate .simulateStep:boolean;
   CONST F:array[T_tristatevalue,T_tristatevalue] of T_tristatevalue=
           //0                ?                1
        {0}((tsv_true        ,tsv_undetermined,tsv_false),
        {?} (tsv_undetermined,tsv_undetermined,tsv_false),
        {1} (tsv_false       ,tsv_false       ,tsv_false));
-  begin output:=F[input[0],input[1]]; end;
+  VAR previous:T_tristatevalue;
+  begin
+    previous:=output;
+    output:=F[input[0],input[1]];
+    result:=output<>previous;
+  end;
 
-PROCEDURE T_nandGate.simulateStep;
+FUNCTION T_nandGate.simulateStep:boolean;
   CONST F:array[T_tristatevalue,T_tristatevalue] of T_tristatevalue=
           //0        ?                1
        {0}((tsv_true,tsv_true        ,tsv_true        ),
        {?} (tsv_true,tsv_undetermined,tsv_undetermined),
        {1} (tsv_true,tsv_undetermined,tsv_false       ));
-  begin output:=F[input[0],input[1]]; end;
+  VAR previous:T_tristatevalue;
+  begin
+    previous:=output;
+    output:=F[input[0],input[1]];
+    result:=output<>previous;
+  end;
 
-PROCEDURE T_xorGate .simulateStep;
+FUNCTION T_xorGate .simulateStep:boolean;
   CONST F:array[T_tristatevalue,T_tristatevalue] of T_tristatevalue=
           //0                ?                1
        {0}((tsv_false       ,tsv_undetermined,tsv_true        ),
        {?} (tsv_undetermined,tsv_undetermined,tsv_undetermined),
        {1} (tsv_true        ,tsv_undetermined,tsv_false       ));
-  begin output:=F[input[0],input[1]]; end;
+  VAR previous:T_tristatevalue;
+  begin
+    previous:=output;
+    output:=F[input[0],input[1]];
+    result:=output<>previous;
+  end;
 
-PROCEDURE T_orGate  .simulateStep;
+FUNCTION T_orGate  .simulateStep:boolean;
   CONST F:array[T_tristatevalue,T_tristatevalue] of T_tristatevalue=
           //0                ?                1
        {0}((tsv_false       ,tsv_undetermined,tsv_true),
        {?} (tsv_undetermined,tsv_undetermined,tsv_true),
        {1} (tsv_true        ,tsv_true        ,tsv_true));
-  begin output:=F[input[0],input[1]]; end;
+  VAR previous:T_tristatevalue;
+  begin
+    previous:=output;
+    output:=F[input[0],input[1]];
+    result:=output<>previous;
+  end;
 
-PROCEDURE T_andGate .simulateStep;
+FUNCTION T_andGate .simulateStep:boolean;
   CONST F:array[T_tristatevalue,T_tristatevalue] of T_tristatevalue=
           //0         ?                1
        {0}((tsv_false,tsv_false       ,tsv_false       ),
        {?} (tsv_false,tsv_undetermined,tsv_undetermined),
        {1} (tsv_false,tsv_undetermined,tsv_true        ));
-  begin output:=F[input[0],input[1]]; end;
+  VAR previous:T_tristatevalue;
+  begin
+    previous:=output;
+    output:=F[input[0],input[1]];
+    result:=output<>previous;
+  end;
 
 FUNCTION T_nxorGate.gateType: T_gateType; begin result:=gt_nxorGate; end;
 FUNCTION T_norGate .gateType: T_gateType; begin result:=gt_norGate;  end;
