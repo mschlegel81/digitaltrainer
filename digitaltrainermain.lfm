@@ -7,7 +7,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   ClientHeight = 549
   ClientWidth = 583
   Menu = MainMenu
-  OnClose = FormClose
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnResize = FormResize

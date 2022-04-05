@@ -76,7 +76,6 @@ TYPE
     PROCEDURE CustomGateListBoxSelectionChange(Sender: TObject; user: boolean);
     PROCEDURE DeleteButtonClick(Sender: TObject);
     PROCEDURE descriptionMemoEditingDone(Sender: TObject);
-    PROCEDURE FormClose(Sender: TObject; VAR CloseAction: TCloseAction);
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE FormDestroy(Sender: TObject);
     PROCEDURE FormResize(Sender: TObject);
@@ -191,11 +190,6 @@ PROCEDURE TDigitaltrainerMainForm.CustomGateListBoxSelectionChange(Sender: TObje
       CustomGateListBox.Hint:=workspace.paletteEntries[i]^.description;
       ButtonAddCustom.enabled:=true;
     end else ButtonAddCustom.enabled:=false;
-  end;
-
-PROCEDURE TDigitaltrainerMainForm.FormClose(Sender: TObject;
-  VAR CloseAction: TCloseAction);
-  begin
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
