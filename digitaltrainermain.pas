@@ -13,6 +13,7 @@ TYPE
   { TDigitaltrainerMainForm }
 
   TDigitaltrainerMainForm = class(TForm)
+    speedLabel: TLabel;
     MenuItem4: TMenuItem;
     miAddToPalette: TMenuItem;
     miAnalyzeBoard: TMenuItem;
@@ -100,7 +101,9 @@ TYPE
   private
     workspace:T_workspace;
     visualGateForContextPopup:P_visualGate;
+    stepsPerTimer:longint;
     PROCEDURE updateSidebar;
+    PROCEDURE restartTimerCallback;
   public
   end;
 
@@ -119,7 +122,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
   begin
     workspace.create;
     workspace.loadFromFile(workspaceFilename);
-    workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu);
+    workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
     updateSidebar;
   end;
 
@@ -247,7 +250,7 @@ PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
         workspace.destroy;
         workspace.create;
         workspace.loadFromFile(OpenDialog1.fileName);
-        workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu);
+        workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
         workspace.currentBoard^.Repaint;
         updateSidebar;
       end;
@@ -279,20 +282,79 @@ PROCEDURE TDigitaltrainerMainForm.miSelectAllClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.resetButtonClick(Sender: TObject);
   begin
     workspace.currentBoard^.reset;
+    restartTimerCallback;
   end;
+
+CONST SPEED_SETTING:array[0..35] of record
+        timerInterval,
+        simSteps:longint;
+        labelCaption:string;
+      end=((timerInterval:   0; simSteps:   0; labelCaption:'gestoppt'),
+           (timerInterval:1000; simSteps:   1; labelCaption:'1.00Hz'),
+           (timerInterval: 707; simSteps:   1; labelCaption:'1.41Hz'),
+           (timerInterval: 500; simSteps:   1; labelCaption:'2.00Hz'),
+           (timerInterval: 354; simSteps:   1; labelCaption:'2.82Hz'),
+           (timerInterval: 250; simSteps:   1; labelCaption:'4.00Hz'),
+           (timerInterval: 177; simSteps:   1; labelCaption:'5.65Hz'),
+           (timerInterval: 125; simSteps:   1; labelCaption:'8.00Hz'),
+           (timerInterval:  88; simSteps:   1; labelCaption:'11.36Hz'),
+           (timerInterval:  62; simSteps:   1; labelCaption:'16.13Hz'),
+           (timerInterval:  44; simSteps:   1; labelCaption:'22.73Hz'),
+           (timerInterval:  40; simSteps:   1; labelCaption:' 25Hz'),
+           (timerInterval:  40; simSteps:   2; labelCaption:' 50Hz'),
+           (timerInterval:  40; simSteps:   3; labelCaption:' 75Hz'),
+           (timerInterval:  40; simSteps:   4; labelCaption:'100Hz'),
+           (timerInterval:  40; simSteps:   5; labelCaption:'125Hz'),
+           (timerInterval:  40; simSteps:   7; labelCaption:'175Hz'),
+           (timerInterval:  40; simSteps:  10; labelCaption:'250Hz'),
+           (timerInterval:  40; simSteps:  14; labelCaption:'350Hz'),
+           (timerInterval:  40; simSteps:  20; labelCaption:'500Hz'),
+           (timerInterval:  40; simSteps:  29; labelCaption:'725Hz'),
+           (timerInterval:  40; simSteps:  41; labelCaption:'1.0kHz'),
+           (timerInterval:  40; simSteps:  58; labelCaption:'1.5kHz'),
+           (timerInterval:  40; simSteps:  82; labelCaption:'2.1kHz'),
+           (timerInterval:  40; simSteps: 116; labelCaption:'2.9kHz'),
+           (timerInterval:  40; simSteps: 164; labelCaption:'4.1kHz'),
+           (timerInterval:  40; simSteps: 232; labelCaption:'5.8kHz'),
+           (timerInterval:  40; simSteps: 328; labelCaption:'8.2kHz'),
+           (timerInterval:  40; simSteps: 463; labelCaption:'11.6kHz'),
+           (timerInterval:  40; simSteps: 655; labelCaption:'16.4kHz'),
+           (timerInterval:  40; simSteps: 927; labelCaption:'23.2kHz'),
+           (timerInterval:  40; simSteps:1311; labelCaption:'32.8kHz'),
+           (timerInterval:  40; simSteps:1854; labelCaption:'46.4kHz'),
+           (timerInterval:  40; simSteps:2621; labelCaption:'65.5kHz'),
+           (timerInterval:  40; simSteps:3707; labelCaption:'92.7kHz'),
+           (timerInterval:  40; simSteps:5243; labelCaption:'131.1kHz'));
 
 PROCEDURE TDigitaltrainerMainForm.SimTimerTimer(Sender: TObject);
   begin
-    workspace.currentBoard^.simulateStep;
+    if not(workspace.currentBoard^.simulateSteps(stepsPerTimer)) then begin
+      SimTimer.enabled:=false;
+      speedLabel.caption:=SPEED_SETTING[speedTrackBar.position].labelCaption+' (pausiert)';
+    end;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.restartTimerCallback;
+  begin
+    if SimTimer.enabled or (speedTrackBar.position=0) then exit;
+    SimTimer.enabled:=true;
+    speedLabel.caption:=SPEED_SETTING[speedTrackBar.position].labelCaption;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);
   begin
     if speedTrackBar.position=0
-    then SimTimer.enabled:=false
+    then begin
+      SimTimer.enabled:=false;
+      speedLabel.caption:='gestoppt';
+    end
     else begin
       SimTimer.enabled:=true;
-      SimTimer.interval:=round(1000*exp(ln(5/1000)*(speedTrackBar.position-1)/(speedTrackBar.max-1)));
+      with SPEED_SETTING[speedTrackBar.position] do begin
+        SimTimer.interval :=timerInterval;
+        stepsPerTimer     :=simSteps;
+        speedLabel.caption:=labelCaption;
+      end;
     end;
   end;
 

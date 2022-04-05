@@ -9,6 +9,8 @@ USES ExtCtrls, Classes, Controls, StdCtrls, UITypes, wiringUtil,
 CONST defaultBoardCaption='unbenannt';
 
 TYPE
+  F_simpleCallback=PROCEDURE of object;
+
   P_circuitBoard=^T_circuitBoard;
   P_workspace=^T_workspace;
   { T_abstractGate }
@@ -122,7 +124,7 @@ TYPE
     FUNCTION  gateType:T_gateType; virtual;
     FUNCTION  simulateStep:boolean;                                       virtual;
     FUNCTION  getOutput(CONST index:longint):T_triStateValue;             virtual;
-    PROCEDURE setInput(CONST index:longint; CONST value:T_triStateValue); virtual;
+    FUNCTION setInput(CONST index:longint; CONST value:T_triStateValue):boolean; virtual;
     FUNCTION  getInput(CONST index:longint):T_triStateValue;              virtual;
     FUNCTION  clone:P_abstractGate; virtual;
   end;
@@ -140,7 +142,7 @@ TYPE
         container:TWinControl;
         wireImage:TImage;
         gateContextMenu:TPopupMenu;
-
+        anyChangeCallback:F_simpleCallback;
         lastClickedGate:P_visualGate;
       end;
 
@@ -180,7 +182,7 @@ TYPE
       DESTRUCTOR destroy;  virtual;
       PROCEDURE clear;
       PROCEDURE setSelectForAll(CONST doSelect:boolean);
-      PROCEDURE attachGUI(CONST zoom:longint; CONST container:TWinControl; CONST wireImage:TImage; CONST gatePopup:TPopupMenu);
+      PROCEDURE attachGUI(CONST zoom:longint; CONST container:TWinControl; CONST wireImage:TImage; CONST gatePopup:TPopupMenu; CONST anyChangeCallback:F_simpleCallback);
       PROCEDURE detachGUI;
       PROCEDURE gateMoved(CONST gate:P_visualGate; CONST doneDragging:boolean);
       PROCEDURE anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -188,7 +190,7 @@ TYPE
       PROCEDURE setZoom(CONST zoom:longint);
       PROCEDURE deleteMarkedElements;
       PROCEDURE Repaint;
-      PROCEDURE simulateStep;
+      FUNCTION simulateSteps(CONST count:longint):boolean;
 
       FUNCTION loadFromStream(CONST workspace:P_workspace; VAR stream:T_bufferedInputStreamWrapper):boolean;
       PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper);
@@ -349,6 +351,7 @@ PROCEDURE T_visualGate.inputClick(Sender: TObject);
     k:=TControl(Sender).Tag;
     behavior^.setInput(k,TRI_STATE_NOT[behavior^.getInput(k)]);
     updateIoVisuals;
+    if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
   end;
 
 PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -357,6 +360,7 @@ PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton;
       if behavior^.gateType=gt_input then begin
         behavior^.setInput(0,TRI_STATE_NOT[behavior^.getInput(0)]);
         updateIoVisuals;
+        if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
       end;
       dragging:=true;
       movedDuringDrag:=false;
@@ -381,8 +385,7 @@ PROCEDURE T_visualGate.mainShapeMouseMove(Sender: TObject; Shift: TShiftState; X
         movedDuringDrag:=true;
         origin:=newOrigin;
         board^.gateMoved(@self,false);
-        Repaint;
-      end;
+      end else Repaint;
     end;
   end;
 
@@ -700,13 +703,13 @@ FUNCTION T_customGate.simulateStep:boolean;
     for i:=0 to length(inputConnections)-1 do for tgt in inputConnections[i].goesTo do begin
       v:=inputConnections[i].value;
       if v<>tsv_undetermined
-      then tgt.setInputValue(v);
+      then result:=tgt.setInputValue(v) or result;
     end;
-    for gate in gates do if gate^.simulateStep then result:=true;
+    for gate in gates do result:=gate^.simulateStep or result;
     for i:=0 to length(connections)-1 do with connections[i] do begin
       v:=source.getOutputValue;
       if v<>tsv_undetermined
-      then sink.setInputValue(v);
+      then result:=sink.setInputValue(v) or result;
     end;
   end;
 
@@ -715,8 +718,9 @@ FUNCTION T_customGate.getOutput(CONST index: longint): T_triStateValue;
     result:=outputConnections[index].comesFrom.getOutputValue;
   end;
 
-PROCEDURE T_customGate.setInput(CONST index: longint; CONST value: T_triStateValue);
+FUNCTION T_customGate.setInput(CONST index: longint; CONST value: T_triStateValue):boolean;
   begin
+    result:=inputConnections[index].value<>value;
     inputConnections[index].value:=value;
   end;
 
@@ -785,7 +789,7 @@ PROCEDURE T_workspace.addCustomGate(CONST index: longint; CONST x0, y0: longint)
 
 FUNCTION T_workspace.getSerialVersion: dword;
   begin
-    result:=3;
+    result:=4;
   end;
 
 FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
@@ -865,7 +869,8 @@ PROCEDURE T_workspace.addCurrentBoardToPalette;
       newPaletteEntry^.GUI.zoom,
       newPaletteEntry^.GUI.container,
       newPaletteEntry^.GUI.wireImage,
-      newPaletteEntry^.GUI.gateContextMenu);
+      newPaletteEntry^.GUI.gateContextMenu,
+      newPaletteEntry^.GUI.anyChangeCallback);
     newPaletteEntry^.detachGUI;
 
     if doReplace=mrYes then begin
@@ -904,13 +909,14 @@ DESTRUCTOR T_circuitBoard.destroy;
     clear;
   end;
 
-PROCEDURE T_circuitBoard.attachGUI(CONST zoom: longint; CONST container: TWinControl; CONST wireImage: TImage; CONST gatePopup:TPopupMenu);
+PROCEDURE T_circuitBoard.attachGUI(CONST zoom: longint; CONST container: TWinControl; CONST wireImage: TImage; CONST gatePopup:TPopupMenu; CONST anyChangeCallback:F_simpleCallback);
   VAR gate:P_visualGate;
   begin
     GUI.zoom:=zoom;
     GUI.container:=container;
     GUI.wireImage:=wireImage;
     GUI.gateContextMenu:=gatePopup;
+    GUI.anyChangeCallback:=anyChangeCallback;
     wireImage.OnMouseDown:=@WireImageMouseDown;
     for gate in gates do gate^.ensureGuiElements;
     rewire;
@@ -924,6 +930,7 @@ PROCEDURE T_circuitBoard.detachGUI;
     GUI.container:=nil;
     GUI.wireImage:=nil;
     GUI.gateContextMenu:=nil;
+    GUI.anyChangeCallback:=nil;
   end;
 
 PROCEDURE T_circuitBoard.clear;
@@ -1014,8 +1021,9 @@ FUNCTION T_circuitBoard.positionNewGate(CONST gateToAdd: P_visualGate): boolean;
     if repositionGate(gateToAdd,true)<>ro_noPositionFound then begin
       setLength(gates,length(gates)+1);
       gates[length(gates)-1]:=gateToAdd;
-      gateToAdd^.Repaint;
       result:=true;
+      gateToAdd^.ensureGuiElements;
+      gateToAdd^.Repaint;
     end else result:=false;
   end;
 
@@ -1141,16 +1149,19 @@ PROCEDURE T_circuitBoard.setZoom(CONST zoom: longint);
     Repaint;
   end;
 
-PROCEDURE T_circuitBoard.simulateStep;
+FUNCTION T_circuitBoard.simulateSteps(CONST count:longint):boolean;
   VAR gate:P_visualGate;
-      i,j:longint;
+      i,j,step:longint;
       output:T_triStateValue;
   begin
-    for gate in gates do gate^.behavior^.simulateStep;
-    for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
-      output:=source.gate^.behavior^.getOutput(source.index);
-      if output<>tsv_undetermined then for j:=0 to length(wires)-1 do
-        wires[j].sink.gate^.behavior^.setInput(wires[j].sink.index,output);
+    result:=false;
+    for step:=1 to count do begin
+      for gate in gates do result:=gate^.behavior^.simulateStep or result;
+      for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
+        output:=source.gate^.behavior^.getOutput(source.index);
+        if output<>tsv_undetermined then for j:=0 to length(wires)-1 do
+          result:=wires[j].sink.gate^.behavior^.setInput(wires[j].sink.index,output) or result;
+      end;
     end;
     for gate in gates do gate^.updateIoVisuals;
   end;
@@ -1172,6 +1183,7 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream:
   begin
     name:=stream.readAnsiString;
     description:=stream.readAnsiString;
+    paletteIndex:=stream.readLongint;
     if not(stream.allOkay) then exit(false);
     setLength(gates,stream.readNaturalNumber);
     for i:=0 to length(gates)-1 do begin
@@ -1219,6 +1231,7 @@ PROCEDURE T_circuitBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper)
   begin
     stream.writeAnsiString(name);
     stream.writeAnsiString(description);
+    stream.writeLongint(paletteIndex);
     stream.writeNaturalNumber(length(gates));
     for i:=0 to length(gates)-1 do begin
       stream.writeByte(byte(gates[i]^.behavior^.gateType));
@@ -1420,7 +1433,9 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point);
         wires[j].visual:=findWirePath(incompleteWire.source,connector.gate^.getInputPositionInGridSize(connector.index));
       end;
     end;
+    if (GUI.anyChangeCallback<>nil) then GUI.anyChangeCallback();
     cleanup;
+    Repaint;
   end;
 
 PROCEDURE T_circuitBoard.rewire;
@@ -1449,7 +1464,6 @@ PROCEDURE T_circuitBoard.rewire;
       end;
       setLength(paths,0);
     end;
-
 
     //for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
     //  for j:=0 to length(wires)-1 do begin
@@ -1558,7 +1572,8 @@ PROCEDURE T_workspace.editPaletteEntry(CONST index:longint);
       previous^.GUI.zoom,
       previous^.GUI.container,
       previous^.GUI.wireImage,
-      previous^.GUI.gateContextMenu);
+      previous^.GUI.gateContextMenu,
+      previous^.GUI.anyChangeCallback);
     currentBoard^.rewire;
     dispose(previous,destroy);
     currentBoard^.Repaint;

@@ -32,7 +32,7 @@ TYPE
       FUNCTION  gateType:T_gateType;     virtual; abstract;
       FUNCTION  simulateStep:boolean;    virtual; abstract;
       FUNCTION  getOutput(CONST index:longint):T_triStateValue;             virtual; abstract;
-      PROCEDURE setInput(CONST index:longint; CONST value:T_triStateValue); virtual; abstract;
+      FUNCTION  setInput(CONST index:longint; CONST value:T_triStateValue):boolean; virtual; abstract;
       FUNCTION  getInput(CONST index:longint):T_triStateValue;              virtual; abstract;
     end;
 
@@ -40,7 +40,7 @@ TYPE
     gate:P_abstractGate;
     index:longint;
     FUNCTION getOutputValue:T_triStateValue;
-    PROCEDURE setInputValue(CONST v:T_triStateValue);
+    FUNCTION setInputValue(CONST v:T_triStateValue):boolean;
   end;
 
   P_notGate=^T_notGate;
@@ -57,7 +57,7 @@ TYPE
       FUNCTION  gateType:T_gateType;     virtual;
       FUNCTION  simulateStep:boolean;    virtual;
       FUNCTION  getOutput(CONST index:longint):T_triStateValue;             virtual;
-      PROCEDURE setInput(CONST index:longint; CONST value:T_triStateValue); virtual;
+      FUNCTION  setInput(CONST index:longint; CONST value:T_triStateValue):boolean; virtual;
       FUNCTION  getInput(CONST index:longint):T_triStateValue;              virtual;
   end;
 
@@ -77,7 +77,7 @@ TYPE
       FUNCTION  gateType:T_gateType;     virtual;
       FUNCTION  simulateStep:boolean;    virtual;
       FUNCTION  getOutput(CONST index:longint):T_triStateValue;             virtual;
-      PROCEDURE setInput(CONST index:longint; CONST value:T_triStateValue); virtual;
+      FUNCTION  setInput(CONST index:longint; CONST value:T_triStateValue):boolean; virtual;
       FUNCTION  getInput(CONST index:longint):T_triStateValue;              virtual;
   end;
 
@@ -102,7 +102,7 @@ TYPE
        FUNCTION  numberOfInputs :longint; virtual;
        FUNCTION  numberOfOutputs:longint; virtual;
        FUNCTION  getOutput(CONST index:longint):T_triStateValue; virtual;
-       PROCEDURE setInput(CONST index:longint; CONST value:T_triStateValue); virtual;
+       FUNCTION  setInput(CONST index:longint; CONST value:T_triStateValue):boolean; virtual;
        FUNCTION  getInput(CONST index:longint):T_triStateValue;              virtual;
    end;
 
@@ -177,7 +177,7 @@ TYPE
       FUNCTION  gateType:T_gateType;     virtual;
       FUNCTION  simulateStep:boolean;    virtual;
       FUNCTION  getOutput(CONST index:longint):T_triStateValue;             virtual;
-      PROCEDURE setInput(CONST index:longint; CONST value:T_triStateValue); virtual;
+      FUNCTION  setInput(CONST index:longint; CONST value:T_triStateValue):boolean; virtual;
       FUNCTION  getInput(CONST index:longint):T_triStateValue;              virtual;
     end;
 
@@ -257,8 +257,10 @@ FUNCTION T_clock.getOutput(CONST index: longint): T_triStateValue;
   CONST T:array[false..true] of T_triStateValue=(tsv_false,tsv_true);
   begin result:=T[tick]; end;
 
-PROCEDURE T_clock.setInput(CONST index: longint; CONST value: T_triStateValue);
-  begin end;
+FUNCTION T_clock.setInput(CONST index: longint; CONST value: T_triStateValue):boolean;
+  begin
+    result:=false;
+  end;
 
 FUNCTION T_clock.getInput(CONST index: longint): T_triStateValue;
   begin result:=tsv_undetermined; end;
@@ -316,8 +318,11 @@ FUNCTION T_inputGate.simulateStep:boolean;
 FUNCTION T_inputGate.getOutput(CONST index: longint): T_triStateValue;
   begin result:=io; end;
 
-PROCEDURE T_inputGate.setInput(CONST index: longint; CONST value: T_triStateValue);
-  begin io:=value; end;
+FUNCTION T_inputGate.setInput(CONST index: longint; CONST value: T_triStateValue):boolean;
+  begin
+    result:=io<>value;
+    io:=value;
+  end;
 
 FUNCTION T_inputGate.getInput(CONST index: longint): T_triStateValue;
   begin result:=io; end;
@@ -338,9 +343,9 @@ FUNCTION T_gateConnector.getOutputValue: T_triStateValue;
     result:=gate^.getOutput(index);
   end;
 
-PROCEDURE T_gateConnector.setInputValue(CONST v: T_triStateValue);
+FUNCTION T_gateConnector.setInputValue(CONST v: T_triStateValue):boolean;
   begin
-    gate^.setInput(index,v);
+    result:=gate^.setInput(index,v);
   end;
 
 CONSTRUCTOR T_notGate.create;
@@ -373,8 +378,11 @@ FUNCTION T_notGate.simulateStep:boolean;
 FUNCTION T_notGate.getOutput(CONST index: longint): T_triStateValue;
   begin result:=output; end;
 
-PROCEDURE T_notGate.setInput(CONST index: longint; CONST value: T_triStateValue);
-  begin input:=value;  end;
+FUNCTION T_notGate.setInput(CONST index: longint; CONST value: T_triStateValue):boolean;
+  begin
+    result:=input<>value;
+    input:=value;
+  end;
 
 FUNCTION T_notGate.getInput(CONST index: longint): T_triStateValue;
   begin result:=input; end;
@@ -393,8 +401,11 @@ FUNCTION T_binaryBaseGate.numberOfOutputs: longint;
 FUNCTION T_binaryBaseGate.getOutput(CONST index:longint):T_triStateValue;
   begin result:=output; end;
 
-PROCEDURE T_binaryBaseGate.setInput(CONST index: longint; CONST value: T_triStateValue);
-  begin input[index]:=value; end;
+FUNCTION T_binaryBaseGate.setInput(CONST index: longint; CONST value: T_triStateValue):boolean;
+  begin
+    result:=input[index]<>value;
+    input[index]:=value;
+  end;
 
 FUNCTION T_binaryBaseGate.getInput(CONST index: longint): T_triStateValue;
   begin result:=input[index]; end;
