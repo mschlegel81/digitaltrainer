@@ -6,10 +6,16 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
-  StdCtrls, Buttons, Menus,baseGate,logicGates,propertyDialog;
+  StdCtrls, Buttons, Menus,baseGate,logicGates,propertyDialog,analysisDialog;
 
 TYPE
+
+  { TDigitaltrainerMainForm }
+
   TDigitaltrainerMainForm = class(TForm)
+    MenuItem4: TMenuItem;
+    miAddToPalette: TMenuItem;
+    miAnalyzeBoard: TMenuItem;
     resetButton: TButton;
     ButtonAddCustom: TButton;
     ButtonAddNxor: TButton;
@@ -37,7 +43,6 @@ TYPE
     MenuItem3: TMenuItem;
     miGateProperties: TMenuItem;
     MenuItem7: TMenuItem;
-    miAddToPalette: TMenuItem;
     miDelete: TMenuItem;
     miDeselectAll: TMenuItem;
     miLoad: TMenuItem;
@@ -79,6 +84,7 @@ TYPE
     PROCEDURE MenuItem2Click(Sender: TObject);
     PROCEDURE MenuItem3Click(Sender: TObject);
     PROCEDURE miAddToPaletteClick(Sender: TObject);
+    PROCEDURE miAnalyzeBoardClick(Sender: TObject);
     PROCEDURE miDeleteClick(Sender: TObject);
     PROCEDURE miDeselectAllClick(Sender: TObject);
     PROCEDURE miGatePropertiesClick(Sender: TObject);
@@ -87,7 +93,7 @@ TYPE
     PROCEDURE miQuitClick(Sender: TObject);
     PROCEDURE miSaveClick(Sender: TObject);
     PROCEDURE miSelectAllClick(Sender: TObject);
-    procedure resetButtonClick(Sender: TObject);
+    PROCEDURE resetButtonClick(Sender: TObject);
     PROCEDURE SimTimerTimer(Sender: TObject);
     PROCEDURE speedTrackBarChange(Sender: TObject);
     PROCEDURE ZoomTrackBarChange(Sender: TObject);
@@ -210,6 +216,11 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
     updateSidebar;
   end;
 
+PROCEDURE TDigitaltrainerMainForm.miAnalyzeBoardClick(Sender: TObject);
+  begin
+    analysisForm.showForBoard(workspace.currentBoard);
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.miDeleteClick(Sender: TObject);
   begin
     workspace.currentBoard^.deleteMarkedElements;
@@ -265,7 +276,7 @@ PROCEDURE TDigitaltrainerMainForm.miSelectAllClick(Sender: TObject);
     workspace.currentBoard^.setSelectForAll(true);
   end;
 
-procedure TDigitaltrainerMainForm.resetButtonClick(Sender: TObject);
+PROCEDURE TDigitaltrainerMainForm.resetButtonClick(Sender: TObject);
   begin
     workspace.currentBoard^.reset;
   end;

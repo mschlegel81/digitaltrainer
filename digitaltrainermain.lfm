@@ -1,7 +1,7 @@
 object DigitaltrainerMainForm: TDigitaltrainerMainForm
-  Left = 1151
+  Left = 716
   Height = 569
-  Top = 244
+  Top = 356
   Width = 583
   Caption = 'Digitaltrainer'
   ClientHeight = 549
@@ -389,22 +389,22 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   object SimTimer: TTimer
     Interval = 100
     OnTimer = SimTimerTimer
-    Left = 45
-    Top = 416
+    Left = 392
+    Top = 24
   end
   object SaveDialog1: TSaveDialog
     Filter = 'Workspaces|*.workspace'
-    Left = 338
-    Top = 170
+    Left = 336
+    Top = 80
   end
   object OpenDialog1: TOpenDialog
     Filter = 'Workspaces|*.workspace'
-    Left = 269
-    Top = 130
+    Left = 336
+    Top = 24
   end
   object GateListBoxPopupMenu: TPopupMenu
-    Left = 239
-    Top = 243
+    Left = 264
+    Top = 80
     object MenuItem2: TMenuItem
       Caption = 'Eintrag löschen'
       OnClick = MenuItem2Click
@@ -415,18 +415,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     end
   end
   object MainMenu: TMainMenu
-    Left = 132
-    Top = 12
+    Left = 264
+    Top = 24
     object MenuItem1: TMenuItem
-      Caption = 'Datei'
+      Caption = '&Datei'
       object miNew: TMenuItem
         Caption = '&Neu'
         ShortCut = 16462
         OnClick = miNewClick
-      end
-      object miAddToPalette: TMenuItem
-        Caption = 'Aktuelle Schaltung zur &Palette hinzufügen'
-        OnClick = miAddToPaletteClick
       end
       object miLoad: TMenuItem
         Caption = '&Laden'
@@ -443,8 +439,19 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         OnClick = miQuitClick
       end
     end
+    object MenuItem4: TMenuItem
+      Caption = '&Schaltung'
+      object miAddToPalette: TMenuItem
+        Caption = 'Zur &Palette hinzufügen'
+        OnClick = miAddToPaletteClick
+      end
+      object miAnalyzeBoard: TMenuItem
+        Caption = '&Analysieren...'
+        OnClick = miAnalyzeBoardClick
+      end
+    end
     object MenuItem7: TMenuItem
-      Caption = 'Bearbeiten'
+      Caption = '&Bearbeiten'
       object miSelectAll: TMenuItem
         Caption = 'Alle auswählen'
         ShortCut = 16449
@@ -463,8 +470,8 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   end
   object AnyGatePopupMenu: TPopupMenu
     OnPopup = AnyGatePopupMenuPopup
-    Left = 280
-    Top = 358
+    Left = 264
+    Top = 152
     object miGateProperties: TMenuItem
       Caption = 'Eigenschaften...'
       OnClick = miGatePropertiesClick

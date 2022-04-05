@@ -482,7 +482,6 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
       openSet.add(result,distance(startPoint));
     end;
 
-    //TODO: Is there a plausible earlier exit?!?
     while not openSet.isEmpty do begin
       result:=openSet.ExtractMin(scoreBasis);
       n:=result[length(result)-1];
