@@ -795,8 +795,8 @@ FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): b
   begin
     if not(inherited) then exit(false);
     count:=stream.readNaturalNumber;
+    result:=true;
     if (count<maxLongint) then begin
-      result:=true;
       for i:=0 to longint(count)-1 do begin
         new(board,create);
         if board^.loadFromStream(@self,stream) then begin
@@ -809,7 +809,8 @@ FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): b
         end;
       end;
     end else exit(false);
-    result:=result and currentBoard^.loadFromStream(@self,stream) and stream.allOkay;
+    result:=currentBoard^.loadFromStream(@self,stream);
+    result:=result and stream.allOkay;
   end;
 
 PROCEDURE T_workspace.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
@@ -1175,6 +1176,9 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream:
     setLength(gates,stream.readNaturalNumber);
     for i:=0 to length(gates)-1 do begin
       gateType:=T_gateType(stream.readByte([byte(low(T_gateType))..byte(high(T_gateType))]));
+
+      if not(stream.allOkay) then exit(false);
+
       if gateType=gt_compound then begin
         k:=stream.readNaturalNumber;
         //TODO: This provokes later NPEs!
@@ -1189,7 +1193,7 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream:
           end;
           gt_output: begin
             P_outputGate(behavior)^.ioIndex:=stream.readNaturalNumber;
-            P_outputGate (behavior)^.ioLabel:=stream.readAnsiString;
+            P_outputGate(behavior)^.ioLabel:=stream.readAnsiString;
           end;
           gt_clock   : P_clock(behavior)^.interval:=stream.readNaturalNumber;
         end;
@@ -1207,6 +1211,7 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream:
         setLength(logicWires[i].wires[k].visual,0);
       end;
     end;
+    result:=stream.allOkay;
   end;
 
 PROCEDURE T_circuitBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
@@ -1226,7 +1231,7 @@ PROCEDURE T_circuitBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper)
           stream.writeNaturalNumber(P_outputGate(gates[i]^.behavior)^.ioIndex);
           stream.writeAnsiString   (P_outputGate(gates[i]^.behavior)^.ioLabel);
         end;
-        gt_clock   : stream.writeNaturalNumber(P_clock(gates[i]^.behavior)^.interval);
+        gt_clock   : stream.writeNaturalNumber(P_clock     (gates[i]^.behavior)^.interval);
         gt_compound: stream.writeNaturalNumber(P_customGate(gates[i]^.behavior)^.prototype^.paletteIndex);
       end;
 
@@ -1421,20 +1426,39 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point);
 PROCEDURE T_circuitBoard.rewire;
   VAR connector:T_visualGateConnector;
       i,j:longint;
-      sourcePoint,targetPoint:T_point;
+      //sourcePoint,targetPoint:T_point;
+      startPoint:T_point;
+      targetPoints:T_wirePath;
+      paths:T_wirePathArray;
   begin
     if wireGraph<>nil then dispose(wireGraph,destroy);
     connector.gate:=nil;
     connector.index:=0;
     initWireGraph(connector,false);
     for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
+      startPoint:=source.gate^.getOutputPositionInGridSize(source.index);
+      setLength(targetPoints,length(wires));
+      for j:=0 to length(targetPoints)-1 do
+        targetPoints[j]:=wires[j].sink.gate^.getInputPositionInGridSize(wires[j].sink.index);
+
+      paths:=wireGraph^.findPaths(startPoint,targetPoints);
+
       for j:=0 to length(wires)-1 do begin
-        sourcePoint:=source       .gate^.getOutputPositionInGridSize(source       .index);
-        targetPoint:=wires[j].sink.gate^.getInputPositionInGridSize (wires[j].sink.index);
-        wires[j].visual:=wireGraph^.findPath(sourcePoint,targetPoint);
+        wires[j].visual:=   paths[j];
+        wireGraph^.dropWire(paths[j]);
       end;
-      for j:=0 to length(wires)-1 do wireGraph^.dropWire(wires[j].visual);
+      setLength(paths,0);
     end;
+
+
+    //for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
+    //  for j:=0 to length(wires)-1 do begin
+    //    sourcePoint:=source       .gate^.getOutputPositionInGridSize(source       .index);
+    //    targetPoint:=wires[j].sink.gate^.getInputPositionInGridSize (wires[j].sink.index);
+    //    wires[j].visual:=wireGraph^.findPath(sourcePoint,targetPoint);
+    //  end;
+    //  for j:=0 to length(wires)-1 do wireGraph^.dropWire(wires[j].visual);
+    //end;
     fixWireImageSize;
   end;
 

@@ -9,9 +9,6 @@ USES
   StdCtrls, Buttons, Menus,baseGate,logicGates,propertyDialog;
 
 TYPE
-
-  { TDigitaltrainerMainForm }
-
   TDigitaltrainerMainForm = class(TForm)
     resetButton: TButton;
     ButtonAddCustom: TButton;
@@ -107,9 +104,6 @@ VAR
 IMPLEMENTATION
 
 {$R *.lfm}
-
-{ TDigitaltrainerMainForm }
-
 FUNCTION workspaceFilename:string;
   begin
     result:=ChangeFileExt(paramStr(0),'.workspace');
