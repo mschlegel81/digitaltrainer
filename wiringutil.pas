@@ -77,12 +77,7 @@ TYPE
   { T_nodeMap }
 
   T_nodeMap=object
-    //In this special case, the map can be represented
-    //efficiently by a "sparse array".
-    //X-Dimension: - allocate all up to needed
-    //Y-Dimension: - allocate needed number; maybe retain sorting?!?
     map:array of array of P_aStarNodeInfo;
-
     CONSTRUCTOR create;
     DESTRUCTOR destroy;
     FUNCTION containsKey(CONST p:T_point; OUT value:T_aStarNodeInfo):boolean;
@@ -392,7 +387,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
 
   begin
     potentialResult.seen:=0;
-    potentialResult.score:=Infinity;
+    potentialResult.score:=infinity;
     potentialResult.found:=false;
     nodeMap.create;
     openSet.create;

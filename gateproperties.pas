@@ -32,7 +32,8 @@ CONST
   {gt_nxorGate} [gpe_caption],
   {gt_input}    [gpe_editableLabel],
   {gt_output}   [gpe_editableLabel],
-  {gt_compound} [gpe_caption,gpe_description]);
+  {gt_compound} [gpe_caption,gpe_description],
+  {gt_clock}    [gpe_caption,gpe_intervalGreaterZero]);
 
 TYPE
   T_gatePropertyValue=record
@@ -84,7 +85,9 @@ FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum): T_gate
       gpe_editableLabel: if gate^.gateType in [gt_input,gt_output] then begin
         result.s:=P_inputGate(gate)^.caption;
       end;
-  //        gpe_intervalGreaterZero...;
+      gpe_intervalGreaterZero: if gate^.gateType=gt_clock then begin
+        result.n:=P_clock(gate)^.interval;
+      end;
     end;
   end;
 
@@ -94,7 +97,9 @@ PROCEDURE T_gatePropertyValues.applyValue(CONST prop: T_gatePropertyEnum; CONST 
       gpe_editableLabel: if gate^.gateType in [gt_input,gt_output] then begin
         P_inputGate(gate)^.ioLabel:=value.s;
       end;
-      //        gpe_intervalGreaterZero...;
+      gpe_intervalGreaterZero: if gate^.gateType=gt_clock then begin
+        P_clock(gate)^.interval:=value.n;
+      end;
     end;
   end;
 

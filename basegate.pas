@@ -105,7 +105,7 @@ TYPE
     connections:array of record source,sink:T_gateConnector end;
     inputConnections :array of record
                         caption:string;
-                        value:T_tristatevalue;
+                        value:T_triStateValue;
                         goesTo:array of T_gateConnector;
                       end;
     outputConnections:array of record
@@ -115,14 +115,15 @@ TYPE
 
     CONSTRUCTOR create(CONST origin:P_circuitBoard);
     DESTRUCTOR destroy; virtual;
+    PROCEDURE reset;                   virtual;
     FUNCTION  caption:string;          virtual;
     FUNCTION  numberOfInputs :longint; virtual;
     FUNCTION  numberOfOutputs:longint; virtual;
     FUNCTION  gateType:T_gateType; virtual;
     FUNCTION  simulateStep:boolean;                                       virtual;
-    FUNCTION  getOutput(CONST index:longint):T_tristatevalue;             virtual;
-    PROCEDURE setInput(CONST index:longint; CONST value:T_tristatevalue); virtual;
-    FUNCTION  getInput(CONST index:longint):T_tristatevalue;              virtual;
+    FUNCTION  getOutput(CONST index:longint):T_triStateValue;             virtual;
+    PROCEDURE setInput(CONST index:longint; CONST value:T_triStateValue); virtual;
+    FUNCTION  getInput(CONST index:longint):T_triStateValue;              virtual;
     FUNCTION  clone:P_abstractGate; virtual;
   end;
 
@@ -193,6 +194,7 @@ TYPE
       PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper);
 
       PROPERTY lastClickedGate:P_visualGate read GUI.lastClickedGate;
+      PROCEDURE reset;
   end;
 
 IMPLEMENTATION
@@ -280,6 +282,7 @@ PROCEDURE T_visualGateForCustom.ensureGuiElements;
       setLength(labels,length(shapes));
       for k:=0 to behavior^.numberOfInputs-1 do begin
         labels[shapeIndex]:=TLabel.create(board^.GUI.container);
+        labels[shapeIndex].Tag:=k;
         labels[shapeIndex].parent:=board^.GUI.container;
         labels[shapeIndex].caption:=P_customGate(behavior)^.inputConnections[k].caption;
         labels[shapeIndex].OnClick:=@inputClick;
@@ -287,6 +290,7 @@ PROCEDURE T_visualGateForCustom.ensureGuiElements;
       end;
       for k:=0 to behavior^.numberOfOutputs-1 do begin
         labels[shapeIndex]:=TLabel.create(board^.GUI.container);
+        labels[shapeIndex].Tag:=k;
         labels[shapeIndex].parent:=board^.GUI.container;
         labels[shapeIndex].caption:=P_customGate(behavior)^.outputConnections[k].caption;
         labels[shapeIndex].OnMouseDown:=@outputMouseDown;
@@ -337,7 +341,7 @@ PROCEDURE T_visualGate.setMarked(CONST value: boolean);
     else shapes[0].Brush.color:=clWhite;
   end;
 
-CONST TRI_STATE_NOT:array[T_tristatevalue] of T_tristatevalue=(tsv_true,tsv_false,tsv_false);
+CONST TRI_STATE_NOT:array[T_triStateValue] of T_triStateValue=(tsv_true,tsv_false,tsv_false);
 
 PROCEDURE T_visualGate.inputClick(Sender: TObject);
   VAR k:longint;
@@ -648,6 +652,14 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
     end;
   end;
 
+PROCEDURE T_customGate.reset;
+  VAR gate:P_abstractGate;
+      i:longint;
+  begin
+    for gate in gates do gate^.reset;
+    for i:=0 to length(inputConnections)-1 do inputConnections[i].value:=tsv_true;
+  end;
+
 DESTRUCTOR T_customGate.destroy;
   VAR i:longint;
   begin
@@ -682,7 +694,7 @@ FUNCTION T_customGate.simulateStep:boolean;
   VAR gate:P_abstractGate;
       i:longint;
       tgt:T_gateConnector;
-      v:T_tristatevalue;
+      v:T_triStateValue;
   begin
     result:=false;
     for i:=0 to length(inputConnections)-1 do for tgt in inputConnections[i].goesTo do begin
@@ -698,17 +710,17 @@ FUNCTION T_customGate.simulateStep:boolean;
     end;
   end;
 
-FUNCTION T_customGate.getOutput(CONST index: longint): T_tristatevalue;
+FUNCTION T_customGate.getOutput(CONST index: longint): T_triStateValue;
   begin
     result:=outputConnections[index].comesFrom.getOutputValue;
   end;
 
-PROCEDURE T_customGate.setInput(CONST index: longint; CONST value: T_tristatevalue);
+PROCEDURE T_customGate.setInput(CONST index: longint; CONST value: T_triStateValue);
   begin
     inputConnections[index].value:=value;
   end;
 
-FUNCTION T_customGate.getInput(CONST index: longint): T_tristatevalue;
+FUNCTION T_customGate.getInput(CONST index: longint): T_triStateValue;
   begin
     result:=inputConnections[index].value;
   end;
@@ -773,7 +785,7 @@ PROCEDURE T_workspace.addCustomGate(CONST index: longint; CONST x0, y0: longint)
 
 FUNCTION T_workspace.getSerialVersion: dword;
   begin
-    result:=1;
+    result:=3;
   end;
 
 FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
@@ -1131,7 +1143,7 @@ PROCEDURE T_circuitBoard.setZoom(CONST zoom: longint);
 PROCEDURE T_circuitBoard.simulateStep;
   VAR gate:P_visualGate;
       i,j:longint;
-      output:T_tristatevalue;
+      output:T_triStateValue;
   begin
     for gate in gates do gate^.behavior^.simulateStep;
     for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
@@ -1179,6 +1191,7 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream:
             P_outputGate(behavior)^.ioIndex:=stream.readNaturalNumber;
             P_outputGate (behavior)^.ioLabel:=stream.readAnsiString;
           end;
+          gt_clock   : P_clock(behavior)^.interval:=stream.readNaturalNumber;
         end;
       end;
       origin:=readPoint(stream);
@@ -1213,6 +1226,7 @@ PROCEDURE T_circuitBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper)
           stream.writeNaturalNumber(P_outputGate(gates[i]^.behavior)^.ioIndex);
           stream.writeAnsiString   (P_outputGate(gates[i]^.behavior)^.ioLabel);
         end;
+        gt_clock   : stream.writeNaturalNumber(P_clock(gates[i]^.behavior)^.interval);
         gt_compound: stream.writeNaturalNumber(P_customGate(gates[i]^.behavior)^.prototype^.paletteIndex);
       end;
 
@@ -1225,6 +1239,15 @@ PROCEDURE T_circuitBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper)
       for k:=0 to length(logicWires[i].wires)-1 do begin
         logicWires[i].wires[k].sink.saveToStream(@self,stream);
       end;
+    end;
+  end;
+
+PROCEDURE T_circuitBoard.reset;
+  VAR gate:P_visualGate;
+  begin
+    for gate in gates do begin
+      gate^.behavior^.reset;
+      gate^.updateIoVisuals;
     end;
   end;
 

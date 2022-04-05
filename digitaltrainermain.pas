@@ -13,10 +13,12 @@ TYPE
   { TDigitaltrainerMainForm }
 
   TDigitaltrainerMainForm = class(TForm)
+    resetButton: TButton;
     ButtonAddCustom: TButton;
     ButtonAddNxor: TButton;
     ButtonAddNor: TButton;
     ButtonAddNand: TButton;
+    ButtonAddClock: TButton;
     ButtonAddXor: TButton;
     ButtonAddNot: TButton;
     ButtonAddOr: TButton;
@@ -59,6 +61,7 @@ TYPE
     ZoomTrackBar: TTrackBar;
     speedTrackBar: TTrackBar;
     PROCEDURE AnyGatePopupMenuPopup(Sender: TObject);
+    PROCEDURE ButtonAddClockClick(Sender: TObject);
     PROCEDURE ButtonAddCustomClick(Sender: TObject);
     PROCEDURE ButtonAddAndClick(Sender: TObject);
     PROCEDURE ButtonAddInputClick(Sender: TObject);
@@ -88,6 +91,7 @@ TYPE
     PROCEDURE miQuitClick(Sender: TObject);
     PROCEDURE miSaveClick(Sender: TObject);
     PROCEDURE miSelectAllClick(Sender: TObject);
+    procedure resetButtonClick(Sender: TObject);
     PROCEDURE SimTimerTimer(Sender: TObject);
     PROCEDURE speedTrackBarChange(Sender: TObject);
     PROCEDURE ZoomTrackBarChange(Sender: TObject);
@@ -164,6 +168,9 @@ PROCEDURE TDigitaltrainerMainForm.AnyGatePopupMenuPopup(Sender: TObject);
   begin
     visualGateForContextPopup:=workspace.currentBoard^.lastClickedGate;
   end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddClockClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_clock,0,0);end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddOutputClick(Sender: TObject);
   begin workspace.addBaseGate(gt_output,0,0);end;
@@ -268,6 +275,11 @@ PROCEDURE TDigitaltrainerMainForm.miSaveClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miSelectAllClick(Sender: TObject);
   begin
     workspace.currentBoard^.setSelectForAll(true);
+  end;
+
+procedure TDigitaltrainerMainForm.resetButtonClick(Sender: TObject);
+  begin
+    workspace.currentBoard^.reset;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.SimTimerTimer(Sender: TObject);
