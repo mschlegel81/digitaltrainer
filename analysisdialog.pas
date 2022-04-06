@@ -13,7 +13,12 @@ TYPE
   { TanalysisForm }
 
   TanalysisForm = class(TForm)
+    ResetCheckBox: TCheckBox;
     GroupBox1: TGroupBox;
+    GroupBox2: TGroupBox;
+    rbSimOrdered: TRadioButton;
+    rbBitFlip: TRadioButton;
+    rbSimRandom: TRadioButton;
     rbBinary: TRadioButton;
     rbPositive: TRadioButton;
     rb2Complement: TRadioButton;
@@ -46,20 +51,23 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
     VAR k:longint=0;
     begin
       inc(inputsGenerated);
-      if inputsGenerated>1000 then exit;
-      if k>=length(input) then exit;
-
-      if length(input)<9 then begin
+      if (inputsGenerated>1000) or (length(input)=0) then exit(false);
+      if rbSimOrdered.checked then begin
         //Counting up in binary ;-)
         repeat
           input[k]:=not(input[k]);
           if input[k] then exit(true)
                       else inc(k);
         until k>=length(input);
+        result:=false;
+      end else if rbBitFlip.checked then begin
+        k:=random(length(input));
+        input[k]:=not(input[k]);
+        result:=true;
       end else begin
         for k:=0 to length(input)-1 do input[k]:=(random>0.5);
+        result:=true;
       end;
-      result:=false;
     end;
 
   FUNCTION getIoString(CONST wire:T_wireValue):string;
@@ -92,14 +100,15 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       end;
     end;
 
-  VAR i:longint;
+  VAR i,stepCount:longint;
       r,c:longint;
-      w:T_wireValue;
       wIn:array of record
         v:T_wireValue;
         firstIndex:longint;
       end;
+      startTicks: qword;
   begin
+    startTicks:=GetTickCount64;
     StringGrid.rowCount:=1;
     c:=0;
     setLength(wIn,clonedGate^.numberOfInputs);
@@ -110,17 +119,18 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
     end;
     setLength(input,c);
     for i:=0 to length(input)-1 do input[i]:=false;
-
+    clonedGate^.reset;
     repeat
-      clonedGate^.reset;
-      for c:=0 to length(wIn)-1 do
+      if ResetCheckBox.checked then clonedGate^.reset;
+      for c:=0 to length(wIn)-1 do begin
         for i:=0 to wIn[c].v.width-1 do
           if input[wIn[c].firstIndex+i]
           then wIn[c].v.bit[i]:=tsv_true
           else wIn[c].v.bit[i]:=tsv_false;
-
-      i:=0;
-      while (i<=1000) and clonedGate^.simulateStep do inc(i);
+        clonedGate^.setInput(c,wIn[c].v);
+      end;
+      stepCount:=0;
+      while (stepCount<=1000) and clonedGate^.simulateStep do inc(stepCount);
 
       r:=StringGrid.rowCount;
       StringGrid.rowCount:=r+1;
@@ -129,14 +139,20 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
         StringGrid.Cells[c,r]:=getIoString(wIn[i].v);
         inc(c);
       end;
-      if i<=1000 then StringGrid.Cells[c,r]:=intToStr(i)
-                 else StringGrid.Cells[c,r]:='>1000';
+
+      if stepCount<=1000
+      then StringGrid.Cells[c,r]:=intToStr(stepCount)
+      else StringGrid.Cells[c,r]:='>1000';
+
       inc(c);
       for i:=0 to clonedGate^.numberOfOutputs-1 do begin
         StringGrid.Cells[c,r]:=getIoString(clonedGate^.getOutput(i));
         inc(c);
       end;
-      Application.ProcessMessages;
+      if GetTickCount64>startTicks+500 then begin
+        Application.ProcessMessages;
+        startTicks:=GetTickCount64;
+      end;
     until not(nextInput);
   end;
 

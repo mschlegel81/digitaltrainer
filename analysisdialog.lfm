@@ -22,37 +22,36 @@ object analysisForm: TanalysisForm
       ClientHeight = 591
       ClientWidth = 689
       object StringGrid: TStringGrid
+        AnchorSideLeft.Control = TabSheet1
+        AnchorSideTop.Control = GroupBox1
+        AnchorSideTop.Side = asrBottom
+        AnchorSideRight.Control = TabSheet1
+        AnchorSideRight.Side = asrBottom
+        AnchorSideBottom.Control = TabSheet1
+        AnchorSideBottom.Side = asrBottom
         Left = 0
         Height = 510
         Top = 81
         Width = 689
-        Align = alClient
+        Align = alCustom
+        Anchors = [akTop, akLeft, akRight, akBottom]
         FixedCols = 0
         Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing, goDblClickAutoSize, goSmoothScroll]
         TabOrder = 0
       end
       object GroupBox1: TGroupBox
+        AnchorSideLeft.Control = TabSheet1
+        AnchorSideTop.Control = TabSheet1
         Left = 0
         Height = 81
         Top = 0
-        Width = 689
-        Align = alTop
+        Width = 175
+        Align = alCustom
         AutoSize = True
-        Caption = 'Einstellungen'
+        Caption = 'Darstellung'
         ClientHeight = 61
-        ClientWidth = 685
+        ClientWidth = 171
         TabOrder = 1
-        object UpdateTableButton: TButton
-          Left = 591
-          Height = 61
-          Top = 0
-          Width = 94
-          Align = alRight
-          AutoSize = True
-          Caption = 'Aktualisieren'
-          OnClick = UpdateTableButtonClick
-          TabOrder = 0
-        end
         object rbBinary: TRadioButton
           AnchorSideLeft.Control = GroupBox1
           AnchorSideTop.Control = GroupBox1
@@ -65,7 +64,7 @@ object analysisForm: TanalysisForm
           BorderSpacing.Top = 4
           Caption = 'Binär'
           Checked = True
-          TabOrder = 3
+          TabOrder = 2
           TabStop = True
         end
         object rbPositive: TRadioButton
@@ -78,7 +77,7 @@ object analysisForm: TanalysisForm
           Width = 167
           Align = alCustom
           Caption = 'Dezimal (positiv ganzzahlig)'
-          TabOrder = 1
+          TabOrder = 0
         end
         object rb2Complement: TRadioButton
           AnchorSideLeft.Control = rbPositive
@@ -90,6 +89,89 @@ object analysisForm: TanalysisForm
           Width = 163
           Align = alCustom
           Caption = 'Dezimal (2er-Komplement)'
+          TabOrder = 1
+        end
+      end
+      object UpdateTableButton: TButton
+        AnchorSideLeft.Control = GroupBox2
+        AnchorSideLeft.Side = asrBottom
+        AnchorSideTop.Control = GroupBox2
+        AnchorSideBottom.Control = GroupBox2
+        AnchorSideBottom.Side = asrBottom
+        Left = 432
+        Height = 81
+        Top = 0
+        Width = 94
+        Align = alCustom
+        Anchors = [akTop, akLeft, akBottom]
+        AutoSize = True
+        Caption = 'Aktualisieren'
+        OnClick = UpdateTableButtonClick
+        TabOrder = 2
+      end
+      object GroupBox2: TGroupBox
+        AnchorSideLeft.Control = GroupBox1
+        AnchorSideLeft.Side = asrBottom
+        AnchorSideTop.Control = TabSheet1
+        AnchorSideBottom.Control = GroupBox1
+        AnchorSideBottom.Side = asrBottom
+        Left = 175
+        Height = 81
+        Top = 0
+        Width = 257
+        Align = alCustom
+        Anchors = [akTop, akLeft, akBottom]
+        Caption = 'Simulation'
+        ClientHeight = 61
+        ClientWidth = 253
+        TabOrder = 3
+        object rbSimOrdered: TRadioButton
+          AnchorSideLeft.Control = GroupBox2
+          AnchorSideTop.Control = GroupBox2
+          Left = 4
+          Height = 19
+          Top = 4
+          Width = 98
+          Align = alCustom
+          BorderSpacing.Left = 4
+          BorderSpacing.Top = 4
+          Caption = 'der Reihe nach'
+          Checked = True
+          TabOrder = 3
+          TabStop = True
+        end
+        object rbBitFlip: TRadioButton
+          AnchorSideLeft.Control = rbSimOrdered
+          AnchorSideTop.Control = rbSimOrdered
+          AnchorSideTop.Side = asrBottom
+          Left = 4
+          Height = 19
+          Top = 23
+          Width = 109
+          Caption = 'zufälliger Bit-Flip'
+          TabOrder = 0
+        end
+        object rbSimRandom: TRadioButton
+          AnchorSideLeft.Control = rbBitFlip
+          AnchorSideTop.Control = rbBitFlip
+          AnchorSideTop.Side = asrBottom
+          Left = 4
+          Height = 19
+          Top = 42
+          Width = 58
+          Caption = 'zufällig'
+          TabOrder = 1
+        end
+        object ResetCheckBox: TCheckBox
+          AnchorSideLeft.Control = rbSimOrdered
+          AnchorSideLeft.Side = asrBottom
+          AnchorSideTop.Control = GroupBox2
+          Left = 102
+          Height = 19
+          Top = 3
+          Width = 141
+          BorderSpacing.Top = 3
+          Caption = 'Reset vor jedem Schritt'
           TabOrder = 2
         end
       end
