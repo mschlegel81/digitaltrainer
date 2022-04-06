@@ -15,7 +15,13 @@ TYPE
               gt_input,
               gt_output,
               gt_compound,
-              gt_clock);
+              gt_clock,
+              gt_adapter1to4,
+              gt_adapter4to1,
+              gt_adapter1to8,
+              gt_adapter8to1,
+              gt_adapter4to8,
+              gt_adapter8to4);
 
   T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
 
@@ -83,6 +89,8 @@ TYPE
       FUNCTION  caption:string;          virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
+      FUNCTION  inputWidth (CONST index:longint):byte; virtual;
+      FUNCTION  outputWidth(CONST index:longint):byte; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
       FUNCTION  simulateStep:boolean;    virtual;
       FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
@@ -99,6 +107,28 @@ TYPE
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
+  end;
+
+  { T_adapter }
+  P_adapter=^T_adapter;
+  T_adapter=object(T_abstractGate)
+    private
+      io:T_wireValue;
+      subtype:T_gateType;
+    public
+      CONSTRUCTOR create(CONST subtype_:T_gateType);
+      PROCEDURE reset;                   virtual;
+      FUNCTION  clone:P_abstractGate;    virtual;
+      FUNCTION  caption:string;          virtual;
+      FUNCTION  numberOfInputs :longint; virtual;
+      FUNCTION  numberOfOutputs:longint; virtual;
+      FUNCTION  inputWidth (CONST index:longint):byte; virtual;
+      FUNCTION  outputWidth(CONST index:longint):byte; virtual;
+      FUNCTION  gateType:T_gateType;     virtual;
+      FUNCTION  simulateStep:boolean;    virtual;
+      FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
+      FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
+      FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
   end;
 
   T_binaryBaseGate=object(T_abstractGate)
@@ -170,9 +200,6 @@ TYPE
    end;
 
    P_clock=^T_clock;
-
-   { T_clock }
-
    T_clock=object(T_abstractGate)
       tick:boolean;
       interval,counter:longint;
@@ -194,7 +221,7 @@ FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
 OPERATOR =(CONST x,y:T_gateConnector):boolean;
 OPERATOR :=(CONST x:T_triStateValue):T_wireValue;
 FUNCTION isFullyDefined(CONST w:T_wireValue):boolean;
-OPERATOR =(CONST x,y:T_wireValue):Boolean;
+OPERATOR =(CONST x,y:T_wireValue):boolean;
 
 IMPLEMENTATION
 USES sysutils;
@@ -216,7 +243,140 @@ FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
       gt_input   : new(P_inputGate (result),create);
       gt_output  : new(P_outputGate(result),create);
       gt_clock   : new(P_clock     (result),create);
+      gt_adapter1to4,
+      gt_adapter4to1,
+      gt_adapter1to8,
+      gt_adapter8to1,
+      gt_adapter4to8,
+      gt_adapter8to4: new(P_adapter(result),create(gateType));
       else result:=nil;
+    end;
+  end;
+
+{ T_adapter }
+
+CONSTRUCTOR T_adapter.create(CONST subtype_: T_gateType);
+  begin
+    if subtype_ in [gt_adapter1to4,
+                    gt_adapter4to1,
+                    gt_adapter1to8,
+                    gt_adapter8to1,
+                    gt_adapter4to8,
+                    gt_adapter8to4]
+    then subtype:=subtype_
+    else subtype:=gt_adapter1to4;
+    case subtype of
+      gt_adapter1to4,
+      gt_adapter4to1: io.width:=4;
+      gt_adapter1to8,
+      gt_adapter8to1,
+      gt_adapter4to8,
+      gt_adapter8to4: io.width:=8;
+    end;
+  end;
+
+PROCEDURE T_adapter.reset;
+  VAR i:byte;
+  begin
+    for i:=0 to 7 do io.bit[i]:=tsv_undetermined;
+  end;
+
+FUNCTION T_adapter.clone: P_abstractGate;
+  begin new(P_adapter(result),create(subtype)); end;
+
+FUNCTION T_adapter.caption: string;
+  begin result:='Adapter'; end;
+
+FUNCTION T_adapter.numberOfInputs: longint;
+  CONST R:array[gt_adapter1to4..gt_adapter8to4] of longint=(4,1,8,1,2,1);
+  begin result:=R[subtype]; end;
+
+FUNCTION T_adapter.numberOfOutputs: longint;
+  CONST R:array[gt_adapter1to4..gt_adapter8to4] of longint=(1,4,1,8,1,2);
+  begin result:=R[subtype]; end;
+
+FUNCTION T_adapter.inputWidth(CONST index: longint): byte;
+  CONST R:array[gt_adapter1to4..gt_adapter8to4] of byte=(1,4,1,8,4,8);
+  begin result:=R[subtype]; end;
+
+FUNCTION T_adapter.outputWidth(CONST index: longint): byte;
+  CONST R:array[gt_adapter1to4..gt_adapter8to4] of byte=(4,1,8,1,8,4);
+  begin result:=R[subtype]; end;
+
+FUNCTION T_adapter.gateType: T_gateType;
+  begin
+    result:=subtype;
+  end;
+
+FUNCTION T_adapter.simulateStep: boolean;
+  begin result:=false; end;
+
+FUNCTION T_adapter.getOutput(CONST index: longint): T_wireValue;
+  VAR k0,k:longint;
+  begin
+    case subtype of
+      gt_adapter1to4,
+      gt_adapter1to8,
+      gt_adapter4to8:result:=io;
+      gt_adapter4to1,
+      gt_adapter8to1: begin
+        result.width:=1;
+        result.bit[0]:=io.bit[index];
+      end;
+      gt_adapter8to4: begin
+        result.width:=4;
+        k0:=4*index;
+        for k:=0 to 3 do result.bit[k]:=io.bit[k+k0];
+      end;
+    end;
+  end;
+
+FUNCTION T_adapter.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
+  VAR k0,k:longint;
+  begin
+    case subtype of
+      gt_adapter4to1,
+      gt_adapter8to1,
+      gt_adapter8to4: begin
+        result:=
+        io<>value;
+        io:=value;
+      end;
+      gt_adapter1to4,
+      gt_adapter1to8: begin
+        result:=
+        io.bit[index]<>value.bit[0];
+        io.bit[index]:=value.bit[0];
+      end;
+      gt_adapter4to8: begin
+        k0:=4*index;
+        result:=false;
+        for k:=0 to 3 do begin
+          result:=result or
+          (io.bit[k+k0]<>value.bit[k]);
+           io.bit[k+k0]:=value.bit[k] ;
+        end;
+      end;
+    end;
+  end;
+
+FUNCTION T_adapter.getInput(CONST index: longint): T_wireValue;
+  VAR k0,k:longint;
+  begin
+    case subtype of
+      gt_adapter4to1,
+      gt_adapter8to1,
+      gt_adapter8to4: result:=io;
+      gt_adapter1to4,
+      gt_adapter1to8: begin
+        result.width:=1;
+        result.bit[0]:=io.bit[index]
+      end;
+      gt_adapter4to8: begin
+        k0:=4*index;
+        result.width:=4;
+        for k:=0 to 3 do result.bit[k]:=io.bit[k+k0];
+      end;
     end;
   end;
 
@@ -279,7 +439,7 @@ FUNCTION isFullyDefined(CONST w:T_wireValue):boolean;
     for i:=0 to w.width-1 do if w.bit[i]=tsv_undetermined then exit(false);
   end;
 
-OPERATOR =(CONST x,y:T_wireValue):Boolean;
+OPERATOR =(CONST x,y:T_wireValue):boolean;
   VAR i:longint;
   begin
     result:=x.width=y.width;
@@ -340,10 +500,20 @@ FUNCTION T_inputGate.numberOfInputs: longint;
 FUNCTION T_inputGate.numberOfOutputs: longint;
   begin result:=1; end;
 
+FUNCTION T_inputGate.inputWidth(CONST index: longint): byte;
+  begin
+    result:=width;
+  end;
+
+FUNCTION T_inputGate.outputWidth(CONST index: longint): byte;
+  begin
+    result:=width;
+  end;
+
 FUNCTION T_inputGate.gateType: T_gateType;
   begin result:=gt_input; end;
 
-FUNCTION T_inputGate.simulateStep:boolean;
+FUNCTION T_inputGate.simulateStep: boolean;
   begin
     result:=false;
   end;
@@ -351,7 +521,8 @@ FUNCTION T_inputGate.simulateStep:boolean;
 FUNCTION T_inputGate.getOutput(CONST index: longint): T_wireValue;
   begin result:=io; end;
 
-FUNCTION T_inputGate.setInput(CONST index: longint; CONST value: T_wireValue):boolean;
+FUNCTION T_inputGate.setInput(CONST index: longint; CONST value: T_wireValue
+  ): boolean;
   begin
     result:=io<>value.bit[0];
     io:=value.bit[0];
@@ -555,7 +726,7 @@ FUNCTION T_nandGate  .clone:P_abstractGate; begin new(P_nandGate(result),create)
 FUNCTION T_xorGate   .clone:P_abstractGate; begin new(P_xorGate (result),create); end;
 FUNCTION T_orGate    .clone:P_abstractGate; begin new(P_orGate  (result),create); end;
 FUNCTION T_andGate   .clone:P_abstractGate; begin new(P_andGate (result),create); end;
-FUNCTION T_inputGate .clone:P_abstractGate; begin new(P_inputGate (result),create); P_inputGate (result)^.ioIndex:=ioIndex; P_inputGate (result)^.ioLabel:=ioLabel; P_inputGate (result)^.width:=width; end;
+FUNCTION T_inputGate.clone: P_abstractGate; begin new(P_inputGate (result),create); P_inputGate (result)^.ioIndex:=ioIndex; P_inputGate (result)^.ioLabel:=ioLabel; P_inputGate (result)^.width:=width; end;
 FUNCTION T_outputGate.clone:P_abstractGate; begin new(P_outputGate(result),create); P_outputGate(result)^.ioIndex:=ioIndex; P_outputGate(result)^.ioLabel:=ioLabel; P_outputGate(result)^.width:=width; end;
 
 end.

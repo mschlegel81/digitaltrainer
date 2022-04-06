@@ -35,7 +35,13 @@ CONST
   {gt_input}    [gpe_editableLabel,gpe_widthInBits],
   {gt_output}   [gpe_editableLabel,gpe_widthInBits],
   {gt_compound} [gpe_caption,gpe_description],
-  {gt_clock}    [gpe_caption,gpe_intervalGreaterZero]);
+  {gt_clock}    [gpe_caption,gpe_intervalGreaterZero],
+  {gt_adapter1to4} [gpe_caption],
+  {gt_adapter4to1} [gpe_caption],
+  {gt_adapter1to8} [gpe_caption],
+  {gt_adapter8to1} [gpe_caption],
+  {gt_adapter4to8} [gpe_caption],
+  {gt_adapter8to4} [gpe_caption]);
 
 TYPE
   T_gatePropertyValue=record

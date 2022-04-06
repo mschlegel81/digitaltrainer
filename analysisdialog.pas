@@ -67,7 +67,7 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
         k:int64=0;
         maxVal:int64;
     begin
-      if rbBinary.Checked then begin
+      if rbBinary.checked then begin
         result:='';
         for i:=wire.width-1 downto 0 do
         case wire.bit[i] of
@@ -84,11 +84,11 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
           end;
           k:=k shl 1;
         end;
-        if rb2Complement.Checked and (wire.width>1) then begin
+        if rb2Complement.checked and (wire.width>1) then begin
           maxVal:=1 shl (wire.width-1);
           if k>maxVal then k:=maxVal-k;
         end;
-        result:=IntToStr(k);
+        result:=intToStr(k);
       end;
     end;
 
