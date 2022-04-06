@@ -106,6 +106,7 @@
         <Filename Value="analysisdialog.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="analysisForm"/>
+        <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="analysisDialog"/>
       </Unit7>

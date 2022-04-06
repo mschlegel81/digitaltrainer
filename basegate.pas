@@ -107,11 +107,13 @@ TYPE
     connections:array of record source,sink:T_gateConnector end;
     inputConnections :array of record
                         caption:string;
-                        value:T_triStateValue;
+                        width:byte;
+                        value:T_wireValue;
                         goesTo:array of T_gateConnector;
                       end;
     outputConnections:array of record
                         caption:string;
+                        width:byte;
                         comesFrom:T_gateConnector;
                       end;
 
@@ -121,11 +123,13 @@ TYPE
     FUNCTION  caption:string;          virtual;
     FUNCTION  numberOfInputs :longint; virtual;
     FUNCTION  numberOfOutputs:longint; virtual;
+    FUNCTION  inputWidth (CONST index:longint):byte; virtual;
+    FUNCTION  outputWidth(CONST index:longint):byte; virtual;
     FUNCTION  gateType:T_gateType; virtual;
-    FUNCTION  simulateStep:boolean;                                       virtual;
-    FUNCTION  getOutput(CONST index:longint):T_triStateValue;             virtual;
-    FUNCTION setInput(CONST index:longint; CONST value:T_triStateValue):boolean; virtual;
-    FUNCTION  getInput(CONST index:longint):T_triStateValue;              virtual;
+    FUNCTION  simulateStep:boolean; virtual;
+    FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
+    FUNCTION setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
+    FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
     FUNCTION  clone:P_abstractGate; virtual;
   end;
 
@@ -349,7 +353,7 @@ PROCEDURE T_visualGate.inputClick(Sender: TObject);
   VAR k:longint;
   begin
     k:=TControl(Sender).Tag;
-    behavior^.setInput(k,TRI_STATE_NOT[behavior^.getInput(k)]);
+    if behavior^.inputWidth(k)=1 then behavior^.setInput(k,TRI_STATE_NOT[behavior^.getInput(k).bit[0]]);
     updateIoVisuals;
     if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
   end;
@@ -357,8 +361,8 @@ PROCEDURE T_visualGate.inputClick(Sender: TObject);
 PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     if (button=mbLeft) then begin
-      if behavior^.gateType=gt_input then begin
-        behavior^.setInput(0,TRI_STATE_NOT[behavior^.getInput(0)]);
+      if (behavior^.gateType=gt_input) and (P_inputGate(behavior)^.width=1) then begin
+        behavior^.setInput(0,TRI_STATE_NOT[behavior^.getInput(0).bit[0]]);
         updateIoVisuals;
         if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
       end;
@@ -515,13 +519,16 @@ PROCEDURE T_visualGateForCustom.Repaint;
 PROCEDURE T_visualGate.updateIoVisuals;
   VAR shapeIndex:longint=1;
       i:longint;
+      w:T_wireValue;
   begin
     if (length(shapes)=0) then begin
       ensureGuiElements;
       Repaint;
     end;
     for i:=0 to numberOfInputs-1 do begin
-      case behavior^.getInput(i) of
+      w:=behavior^.getInput(i);
+      if w.width>1 then   shapes[shapeIndex].Brush.color:=clBlue
+      else case w.bit[0] of
         tsv_true        : shapes[shapeIndex].Brush.color:=clLime;
         tsv_false       : shapes[shapeIndex].Brush.color:=clGray;
         tsv_undetermined: shapes[shapeIndex].Brush.color:=clBtnFace;
@@ -529,7 +536,9 @@ PROCEDURE T_visualGate.updateIoVisuals;
       inc(shapeIndex);
     end;
     for i:=0 to numberOfOutputs-1 do begin
-      case behavior^.getOutput(i) of
+      w:=behavior^.getOutput(i);
+      if w.width>1 then   shapes[shapeIndex].Brush.color:=clBlue;
+      case w.bit[0]  of
         tsv_true        : shapes[shapeIndex].Brush.color:=clLime;
         tsv_false       : shapes[shapeIndex].Brush.color:=clGray;
         tsv_undetermined: shapes[shapeIndex].Brush.color:=clBtnFace;
@@ -582,6 +591,7 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
         k:=length(inputConnections[ioIdx].goesTo);
         setLength(inputConnections[ioIdx].goesTo,k+1);
         inputConnections[ioIdx].goesTo[k]:=tgt;
+        inputConnections[ioIdx].width  :=P_inputGate(src.gate)^.width;
         inputConnections[ioIdx].caption:=P_inputGate(src.gate)^.caption;
       end else if tgt.gate^.gateType=gt_output then begin
         ioIdx:=P_outputGate(tgt.gate)^.ioIndex;
@@ -594,7 +604,8 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
           end;
         end;
         outputConnections[ioIdx].comesFrom:=src;
-        outputConnections[ioIdx].caption:=P_outputGate(tgt.gate)^.caption;
+        outputConnections[ioIdx].width    :=P_outputGate(tgt.gate)^.width;
+        outputConnections[ioIdx].caption  :=P_outputGate(tgt.gate)^.caption;
       end else begin
         k:=length(connections);
         setLength(connections,k+1);
@@ -604,11 +615,15 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
     end;
 
   FUNCTION anyOutputUndetermined:boolean;
-    VAR k:longint;
+    VAR k,j:longint;
+        w:T_wireValue;
+
     begin
-      for k:=0 to numberOfOutputs-1 do
-      if getOutput(k)=tsv_undetermined
-      then exit(true);
+      for k:=0 to numberOfOutputs-1 do begin
+        w:=getOutput(k);
+        for j:=0 to w.width-1 do
+        if w.bit[j]=tsv_undetermined then exit(true);
+      end;
       result:=false;
     end;
 
@@ -688,6 +703,16 @@ FUNCTION T_customGate.numberOfOutputs: longint;
     result:=length(outputConnections);
   end;
 
+FUNCTION T_customGate.inputWidth (CONST index:longint):byte;
+  begin
+    result:=inputConnections[index].width;
+  end;
+
+FUNCTION T_customGate.outputWidth(CONST index:longint):byte;
+  begin
+    result:=outputConnections[index].width;
+  end;
+
 FUNCTION T_customGate.gateType: T_gateType;
   begin
     result:=gt_compound;
@@ -697,34 +722,34 @@ FUNCTION T_customGate.simulateStep:boolean;
   VAR gate:P_abstractGate;
       i:longint;
       tgt:T_gateConnector;
-      v:T_triStateValue;
+      v:T_wireValue;
   begin
     result:=false;
     for i:=0 to length(inputConnections)-1 do for tgt in inputConnections[i].goesTo do begin
       v:=inputConnections[i].value;
-      if v<>tsv_undetermined
+      if isFullyDefined(v)
       then result:=tgt.setInputValue(v) or result;
     end;
     for gate in gates do result:=gate^.simulateStep or result;
     for i:=0 to length(connections)-1 do with connections[i] do begin
       v:=source.getOutputValue;
-      if v<>tsv_undetermined
+      if isFullyDefined(v)
       then result:=sink.setInputValue(v) or result;
     end;
   end;
 
-FUNCTION T_customGate.getOutput(CONST index: longint): T_triStateValue;
+FUNCTION T_customGate.getOutput(CONST index: longint): T_wireValue;
   begin
     result:=outputConnections[index].comesFrom.getOutputValue;
   end;
 
-FUNCTION T_customGate.setInput(CONST index: longint; CONST value: T_triStateValue):boolean;
+FUNCTION T_customGate.setInput(CONST index: longint; CONST value: T_wireValue):boolean;
   begin
     result:=inputConnections[index].value<>value;
     inputConnections[index].value:=value;
   end;
 
-FUNCTION T_customGate.getInput(CONST index: longint): T_triStateValue;
+FUNCTION T_customGate.getInput(CONST index: longint): T_wireValue;
   begin
     result:=inputConnections[index].value;
   end;
@@ -1152,14 +1177,14 @@ PROCEDURE T_circuitBoard.setZoom(CONST zoom: longint);
 FUNCTION T_circuitBoard.simulateSteps(CONST count:longint):boolean;
   VAR gate:P_visualGate;
       i,j,step:longint;
-      output:T_triStateValue;
+      output:T_wireValue;
   begin
     result:=false;
     for step:=1 to count do begin
       for gate in gates do result:=gate^.behavior^.simulateStep or result;
       for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
         output:=source.gate^.behavior^.getOutput(source.index);
-        if output<>tsv_undetermined then for j:=0 to length(wires)-1 do
+        if isFullyDefined(output) then for j:=0 to length(wires)-1 do
           result:=wires[j].sink.gate^.behavior^.setInput(wires[j].sink.index,output) or result;
       end;
     end;

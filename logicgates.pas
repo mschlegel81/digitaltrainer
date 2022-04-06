@@ -4,6 +4,7 @@ UNIT logicGates;
 
 INTERFACE
 TYPE
+
   T_gateType=(gt_notGate,
               gt_andGate,
               gt_orGate,
@@ -18,6 +19,11 @@ TYPE
 
   T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
 
+  T_wireValue=record
+    bit:array[0..7] of T_triStateValue;
+    width:byte;
+  end;
+
   P_abstractGate=^T_abstractGate;
   T_abstractGate=object
     public
@@ -29,18 +35,20 @@ TYPE
       FUNCTION  getDescription:string;   virtual;
       FUNCTION  numberOfInputs :longint; virtual; abstract;
       FUNCTION  numberOfOutputs:longint; virtual; abstract;
+      FUNCTION  inputWidth (CONST index:longint):byte; virtual;
+      FUNCTION  outputWidth(CONST index:longint):byte; virtual;
       FUNCTION  gateType:T_gateType;     virtual; abstract;
       FUNCTION  simulateStep:boolean;    virtual; abstract;
-      FUNCTION  getOutput(CONST index:longint):T_triStateValue;             virtual; abstract;
-      FUNCTION  setInput(CONST index:longint; CONST value:T_triStateValue):boolean; virtual; abstract;
-      FUNCTION  getInput(CONST index:longint):T_triStateValue;              virtual; abstract;
+      FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual; abstract;
+      FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual; abstract;
+      FUNCTION  getInput(CONST index:longint):T_wireValue; virtual; abstract;
     end;
 
   T_gateConnector=object
     gate:P_abstractGate;
     index:longint;
-    FUNCTION getOutputValue:T_triStateValue;
-    FUNCTION setInputValue(CONST v:T_triStateValue):boolean;
+    FUNCTION getOutputValue:T_wireValue;
+    FUNCTION setInputValue(CONST v:T_wireValue):boolean;
   end;
 
   P_notGate=^T_notGate;
@@ -56,9 +64,9 @@ TYPE
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
       FUNCTION  simulateStep:boolean;    virtual;
-      FUNCTION  getOutput(CONST index:longint):T_triStateValue;             virtual;
-      FUNCTION  setInput(CONST index:longint; CONST value:T_triStateValue):boolean; virtual;
-      FUNCTION  getInput(CONST index:longint):T_triStateValue;              virtual;
+      FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
+      FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
+      FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
   end;
 
   P_inputGate=^T_inputGate;
@@ -68,6 +76,7 @@ TYPE
     public
       ioLabel:string;
       ioIndex:longint;
+      width:byte;
       CONSTRUCTOR create;
       PROCEDURE reset;                   virtual;
       FUNCTION  clone:P_abstractGate;    virtual;
@@ -76,9 +85,9 @@ TYPE
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
       FUNCTION  simulateStep:boolean;    virtual;
-      FUNCTION  getOutput(CONST index:longint):T_triStateValue;             virtual;
-      FUNCTION  setInput(CONST index:longint; CONST value:T_triStateValue):boolean; virtual;
-      FUNCTION  getInput(CONST index:longint):T_triStateValue;              virtual;
+      FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
+      FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
+      FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
   end;
 
   P_outputGate=^T_outputGate;
@@ -101,9 +110,9 @@ TYPE
        PROCEDURE reset;                   virtual;
        FUNCTION  numberOfInputs :longint; virtual;
        FUNCTION  numberOfOutputs:longint; virtual;
-       FUNCTION  getOutput(CONST index:longint):T_triStateValue; virtual;
-       FUNCTION  setInput(CONST index:longint; CONST value:T_triStateValue):boolean; virtual;
-       FUNCTION  getInput(CONST index:longint):T_triStateValue;              virtual;
+       FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
+       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
+       FUNCTION  getInput(CONST index:longint):T_wireValue;              virtual;
    end;
 
    P_andGate=^T_andGate;
@@ -176,13 +185,17 @@ TYPE
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
       FUNCTION  simulateStep:boolean;    virtual;
-      FUNCTION  getOutput(CONST index:longint):T_triStateValue;             virtual;
-      FUNCTION  setInput(CONST index:longint; CONST value:T_triStateValue):boolean; virtual;
-      FUNCTION  getInput(CONST index:longint):T_triStateValue;              virtual;
+      FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
+      FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
+      FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
     end;
 
 FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
 OPERATOR =(CONST x,y:T_gateConnector):boolean;
+OPERATOR :=(CONST x:T_triStateValue):T_wireValue;
+FUNCTION isFullyDefined(CONST w:T_wireValue):boolean;
+OPERATOR =(CONST x,y:T_wireValue):Boolean;
+
 IMPLEMENTATION
 USES sysutils;
 OPERATOR =(CONST x,y:T_gateConnector):boolean;
@@ -253,16 +266,36 @@ FUNCTION T_clock.simulateStep: boolean;
     result:=true;
   end;
 
-FUNCTION T_clock.getOutput(CONST index: longint): T_triStateValue;
+OPERATOR :=(CONST x:T_triStateValue):T_wireValue;
+  begin
+    result.width:=1;
+    result.bit[0]:=x;
+  end;
+
+FUNCTION isFullyDefined(CONST w:T_wireValue):boolean;
+  VAR i:longint;
+  begin
+    result:=true;
+    for i:=0 to w.width-1 do if w.bit[i]=tsv_undetermined then exit(false);
+  end;
+
+OPERATOR =(CONST x,y:T_wireValue):Boolean;
+  VAR i:longint;
+  begin
+    result:=x.width=y.width;
+    for i:=0 to x.width-1 do result:=result and (x.bit[i]=y.bit[i]);
+  end;
+
+FUNCTION T_clock.getOutput(CONST index: longint): T_wireValue;
   CONST T:array[false..true] of T_triStateValue=(tsv_false,tsv_true);
   begin result:=T[tick]; end;
 
-FUNCTION T_clock.setInput(CONST index: longint; CONST value: T_triStateValue):boolean;
+FUNCTION T_clock.setInput(CONST index: longint; CONST value: T_wireValue):boolean;
   begin
     result:=false;
   end;
 
-FUNCTION T_clock.getInput(CONST index: longint): T_triStateValue;
+FUNCTION T_clock.getInput(CONST index: longint): T_wireValue;
   begin result:=tsv_undetermined; end;
 
 { T_outputGate }
@@ -289,7 +322,7 @@ FUNCTION T_outputGate.gateType: T_gateType;
 { T_inputGate }
 
 CONSTRUCTOR T_inputGate.create;
-  begin inherited; io:=tsv_true; ioLabel:=''; end;
+  begin inherited; io:=tsv_true; ioLabel:=''; width:=1; end;
 
 PROCEDURE T_inputGate.reset;
   begin io:=tsv_true; end;
@@ -315,16 +348,16 @@ FUNCTION T_inputGate.simulateStep:boolean;
     result:=false;
   end;
 
-FUNCTION T_inputGate.getOutput(CONST index: longint): T_triStateValue;
+FUNCTION T_inputGate.getOutput(CONST index: longint): T_wireValue;
   begin result:=io; end;
 
-FUNCTION T_inputGate.setInput(CONST index: longint; CONST value: T_triStateValue):boolean;
+FUNCTION T_inputGate.setInput(CONST index: longint; CONST value: T_wireValue):boolean;
   begin
-    result:=io<>value;
-    io:=value;
+    result:=io<>value.bit[0];
+    io:=value.bit[0];
   end;
 
-FUNCTION T_inputGate.getInput(CONST index: longint): T_triStateValue;
+FUNCTION T_inputGate.getInput(CONST index: longint): T_wireValue;
   begin result:=io; end;
 
 { T_abstractGate }
@@ -338,12 +371,18 @@ DESTRUCTOR T_abstractGate.destroy;
 FUNCTION T_abstractGate.getDescription:string;
   begin result:=''; end; //plausible default
 
-FUNCTION T_gateConnector.getOutputValue: T_triStateValue;
+FUNCTION T_abstractGate.inputWidth(CONST index:longint):byte;
+  begin result:=1; end;
+
+FUNCTION T_abstractGate.outputWidth(CONST index:longint):byte;
+  begin result:=1; end;
+
+FUNCTION T_gateConnector.getOutputValue: T_wireValue;
   begin
     result:=gate^.getOutput(index);
   end;
 
-FUNCTION T_gateConnector.setInputValue(CONST v: T_triStateValue):boolean;
+FUNCTION T_gateConnector.setInputValue(CONST v: T_wireValue):boolean;
   begin
     result:=gate^.setInput(index,v);
   end;
@@ -375,16 +414,16 @@ FUNCTION T_notGate.simulateStep:boolean;
     result:=output<>previous;
   end;
 
-FUNCTION T_notGate.getOutput(CONST index: longint): T_triStateValue;
+FUNCTION T_notGate.getOutput(CONST index: longint): T_wireValue;
   begin result:=output; end;
 
-FUNCTION T_notGate.setInput(CONST index: longint; CONST value: T_triStateValue):boolean;
+FUNCTION T_notGate.setInput(CONST index: longint; CONST value: T_wireValue):boolean;
   begin
-    result:=input<>value;
-    input:=value;
+    result:=input<>value.bit[0];
+    input:=value.bit[0];
   end;
 
-FUNCTION T_notGate.getInput(CONST index: longint): T_triStateValue;
+FUNCTION T_notGate.getInput(CONST index: longint): T_wireValue;
   begin result:=input; end;
 
 CONSTRUCTOR T_binaryBaseGate.create;
@@ -398,16 +437,16 @@ FUNCTION T_binaryBaseGate.numberOfInputs: longint;
 FUNCTION T_binaryBaseGate.numberOfOutputs: longint;
   begin result:=1; end;
 
-FUNCTION T_binaryBaseGate.getOutput(CONST index:longint):T_triStateValue;
+FUNCTION T_binaryBaseGate.getOutput(CONST index:longint):T_wireValue;
   begin result:=output; end;
 
-FUNCTION T_binaryBaseGate.setInput(CONST index: longint; CONST value: T_triStateValue):boolean;
+FUNCTION T_binaryBaseGate.setInput(CONST index: longint; CONST value: T_wireValue):boolean;
   begin
-    result:=input[index]<>value;
-    input[index]:=value;
+    result:=input[index]<>value.bit[0];
+    input[index]:=value.bit[0];
   end;
 
-FUNCTION T_binaryBaseGate.getInput(CONST index: longint): T_triStateValue;
+FUNCTION T_binaryBaseGate.getInput(CONST index: longint): T_wireValue;
   begin result:=input[index]; end;
 
 CONSTRUCTOR T_nxorGate.create; begin inherited; end;
@@ -516,8 +555,8 @@ FUNCTION T_nandGate  .clone:P_abstractGate; begin new(P_nandGate(result),create)
 FUNCTION T_xorGate   .clone:P_abstractGate; begin new(P_xorGate (result),create); end;
 FUNCTION T_orGate    .clone:P_abstractGate; begin new(P_orGate  (result),create); end;
 FUNCTION T_andGate   .clone:P_abstractGate; begin new(P_andGate (result),create); end;
-FUNCTION T_inputGate .clone:P_abstractGate; begin new(P_inputGate (result),create); P_inputGate (result)^.ioIndex:=ioIndex; P_inputGate (result)^.ioLabel:=ioLabel; end;
-FUNCTION T_outputGate.clone:P_abstractGate; begin new(P_outputGate(result),create); P_outputGate(result)^.ioIndex:=ioIndex; P_outputGate(result)^.ioLabel:=ioLabel; end;
+FUNCTION T_inputGate .clone:P_abstractGate; begin new(P_inputGate (result),create); P_inputGate (result)^.ioIndex:=ioIndex; P_inputGate (result)^.ioLabel:=ioLabel; P_inputGate (result)^.width:=width; end;
+FUNCTION T_outputGate.clone:P_abstractGate; begin new(P_outputGate(result),create); P_outputGate(result)^.ioIndex:=ioIndex; P_outputGate(result)^.ioLabel:=ioLabel; P_outputGate(result)^.width:=width; end;
 
 end.
 

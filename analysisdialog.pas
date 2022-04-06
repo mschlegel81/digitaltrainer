@@ -77,7 +77,7 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
                  else StringGrid.Cells[c,r]:='>1000';
       inc(c);
       for i:=0 to clonedGate^.numberOfOutputs-1 do begin
-        case clonedGate^.getOutput(i) of
+        case clonedGate^.getOutput(i).bit[0] of
           tsv_true        : StringGrid.Cells[c,r]:='1';
           tsv_false       : StringGrid.Cells[c,r]:='0';
           tsv_undetermined: StringGrid.Cells[c,r]:='?';
