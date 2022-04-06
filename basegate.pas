@@ -13,7 +13,6 @@ TYPE
 
   P_circuitBoard=^T_circuitBoard;
   P_workspace=^T_workspace;
-  { T_abstractGate }
   P_visualGate=^T_visualGate;
   T_visualGate=object
     private
@@ -155,6 +154,7 @@ TYPE
       //One source can be associated with many sinks
       logicWires:array of record
         source:   T_visualGateConnector;
+        width:byte; //TODO: Set width on creation!
         wires:array of record
           sink:   T_visualGateConnector;
           visual: T_wirePath; //Nonpersistent!
@@ -164,6 +164,7 @@ TYPE
 
       incompleteWire:record
         dragging:boolean;
+        width:byte;
         source:T_visualGateConnector;
         sourcePoint:T_point;
         lastPreviewTarget:T_point;
@@ -414,6 +415,7 @@ PROCEDURE T_visualGate.outputMouseDown(Sender: TObject; button: TMouseButton; Sh
         dragging:=true;
         source.gate:=@self;
         source.index:=wireDragOutputIndex;
+        width:=behavior^.outputWidth(source.index);
         sourcePoint:=p;
         lastPreviewTarget:=p;
       end;
@@ -725,10 +727,10 @@ FUNCTION T_customGate.simulateStep:boolean;
       v:T_wireValue;
   begin
     result:=false;
-    for i:=0 to length(inputConnections)-1 do for tgt in inputConnections[i].goesTo do begin
+    for i:=0 to length(inputConnections)-1 do begin
       v:=inputConnections[i].value;
       if isFullyDefined(v)
-      then result:=tgt.setInputValue(v) or result;
+      then for tgt in inputConnections[i].goesTo do result:=tgt.setInputValue(v) or result;
     end;
     for gate in gates do result:=gate^.simulateStep or result;
     for i:=0 to length(connections)-1 do with connections[i] do begin
@@ -1242,6 +1244,7 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream:
     setLength(logicWires,stream.readNaturalNumber);
     for i:=0 to length(logicWires)-1 do begin
       logicWires[i].source.loadFromStream(@self,stream);
+      logicWires[i].width:=logicWires[i].source.gate^.behavior^.outputWidth(logicWires[i].source.index);
       setLength(logicWires[i].wires,stream.readNaturalNumber);
       for k:=0 to length(logicWires[i].wires)-1 do begin
         logicWires[i].wires[k].sink.loadFromStream(@self,stream);
@@ -1339,15 +1342,31 @@ PROCEDURE T_circuitBoard.drawAllWires;
     end; end;
 
   VAR i:longint;
+      wireWidth,gapWidth:longint;
   begin
     if GUI.wireImage=nil then exit;
     with GUI.wireImage.Canvas do begin
       Brush.color:=clBtnFace;
       clear;
       for i:=0 to length(logicWires)-1 do begin
-        Pen.color:=clBtnFace; Pen.width:=max(1,round(GUI.zoom*0.45));
+        case logicWires[i].width of
+          0..1: begin
+            wireWidth:=max(1,round(GUI.zoom*0.08));
+            gapWidth :=max(1,round(GUI.zoom*0.38));
+          end;
+          4..7: begin
+            wireWidth:=max(1,round(GUI.zoom*0.15));
+            gapWidth :=max(1,round(GUI.zoom*0.45));
+          end;
+          else begin
+            wireWidth:=max(1,round(GUI.zoom*0.25));
+            gapWidth :=max(1,round(GUI.zoom*0.55));
+          end;
+        end;
+        Pen.color:=clBtnFace; Pen.width:=gapWidth;
         drawWires(i,false);
-        Pen.width:=max(1,round(GUI.zoom*0.15));
+
+        Pen.width:=wireWidth;
         drawWires(i,true);
       end;
     end;
@@ -1381,8 +1400,7 @@ PROCEDURE T_circuitBoard.initWireGraph(CONST start: T_visualGateConnector; CONST
       for j:=0 to length(wires)-1 do wireGraph^.dropWire(wires[j].visual);
   end;
 
-FUNCTION T_circuitBoard.findWirePath(CONST start: T_visualGateConnector;
-  CONST endPoint: T_point): T_wirePath;
+FUNCTION T_circuitBoard.findWirePath(CONST start: T_visualGateConnector; CONST endPoint: T_point): T_wirePath;
   begin
     if wireGraph=nil then initWireGraph(start,true);
     if wireGraph^.anyEdgeLeadsTo(endPoint)
@@ -1446,12 +1464,14 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point);
     end;
 
     if (connector.gate=nil) or (distanceToConnector>1.5*GUI.zoom) then begin cleanup; exit; end;
-    if not(isInputConnected(connector.gate,connector.index)) then begin
+    if not(isInputConnected(connector.gate,connector.index)) and
+       (connector.gate^.behavior^.inputWidth (connector.index)=incompleteWire.width) then begin
       i:=0;
       while (i<length(logicWires)) and (logicWires[i].source<>incompleteWire.source) do inc(i);
       if i>=length(logicWires) then setLength(logicWires,i+1);
       with logicWires[i] do begin
         source:=incompleteWire.source;
+        width :=incompleteWire.width;
         j:=length(wires);
         setLength(wires,j+1);
         wires[j].sink:=connector;
@@ -1489,15 +1509,6 @@ PROCEDURE T_circuitBoard.rewire;
       end;
       setLength(paths,0);
     end;
-
-    //for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
-    //  for j:=0 to length(wires)-1 do begin
-    //    sourcePoint:=source       .gate^.getOutputPositionInGridSize(source       .index);
-    //    targetPoint:=wires[j].sink.gate^.getInputPositionInGridSize (wires[j].sink.index);
-    //    wires[j].visual:=wireGraph^.findPath(sourcePoint,targetPoint);
-    //  end;
-    //  for j:=0 to length(wires)-1 do wireGraph^.dropWire(wires[j].visual);
-    //end;
     fixWireImageSize;
   end;
 

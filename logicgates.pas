@@ -285,7 +285,13 @@ FUNCTION T_adapter.clone: P_abstractGate;
   begin new(P_adapter(result),create(subtype)); end;
 
 FUNCTION T_adapter.caption: string;
-  begin result:='Adapter'; end;
+  CONST R:array[gt_adapter1to4..gt_adapter8to4] of string=('4x1 to 1x4',
+                                                           '1x4 to 4x1',
+                                                           '8x1 to 1x8',
+                                                           '1x8 to 8x1',
+                                                           '2x4 to 8x1',
+                                                           '8x1 to 2x4');
+  begin result:='Adapter'+LineEnding+R[subtype]; end;
 
 FUNCTION T_adapter.numberOfInputs: longint;
   CONST R:array[gt_adapter1to4..gt_adapter8to4] of longint=(4,1,8,1,2,1);

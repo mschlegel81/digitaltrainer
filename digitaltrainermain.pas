@@ -104,6 +104,8 @@ TYPE
     stepsPerTimer:longint;
     PROCEDURE updateSidebar;
     PROCEDURE restartTimerCallback;
+    //TODO: Add analysis dialog in GateListBoxPopupMenu
+    //TODO: Add analysis dialog in AnyGatePopupMenu
   public
   end;
 
@@ -238,6 +240,7 @@ PROCEDURE TDigitaltrainerMainForm.miGatePropertiesClick(Sender: TObject);
   begin
     if visualGateForContextPopup=nil then exit;
     gatePropertyDialog.showForGate(visualGateForContextPopup^.getBehavior);
+    //TODO: Wires must be checked, because I/O width may have changed.
     visualGateForContextPopup^.Repaint;
   end;
 
