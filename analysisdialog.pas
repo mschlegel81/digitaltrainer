@@ -71,33 +71,10 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
     end;
 
   FUNCTION getIoString(CONST wire:T_wireValue):string;
-    VAR i:longint;
-        k:int64=0;
-        maxVal:int64;
     begin
-      if rbBinary.checked then begin
-        result:='';
-        for i:=wire.width-1 downto 0 do
-        case wire.bit[i] of
-          tsv_true        : result+='1';
-          tsv_false       : result+='0';
-          tsv_undetermined: result+='?';
-        end;
-      end else begin
-        for i:=wire.width-1 downto 0 do begin
-          k:=k shl 1;
-          case wire.bit[i] of
-            tsv_true        : inc(k);
-            tsv_false       : begin end;
-            tsv_undetermined: exit('?');
-          end;
-        end;
-        if rb2Complement.checked and (wire.width>1) then begin
-          maxVal:=1 shl (wire.width-1);
-          if k>maxVal then k:=maxVal-k;
-        end;
-        result:=intToStr(k);
-      end;
+      if rbBinary.checked        then result:=getBinaryString     (wire)
+      else if rbPositive.checked then result:=getDecimalString    (wire)
+      else                            result:=get2ComplementString(wire);
     end;
 
   VAR i,stepCount:longint;

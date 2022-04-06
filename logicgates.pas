@@ -222,9 +222,58 @@ OPERATOR =(CONST x,y:T_gateConnector):boolean;
 OPERATOR :=(CONST x:T_triStateValue):T_wireValue;
 FUNCTION isFullyDefined(CONST w:T_wireValue):boolean;
 OPERATOR =(CONST x,y:T_wireValue):boolean;
-
+FUNCTION getBinaryString(CONST wire:T_wireValue):string;
+FUNCTION getDecimalString(CONST wire:T_wireValue):string;
+FUNCTION get2ComplementString(CONST wire:T_wireValue):string;
 IMPLEMENTATION
 USES sysutils;
+FUNCTION getBinaryString(CONST wire:T_wireValue):string;
+  VAR i:longint;
+  begin
+    result:='';
+    for i:=wire.width-1 downto 0 do
+    case wire.bit[i] of
+      tsv_true        : result+='1';
+      tsv_false       : result+='0';
+      tsv_undetermined: result+='?';
+    end;
+  end;
+
+FUNCTION getDecimalString(CONST wire:T_wireValue):string;
+  VAR i:longint;
+      k:int64=0;
+  begin
+    for i:=wire.width-1 downto 0 do begin
+      k:=k shl 1;
+      case wire.bit[i] of
+        tsv_true        : inc(k);
+        tsv_false       : begin end;
+        tsv_undetermined: exit('?');
+      end;
+    end;
+    result:=intToStr(k);
+  end;
+
+FUNCTION get2ComplementString(CONST wire:T_wireValue):string;
+  VAR i:longint;
+      k:int64=0;
+      maxVal:int64;
+  begin
+    for i:=wire.width-1 downto 0 do begin
+      k:=k shl 1;
+      case wire.bit[i] of
+        tsv_true        : inc(k);
+        tsv_false       : begin end;
+        tsv_undetermined: exit('?');
+      end;
+    end;
+    if (wire.width>1) then begin
+      maxVal:=1 shl (wire.width-1);
+      if k>maxVal then k-=maxVal+maxVal;
+    end;
+    result:=intToStr(k);
+  end;
+
 OPERATOR =(CONST x,y:T_gateConnector):boolean;
   begin
     result:=(x.gate=y.gate) and (x.index=y.index);

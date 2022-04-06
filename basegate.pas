@@ -32,6 +32,7 @@ TYPE
     protected
       PROCEDURE ensureGuiElements;  virtual;
       PROCEDURE disposeGuiElements;
+      PROCEDURE updateIoVisuals; virtual;
 
       CONSTRUCTOR create(CONST origin_:T_point; CONST gateToWrap:P_abstractGate; CONST board_:P_circuitBoard);
       DESTRUCTOR destroy; virtual;
@@ -47,7 +48,6 @@ TYPE
       FUNCTION getInputPositionInGridSize (CONST index:longint):T_point;
       FUNCTION getOutputPositionInGridSize(CONST index:longint):T_point;
       PROPERTY marked:boolean read marked_ write setMarked;
-      PROCEDURE updateIoVisuals;
       FUNCTION numberOfInputs:longint;
       FUNCTION numberOfOutputs:longint;
     public
@@ -55,15 +55,35 @@ TYPE
       PROPERTY getBehavior:P_abstractGate read behavior;
   end;
 
-  { T_visualGateForCustom }
   P_visualGateForCustom=^T_visualGateForCustom;
   T_visualGateForCustom=object(T_visualGate)
   protected
     PROCEDURE ensureGuiElements; virtual;
-
     CONSTRUCTOR create(CONST origin_:T_point; CONST gateToWrap:P_abstractGate; CONST board_:P_circuitBoard);
   public
     PROCEDURE Repaint; virtual;
+  end;
+
+  P_visualGateForOutput=^T_visualGateForOutput;
+  T_visualGateForOutput=object(T_visualGate)
+  protected
+    PROCEDURE ensureGuiElements; virtual;
+    PROCEDURE updateIoVisuals; virtual;
+    CONSTRUCTOR create(CONST origin_:T_point; CONST gateToWrap:P_abstractGate; CONST board_:P_circuitBoard);
+  public
+    PROCEDURE Repaint; virtual;
+  end;
+
+  P_visualGateForInput=^T_visualGateForInput;
+  T_visualGateForInput=object(T_visualGate)
+  protected
+    edit:TEdit;
+    PROCEDURE ensureGuiElements; virtual;
+    PROCEDURE updateIoVisuals; virtual;
+    CONSTRUCTOR create(CONST origin_:T_point; CONST gateToWrap:P_abstractGate; CONST board_:P_circuitBoard);
+  public
+    PROCEDURE Repaint; virtual;
+    DESTRUCTOR destroy; virtual;
   end;
 
   T_visualGateConnector=object
@@ -193,6 +213,7 @@ TYPE
       PROCEDURE anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
       PROCEDURE fixWireImageSize;
       PROCEDURE setZoom(CONST zoom:longint);
+      PROCEDURE deleteInvalidWires;
       PROCEDURE deleteMarkedElements;
       PROCEDURE Repaint;
       FUNCTION simulateSteps(CONST count:longint):boolean;
@@ -214,6 +235,8 @@ OPERATOR =(CONST x,y:T_visualGateConnector):boolean;
 
 CONSTRUCTOR T_visualGateForCustom.create(CONST origin_: T_point; CONST gateToWrap: P_abstractGate; CONST board_: P_circuitBoard);
   begin inherited; end;
+CONSTRUCTOR T_visualGateForOutput.create(CONST origin_: T_point; CONST gateToWrap: P_abstractGate; CONST board_: P_circuitBoard);
+begin inherited; size[1]+=1; end;
 
 FUNCTION T_visualGateConnector.loadFromStream(CONST board: P_circuitBoard; VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR gateIndex:longint;
@@ -306,6 +329,55 @@ PROCEDURE T_visualGateForCustom.ensureGuiElements;
         inc(shapeIndex);
       end;
     end;
+  end;
+
+PROCEDURE T_visualGateForOutput.ensureGuiElements;
+  VAR i:longint;
+  begin
+    if (length(shapes)=0) and (board<>nil) and (board^.GUI.container<>nil) then begin
+      inherited;
+      setLength(labels,4);
+      for i:=1 to 3 do begin
+        labels[i]:=TLabel.create(board^.GUI.container);
+        labels[i].parent:=board^.GUI.container;
+      end;
+      labels[1].caption:='bin: ?';
+      labels[2].caption:='dec: ?';
+      labels[3].caption:='neg: ?';
+    end;
+  end;
+
+PROCEDURE T_visualGateForOutput.updateIoVisuals;
+  begin
+    inherited;
+    labels[1].caption:='bin: '+getBinaryString(behavior^.getOutput(0));
+    labels[2].caption:='dec: '+getDecimalString(behavior^.getOutput(0));
+    labels[3].caption:='neg: '+get2ComplementString(behavior^.getOutput(0));
+  end;
+
+PROCEDURE T_visualGateForOutput.Repaint;
+  VAR newFontSize:longint;
+  begin
+    inherited;
+    newFontSize:=min(round(labels[0].Font.size*shapes[0].width  *0.75/labels[0].width),
+                     round(labels[0].Font.size*shapes[0].height *0.33/labels[0].height));
+    if abs(newFontSize-labels[0].Font.size)>1 then begin
+      labels[0].Font.size:=newFontSize;
+      newFontSize:=newFontSize div 2;
+      labels[1].Font.size:=newFontSize;
+      labels[2].Font.size:=newFontSize;
+      labels[3].Font.size:=newFontSize;
+    end;
+
+    labels[0].top :=shapes[0].top;
+    labels[1].top:=labels[0].top+labels[0].height;
+    labels[2].top:=labels[1].top+labels[1].height;
+    labels[3].top:=labels[2].top+labels[2].height;
+
+    labels[0].Left:=shapes[0].Left+(shapes[0].width -labels[0].width) div 2 ;
+    labels[1].Left:=shapes[0].Left+round(board^.GUI.zoom*0.7);
+    labels[2].Left:=shapes[0].Left+round(board^.GUI.zoom*0.7);
+    labels[3].Left:=shapes[0].Left+round(board^.GUI.zoom*0.7);
   end;
 
 PROCEDURE T_visualGate.disposeGuiElements;
@@ -461,8 +533,6 @@ PROCEDURE T_visualGate.Repaint;
     shapes[0].height:=size  [1]*board^.GUI.zoom;
 
     labels[0].caption:=behavior^.caption;
-    labels[0].top :=shapes[0].top +(shapes[0].height-labels[0].height) div 2;
-    labels[0].Left:=shapes[0].Left+(shapes[0].width -labels[0].width) div 2 ;
     newFontSize:=min(round(labels[0].Font.size*shapes[0].width  *0.75/labels[0].width),
                      round(labels[0].Font.size*shapes[0].height *0.5 /labels[0].height));
     if abs(newFontSize-labels[0].Font.size)>1 then labels[0].Font.size:=newFontSize;
@@ -1054,6 +1124,28 @@ FUNCTION T_circuitBoard.positionNewGate(CONST gateToAdd: P_visualGate): boolean;
     end else result:=false;
   end;
 
+PROCEDURE T_circuitBoard.deleteInvalidWires;
+  begin
+    for k:=0 to length(logicWires)-1 do with logicWires[k] do begin
+      width:=source.gate^.behavior^.outputWidth(source.index);
+      j:=0;
+      for i:=0 to length(wires)-1 do
+      if wires[i].sink.gate^.behavior^.inputWidth(wires[i].sink.index)=width
+      then begin
+        wires[j]:=wires[i];
+        inc(j);
+      end;
+      setLength(wires,j);
+    end;
+    j:=0;
+    for i:=0 to length(logicWires)-1 do
+    if length(logicWires[i].wires)>0 then begin
+      logicWires[j]:=logicWires[i];
+      inc(j);
+    end;
+    Repaint;
+  end;
+
 PROCEDURE T_circuitBoard.deleteMarkedElements;
   PROCEDURE removeAssociatedWires(CONST gateToDelete:P_visualGate);
     VAR i:longint;
@@ -1197,7 +1289,8 @@ FUNCTION T_circuitBoard.wrapGate(CONST origin:T_point; CONST g:P_abstractGate):P
   begin
     case g^.gateType of
       gt_compound: new(P_visualGateForCustom(result),create(origin,g,@self));
-      else new(result,create(origin,g,@self));
+      gt_output  : new(P_visualGateForOutput(result),create(origin,g,@self));
+      else         new(                      result ,create(origin,g,@self));
     end;
   end;
 

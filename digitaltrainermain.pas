@@ -270,7 +270,7 @@ PROCEDURE TDigitaltrainerMainForm.miGatePropertiesClick(Sender: TObject);
   begin
     if visualGateForContextPopup=nil then exit;
     gatePropertyDialog.showForGate(visualGateForContextPopup^.getBehavior);
-    //TODO: Wires must be checked, because I/O width may have changed.
+    workspace.currentBoard^.deleteInvalidWires;
     visualGateForContextPopup^.Repaint;
   end;
 
