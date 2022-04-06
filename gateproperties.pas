@@ -3,11 +3,12 @@ UNIT gateProperties;
 INTERFACE
 USES serializationUtil,logicGates;
 TYPE
-  T_gatePropertyType=(pt_number,pt_string);
+  T_gatePropertyType=(pt_number,pt_string,pt_wireWidth);
   T_gatePropertyEnum=(gpe_caption,
                       gpe_description,
                       gpe_editableLabel,
-                      gpe_intervalGreaterZero);
+                      gpe_intervalGreaterZero,
+                      gpe_widthInBits);
   T_gatePropertyEnums=set of T_gatePropertyEnum;
   T_gateProperty=record
     name:string;
@@ -18,10 +19,11 @@ TYPE
 
 CONST
   C_gateProperty:array[T_gatePropertyEnum] of T_gateProperty=
-  ((name:'Name'        ; typ:pt_string; minValue:0; maxValue:   0; readonly:true),
-   (name:'Beschreibung'; typ:pt_string; minValue:0; maxValue:   0; readonly:true),
-   (name:'Label';        typ:pt_string; minValue:0; maxValue:   0; readonly:false),
-   (name:'Intervall';    typ:pt_number; minValue:1; maxValue:1024; readonly:false));
+  ((name:'Name'        ;            typ:pt_string; minValue:0; maxValue:   0; readonly:true),
+   (name:'Beschreibung';            typ:pt_string; minValue:0; maxValue:   0; readonly:true),
+   (name:'Label';                   typ:pt_string; minValue:0; maxValue:   0; readonly:false),
+   (name:'Intervall';               typ:pt_number; minValue:1; maxValue:1024; readonly:false),
+   (name:'Anschlussbreite in bits'; typ:pt_wireWidth; minValue:1; maxValue:8; readonly:false));
   C_availableProperies:array[T_gateType] of T_gatePropertyEnums=
   {gt_notGate} ([gpe_caption],
   {gt_andGate}  [gpe_caption],
@@ -30,8 +32,8 @@ CONST
   {gt_nandGate} [gpe_caption],
   {gt_norGate}  [gpe_caption],
   {gt_nxorGate} [gpe_caption],
-  {gt_input}    [gpe_editableLabel],
-  {gt_output}   [gpe_editableLabel],
+  {gt_input}    [gpe_editableLabel,gpe_widthInBits],
+  {gt_output}   [gpe_editableLabel,gpe_widthInBits],
   {gt_compound} [gpe_caption,gpe_description],
   {gt_clock}    [gpe_caption,gpe_intervalGreaterZero]);
 
@@ -45,7 +47,7 @@ TYPE
 
   { T_gatePropertyValues }
 
-  T_gatePropertyValues=object(T_serializable)
+  T_gatePropertyValues=object
     private
       gate:P_abstractGate;
       entry:array of record
@@ -59,10 +61,6 @@ TYPE
     public
       CONSTRUCTOR create(CONST gate_:P_abstractGate);
       DESTRUCTOR destroy;
-
-      FUNCTION getSerialVersion:dword; virtual;
-      FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
-      PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
 
       FUNCTION count:longint;
       FUNCTION key           (CONST index:longint):string;
@@ -85,6 +83,9 @@ FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum): T_gate
       gpe_editableLabel: if gate^.gateType in [gt_input,gt_output] then begin
         result.s:=P_inputGate(gate)^.caption;
       end;
+      gpe_widthInBits: if gate^.gateType in [gt_input,gt_output] then begin
+        result.n:=P_inputGate(gate)^.width;
+      end;
       gpe_intervalGreaterZero: if gate^.gateType=gt_clock then begin
         result.n:=P_clock(gate)^.interval;
       end;
@@ -99,6 +100,9 @@ PROCEDURE T_gatePropertyValues.applyValue(CONST prop: T_gatePropertyEnum; CONST 
       end;
       gpe_intervalGreaterZero: if gate^.gateType=gt_clock then begin
         P_clock(gate)^.interval:=value.n;
+      end;
+      gpe_widthInBits: if gate^.gateType in [gt_input,gt_output] then begin
+        P_inputGate(gate)^.width:=value.n;
       end;
     end;
   end;
@@ -122,33 +126,6 @@ DESTRUCTOR T_gatePropertyValues.destroy;
     setLength(entry,0);
   end;
 
-FUNCTION T_gatePropertyValues.getSerialVersion: dword;
-  begin
-    result:=123;
-  end;
-
-FUNCTION T_gatePropertyValues.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
-  VAR i:longint;
-  begin
-    for i:=0 to length(entry)-1 do if not(C_gateProperty[entry[i].prop].readonly) then begin
-      case C_gateProperty[entry[i].prop].typ of
-        pt_number: entry[i].value.n:=stream.readLongint;
-        pt_string: entry[i].value.s:=stream.readAnsiString;
-      end;
-    end;
-  end;
-
-PROCEDURE T_gatePropertyValues.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
-  VAR i:longint;
-  begin
-    for i:=0 to length(entry)-1 do if not(C_gateProperty[entry[i].prop].readonly) then begin
-      case C_gateProperty[entry[i].prop].typ of
-        pt_number: stream.writeLongint   (entry[i].value.n);
-        pt_string: stream.writeAnsiString(entry[i].value.s);
-      end;
-    end;
-  end;
-
 FUNCTION T_gatePropertyValues.count:longint;
   begin
     result:=length(entry);
@@ -162,7 +139,7 @@ FUNCTION T_gatePropertyValues.key(CONST index: longint): string;
 FUNCTION T_gatePropertyValues.value(CONST index: longint): string;
   begin
     case C_gateProperty[entry[index].prop].typ of
-      pt_number: result:=intToStr(entry[index].value.n);
+      pt_number,pt_wireWidth: result:=intToStr(entry[index].value.n);
       pt_string: result:=         entry[index].value.s;
     end;
   end;
@@ -177,6 +154,12 @@ FUNCTION T_gatePropertyValues.acceptNewValue(CONST index: longint; CONST newValu
         if (newNumber>C_gateProperty[entry[index].prop].maxValue) or
            (newNumber<C_gateProperty[entry[index].prop].minValue) then exit(false);
         entry[index].value.n:=longint(newNumber);
+        result:=true;
+      end;
+      pt_wireWidth: begin
+        newNumber:=StrToInt64Def(newValue,int64(maxLongint)+1);
+        if not((newNumber=1) or (newNumber=4) or (newNumber=8)) then exit(false);
+        entry[index].value.n:=byte(newNumber);
         result:=true;
       end;
       pt_string: begin
