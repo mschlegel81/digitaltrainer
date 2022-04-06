@@ -23,23 +23,75 @@ object analysisForm: TanalysisForm
       ClientWidth = 689
       object StringGrid: TStringGrid
         Left = 0
-        Height = 566
-        Top = 0
+        Height = 510
+        Top = 81
         Width = 689
         Align = alClient
         FixedCols = 0
         Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing, goDblClickAutoSize, goSmoothScroll]
         TabOrder = 0
       end
-      object UpdateTableButton: TButton
+      object GroupBox1: TGroupBox
         Left = 0
-        Height = 25
-        Top = 566
+        Height = 81
+        Top = 0
         Width = 689
-        Align = alBottom
-        Caption = 'Aktualisieren'
-        OnClick = UpdateTableButtonClick
+        Align = alTop
+        AutoSize = True
+        Caption = 'Einstellungen'
+        ClientHeight = 61
+        ClientWidth = 685
         TabOrder = 1
+        object UpdateTableButton: TButton
+          Left = 591
+          Height = 61
+          Top = 0
+          Width = 94
+          Align = alRight
+          AutoSize = True
+          Caption = 'Aktualisieren'
+          OnClick = UpdateTableButtonClick
+          TabOrder = 0
+        end
+        object rbBinary: TRadioButton
+          AnchorSideLeft.Control = GroupBox1
+          AnchorSideTop.Control = GroupBox1
+          Left = 4
+          Height = 19
+          Top = 4
+          Width = 47
+          Align = alCustom
+          BorderSpacing.Left = 4
+          BorderSpacing.Top = 4
+          Caption = 'Binär'
+          Checked = True
+          TabOrder = 3
+          TabStop = True
+        end
+        object rbPositive: TRadioButton
+          AnchorSideLeft.Control = rbBinary
+          AnchorSideTop.Control = rbBinary
+          AnchorSideTop.Side = asrBottom
+          Left = 4
+          Height = 19
+          Top = 23
+          Width = 167
+          Align = alCustom
+          Caption = 'Dezimal (positiv ganzzahlig)'
+          TabOrder = 1
+        end
+        object rb2Complement: TRadioButton
+          AnchorSideLeft.Control = rbPositive
+          AnchorSideTop.Control = rbPositive
+          AnchorSideTop.Side = asrBottom
+          Left = 4
+          Height = 19
+          Top = 42
+          Width = 163
+          Align = alCustom
+          Caption = 'Dezimal (2er-Komplement)'
+          TabOrder = 2
+        end
       end
     end
   end
