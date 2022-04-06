@@ -85,12 +85,12 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
         end;
       end else begin
         for i:=wire.width-1 downto 0 do begin
+          k:=k shl 1;
           case wire.bit[i] of
             tsv_true        : inc(k);
             tsv_false       : begin end;
             tsv_undetermined: exit('?');
           end;
-          k:=k shl 1;
         end;
         if rb2Complement.checked and (wire.width>1) then begin
           maxVal:=1 shl (wire.width-1);

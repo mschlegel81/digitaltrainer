@@ -154,7 +154,7 @@ TYPE
       //One source can be associated with many sinks
       logicWires:array of record
         source:   T_visualGateConnector;
-        width:byte; //TODO: Set width on creation!
+        width:byte;
         wires:array of record
           sink:   T_visualGateConnector;
           visual: T_wirePath; //Nonpersistent!
@@ -662,14 +662,14 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
     setLength(gates,j);
 
     //simulate some steps to arrive at valid state...
-    i:=0;
-    while anyOutputUndetermined and (i<1000) do begin
-      for j:=0 to numberOfInputs-1 do if random>0.5
-      then setInput(j,tsv_true)
-      else setInput(j,tsv_false);
-      for j:=0 to 3 do simulateStep;
-      inc(i);
-    end;
+   // i:=0;
+   // while anyOutputUndetermined and (i<1000) do begin
+   //   for j:=0 to numberOfInputs-1 do if random>0.5
+   //   then setInput(j,tsv_true)
+   //   else setInput(j,tsv_false);
+   //   for j:=0 to 3 do simulateStep;
+   //   inc(i);
+   // end;
   end;
 
 PROCEDURE T_customGate.reset;
@@ -816,7 +816,7 @@ PROCEDURE T_workspace.addCustomGate(CONST index: longint; CONST x0, y0: longint)
 
 FUNCTION T_workspace.getSerialVersion: dword;
   begin
-    result:=4;
+    result:=5;
   end;
 
 FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
@@ -1092,7 +1092,7 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
           inc(inputIndex);
         end;
         gt_output: begin
-          P_outputGate(gate^.behavior)^.ioIndex:=inputIndex;
+          P_outputGate(gate^.behavior)^.ioIndex:=outputIndex;
           gate^.labels[0].caption:=gate^.behavior^.caption;
           inc(outputIndex);
         end;
@@ -1229,15 +1229,18 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream:
           gt_input : begin
             P_inputGate (behavior)^.ioIndex:=stream.readNaturalNumber;
             P_inputGate (behavior)^.ioLabel:=stream.readAnsiString;
+            P_inputGate (behavior)^.width  :=stream.readByte;
           end;
           gt_output: begin
             P_outputGate(behavior)^.ioIndex:=stream.readNaturalNumber;
             P_outputGate(behavior)^.ioLabel:=stream.readAnsiString;
+            P_inputGate (behavior)^.width  :=stream.readByte;
           end;
           gt_clock   : P_clock(behavior)^.interval:=stream.readNaturalNumber;
         end;
       end;
       origin:=readPoint(stream);
+      behavior^.reset;
       gates[i]:=wrapGate(origin,behavior);
     end;
 
@@ -1267,10 +1270,12 @@ PROCEDURE T_circuitBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper)
         gt_input   : begin
           stream.writeNaturalNumber(P_inputGate (gates[i]^.behavior)^.ioIndex);
           stream.writeAnsiString   (P_inputGate (gates[i]^.behavior)^.ioLabel);
+          stream.writeByte         (P_inputGate (gates[i]^.behavior)^.width);
         end;
         gt_output  : begin
           stream.writeNaturalNumber(P_outputGate(gates[i]^.behavior)^.ioIndex);
           stream.writeAnsiString   (P_outputGate(gates[i]^.behavior)^.ioLabel);
+          stream.writeByte         (P_outputGate(gates[i]^.behavior)^.width);
         end;
         gt_clock   : stream.writeNaturalNumber(P_clock     (gates[i]^.behavior)^.interval);
         gt_compound: stream.writeNaturalNumber(P_customGate(gates[i]^.behavior)^.prototype^.paletteIndex);
@@ -1445,7 +1450,7 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point);
   VAR i:longint=0;
       j:longint;
       gate:P_visualGate;
-
+      wireAdded:boolean=false;
       connector:T_visualGateConnector;
 
       distanceToConnector:longint=maxLongint;
@@ -1475,9 +1480,10 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point);
         j:=length(wires);
         setLength(wires,j+1);
         wires[j].sink:=connector;
-        wires[j].visual:=findWirePath(incompleteWire.source,connector.gate^.getInputPositionInGridSize(connector.index));
+        wireAdded:=true;
       end;
     end;
+    if wireAdded then rewire;
     if (GUI.anyChangeCallback<>nil) then GUI.anyChangeCallback();
     cleanup;
     Repaint;

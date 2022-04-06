@@ -109,6 +109,7 @@ PROCEDURE T_gatePropertyValues.applyValue(CONST prop: T_gatePropertyEnum; CONST 
       end;
       gpe_widthInBits: if gate^.gateType in [gt_input,gt_output] then begin
         P_inputGate(gate)^.width:=value.n;
+        P_inputGate(gate)^.reset;
       end;
     end;
   end;

@@ -13,6 +13,12 @@ TYPE
   { TDigitaltrainerMainForm }
 
   TDigitaltrainerMainForm = class(TForm)
+    ButtonAdd1to4: TButton;
+    ButtonAdd8to4: TButton;
+    ButtonAdd4to8: TButton;
+    ButtonAdd8to1: TButton;
+    ButtonAdd1to8: TButton;
+    ButtonAdd4to1: TButton;
     speedLabel: TLabel;
     MenuItem4: TMenuItem;
     miAddToPalette: TMenuItem;
@@ -64,6 +70,12 @@ TYPE
     ZoomTrackBar: TTrackBar;
     speedTrackBar: TTrackBar;
     PROCEDURE AnyGatePopupMenuPopup(Sender: TObject);
+    PROCEDURE ButtonAdd1to4Click(Sender: TObject);
+    PROCEDURE ButtonAdd1to8Click(Sender: TObject);
+    PROCEDURE ButtonAdd4to1Click(Sender: TObject);
+    PROCEDURE ButtonAdd4to8Click(Sender: TObject);
+    PROCEDURE ButtonAdd8to1Click(Sender: TObject);
+    PROCEDURE ButtonAdd8to4Click(Sender: TObject);
     PROCEDURE ButtonAddClockClick(Sender: TObject);
     PROCEDURE ButtonAddCustomClick(Sender: TObject);
     PROCEDURE ButtonAddAndClick(Sender: TObject);
@@ -172,6 +184,24 @@ PROCEDURE TDigitaltrainerMainForm.AnyGatePopupMenuPopup(Sender: TObject);
   begin
     visualGateForContextPopup:=workspace.currentBoard^.lastClickedGate;
   end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAdd1to4Click(Sender: TObject);
+  begin workspace.addBaseGate(gt_adapter1to4,0,0); end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAdd1to8Click(Sender: TObject);
+  begin workspace.addBaseGate(gt_adapter1to8,0,0); end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAdd4to1Click(Sender: TObject);
+  begin workspace.addBaseGate(gt_adapter4to1,0,0); end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAdd4to8Click(Sender: TObject);
+  begin workspace.addBaseGate(gt_adapter4to8,0,0); end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAdd8to1Click(Sender: TObject);
+  begin workspace.addBaseGate(gt_adapter8to1,0,0); end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAdd8to4Click(Sender: TObject);
+  begin workspace.addBaseGate(gt_adapter8to4,0,0); end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddClockClick(Sender: TObject);
   begin workspace.addBaseGate(gt_clock,0,0);end;

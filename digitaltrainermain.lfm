@@ -142,8 +142,8 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       TabOrder = 4
       object CustomGateListBox: TListBox
         Left = 0
-        Height = 164
-        Top = 125
+        Height = 114
+        Top = 175
         Width = 166
         Align = alClient
         ItemHeight = 0
@@ -156,7 +156,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
       object FlowPanel1: TFlowPanel
         Left = 0
-        Height = 100
+        Height = 150
         Top = 0
         Width = 166
         Align = alTop
@@ -212,6 +212,36 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
             Control = ButtonAddClock
             WrapAfter = waAuto
             Index = 9
+          end        
+          item
+            Control = ButtonAdd1to4
+            WrapAfter = waAuto
+            Index = 10
+          end        
+          item
+            Control = ButtonAdd4to1
+            WrapAfter = waAuto
+            Index = 11
+          end        
+          item
+            Control = ButtonAdd1to8
+            WrapAfter = waAuto
+            Index = 12
+          end        
+          item
+            Control = ButtonAdd8to1
+            WrapAfter = waAuto
+            Index = 13
+          end        
+          item
+            Control = ButtonAdd4to8
+            WrapAfter = waAuto
+            Index = 14
+          end        
+          item
+            Control = ButtonAdd8to4
+            WrapAfter = waAuto
+            Index = 15
           end>
         FlowLayout = tlTop
         FlowStyle = fsLeftRightTopBottom
@@ -330,11 +360,77 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           ShowHint = True
           TabOrder = 9
         end
+        object ButtonAdd1to4: TButton
+          Left = 48
+          Height = 25
+          Top = 75
+          Width = 48
+          Anchors = []
+          Caption = '1->4'
+          OnClick = ButtonAdd1to4Click
+          ParentFont = False
+          TabOrder = 10
+        end
+        object ButtonAdd4to1: TButton
+          Left = 96
+          Height = 25
+          Top = 75
+          Width = 48
+          Anchors = []
+          Caption = '4->1'
+          OnClick = ButtonAdd4to1Click
+          ParentFont = False
+          TabOrder = 11
+        end
+        object ButtonAdd1to8: TButton
+          Left = 0
+          Height = 25
+          Top = 100
+          Width = 48
+          Anchors = []
+          Caption = '1->8'
+          OnClick = ButtonAdd1to8Click
+          ParentFont = False
+          TabOrder = 12
+        end
+        object ButtonAdd8to1: TButton
+          Left = 48
+          Height = 25
+          Top = 100
+          Width = 48
+          Anchors = []
+          Caption = '8->1'
+          OnClick = ButtonAdd8to1Click
+          ParentFont = False
+          TabOrder = 13
+        end
+        object ButtonAdd4to8: TButton
+          Left = 96
+          Height = 25
+          Top = 100
+          Width = 48
+          Anchors = []
+          Caption = '4->8'
+          OnClick = ButtonAdd4to8Click
+          ParentFont = False
+          TabOrder = 14
+        end
+        object ButtonAdd8to4: TButton
+          Left = 0
+          Height = 25
+          Top = 125
+          Width = 48
+          Anchors = []
+          Caption = '8->4'
+          OnClick = ButtonAdd8to4Click
+          ParentFont = False
+          TabOrder = 15
+        end
       end
       object ButtonAddCustom: TButton
         Left = 0
         Height = 25
-        Top = 100
+        Top = 150
         Width = 166
         Align = alTop
         Caption = 'benutzerdefiniert'

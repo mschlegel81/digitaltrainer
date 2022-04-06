@@ -78,7 +78,7 @@ TYPE
   P_inputGate=^T_inputGate;
   T_inputGate=object(T_abstractGate)
     private
-      io:T_triStateValue;
+      io:T_wireValue;
     public
       ioLabel:string;
       ioIndex:longint;
@@ -273,6 +273,7 @@ CONSTRUCTOR T_adapter.create(CONST subtype_: T_gateType);
       gt_adapter4to8,
       gt_adapter8to4: io.width:=8;
     end;
+    reset;
   end;
 
 PROCEDURE T_adapter.reset;
@@ -491,7 +492,11 @@ CONSTRUCTOR T_inputGate.create;
   begin inherited; io:=tsv_true; ioLabel:=''; width:=1; end;
 
 PROCEDURE T_inputGate.reset;
-  begin io:=tsv_true; end;
+  VAR i:longint;
+  begin
+    io.width:=width;
+    for i:=0 to 7 do io.bit[i]:=tsv_true;
+  end;
 
 FUNCTION T_inputGate.caption: string;
   begin
@@ -527,11 +532,10 @@ FUNCTION T_inputGate.simulateStep: boolean;
 FUNCTION T_inputGate.getOutput(CONST index: longint): T_wireValue;
   begin result:=io; end;
 
-FUNCTION T_inputGate.setInput(CONST index: longint; CONST value: T_wireValue
-  ): boolean;
+FUNCTION T_inputGate.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
   begin
-    result:=io<>value.bit[0];
-    io:=value.bit[0];
+    result:=io<>value;
+    io:=value;
   end;
 
 FUNCTION T_inputGate.getInput(CONST index: longint): T_wireValue;
@@ -732,8 +736,8 @@ FUNCTION T_nandGate  .clone:P_abstractGate; begin new(P_nandGate(result),create)
 FUNCTION T_xorGate   .clone:P_abstractGate; begin new(P_xorGate (result),create); end;
 FUNCTION T_orGate    .clone:P_abstractGate; begin new(P_orGate  (result),create); end;
 FUNCTION T_andGate   .clone:P_abstractGate; begin new(P_andGate (result),create); end;
-FUNCTION T_inputGate.clone: P_abstractGate; begin new(P_inputGate (result),create); P_inputGate (result)^.ioIndex:=ioIndex; P_inputGate (result)^.ioLabel:=ioLabel; P_inputGate (result)^.width:=width; end;
-FUNCTION T_outputGate.clone:P_abstractGate; begin new(P_outputGate(result),create); P_outputGate(result)^.ioIndex:=ioIndex; P_outputGate(result)^.ioLabel:=ioLabel; P_outputGate(result)^.width:=width; end;
+FUNCTION T_inputGate.clone: P_abstractGate; begin new(P_inputGate (result),create); P_inputGate (result)^.ioIndex:=ioIndex; P_inputGate (result)^.ioLabel:=ioLabel; P_inputGate (result)^.width:=width; result^.reset; end;
+FUNCTION T_outputGate.clone:P_abstractGate; begin new(P_outputGate(result),create); P_outputGate(result)^.ioIndex:=ioIndex; P_outputGate(result)^.ioLabel:=ioLabel; P_outputGate(result)^.width:=width; result^.reset; end;
 
 end.
 
