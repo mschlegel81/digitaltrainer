@@ -1466,8 +1466,8 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream:
       origin: T_point;
       behavior: P_abstractGate;
   begin
-    name:=stream.readAnsiString;
-    description:=stream.readAnsiString;
+    name:=stream.readShortString;
+    description:=stream.readShortString;
     paletteIndex:=stream.readLongint;
     if not(stream.allOkay) then exit(false);
     setLength(gates,stream.readNaturalNumber);
@@ -1486,12 +1486,12 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream:
         case gateType of
           gt_input : begin
             P_inputGate (behavior)^.ioIndex:=stream.readNaturalNumber;
-            P_inputGate (behavior)^.ioLabel:=stream.readAnsiString;
+            P_inputGate (behavior)^.ioLabel:=stream.readShortString;
             P_inputGate (behavior)^.width  :=stream.readByte;
           end;
           gt_output: begin
             P_outputGate(behavior)^.ioIndex:=stream.readNaturalNumber;
-            P_outputGate(behavior)^.ioLabel:=stream.readAnsiString;
+            P_outputGate(behavior)^.ioLabel:=stream.readShortString;
             P_inputGate (behavior)^.width  :=stream.readByte;
           end;
           gt_clock   : P_clock(behavior)^.interval:=stream.readNaturalNumber;
@@ -1518,8 +1518,8 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream:
 PROCEDURE T_circuitBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
   VAR i,k:longint;
   begin
-    stream.writeAnsiString(name);
-    stream.writeAnsiString(description);
+    stream.writeShortString(name);
+    stream.writeShortString(description);
     stream.writeLongint(paletteIndex);
     stream.writeNaturalNumber(length(gates));
     for i:=0 to length(gates)-1 do begin
@@ -1527,12 +1527,12 @@ PROCEDURE T_circuitBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper)
       case gates[i]^.behavior^.gateType of
         gt_input   : begin
           stream.writeNaturalNumber(P_inputGate (gates[i]^.behavior)^.ioIndex);
-          stream.writeAnsiString   (P_inputGate (gates[i]^.behavior)^.ioLabel);
+          stream.writeShortString  (P_inputGate (gates[i]^.behavior)^.ioLabel);
           stream.writeByte         (P_inputGate (gates[i]^.behavior)^.width);
         end;
         gt_output  : begin
           stream.writeNaturalNumber(P_outputGate(gates[i]^.behavior)^.ioIndex);
-          stream.writeAnsiString   (P_outputGate(gates[i]^.behavior)^.ioLabel);
+          stream.writeShortString  (P_outputGate(gates[i]^.behavior)^.ioLabel);
           stream.writeByte         (P_outputGate(gates[i]^.behavior)^.width);
         end;
         gt_clock   : stream.writeNaturalNumber(P_clock     (gates[i]^.behavior)^.interval);

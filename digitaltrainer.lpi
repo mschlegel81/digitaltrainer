@@ -29,6 +29,12 @@
             <OtherUnitFiles Value="common"/>
             <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
           </SearchPaths>
+          <Parsing>
+            <SyntaxOptions>
+              <AllowLabel Value="False"/>
+              <UseAnsiStrings Value="False"/>
+            </SyntaxOptions>
+          </Parsing>
           <CodeGeneration>
             <Optimizations>
               <OptimizationLevel Value="3"/>
@@ -126,6 +132,8 @@
     <Parsing>
       <SyntaxOptions>
         <IncludeAssertionCode Value="True"/>
+        <AllowLabel Value="False"/>
+        <UseAnsiStrings Value="False"/>
       </SyntaxOptions>
     </Parsing>
     <CodeGeneration>

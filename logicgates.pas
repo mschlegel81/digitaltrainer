@@ -80,7 +80,7 @@ TYPE
     private
       io:T_wireValue;
     public
-      ioLabel:string;
+      ioLabel:shortstring;
       ioIndex:longint;
       width:byte;
       CONSTRUCTOR create;
