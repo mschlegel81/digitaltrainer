@@ -3,8 +3,8 @@ UNIT logicGates;
 {$mode objfpc}{$H+}
 
 INTERFACE
+CONST WIRE_MAX_WIDTH=8;
 TYPE
-
   T_gateType=(gt_notGate,
               gt_andGate,
               gt_orGate,
@@ -26,7 +26,7 @@ TYPE
   T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
 
   T_wireValue=record
-    bit:array[0..7] of T_triStateValue;
+    bit:array[0..WIRE_MAX_WIDTH-1] of T_triStateValue;
     width:byte;
   end;
 
@@ -280,9 +280,16 @@ FUNCTION get2ComplementString(CONST wire:T_wireValue):string;
 
 FUNCTION parseWireBin(CONST s: string; CONST width: byte): T_wireValue;
   VAR i:longint;
+      k:longint;
   begin
     result.width:=width;
-    for i:=0 to 7 do result.bit[i]:=tsv_false;
+    for i:=0 to WIRE_MAX_WIDTH-1 do result.bit[i]:=tsv_false;
+    k:=length(s)-1;
+    if k>=WIRE_MAX_WIDTH then k:=WIRE_MAX_WIDTH-1;
+    for i:=0 to k do case s[length(s)-i] of
+      '1': result.bit[i]:=tsv_true;
+      '0': result.bit[i]:=tsv_false;
+    end;
   end;
 
 FUNCTION parseWireDecimal(CONST s: string; CONST width: byte): T_wireValue;
@@ -292,8 +299,7 @@ FUNCTION parseWireDecimal(CONST s: string; CONST width: byte): T_wireValue;
     result.width:=width;
     n:=StrToInt64Def(s,-1);
     if n<0 then n:=0;
-
-    for i:=0 to 7 do begin
+    for i:=0 to WIRE_MAX_WIDTH-1 do begin
       if odd(n) then result.bit[i]:=tsv_true
                 else result.bit[i]:=tsv_false;
       n:=n shr 1;
@@ -313,8 +319,7 @@ FUNCTION parseWire2Complement(CONST s: string; CONST width: byte): T_wireValue;
       maxVal:=1 shl width;
       while (n<0) do n+=maxVal;
     end;
-
-    for i:=0 to 7 do begin
+    for i:=0 to WIRE_MAX_WIDTH-1 do begin
       if odd(n) then result.bit[i]:=tsv_true
                 else result.bit[i]:=tsv_false;
       n:=n shr 1;
@@ -375,7 +380,7 @@ CONSTRUCTOR T_adapter.create(CONST subtype_: T_gateType);
 PROCEDURE T_adapter.reset;
   VAR i:byte;
   begin
-    for i:=0 to 7 do io.bit[i]:=tsv_undetermined;
+    for i:=0 to WIRE_MAX_WIDTH-1 do io.bit[i]:=tsv_undetermined;
   end;
 
 FUNCTION T_adapter.clone: P_abstractGate;
@@ -534,7 +539,7 @@ OPERATOR :=(CONST x:T_triStateValue):T_wireValue;
   begin
     result.width:=1;
     result.bit[0]:=x;
-    for i:=1 to 7 do result.bit[i]:=tsv_undetermined;
+    for i:=1 to WIRE_MAX_WIDTH-1 do result.bit[i]:=tsv_undetermined;
   end;
 
 FUNCTION isFullyDefined(CONST w:T_wireValue):boolean;
@@ -593,7 +598,7 @@ PROCEDURE T_inputGate.reset;
   VAR i:longint;
   begin
     io.width:=width;
-    for i:=0 to 7 do io.bit[i]:=tsv_true;
+    for i:=0 to WIRE_MAX_WIDTH-1 do io.bit[i]:=tsv_true;
   end;
 
 FUNCTION T_inputGate.caption: string;

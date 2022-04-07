@@ -52,6 +52,7 @@ TYPE
       FUNCTION findPath(CONST startPoint,endPoint:T_point):T_wirePath;
       FUNCTION findPaths(CONST startPoint:T_point; CONST endPoints:T_wirePath):T_wirePathArray;
       FUNCTION anyEdgeLeadsTo(CONST endPoint:T_point):boolean;
+      FUNCTION isWireAllowed(CONST path:T_wirePath):boolean;
   end;
 
 FUNCTION pointOf(CONST x,y:longint):T_point;
@@ -393,10 +394,10 @@ PROCEDURE T_wireGraph.dropWire(CONST path:T_wirePath; CONST diagonalsOnly:boolea
   end;
 
 FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsToPrimeWith:T_wirePathArray): T_wirePath;
-  CONST DirectionCost:array[T_wireDirection] of double=(1,1.6,
-                                                        1,1.6,
-                                                        1,1.6,
-                                                        1,1.6);
+  CONST DirectionCost:array[T_wireDirection] of double=(1,1.8,
+                                                        1,1.8,
+                                                        1,1.8,
+                                                        1,1.8);
         ChangeDirectionPenalty=0.8;
   FUNCTION distance(CONST p:T_point):double;
     begin
@@ -556,6 +557,32 @@ FUNCTION T_wireGraph.anyEdgeLeadsTo(CONST endPoint:T_point):boolean;
          (OppositeDirection[d] in allowedDirectionsPerPoint[p[0],p[1]]) then exit(true);
     end;
     result:=false;
+  end;
+
+FUNCTION T_wireGraph.isWireAllowed(CONST path:T_wirePath):boolean;
+  VAR p:T_point;
+      i,k,len:longint;
+      dir:T_wireDirection;
+  begin
+    for p in path do if (p[0]<0)
+    or (p[1]<0)
+    or (p[0]>=BOARD_MAX_SIZE_IN_GRID_ENTRIES)
+    or (p[1]>=BOARD_MAX_SIZE_IN_GRID_ENTRIES) then exit(false);
+
+    for i:=0 to length(path)-2 do begin
+      p:=path[i];
+      try
+        dir:=directionBetween(p,path[i+1]);
+      except
+        result:=false;
+      end;
+      len:=maxNormDistance(path[i],path[i+1]);
+      for k:=0 to len-1 do begin
+        if not(dir in allowedDirectionsPerPoint[p[0],p[1]]) then exit(false);
+        p+=dir;
+      end;
+    end;
+    result:=true;
   end;
 
 { T_nodeMap }
