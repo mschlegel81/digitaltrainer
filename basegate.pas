@@ -1565,6 +1565,7 @@ PROCEDURE T_circuitBoard.Repaint;
   begin
     if (GUI.container=nil) then inherited else begin
       for gate in gates do gate^.Repaint;
+      fixWireImageSize;
       drawAllWires;
     end;
   end;
@@ -1582,8 +1583,7 @@ FUNCTION T_circuitBoard.isInputConnected(CONST gate: P_visualGate;
           then exit(true);
   end;
 
-PROCEDURE T_circuitBoard.anyMouseUp(Sender: TObject; button: TMouseButton;
-  Shift: TShiftState; X, Y: integer);
+PROCEDURE T_circuitBoard.anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     dispose(wireGraph,destroy);
     incompleteWire.dragging:=false;
@@ -1750,29 +1750,54 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point);
 PROCEDURE T_circuitBoard.rewire;
   VAR connector:T_visualGateConnector;
       i,j:longint;
-      //sourcePoint,targetPoint:T_point;
-      startPoint:T_point;
-      targetPoints:T_wirePath;
+
+      needAnyRewire:boolean=false;
+      preview:array of record
+        startPoint:T_point;
+        targetPoints:T_wirePath;
+        needRewire:boolean;
+      end;
+
       paths:T_wirePathArray;
   begin
+    setLength(preview,length(logicWires));
+    for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
+      preview[i].needRewire:=false;
+      preview[i].startPoint:=source.gate^.getOutputPositionInGridSize(source.index);
+      setLength(preview[i].targetPoints,length(wires));
+      for j:=0 to length(preview[i].targetPoints)-1 do begin
+        preview[i].targetPoints[j]:=wires[j].sink.gate^.getInputPositionInGridSize(wires[j].sink.index);
+        preview[i].needRewire:=preview[i].needRewire or
+           (length(wires[j].visual)<=0) or //no wire there at all
+           (wires[j].visual[0]<>preview[i].startPoint) or //start point off
+           (wires[j].visual[length(wires[j].visual)-1]<>preview[i].targetPoints[j]);
+      end;
+      needAnyRewire:=needAnyRewire or preview[i].needRewire;
+    end;
+
+    if not(needAnyRewire) then exit;
+
     if wireGraph<>nil then dispose(wireGraph,destroy);
     connector.gate:=nil;
     connector.index:=0;
     initWireGraph(connector,false);
-    for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
-      startPoint:=source.gate^.getOutputPositionInGridSize(source.index);
-      setLength(targetPoints,length(wires));
-      for j:=0 to length(targetPoints)-1 do
-        targetPoints[j]:=wires[j].sink.gate^.getInputPositionInGridSize(wires[j].sink.index);
 
-      paths:=wireGraph^.findPaths(startPoint,targetPoints);
+    for i:=0 to length(logicWires)-1 do
+      with logicWires[i] do
+      if not(preview[i].needRewire)
+      then for j:=0 to length(wires)-1 do wireGraph^.dropWire(wires[j].visual);
 
-      for j:=0 to length(wires)-1 do begin
-        wires[j].visual:=   paths[j];
-        wireGraph^.dropWire(paths[j]);
+    for i:=0 to length(logicWires)-1 do
+      with logicWires[i] do
+      if preview[i].needRewire then begin
+        paths:=wireGraph^.findPaths(preview[i].startPoint,preview[i].targetPoints);
+        for j:=0 to length(wires)-1 do begin
+          wires[j].visual:=   paths[j];
+          wireGraph^.dropWire(paths[j]);
+        end;
+        setLength(paths,0);
       end;
-      setLength(paths,0);
-    end;
+
     fixWireImageSize;
   end;
 
