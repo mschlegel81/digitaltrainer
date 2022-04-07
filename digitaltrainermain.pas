@@ -19,6 +19,8 @@ TYPE
     ButtonAdd8to1: TButton;
     ButtonAdd1to8: TButton;
     ButtonAdd4to1: TButton;
+    miAnalyze: TMenuItem;
+    miAnalyzeGate: TMenuItem;
     speedLabel: TLabel;
     MenuItem4: TMenuItem;
     miAddToPalette: TMenuItem;
@@ -98,6 +100,8 @@ TYPE
     PROCEDURE MenuItem3Click(Sender: TObject);
     PROCEDURE miAddToPaletteClick(Sender: TObject);
     PROCEDURE miAnalyzeBoardClick(Sender: TObject);
+    PROCEDURE miAnalyzeClick(Sender: TObject);
+    PROCEDURE miAnalyzeGateClick(Sender: TObject);
     PROCEDURE miDeleteClick(Sender: TObject);
     PROCEDURE miDeselectAllClick(Sender: TObject);
     PROCEDURE miGatePropertiesClick(Sender: TObject);
@@ -116,8 +120,6 @@ TYPE
     stepsPerTimer:longint;
     PROCEDURE updateSidebar;
     PROCEDURE restartTimerCallback;
-    //TODO: Add analysis dialog in GateListBoxPopupMenu
-    //TODO: Add analysis dialog in AnyGatePopupMenu
   public
   end;
 
@@ -255,6 +257,19 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miAnalyzeBoardClick(Sender: TObject);
   begin
     analysisForm.showForBoard(workspace.currentBoard);
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miAnalyzeClick(Sender: TObject);
+  begin
+    if (CustomGateListBox.ItemIndex>=0) and
+       (CustomGateListBox.ItemIndex<length(workspace.paletteEntries))
+    then analysisForm.showForBoard(workspace.paletteEntries[CustomGateListBox.ItemIndex]);
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miAnalyzeGateClick(Sender: TObject);
+  begin
+    if visualGateForContextPopup=nil then exit;
+    analysisForm.showForGate(visualGateForContextPopup^.getBehavior);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miDeleteClick(Sender: TObject);

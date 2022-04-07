@@ -50,6 +50,7 @@ TYPE
       PROPERTY marked:boolean read marked_ write setMarked;
       FUNCTION numberOfInputs:longint;
       FUNCTION numberOfOutputs:longint;
+      FUNCTION isCompletelyInsideRect(CONST low,high:T_point):boolean;
     public
       PROCEDURE Repaint; virtual;
       PROPERTY getBehavior:P_abstractGate read behavior;
@@ -178,6 +179,8 @@ TYPE
         gateContextMenu:TPopupMenu;
         anyChangeCallback:F_simpleCallback;
         lastClickedGate:P_visualGate;
+        selectionFrame:TShape;
+        selectionStart:T_point;
       end;
 
       gates      :array of P_visualGate;
@@ -209,6 +212,8 @@ TYPE
       PROCEDURE finishWireDrag(CONST targetPoint:T_point; CONST previewDuringDrag:boolean=false);
       PROCEDURE rewire;
       PROCEDURE WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+      PROCEDURE WireImageMouseMove(Sender: TObject; Shift: TShiftState; X,Y: integer);
+      PROCEDURE WireImageMouseUp  (Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
       FUNCTION wrapGate(CONST origin:T_point;CONST g:P_abstractGate):P_visualGate;
       FUNCTION clone:P_circuitBoard;
     public
@@ -790,6 +795,14 @@ FUNCTION T_visualGate.numberOfOutputs: longint;
     result:=behavior^.numberOfOutputs;
   end;
 
+FUNCTION T_visualGate.isCompletelyInsideRect(CONST low,high:T_point):boolean;
+  begin
+    result:=(origin[0]>=low[0])
+        and (origin[1]>=low[1])
+        and (origin[0]+size[0]<=high[0])
+        and (origin[1]+size[1]<=high[1]);
+  end;
+
 { T_customGate }
 
 CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
@@ -1179,7 +1192,9 @@ DESTRUCTOR T_circuitBoard.destroy;
     clear;
   end;
 
-PROCEDURE T_circuitBoard.attachGUI(CONST zoom: longint; CONST container: TWinControl; CONST wireImage: TImage; CONST gatePopup:TPopupMenu; CONST anyChangeCallback:F_simpleCallback);
+PROCEDURE T_circuitBoard.attachGUI(CONST zoom: longint;
+  CONST container: TWinControl; CONST wireImage: TImage;
+  CONST gatePopup: TPopupMenu; CONST anyChangeCallback: F_simpleCallback);
   VAR gate:P_visualGate;
   begin
     GUI.zoom:=zoom;
@@ -1187,7 +1202,15 @@ PROCEDURE T_circuitBoard.attachGUI(CONST zoom: longint; CONST container: TWinCon
     GUI.wireImage:=wireImage;
     GUI.gateContextMenu:=gatePopup;
     GUI.anyChangeCallback:=anyChangeCallback;
+    GUI.selectionFrame:=TShape.create(container);
+    GUI.selectionFrame.parent:=container;
+    GUI.selectionFrame.visible:=false;
+    GUI.selectionFrame.Brush.style:=bsClear;
+    GUI.selectionFrame.Pen.color:=clRed;
+    GUI.selectionFrame.Pen.style:=psDashDot;
     wireImage.OnMouseDown:=@WireImageMouseDown;
+    wireImage.OnMouseUp  :=@WireImageMouseUp;
+    wireImage.OnMouseMove:=@WireImageMouseMove;
     for gate in gates do gate^.ensureGuiElements;
     rewire;
   end;
@@ -1229,7 +1252,8 @@ PROCEDURE T_circuitBoard.setSelectForAll(CONST doSelect: boolean);
     drawAllWires;
   end;
 
-FUNCTION T_circuitBoard.repositionGate(CONST gateToCheck: P_visualGate; CONST considerWires:boolean): T_repositionOutput;
+FUNCTION T_circuitBoard.repositionGate(CONST gateToCheck: P_visualGate;
+  CONST considerWires: boolean): T_repositionOutput;
   FUNCTION isOriginValid(CONST o:T_point):boolean;
     VAR gate:P_visualGate;
         i,j,k,run:longint;
@@ -1440,7 +1464,7 @@ PROCEDURE T_circuitBoard.setZoom(CONST zoom: longint);
     Repaint;
   end;
 
-FUNCTION T_circuitBoard.simulateSteps(CONST count:longint):boolean;
+FUNCTION T_circuitBoard.simulateSteps(CONST count: longint): boolean;
   VAR gate:P_visualGate;
       i,j,step:longint;
       output:T_wireValue;
@@ -1457,7 +1481,8 @@ FUNCTION T_circuitBoard.simulateSteps(CONST count:longint):boolean;
     for gate in gates do gate^.updateIoVisuals;
   end;
 
-FUNCTION T_circuitBoard.wrapGate(CONST origin:T_point; CONST g:P_abstractGate):P_visualGate;
+FUNCTION T_circuitBoard.wrapGate(CONST origin: T_point; CONST g: P_abstractGate
+  ): P_visualGate;
   begin
     case g^.gateType of
       gt_compound: new(P_visualGateForCustom(result),create(origin,g,@self));
@@ -1467,7 +1492,8 @@ FUNCTION T_circuitBoard.wrapGate(CONST origin:T_point; CONST g:P_abstractGate):P
     end;
   end;
 
-FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace;
+  VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i:longint;
       gateType: T_gateType;
       k:longint;
@@ -1523,7 +1549,8 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream:
     result:=stream.allOkay;
   end;
 
-PROCEDURE T_circuitBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_circuitBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper
+  );
   VAR i,k:longint;
   begin
     stream.writeShortString(name);
@@ -1591,7 +1618,8 @@ FUNCTION T_circuitBoard.isInputConnected(CONST gate: P_visualGate;
           then exit(true);
   end;
 
-PROCEDURE T_circuitBoard.anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE T_circuitBoard.anyMouseUp(Sender: TObject; button: TMouseButton;
+  Shift: TShiftState; X, Y: integer);
   begin
     dispose(wireGraph,destroy);
     incompleteWire.dragging:=false;
@@ -1643,7 +1671,8 @@ PROCEDURE T_circuitBoard.drawAllWires;
     end;
   end;
 
-PROCEDURE T_circuitBoard.initWireGraph(CONST start: T_visualGateConnector; CONST includeWires: boolean);
+PROCEDURE T_circuitBoard.initWireGraph(CONST start: T_visualGateConnector;
+  CONST includeWires: boolean);
   VAR gate:P_visualGate;
       x,y,i,j:longint;
   begin
@@ -1671,7 +1700,8 @@ PROCEDURE T_circuitBoard.initWireGraph(CONST start: T_visualGateConnector; CONST
       for j:=0 to length(wires)-1 do wireGraph^.dropWire(wires[j].visual);
   end;
 
-FUNCTION T_circuitBoard.findWirePath(CONST start: T_visualGateConnector; CONST endPoint: T_point): T_wirePath;
+FUNCTION T_circuitBoard.findWirePath(CONST start: T_visualGateConnector;
+  CONST endPoint: T_point): T_wirePath;
   begin
     if wireGraph=nil then initWireGraph(start,true);
     if wireGraph^.anyEdgeLeadsTo(endPoint)
@@ -1679,14 +1709,16 @@ FUNCTION T_circuitBoard.findWirePath(CONST start: T_visualGateConnector; CONST e
     else setLength(result,0);
   end;
 
-PROCEDURE T_circuitBoard.gateMoved(CONST gate: P_visualGate; CONST doneDragging: boolean);
+PROCEDURE T_circuitBoard.gateMoved(CONST gate: P_visualGate;
+  CONST doneDragging: boolean);
   begin
     repositionGate(gate,false);
     if doneDragging then rewire;
     Repaint;
   end;
 
-PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previewDuringDrag:boolean=false);
+PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point;
+  CONST previewDuringDrag: boolean);
 
   PROCEDURE drawTempWire(CONST targetPoint: T_point);
     VAR wire:T_wirePath;
@@ -1858,6 +1890,51 @@ PROCEDURE T_circuitBoard.WireImageMouseDown(Sender: TObject; button: TMouseButto
         anyChange:=true;
       end;
       if anyChange then drawAllWires;
+    end else if (button=mbLeft) then begin
+      GUI.selectionFrame.visible:=true;
+      GUI.selectionFrame.top :=y; GUI.selectionFrame.height:=1;
+      GUI.selectionFrame.Left:=X; GUI.selectionFrame.width :=1;
+      GUI.selectionStart:=pointOf(x,y);
+    end;
+  end;
+
+PROCEDURE T_circuitBoard.WireImageMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
+  VAR low,size:T_point;
+  begin
+    if GUI.selectionFrame.visible then with GUI do begin
+      low :=pointOf(min(x,selectionStart[0]),
+                    min(y,selectionStart[1]));
+      size:=pointOf(max(x,selectionStart[0]),
+                    max(y,selectionStart[1]))-low;
+
+      GUI.selectionFrame.Left  :=low[0];
+      GUI.selectionFrame.top   :=low[1];
+      GUI.selectionFrame.width :=size[0];
+      GUI.selectionFrame.height:=size[1];
+    end;
+  end;
+
+PROCEDURE T_circuitBoard.WireImageMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  VAR selStart,selEnd:T_point;
+      gate:P_visualGate;
+      i,j:longint;
+      p:T_point;
+  begin
+    if GUI.selectionFrame.visible then with GUI do begin
+      selStart:=pointOf(floor(min(x,GUI.selectionStart[0])/zoom),
+                        floor(min(y,GUI.selectionStart[1])/zoom));
+      selEnd  :=pointOf(ceil (max(x,GUI.selectionStart[0])/zoom),
+                        ceil (max(y,GUI.selectionStart[1])/zoom));
+      selectionFrame.visible:=false;
+
+      for gate in gates do gate^.setMarked(gate^.isCompletelyInsideRect(selStart,selEnd));
+      for i:=0 to length(logicWires)-1 do
+      for j:=0 to length(logicWires[i].wires)-1 do
+      with logicWires[i].wires[j] do begin
+        marked:=length(visual)>0;
+        for p in visual do marked:=marked and (p[0]>=selStart[0]) and (p[0]<=selEnd[0]) and (p[1]>=selStart[1]) and (p[1]<=selEnd[1]);
+      end;
+      Repaint;
     end;
   end;
 
