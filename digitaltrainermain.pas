@@ -243,6 +243,7 @@ PROCEDURE TDigitaltrainerMainForm.MenuItem3Click(Sender: TObject);
   begin
     workspace.editPaletteEntry(CustomGateListBox.ItemIndex);
     updateSidebar;
+    restartTimerCallback;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
@@ -286,6 +287,7 @@ PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
         workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
         workspace.currentBoard^.Repaint;
         updateSidebar;
+        restartTimerCallback;
       end;
       temp.destroy;
     end;
