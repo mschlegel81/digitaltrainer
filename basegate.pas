@@ -31,7 +31,7 @@ TYPE
       marked_:boolean;
     protected
       PROCEDURE ensureGuiElements;  virtual;
-      PROCEDURE disposeGuiElements;
+      PROCEDURE disposeGuiElements; virtual;
       PROCEDURE updateIoVisuals; virtual;
 
       CONSTRUCTOR create(CONST origin_:T_point; CONST gateToWrap:P_abstractGate; CONST board_:P_circuitBoard);
@@ -74,16 +74,27 @@ TYPE
     PROCEDURE Repaint; virtual;
   end;
 
+  T_inputMode=(im_bin,im_dec,im_2complement);
+
   P_visualGateForInput=^T_visualGateForInput;
   T_visualGateForInput=object(T_visualGate)
   protected
-    edit:TEdit;
+    inputMode:T_inputMode;
+    edit     :TEdit;
+    button   :TButton;
     PROCEDURE ensureGuiElements; virtual;
+    PROCEDURE disposeGuiElements; virtual;
     PROCEDURE updateIoVisuals; virtual;
     CONSTRUCTOR create(CONST origin_:T_point; CONST gateToWrap:P_abstractGate; CONST board_:P_circuitBoard);
   public
     PROCEDURE Repaint; virtual;
-    DESTRUCTOR destroy; virtual;
+  private
+    //Events...
+    PROCEDURE updateText;
+    PROCEDURE ButtonClick   (Sender: TObject);
+    PROCEDURE inputModeClick(Sender: TObject);
+    PROCEDURE inputEditEditingDone(Sender: TObject);
+    PROCEDURE inputEditKeyEvent(Sender: TObject; VAR key: char);
   end;
 
   T_visualGateConnector=object
@@ -124,6 +135,7 @@ TYPE
     gates      :array of P_abstractGate;
     name       :string;
     connections:array of record source,sink:T_gateConnector end;
+    //TODO: Handle adapters separately?
     inputConnections :array of record
                         caption:string;
                         width:byte;
@@ -233,10 +245,30 @@ OPERATOR =(CONST x,y:T_visualGateConnector):boolean;
     result:=(x.gate=y.gate) and (x.index=y.index);
   end;
 
+PROCEDURE T_visualGateForInput.disposeGuiElements;
+  begin
+    inherited;
+    if button<>nil then FreeAndNil(button);
+    if edit  <>nil then FreeAndNil(edit);
+  end;
+
+PROCEDURE T_visualGateForInput.updateIoVisuals;
+  begin
+    inherited;
+    if not(edit.Focused) then updateText;
+  end;
+
+CONSTRUCTOR T_visualGateForInput.create(CONST origin_: T_point; CONST gateToWrap: P_abstractGate; CONST board_: P_circuitBoard);
+  begin
+    inherited; size[0]+=1; size[1]+=1;
+    inputMode:=im_bin;
+  end;
+
 CONSTRUCTOR T_visualGateForCustom.create(CONST origin_: T_point; CONST gateToWrap: P_abstractGate; CONST board_: P_circuitBoard);
   begin inherited; end;
+
 CONSTRUCTOR T_visualGateForOutput.create(CONST origin_: T_point; CONST gateToWrap: P_abstractGate; CONST board_: P_circuitBoard);
-begin inherited; size[1]+=1; end;
+  begin inherited; size[1]+=1; end;
 
 FUNCTION T_visualGateConnector.loadFromStream(CONST board: P_circuitBoard; VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR gateIndex:longint;
@@ -332,52 +364,54 @@ PROCEDURE T_visualGateForCustom.ensureGuiElements;
   end;
 
 PROCEDURE T_visualGateForOutput.ensureGuiElements;
-  VAR i:longint;
   begin
     if (length(shapes)=0) and (board<>nil) and (board^.GUI.container<>nil) then begin
       inherited;
-      setLength(labels,4);
-      for i:=1 to 3 do begin
-        labels[i]:=TLabel.create(board^.GUI.container);
-        labels[i].parent:=board^.GUI.container;
-      end;
-      labels[1].caption:='bin: ?';
-      labels[2].caption:='dec: ?';
-      labels[3].caption:='neg: ?';
+      setLength(labels,2);
+      labels[1]:=TLabel.create(board^.GUI.container);
+      labels[1].parent:=board^.GUI.container;
+      labels[1].caption:='bin: ?'+LineEnding+
+                         'dec: ?'+LineEnding+
+                         'neg: ?';
+      labels[1].OnMouseDown:=@mainShapeMouseDown;
+      labels[1].OnMouseMove:=@mainShapeMouseMove;
+      labels[1].OnMouseUp  :=@mainShapeMouseUp;
+    end;
+  end;
+
+PROCEDURE T_visualGateForInput.ensureGuiElements;
+  begin
+    if (length(shapes)=0) and (board<>nil) and (board^.GUI.container<>nil) then begin
+      inherited;
+      button:=TButton.create(board^.GUI.container);
+      button.parent:=        board^.GUI.container;
+      button.caption:=behavior^.caption;
+      button.Font.size:=board^.GUI.zoom;
+      button.OnMouseDown:=@mainShapeMouseDown;
+      button.OnMouseMove:=@mainShapeMouseMove;
+      button.OnMouseUp  :=@mainShapeMouseUp;
+      button.Font.name :=labels[0].Font.name;
+      button.OnClick:=@ButtonClick;
+
+      edit:=TEdit.create(board^.GUI.container);
+      edit.parent:=      board^.GUI.container;
+      edit.OnEditingDone:=@inputEditEditingDone;
+      edit.OnKeyPress   :=@inputEditKeyEvent;
+
+      setLength(labels,2);
+      labels[1]:=TLabel.create(board^.GUI.container);
+      labels[1].parent:=board^.GUI.container;
+      labels[1].caption:='bin:';
+      labels[1].OnClick:=@inputModeClick;
     end;
   end;
 
 PROCEDURE T_visualGateForOutput.updateIoVisuals;
   begin
     inherited;
-    labels[1].caption:='bin: '+getBinaryString(behavior^.getOutput(0));
-    labels[2].caption:='dec: '+getDecimalString(behavior^.getOutput(0));
-    labels[3].caption:='neg: '+get2ComplementString(behavior^.getOutput(0));
-  end;
-
-PROCEDURE T_visualGateForOutput.Repaint;
-  VAR newFontSize:longint;
-  begin
-    inherited;
-    newFontSize:=min(round(labels[0].Font.size*shapes[0].width  *0.75/labels[0].width),
-                     round(labels[0].Font.size*shapes[0].height *0.33/labels[0].height));
-    if abs(newFontSize-labels[0].Font.size)>1 then begin
-      labels[0].Font.size:=newFontSize;
-      newFontSize:=newFontSize div 2;
-      labels[1].Font.size:=newFontSize;
-      labels[2].Font.size:=newFontSize;
-      labels[3].Font.size:=newFontSize;
-    end;
-
-    labels[0].top :=shapes[0].top;
-    labels[1].top:=labels[0].top+labels[0].height;
-    labels[2].top:=labels[1].top+labels[1].height;
-    labels[3].top:=labels[2].top+labels[2].height;
-
-    labels[0].Left:=shapes[0].Left+(shapes[0].width -labels[0].width) div 2 ;
-    labels[1].Left:=shapes[0].Left+round(board^.GUI.zoom*0.7);
-    labels[2].Left:=shapes[0].Left+round(board^.GUI.zoom*0.7);
-    labels[3].Left:=shapes[0].Left+round(board^.GUI.zoom*0.7);
+    labels[1].caption:='bin: '+getBinaryString(behavior^.getInput(0))+LineEnding+
+                       'dec: '+getDecimalString(behavior^.getInput(0))+LineEnding+
+                       'neg: '+get2ComplementString(behavior^.getInput(0));
   end;
 
 PROCEDURE T_visualGate.disposeGuiElements;
@@ -434,11 +468,6 @@ PROCEDURE T_visualGate.inputClick(Sender: TObject);
 PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     if (button=mbLeft) then begin
-      if (behavior^.gateType=gt_input) and (P_inputGate(behavior)^.width=1) then begin
-        behavior^.setInput(0,TRI_STATE_NOT[behavior^.getInput(0).bit[0]]);
-        updateIoVisuals;
-        if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
-      end;
       dragging:=true;
       movedDuringDrag:=false;
       if (ssShift in Shift) or (ssCtrl in Shift) then marked:=not(marked);
@@ -532,7 +561,6 @@ PROCEDURE T_visualGate.Repaint;
     shapes[0].width :=size  [0]*board^.GUI.zoom;
     shapes[0].height:=size  [1]*board^.GUI.zoom;
 
-    labels[0].caption:=behavior^.caption;
     newFontSize:=min(round(labels[0].Font.size*shapes[0].width  *0.75/labels[0].width),
                      round(labels[0].Font.size*shapes[0].height *0.5 /labels[0].height));
     if abs(newFontSize-labels[0].Font.size)>1 then labels[0].Font.size:=newFontSize;
@@ -586,6 +614,143 @@ PROCEDURE T_visualGateForCustom.Repaint;
       labels[shapeIndex].top :=shapes[shapeIndex].top +(shapes[shapeIndex].height-labels[shapeIndex].height) div 2;
       inc(shapeIndex);
     end;
+  end;
+
+PROCEDURE T_visualGateForInput.Repaint;
+  VAR caption:shortstring;
+      newFontSize:longint;
+  begin
+    if length(shapes)=0 then exit;
+    caption:=behavior^.caption;
+    button   .caption:=caption;
+    labels[0].caption:=caption;
+    labels[0].visible:=true;
+    inherited;
+    labels[0].visible:=false;
+
+    button.top   :=shapes[0].top;
+    button.Left  :=shapes[0].Left;
+    button.width :=shapes[0].width;
+    button.height:=shapes[0].height div 2;
+    edit  .height:=shapes[0].height div 2;
+
+    button.Font.size:=labels[0].Font.size;
+
+    newFontSize:=min(round(labels[1].Font.size*shapes[0].width *0.25/labels[1].width),
+                     round(labels[1].Font.size*shapes[0].height*0.25/labels[1].height));
+    if abs(newFontSize-labels[1].Font.size)>1 then begin
+      labels[1].Font.size:=newFontSize;
+      edit     .Font.size:=newFontSize;
+    end;
+
+    labels[1].Left:=shapes[0].Left+4;
+    labels[1].top :=round(button.top+1.5*button.height-0.5*labels[1].height);
+    edit.top      :=round(button.top+1.5*button.height-0.5*edit     .height);
+    edit.Left     := labels[1].Left+labels[1].width+4;
+    edit.width    :=(shapes[0].Left+shapes[0].width-4)-edit.Left ;
+  end;
+
+PROCEDURE T_visualGateForInput.updateText;
+ begin
+   case inputMode of
+     im_bin:         edit.text:=getBinaryString (behavior^.getOutput(0));
+     im_dec:         edit.text:=getDecimalString(behavior^.getOutput(0));
+     im_2complement: edit.text:=get2ComplementString(behavior^.getOutput(0));
+   end;
+ end;
+
+PROCEDURE T_visualGateForInput.ButtonClick(Sender: TObject);
+  VAR i:longint;
+      w:T_wireValue;
+  begin
+    w:=behavior^.getInput(0);
+    for i:=0 to 7 do w.bit[i]:=TRI_STATE_NOT[w.bit[i]];
+    behavior^.setInput(0,w);
+    updateIoVisuals;
+    if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
+  end;
+
+PROCEDURE T_visualGateForInput.inputModeClick(Sender: TObject);
+  begin
+    case inputMode of
+      im_bin        : begin inputMode:=im_dec        ; labels[1].caption:='dec:'; end;
+      im_dec        : begin inputMode:=im_2complement; labels[1].caption:='neg:'; end;
+      im_2complement: begin inputMode:=im_bin        ; labels[1].caption:='bin:'; end;
+    end;
+    updateText;
+  end;
+
+PROCEDURE T_visualGateForInput.inputEditEditingDone(Sender: TObject);
+  VAR w:T_wireValue;
+  begin
+    case inputMode of
+      im_bin:         w:=parseWireBin        (edit.text,behavior^.inputWidth(0));
+      im_dec:         w:=parseWireDecimal    (edit.text,behavior^.inputWidth(0));
+      im_2complement: w:=parseWire2Complement(edit.text,behavior^.inputWidth(0));
+    end;
+    behavior^.setInput(0,w);
+    updateText;
+    updateIoVisuals;
+    if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
+  end;
+
+PROCEDURE T_visualGateForInput.inputEditKeyEvent(Sender: TObject; VAR key: char);
+  VAR AllowedKeys:array[T_inputMode] of set of char=
+      {im_bin        } ([#8,'0','1'],
+      {im_dec        }  [#8,'0'..'9'],
+      {im_2complement}  [#8,'-','0'..'9']);
+  begin
+    if key=#13 then begin
+      inputEditEditingDone(Sender);
+      key:=#0;
+      exit;
+    end;
+    if not(key in AllowedKeys[inputMode]) then key:=#0;
+  end;
+
+PROCEDURE T_visualGateForOutput.Repaint;
+  VAR k,newFontSize:longint;
+      shapeIndex :longint=1;
+      p:T_point;
+  begin
+    if length(shapes)=0 then exit;
+    shapes[0].Left  :=origin[0]*board^.GUI.zoom;
+    shapes[0].top   :=origin[1]*board^.GUI.zoom;
+    shapes[0].width :=size  [0]*board^.GUI.zoom;
+    shapes[0].height:=size  [1]*board^.GUI.zoom;
+
+    for k:=0 to numberOfInputs-1 do begin
+      p:=getInputPositionInGridSize(k);
+      shapes[shapeIndex].Left  :=round((p[0]-0.5)*board^.GUI.zoom);
+      shapes[shapeIndex].top   :=round((p[1]-0.5)*board^.GUI.zoom);
+      shapes[shapeIndex].width :=board^.GUI.zoom;
+      shapes[shapeIndex].height:=board^.GUI.zoom;
+      inc(shapeIndex);
+    end;
+
+    for k:=0 to numberOfOutputs-1 do begin
+      p:=getOutputPositionInGridSize(k);
+      shapes[shapeIndex].Left  :=round((p[0]-0.5)*board^.GUI.zoom);
+      shapes[shapeIndex].top   :=round((p[1]-0.5)*board^.GUI.zoom);
+      shapes[shapeIndex].width :=board^.GUI.zoom;
+      shapes[shapeIndex].height:=board^.GUI.zoom;
+      inc(shapeIndex);
+    end;
+
+    labels[0].caption:=behavior^.caption;
+    newFontSize:=min(round(labels[0].Font.size*shapes[0].width *0.75/labels[0].width),
+                     round(labels[0].Font.size*shapes[0].height*0.4 /labels[0].height));
+    if abs(newFontSize-labels[0].Font.size)>1 then labels[0].Font.size:=newFontSize;
+
+    newFontSize:=min(round(labels[1].Font.size*shapes[0].width *0.75/labels[1].width),
+                     round(labels[1].Font.size*shapes[0].height*0.5 /labels[1].height));
+    if abs(newFontSize-labels[1].Font.size)>1 then labels[1].Font.size:=newFontSize;
+
+    labels[0].top:=shapes[0].top;
+    labels[1].top:=labels[0].top+labels[0].height;
+
+    labels[0].Left:=shapes[0].Left+(shapes[0].width -labels[0].width) div 2 ;
+    labels[1].Left:=shapes[0].Left+round(board^.GUI.zoom*0.7);
   end;
 
 PROCEDURE T_visualGate.updateIoVisuals;
@@ -647,7 +812,7 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
     end;
 
   PROCEDURE addConnection(CONST src,tgt:T_gateConnector);
-    VAR k,ioIdx:longint;
+    VAR k,ioIdx,i:longint;
     begin
       if src.gate^.gateType=gt_input then begin
         ioIdx:=P_inputGate(src.gate)^.ioIndex;
@@ -656,7 +821,7 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
           setLength(inputConnections,ioIdx+1);
           while k<length(inputConnections) do begin
             setLength(inputConnections[k].goesTo,0);
-            inputConnections[k].value:=tsv_true;
+            for i:=0 to 7 do inputConnections[k].value.bit[i]:=tsv_true;
             inc(k);
           end;
         end;
@@ -866,7 +1031,7 @@ PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType; CONST x0,y0:longint
         gt_output: P_outputGate(gateToAdd)^.ioIndex:=numberOf(gt_output);
       end;
 
-      new(visual,create(pointOf(x0,y0),gateToAdd,currentBoard));
+      visual:=currentBoard^.wrapGate(pointOf(x0,y0),gateToAdd);
       if not currentBoard^.positionNewGate(visual)
       then dispose(visual,destroy);
     end;
@@ -1125,6 +1290,7 @@ FUNCTION T_circuitBoard.positionNewGate(CONST gateToAdd: P_visualGate): boolean;
   end;
 
 PROCEDURE T_circuitBoard.deleteInvalidWires;
+  VAR k,j,i:longint;
   begin
     for k:=0 to length(logicWires)-1 do with logicWires[k] do begin
       width:=source.gate^.behavior^.outputWidth(source.index);
@@ -1180,12 +1346,10 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
       case gate^.behavior^.gateType of
         gt_input: begin
           P_inputGate(gate^.behavior)^.ioIndex:=inputIndex;
-          gate^.labels[0].caption:=gate^.behavior^.caption;
           inc(inputIndex);
         end;
         gt_output: begin
           P_outputGate(gate^.behavior)^.ioIndex:=outputIndex;
-          gate^.labels[0].caption:=gate^.behavior^.caption;
           inc(outputIndex);
         end;
       end;
@@ -1290,6 +1454,7 @@ FUNCTION T_circuitBoard.wrapGate(CONST origin:T_point; CONST g:P_abstractGate):P
     case g^.gateType of
       gt_compound: new(P_visualGateForCustom(result),create(origin,g,@self));
       gt_output  : new(P_visualGateForOutput(result),create(origin,g,@self));
+      gt_input   : new(P_visualGateForInput (result),create(origin,g,@self));
       else         new(                      result ,create(origin,g,@self));
     end;
   end;

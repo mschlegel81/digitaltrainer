@@ -225,6 +225,10 @@ OPERATOR =(CONST x,y:T_wireValue):boolean;
 FUNCTION getBinaryString(CONST wire:T_wireValue):string;
 FUNCTION getDecimalString(CONST wire:T_wireValue):string;
 FUNCTION get2ComplementString(CONST wire:T_wireValue):string;
+
+FUNCTION parseWireBin        (CONST s:string; CONST width:byte):T_wireValue;
+FUNCTION parseWireDecimal    (CONST s:string; CONST width:byte):T_wireValue;
+FUNCTION parseWire2Complement(CONST s:string; CONST width:byte):T_wireValue;
 IMPLEMENTATION
 USES sysutils;
 FUNCTION getBinaryString(CONST wire:T_wireValue):string;
@@ -272,6 +276,49 @@ FUNCTION get2ComplementString(CONST wire:T_wireValue):string;
       if k>maxVal then k-=maxVal+maxVal;
     end;
     result:=intToStr(k);
+  end;
+
+FUNCTION parseWireBin(CONST s: string; CONST width: byte): T_wireValue;
+  VAR i:longint;
+  begin
+    result.width:=width;
+    for i:=0 to 7 do result.bit[i]:=tsv_false;
+  end;
+
+FUNCTION parseWireDecimal(CONST s: string; CONST width: byte): T_wireValue;
+  VAR n:int64;
+      i:longint;
+  begin
+    result.width:=width;
+    n:=StrToInt64Def(s,-1);
+    if n<0 then n:=0;
+
+    for i:=0 to 7 do begin
+      if odd(n) then result.bit[i]:=tsv_true
+                else result.bit[i]:=tsv_false;
+      n:=n shr 1;
+    end;
+  end;
+
+FUNCTION parseWire2Complement(CONST s: string; CONST width: byte): T_wireValue;
+  VAR n:int64;
+      i:longint;
+      maxVal:int64;
+  begin
+    result.width:=width;
+    n:=StrToInt64Def(s,maxLongint+1);
+    if (n>maxLongint) or (n<-65536) then n:=0;
+
+    if (width>1) then begin
+      maxVal:=1 shl width;
+      while (n<0) do n+=maxVal;
+    end;
+
+    for i:=0 to 7 do begin
+      if odd(n) then result.bit[i]:=tsv_true
+                else result.bit[i]:=tsv_false;
+      n:=n shr 1;
+    end;
   end;
 
 OPERATOR =(CONST x,y:T_gateConnector):boolean;
@@ -492,7 +539,7 @@ FUNCTION isFullyDefined(CONST w:T_wireValue):boolean;
   VAR i:longint;
   begin
     result:=true;
-    for i:=0 to w.width-1 do if w.bit[i]=tsv_undetermined then exit(false);
+    for i:=0 to w.width-1 do if not(w.bit[i] in [tsv_true,tsv_false]) then exit(false);
   end;
 
 OPERATOR =(CONST x,y:T_wireValue):boolean;
