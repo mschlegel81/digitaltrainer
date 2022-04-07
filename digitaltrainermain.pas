@@ -19,6 +19,8 @@ TYPE
     ButtonAdd8to1: TButton;
     ButtonAdd1to8: TButton;
     ButtonAdd4to1: TButton;
+    miPaste: TMenuItem;
+    miCopy: TMenuItem;
     miAnalyze: TMenuItem;
     miAnalyzeGate: TMenuItem;
     speedLabel: TLabel;
@@ -102,11 +104,13 @@ TYPE
     PROCEDURE miAnalyzeBoardClick(Sender: TObject);
     PROCEDURE miAnalyzeClick(Sender: TObject);
     PROCEDURE miAnalyzeGateClick(Sender: TObject);
+    PROCEDURE miCopyClick(Sender: TObject);
     PROCEDURE miDeleteClick(Sender: TObject);
     PROCEDURE miDeselectAllClick(Sender: TObject);
     PROCEDURE miGatePropertiesClick(Sender: TObject);
     PROCEDURE miLoadClick(Sender: TObject);
     PROCEDURE miNewClick(Sender: TObject);
+    PROCEDURE miPasteClick(Sender: TObject);
     PROCEDURE miQuitClick(Sender: TObject);
     PROCEDURE miSaveClick(Sender: TObject);
     PROCEDURE miSelectAllClick(Sender: TObject);
@@ -272,6 +276,11 @@ PROCEDURE TDigitaltrainerMainForm.miAnalyzeGateClick(Sender: TObject);
     analysisForm.showForGate(visualGateForContextPopup^.getBehavior);
   end;
 
+PROCEDURE TDigitaltrainerMainForm.miCopyClick(Sender: TObject);
+  begin
+    workspace.currentBoard^.copySelectionToClipboard;
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.miDeleteClick(Sender: TObject);
   begin
     workspace.currentBoard^.deleteMarkedElements;
@@ -312,6 +321,11 @@ PROCEDURE TDigitaltrainerMainForm.miNewClick(Sender: TObject);
   begin
     workspace.currentBoard^.clear;
     updateSidebar;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miPasteClick(Sender: TObject);
+  begin
+    workspace.currentBoard^.pasteFromClipboard;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miQuitClick(Sender: TObject);

@@ -567,6 +567,16 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     end
     object MenuItem7: TMenuItem
       Caption = '&Bearbeiten'
+      object miCopy: TMenuItem
+        Caption = '&Kopieren'
+        ShortCut = 16451
+        OnClick = miCopyClick
+      end
+      object miPaste: TMenuItem
+        Caption = '&Einfügen'
+        ShortCut = 16470
+        OnClick = miPasteClick
+      end
       object miSelectAll: TMenuItem
         Caption = 'Alle auswählen'
         ShortCut = 16449
