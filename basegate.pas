@@ -25,7 +25,7 @@ TYPE
       shapes:array of TShape;
       //mouse interaction
       dragX,dragY:longint;
-      dragging:boolean;
+      dragging:(not_dragging,drag_self,drag_selection);
       movedDuringDrag:boolean;
       wireDragOutputIndex:longint;
       marked_:boolean;
@@ -447,7 +447,7 @@ CONSTRUCTOR T_visualGate.create(CONST origin_: T_point; CONST gateToWrap: P_abst
     behavior:=gateToWrap;
     size:=pointOf(4,max(2,2*max(numberOfInputs,numberOfOutputs)));
 
-    dragging:=false;
+    dragging:=not_dragging;
     marked  :=false;
     board   :=board_;
 
@@ -484,7 +484,8 @@ PROCEDURE T_visualGate.inputClick(Sender: TObject);
 PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     if (button=mbLeft) then begin
-      dragging:=true;
+      if marked_ then dragging:=drag_selection
+                 else dragging:=drag_self;
       movedDuringDrag:=false;
       if (ssShift in Shift) or (ssCtrl in Shift) then marked:=not(marked);
       shapes[0].Pen.style:=psDash;
@@ -496,28 +497,41 @@ PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton;
   end;
 
 PROCEDURE T_visualGate.mainShapeMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
-  VAR newOrigin:T_point;
-      dx,dy:longint;
+  VAR dx,dy:longint;
+      dragDelta:T_point;
+      gate:P_visualGate;
   begin
-    if dragging then begin
-      dx:=x-dragX;
-      dy:=y-dragY;
-      newOrigin:=origin+pointOf(round(dx/board^.GUI.zoom),round(dy/board^.GUI.zoom));
-      if newOrigin<>origin then begin
-        movedDuringDrag:=true;
-        origin:=newOrigin;
-        board^.gateMoved(@self,false);
-      end else Repaint;
+    dx:=x-dragX;
+    dy:=y-dragY;
+    dragDelta:=pointOf(round(dx/board^.GUI.zoom),round(dy/board^.GUI.zoom));
+    if dragDelta=ZERO_POINT then exit;
+    if dragging=drag_self then begin
+      movedDuringDrag:=true;
+      origin+=dragDelta;
+      board^.gateMoved(@self,false);
+    end else if dragging=drag_selection then begin
+      movedDuringDrag:=true;
+      for gate in board^.gates do if gate^.marked then begin
+        gate^.origin+=dragDelta;
+        board^.gateMoved(gate,false);
+      end;
     end;
   end;
 
 PROCEDURE T_visualGate.mainShapeMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  VAR gate:P_visualGate;
   begin
     if (button=mbLeft) then begin
-      dragging:=false;
       board^.incompleteWire.dragging:=false;
       shapes[0].Pen.style:=psSolid;
-      if movedDuringDrag then board^.gateMoved(@self,true);
+      if movedDuringDrag then begin
+        if dragging=drag_self then board^.gateMoved(@self,true)
+        else if dragging=drag_selection then begin
+          for gate in board^.gates do if gate^.marked then board^.gateMoved(gate,false);
+          board^.gateMoved(@self,true);
+        end;
+      end;
+      dragging:=not_dragging;
       Repaint;
     end;
   end;
@@ -1929,8 +1943,7 @@ FUNCTION T_circuitBoard.findWirePath(CONST start: T_visualGateConnector;
     else setLength(result,0);
   end;
 
-PROCEDURE T_circuitBoard.gateMoved(CONST gate: P_visualGate;
-  CONST doneDragging: boolean);
+PROCEDURE T_circuitBoard.gateMoved(CONST gate: P_visualGate; CONST doneDragging: boolean);
   begin
     repositionGate(gate,false);
     if doneDragging then rewire;

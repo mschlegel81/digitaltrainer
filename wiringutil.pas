@@ -11,7 +11,8 @@ TYPE T_wireDirection=(wd_left,wd_leftDown,wd_down,wd_rightDown,wd_right,wd_right
      T_wirePath=array of T_point;
      T_wirePathArray=array of T_wirePath;
 
-CONST WIRE_DELTA:array[T_wireDirection] of T_point=(
+CONST ZERO_POINT:T_point=(0,0);
+      WIRE_DELTA:array[T_wireDirection] of T_point=(
       {wd_left     } (-1, 0),
       {wd_leftDown } (-1, 1),
       {wd_down     } ( 0, 1),
