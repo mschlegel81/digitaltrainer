@@ -112,8 +112,8 @@ TYPE
 
     CONSTRUCTOR create;
     DESTRUCTOR destroy;
-    PROCEDURE addBaseGate(CONST gateType:T_gateType; CONST x0,y0:longint);
-    PROCEDURE addCustomGate(CONST index:longint; CONST x0,y0:longint);
+    PROCEDURE addBaseGate(CONST gateType:T_gateType);
+    PROCEDURE addCustomGate(CONST index:longint);
 
     FUNCTION getSerialVersion:dword; virtual;
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
@@ -1007,7 +1007,7 @@ DESTRUCTOR T_workspace.destroy;
     dispose(currentBoard,destroy);
   end;
 
-PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType; CONST x0,y0:longint);
+PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType);
   FUNCTION numberOf(CONST gateType:T_gateType):longint;
     VAR gate:P_visualGate;
     begin
@@ -1019,6 +1019,8 @@ PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType; CONST x0,y0:longint
 
   VAR gateToAdd:P_abstractGate=nil;
       visual:P_visualGate;
+
+      p:T_point;
   begin
     gateToAdd:=newBaseGate(gateType);
     if gateToAdd<>nil then begin
@@ -1027,19 +1029,29 @@ PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType; CONST x0,y0:longint
         gt_output: P_outputGate(gateToAdd)^.ioIndex:=numberOf(gt_output);
       end;
 
-      visual:=currentBoard^.wrapGate(pointOf(x0,y0),gateToAdd);
+      if length(currentBoard^.gates)=0
+      then p:=pointOf(5,5)
+      else p:=currentBoard^.gates[length(currentBoard^.gates)-1]^.origin;
+
+      visual:=currentBoard^.wrapGate(p,gateToAdd);
       if not currentBoard^.positionNewGate(visual)
       then dispose(visual,destroy);
     end;
   end;
 
-PROCEDURE T_workspace.addCustomGate(CONST index: longint; CONST x0, y0: longint);
+PROCEDURE T_workspace.addCustomGate(CONST index: longint);
   VAR visual:P_visualGate;
       gateToAdd:P_customGate;
+      p: T_point;
   begin
     if (index>=0) and (index<length(paletteEntries)) then begin
       new(gateToAdd,create(paletteEntries[index]));
-      visual:=currentBoard^.wrapGate(pointOf(x0,y0),gateToAdd);
+
+      if length(currentBoard^.gates)=0
+      then p:=pointOf(5,5)
+      else p:=currentBoard^.gates[length(currentBoard^.gates)-1]^.origin;
+
+      visual:=currentBoard^.wrapGate(p,gateToAdd);
       if not currentBoard^.positionNewGate(visual)
       then dispose(visual,destroy);
     end;

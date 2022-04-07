@@ -157,28 +157,28 @@ PROCEDURE TDigitaltrainerMainForm.descriptionMemoEditingDone(Sender: TObject);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddInputClick(Sender: TObject);
-  begin workspace.addBaseGate(gt_input,0,0);end;
+  begin workspace.addBaseGate(gt_input);end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddNandClick(Sender: TObject);
-  begin workspace.addBaseGate(gt_nandGate,0,0);end;
+  begin workspace.addBaseGate(gt_nandGate);end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddNorClick(Sender: TObject);
-  begin workspace.addBaseGate(gt_norGate,0,0);end;
+  begin workspace.addBaseGate(gt_norGate);end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddNotClick(Sender: TObject);
-  begin workspace.addBaseGate(gt_notGate,0,0);end;
+  begin workspace.addBaseGate(gt_notGate);end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddNxorClick(Sender: TObject);
-  begin workspace.addBaseGate(gt_nxorGate,0,0);end;
+  begin workspace.addBaseGate(gt_nxorGate);end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddOrClick(Sender: TObject);
-  begin workspace.addBaseGate(gt_orGate,0,0);end;
+  begin workspace.addBaseGate(gt_orGate);end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddAndClick(Sender: TObject);
-  begin workspace.addBaseGate(gt_andGate,0,0);end;
+  begin workspace.addBaseGate(gt_andGate);end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddCustomClick(Sender: TObject);
-  begin workspace.addCustomGate(CustomGateListBox.ItemIndex,0,0); end;
+  begin workspace.addCustomGate(CustomGateListBox.ItemIndex); end;
 
 PROCEDURE TDigitaltrainerMainForm.AnyGatePopupMenuPopup(Sender: TObject);
   begin
@@ -186,31 +186,31 @@ PROCEDURE TDigitaltrainerMainForm.AnyGatePopupMenuPopup(Sender: TObject);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAdd1to4Click(Sender: TObject);
-  begin workspace.addBaseGate(gt_adapter1to4,0,0); end;
+  begin workspace.addBaseGate(gt_adapter1to4); end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAdd1to8Click(Sender: TObject);
-  begin workspace.addBaseGate(gt_adapter1to8,0,0); end;
+  begin workspace.addBaseGate(gt_adapter1to8); end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAdd4to1Click(Sender: TObject);
-  begin workspace.addBaseGate(gt_adapter4to1,0,0); end;
+  begin workspace.addBaseGate(gt_adapter4to1); end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAdd4to8Click(Sender: TObject);
-  begin workspace.addBaseGate(gt_adapter4to8,0,0); end;
+  begin workspace.addBaseGate(gt_adapter4to8); end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAdd8to1Click(Sender: TObject);
-  begin workspace.addBaseGate(gt_adapter8to1,0,0); end;
+  begin workspace.addBaseGate(gt_adapter8to1); end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAdd8to4Click(Sender: TObject);
-  begin workspace.addBaseGate(gt_adapter8to4,0,0); end;
+  begin workspace.addBaseGate(gt_adapter8to4); end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddClockClick(Sender: TObject);
-  begin workspace.addBaseGate(gt_clock,0,0);end;
+  begin workspace.addBaseGate(gt_clock);end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddOutputClick(Sender: TObject);
-  begin workspace.addBaseGate(gt_output,0,0);end;
+  begin workspace.addBaseGate(gt_output);end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddXorClick(Sender: TObject);
-  begin workspace.addBaseGate(gt_xorGate,0,0);end;
+  begin workspace.addBaseGate(gt_xorGate);end;
 
 PROCEDURE TDigitaltrainerMainForm.captionEditEditingDone(Sender: TObject);
   begin
