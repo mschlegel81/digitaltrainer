@@ -530,9 +530,11 @@ FUNCTION T_clock.simulateStep: boolean;
   end;
 
 OPERATOR :=(CONST x:T_triStateValue):T_wireValue;
+  VAR i:longint;
   begin
     result.width:=1;
     result.bit[0]:=x;
+    for i:=1 to 7 do result.bit[i]:=tsv_undetermined;
   end;
 
 FUNCTION isFullyDefined(CONST w:T_wireValue):boolean;

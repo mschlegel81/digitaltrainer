@@ -1834,7 +1834,9 @@ FUNCTION T_circuitBoard.clone: P_circuitBoard;
     result^.paletteIndex:=paletteIndex;
 
     setLength(result^.gates,length(gates));
-    for i:=0 to length(gates)-1 do new(result^.gates[i],create(gates[i]^.origin,gates[i]^.behavior^.clone,result));
+    for i:=0 to length(gates)-1 do begin
+      result^.gates[i]:=result^.wrapGate(gates[i]^.origin,gates[i]^.behavior^.clone);
+    end;
 
     setLength(result^.logicWires,length(logicWires));
     for i:=0 to length(logicWires)-1 do begin
