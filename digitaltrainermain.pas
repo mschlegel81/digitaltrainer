@@ -256,6 +256,7 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
   begin
     workspace.addCurrentBoardToPalette;
     updateSidebar;
+    workspace.currentBoard^.Repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAnalyzeBoardClick(Sender: TObject);

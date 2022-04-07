@@ -395,11 +395,11 @@ PROCEDURE T_wireGraph.dropWire(CONST path:T_wirePath; CONST diagonalsOnly:boolea
   end;
 
 FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsToPrimeWith:T_wirePathArray): T_wirePath;
-  CONST DirectionCost:array[T_wireDirection] of double=(1,1.8,
-                                                        1,1.8,
-                                                        1,1.8,
-                                                        1,1.8);
-        ChangeDirectionPenalty=0.8;
+  CONST DirectionCost:array[T_wireDirection] of double=(1,2,
+                                                        1,2,
+                                                        1,2,
+                                                        1,2);
+        ChangeDirectionPenalty=0.9;
   FUNCTION distance(CONST p:T_point):double;
     begin
       result:=0.8*sqrt(sqr(p[0]-endPoint[0])+sqr(p[1]-endPoint[1]));

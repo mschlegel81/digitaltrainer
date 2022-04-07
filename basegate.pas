@@ -364,6 +364,7 @@ PROCEDURE T_visualGateForCustom.ensureGuiElements;
         labels[shapeIndex].parent:=board^.GUI.container;
         labels[shapeIndex].caption:=P_customGate(behavior)^.inputConnections[k].caption;
         labels[shapeIndex].OnClick:=@inputClick;
+        labels[shapeIndex].Font.size:=10;
         inc(shapeIndex);
       end;
       for k:=0 to behavior^.numberOfOutputs-1 do begin
@@ -374,6 +375,7 @@ PROCEDURE T_visualGateForCustom.ensureGuiElements;
         labels[shapeIndex].OnMouseDown:=@outputMouseDown;
         labels[shapeIndex].OnMouseMove:=@outputMouseMove;
         labels[shapeIndex].OnMouseUp  :=@outputMouseUp;
+        labels[shapeIndex].Font.size:=10;
         inc(shapeIndex);
       end;
     end;
@@ -419,6 +421,7 @@ PROCEDURE T_visualGateForInput.ensureGuiElements;
       labels[1].parent:=board^.GUI.container;
       labels[1].caption:='bin:';
       labels[1].OnClick:=@inputModeClick;
+      labels[1].Font.size:=10;
     end;
   end;
 
@@ -666,8 +669,8 @@ PROCEDURE T_visualGateForInput.Repaint;
     button.Font.size:=labels[0].Font.size;
 
     newFontSize:=min(round(labels[1].Font.size*shapes[0].width *0.25/labels[1].width),
-                     round(labels[1].Font.size*shapes[0].height*0.25/labels[1].height));
-    if abs(newFontSize-labels[1].Font.size)>1 then begin
+                     round(labels[1].Font.size*shapes[0].height*0.5 /labels[1].height));
+    if abs(newFontSize-labels[1].Font.size)>0 then begin
       labels[1].Font.size:=newFontSize;
       edit     .Font.size:=newFontSize;
     end;
@@ -768,11 +771,11 @@ PROCEDURE T_visualGateForOutput.Repaint;
 
     labels[0].caption:=behavior^.caption;
     newFontSize:=min(round(labels[0].Font.size*shapes[0].width *0.75/labels[0].width),
-                     round(labels[0].Font.size*shapes[0].height*0.4 /labels[0].height));
+                     round(labels[0].Font.size*shapes[0].height*0.3 /labels[0].height));
     if abs(newFontSize-labels[0].Font.size)>1 then labels[0].Font.size:=newFontSize;
 
     newFontSize:=min(round(labels[1].Font.size*shapes[0].width *0.75/labels[1].width),
-                     round(labels[1].Font.size*shapes[0].height*0.5 /labels[1].height));
+                     round(labels[1].Font.size*shapes[0].height*0.7 /labels[1].height));
     if abs(newFontSize-labels[1].Font.size)>1 then labels[1].Font.size:=newFontSize;
 
     labels[0].top:=shapes[0].top;
@@ -1833,7 +1836,7 @@ PROCEDURE T_circuitBoard.getBoardExtend(OUT origin,size:T_point);
 PROCEDURE T_circuitBoard.Repaint;
   VAR gate:P_visualGate;
   begin
-    if (GUI.container=nil) then inherited else begin
+    if (GUI.container<>nil) then begin
       for gate in gates do gate^.Repaint;
       fixWireImageSize;
       drawAllWires;
