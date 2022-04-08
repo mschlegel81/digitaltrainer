@@ -56,6 +56,49 @@ TYPE
       FUNCTION isWireAllowed(CONST path:T_wirePath):boolean;
   end;
 
+  { T_ioBlock }
+
+  T_ioBlock=object
+    id:longint;
+    origin,size:T_point;
+    inputPoints,outputPoints:array of T_point;
+    PROCEDURE clear(CONST o,s:T_point; CONST id_:longint);
+    PROCEDURE addInput(CONST p:T_point);
+    PROCEDURE addOutput(CONST p:T_point);
+  end;
+
+  { T_wireHelper }
+
+  T_wireHelper=object
+    private
+      criticalSection:TRTLCriticalSection;
+      graph:T_wireGraph;
+      blocks:array of T_ioBlock;
+      currentTotalCost:double;
+      logicWires:array of record
+        startPoint:record blockId,outputIdx:longint; end;
+        trips:array of record
+          endPoint:record blockId,inputIdx:longint; end;
+          path:T_wirePath;
+        end;
+      end;
+      threadKillRequrested:boolean;
+      threadIsUp:boolean;
+      pathsChanged:boolean;
+      PROCEDURE ensureThread;
+    public
+      CONSTRUCTOR create;
+      DESTRUCTOR destroy;
+      PROCEDURE updateBlock(CONST block:T_ioBlock);
+      PROCEDURE deleteBlock(CONST block:T_ioBlock);
+      PROCEDURE addWire   (CONST startBlockId,startOutputIndex,endBlockId,endInputIndex:longint);
+      PROCEDURE deleteWire(CONST startBlockId,startOutputIndex,endBlockId,endInputIndex:longint);
+      PROCEDURE logPathsUnchanged;
+      FUNCTION havePathsChanged:boolean;
+      FUNCTION getDrawablePath(CONST startBlockId,startOutputIndex,endBlockId,endInputIndex:longint):T_wirePath;
+      FUNCTION getPreviewPath(CONST startPoint,endPoint:T_point):T_wirePath;
+  end;
+
 FUNCTION pointOf(CONST x,y:longint):T_point;
 OPERATOR +(CONST x,y:T_point):T_point;
 OPERATOR -(CONST x,y:T_point):T_point;
@@ -192,6 +235,163 @@ FUNCTION wireStep(CONST start:T_point; CONST direction:T_wireDirection; CONST st
   begin
     result[0]:=start[0]+WIRE_DELTA[direction,0]*steps;
     result[1]:=start[1]+WIRE_DELTA[direction,1]*steps;
+  end;
+
+{ T_ioBlock }
+
+PROCEDURE T_ioBlock.clear(CONST o, s: T_point; CONST id_: longint);
+  begin
+    id:=id_;
+    origin:=o;
+    size  :=s;
+    setLength(inputPoints,0);
+    setLength(outputPoints,0);
+  end;
+
+PROCEDURE T_ioBlock.addInput(CONST p: T_point);
+  VAR k:longint;
+  begin
+    k:=length(inputPoints);
+    setLength(inputPoints,k+1);
+    inputPoints[k]:=p;
+  end;
+
+PROCEDURE T_ioBlock.addOutput(CONST p: T_point);
+  VAR k:longint;
+  begin
+    k:=length(outputPoints);
+    setLength(outputPoints,k+1);
+    outputPoints[k]:=p;
+  end;
+
+{ T_wireHelper }
+
+PROCEDURE T_wireHelper.ensureThread;
+  begin
+    if threadIsUp then exit;
+    enterCriticalSection(criticalSection);
+    if threadIsUp then begin
+      leaveCriticalSection(criticalSection);
+      exit;
+    end;
+    threadIsUp:=true;
+    //TODO: Stub
+    //  BeginThread(...);
+    leaveCriticalSection(criticalSection);
+  end;
+
+CONSTRUCTOR T_wireHelper.create;
+  begin
+    initCriticalSection(criticalSection);
+    graph.create;
+    setLength(blocks,0);
+    currentTotalCost:=infinity;
+    setLength(logicWires,0);
+    threadKillRequrested:=false;
+    threadIsUp:=false;
+    pathsChanged:=false;
+  end;
+
+DESTRUCTOR T_wireHelper.destroy;
+  VAR i,j:longint;
+  begin
+    enterCriticalSection(criticalSection);
+    if threadIsUp then begin
+      threadKillRequrested:=true;
+      repeat
+        leaveCriticalSection(criticalSection);
+        sleep(1);
+        enterCriticalSection(criticalSection);
+      until not(threadIsUp);
+    end;
+    graph.destroy;
+    setLength(blocks,0);
+    for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
+      for j:=0 to length(trips)-1 do setLength(trips[j].path,0);
+      setLength(trips,0);
+    end;
+    setLength(logicWires,0);
+    leaveCriticalSection(criticalSection);
+    doneCriticalSection(criticalSection);
+  end;
+
+OPERATOR =(CONST x,y:T_ioBlock):boolean;
+  VAR i:longint;
+  begin
+    result:=(       x.id           =       y.id) and
+            (       x.origin       =       y.origin) and
+            (       x.size         =       y.size) and
+            (length(x.inputPoints )=length(y.inputPoints)) and
+            (length(x.outputPoints)=length(y.outputPoints));
+    if result then begin
+      for i:=0 to length(x.inputPoints )-1 do result:=result and (x.inputPoints [i]=y.inputPoints [i]);
+      for i:=0 to length(x.outputPoints)-1 do result:=result and (x.outputPoints[i]=y.outputPoints[i]);
+    end;
+  end;
+
+PROCEDURE T_wireHelper.updateBlock(CONST block: T_ioBlock);
+  VAR i:longint=0;
+      modified:boolean=false;
+  begin
+    enterCriticalSection(criticalSection);
+    while (i<length(blocks)) and (blocks[i].id<>block.id) do inc(i);
+    if i=length(blocks) then begin
+      setLength(blocks,i+1);
+      modified:=true;
+    end else modified:=blocks[i]<>block;
+    blocks[i]:=block;
+    if modified and (length(logicWires)>0) then ensureThread;
+    leaveCriticalSection(criticalSection);
+  end;
+
+PROCEDURE T_wireHelper.deleteBlock(CONST block: T_ioBlock);
+  VAR i:longint;
+      j:longint=0;
+  begin
+    enterCriticalSection(criticalSection);
+    for i:=0 to length(blocks)-1 do if blocks[i].id<>block.id then begin
+      blocks[j]:=blocks[i];
+      inc(j);
+    end;
+    if j<length(blocks) then begin
+      setLength(blocks,j);
+      if length(logicWires)>0 then ensureThread;
+    end;
+    leaveCriticalSection(criticalSection);
+  end;
+
+PROCEDURE T_wireHelper.addWire(CONST startBlockId, startOutputIndex, endBlockId, endInputIndex: longint);
+  begin
+    //TODO: Stub
+  end;
+
+PROCEDURE T_wireHelper.deleteWire(CONST startBlockId, startOutputIndex, endBlockId, endInputIndex: longint);
+  begin
+    //TODO: Stub
+  end;
+
+PROCEDURE T_wireHelper.logPathsUnchanged;
+  begin
+    enterCriticalSection(criticalSection);
+    pathsChanged:=false;
+    leaveCriticalSection(criticalSection);
+  end;
+
+FUNCTION T_wireHelper.havePathsChanged: boolean;
+  begin
+    enterCriticalSection(criticalSection);
+    result:=pathsChanged;
+    leaveCriticalSection(criticalSection);
+  end;
+
+FUNCTION T_wireHelper.getDrawablePath(CONST startBlockId, startOutputIndex, endBlockId, endInputIndex: longint): T_wirePath;
+  begin
+    //TODO: Stub
+  end;
+
+FUNCTION T_wireHelper.getPreviewPath(CONST startPoint, endPoint: T_point): T_wirePath;
+  begin
+    //TODO: Stub
   end;
 
 { T_priorityQueue }
