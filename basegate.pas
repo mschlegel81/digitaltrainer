@@ -1172,7 +1172,10 @@ PROCEDURE T_circuitBoard.rewire;
       end;
 
       paths:T_wirePathArray;
+      startTicks: qword;
   begin
+    writeln(stdErr,'Rewire called...');
+    startTicks:=GetTickCount64;
     if wireGraph<>nil then dispose(wireGraph,destroy);
     connector.gate:=nil;
     connector.index:=0;
@@ -1193,6 +1196,7 @@ PROCEDURE T_circuitBoard.rewire;
       end;
       needAnyRewire:=needAnyRewire or preview[i].needRewire;
     end;
+    writeln(stdErr,'Rewire finished (without doing anything) after ',GetTickCount64-startTicks,' ticks');
 
     if not(needAnyRewire) then exit;
 
@@ -1211,7 +1215,7 @@ PROCEDURE T_circuitBoard.rewire;
         end;
         setLength(paths,0);
       end;
-
+    writeln(stdErr,'Rewire finished after ',GetTickCount64-startTicks,' ticks');
     fixWireImageSize;
   end;
 

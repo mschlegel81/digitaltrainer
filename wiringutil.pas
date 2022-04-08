@@ -812,7 +812,9 @@ FUNCTION T_wireGraph.findPath(CONST startPoint,endPoint:T_point):T_wirePath;
 FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wirePath):T_wirePathArray;
   VAR nextPath:T_wirePath;
       i:longint;
+      startticks: qword;
   begin
+    startticks:=GetTickCount64;
     setLength(result,0);
     for i:=0 to length(endPoints)-1 do begin
       nextPath:=findPath(startPoint,endPoints[i],result);
@@ -820,6 +822,7 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wireP
       setLength(result,i+1);
       result[i]:=nextPath;
     end;
+    writeln(stdErr,'T_wireGraph.findPaths finished in ',GetTickCount64-startticks,' ticks');
   end;
 
 FUNCTION T_wireGraph.anyEdgeLeadsTo(CONST endPoint:T_point):boolean;
