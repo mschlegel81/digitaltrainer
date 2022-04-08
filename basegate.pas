@@ -117,6 +117,7 @@ TYPE
 
       PROCEDURE copySelectionToClipboard;
       PROCEDURE pasteFromClipboard;
+      PROCEDURE pasteFrom(CONST board:P_circuitBoard);
 
       PROPERTY lastClickedGate:P_visualGate read GUI.lastClickedGate;
       PROCEDURE reset;
@@ -298,23 +299,23 @@ PROCEDURE T_workspace.addCurrentBoardToPalette;
       exit;
     end;
 
-    newPaletteEntry:=currentBoard;
-    currentBoard   :=nil;
-    new(currentBoard,create);
-    currentBoard^.attachGUI(
-      newPaletteEntry^.GUI.zoom,
-      newPaletteEntry^.GUI.container,
-      newPaletteEntry^.GUI.wireImage,
-      newPaletteEntry^.GUI.gateContextMenu,
-      newPaletteEntry^.GUI.anyChangeCallback);
-    newPaletteEntry^.detachGUI;
-
     if doReplace=mrYes then begin
-      i:=newPaletteEntry^.paletteIndex;
-      dispose(paletteEntries[i],destroy);
-      paletteEntries[i]:=newPaletteEntry;
-      //TODO: The palette may be used in other boards, which would lead to errors...
+      i:=currentBoard^.paletteIndex;
+      paletteEntries[i]^.clear;
+      paletteEntries[i]^.pasteFrom(currentBoard);
+      currentBoard^.clear;
     end else begin
+      newPaletteEntry:=currentBoard;
+      currentBoard   :=nil;
+      new(currentBoard,create);
+      currentBoard^.attachGUI(
+        newPaletteEntry^.GUI.zoom,
+        newPaletteEntry^.GUI.container,
+        newPaletteEntry^.GUI.wireImage,
+        newPaletteEntry^.GUI.gateContextMenu,
+        newPaletteEntry^.GUI.anyChangeCallback);
+      newPaletteEntry^.detachGUI;
+
       i:=length(paletteEntries);
       setLength(paletteEntries,i+1);
       paletteEntries[i]:=newPaletteEntry;
@@ -868,12 +869,17 @@ PROCEDURE T_circuitBoard.copySelectionToClipboard;
   end;
 
 PROCEDURE T_circuitBoard.pasteFromClipboard;
+  begin
+    pasteFrom(GUI.Clipboard);
+  end;
+
+PROCEDURE T_circuitBoard.pasteFrom(CONST board:P_circuitBoard);
   VAR indexOfFirstGateAdded:longint;
   FUNCTION addLogicWire(CONST clipboardSource:T_visualGateConnector; CONST width:byte):longint;
     begin
       result:=length(logicWires);
       setLength(logicWires,result+1);
-      logicWires[result].source.gate:=gates[indexOfFirstGateAdded+clipboardSource.gateIndex(GUI.Clipboard)];
+      logicWires[result].source.gate:=gates[indexOfFirstGateAdded+clipboardSource.gateIndex(board)];
       logicWires[result].source.index:=clipboardSource.index;
       logicWires[result].width:=width;
       setLength(logicWires[result].wires,0);
@@ -885,7 +891,7 @@ PROCEDURE T_circuitBoard.pasteFromClipboard;
       k:=length(logicWires[logicWireIndex].wires);
       setLength(logicWires[logicWireIndex].wires,k+1);
       with logicWires[logicWireIndex].wires[k] do begin
-        sink.gate :=gates[indexOfFirstGateAdded+clipboardSink.gateIndex(GUI.Clipboard)];
+        sink.gate :=gates[indexOfFirstGateAdded+clipboardSink.gateIndex(board)];
         sink.index:=clipboardSink.index;
         marked:=false;
         setLength(visual,0);
@@ -904,14 +910,14 @@ PROCEDURE T_circuitBoard.pasteFromClipboard;
 
       anyWireAdded:boolean=false;
   begin
-    if GUI.Clipboard=nil then exit;
-    GUI.Clipboard^.getBoardExtend(clipOrigin,clipSize);
+    if board=nil then exit;
+    board^.getBoardExtend(clipOrigin,clipSize);
     clipNewOrigin:=clipOrigin;
     if repositionGate(clipNewOrigin,clipSize,true)=ro_noPositionFound then exit;
     clipOffset:=clipNewOrigin-clipOrigin;
 
     indexOfFirstGateAdded:=length(gates);
-    for gate in GUI.Clipboard^.gates do begin
+    for gate in board^.gates do begin
       newVisualGate:=wrapGate(gate^.origin+clipOffset,gate^.behavior^.clone);
       if not positionNewGate(newVisualGate) then begin
         dispose(newVisualGate,destroy);
@@ -919,10 +925,10 @@ PROCEDURE T_circuitBoard.pasteFromClipboard;
       end;
     end;
 
-    for i:=0 to length(GUI.Clipboard^.logicWires)-1 do begin
-      lwi:=addLogicWire(GUI.Clipboard^.logicWires[i].source,GUI.Clipboard^.logicWires[i].width);
-      for j:=0 to length(GUI.Clipboard^.logicWires[i].wires)-1 do begin
-        addWire(lwi,GUI.Clipboard^.logicWires[i].wires[j].sink);
+    for i:=0 to length(board^.logicWires)-1 do begin
+      lwi:=addLogicWire(board^.logicWires[i].source,board^.logicWires[i].width);
+      for j:=0 to length(board^.logicWires[i].wires)-1 do begin
+        addWire(lwi,board^.logicWires[i].wires[j].sink);
         anyWireAdded:=true;
       end;
     end;
