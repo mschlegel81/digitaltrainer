@@ -1,7 +1,11 @@
 {$ifdef includeInterface}
 P_visualGate=^T_visualGate;
+
+{ T_visualGate }
+
 T_visualGate=object
   private
+    id_:longint;
     behavior:P_abstractGate;
     origin,size:T_point;
 
@@ -38,8 +42,10 @@ T_visualGate=object
     FUNCTION numberOfOutputs:longint;
     FUNCTION isCompletelyInsideRect(CONST low,high:T_point):boolean;
   public
+    FUNCTION getioBlock:T_ioBlock;
     PROCEDURE Repaint; virtual;
     PROPERTY getBehavior:P_abstractGate read behavior;
+    PROPERTY id:longint read id_;
 end;
 
 P_visualGateForCustom=^T_visualGateForCustom;
@@ -85,6 +91,7 @@ private
 end;
 {$endif}
 {$ifdef includeImplementation}
+VAR visualGateIdTally:longint=0;
   PROCEDURE T_visualGateForInput.disposeGuiElements;
     begin
       inherited;
@@ -110,7 +117,7 @@ end;
   CONSTRUCTOR T_visualGateForOutput.create(CONST origin_: T_point; CONST gateToWrap: P_abstractGate; CONST board_: P_circuitBoard);
     begin inherited; size[1]+=1; end;
 
-  PROCEDURE T_visualGate.ensureGuiElements;
+    PROCEDURE T_visualGate.ensureGuiElements;
     VAR shapeIndex:longint=1;
         k:longint;
     begin
@@ -239,7 +246,7 @@ end;
                          'neg: '+get2ComplementString(behavior^.getInput(0));
     end;
 
-  PROCEDURE T_visualGate.disposeGuiElements;
+    PROCEDURE T_visualGate.disposeGuiElements;
     VAR i:longint;
     begin
       if length(shapes)>0 then begin
@@ -250,8 +257,10 @@ end;
       end;
     end;
 
-  CONSTRUCTOR T_visualGate.create(CONST origin_: T_point; CONST gateToWrap: P_abstractGate; CONST board_: P_circuitBoard);
+    CONSTRUCTOR T_visualGate.create(CONST origin_: T_point;
+    CONST gateToWrap: P_abstractGate; CONST board_: P_circuitBoard);
     begin
+      id_:=interLockedIncrement(visualGateIdTally);
       origin:=origin_;
       behavior:=gateToWrap;
       size:=pointOf(4,max(2,2*max(numberOfInputs,numberOfOutputs)));
@@ -263,13 +272,13 @@ end;
       setLength(shapes,0);
     end;
 
-  DESTRUCTOR T_visualGate.destroy;
+    DESTRUCTOR T_visualGate.destroy;
     begin
       dispose(behavior,destroy);
       disposeGuiElements;
     end;
 
-  PROCEDURE T_visualGate.setMarked(CONST value: boolean);
+    PROCEDURE T_visualGate.setMarked(CONST value: boolean);
     begin
       if marked_=value then exit;
       marked_:=value;
@@ -279,7 +288,7 @@ end;
       else shapes[0].Brush.color:=clWhite;
     end;
 
-  PROCEDURE T_visualGate.inputClick(Sender: TObject);
+    PROCEDURE T_visualGate.inputClick(Sender: TObject);
     VAR k:longint;
     begin
       k:=TControl(Sender).Tag;
@@ -288,7 +297,8 @@ end;
       if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
     end;
 
-  PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject;
+    button: TMouseButton; Shift: TShiftState; X, Y: integer);
     begin
       if (button=mbLeft) then begin
         if marked_ then dragging:=drag_selection
@@ -303,7 +313,8 @@ end;
       end;
     end;
 
-  PROCEDURE T_visualGate.mainShapeMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
+    PROCEDURE T_visualGate.mainShapeMouseMove(Sender: TObject;
+    Shift: TShiftState; X, Y: integer);
     VAR dx,dy:longint;
         dragDelta:T_point;
         gate:P_visualGate;
@@ -325,7 +336,8 @@ end;
       end;
     end;
 
-  PROCEDURE T_visualGate.mainShapeMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE T_visualGate.mainShapeMouseUp(Sender: TObject;
+    button: TMouseButton; Shift: TShiftState; X, Y: integer);
     VAR gate:P_visualGate;
     begin
       if (button=mbLeft) then begin
@@ -343,7 +355,8 @@ end;
       end;
     end;
 
-  PROCEDURE T_visualGate.outputMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE T_visualGate.outputMouseDown(Sender: TObject; button: TMouseButton;
+    Shift: TShiftState; X, Y: integer);
     VAR p:T_point;
     begin
       if (button=mbLeft) then begin
@@ -361,32 +374,36 @@ end;
       end;
     end;
 
-  PROCEDURE T_visualGate.outputMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
+    PROCEDURE T_visualGate.outputMouseMove(Sender: TObject; Shift: TShiftState;
+    X, Y: integer);
     begin
       if board=nil then exit;
       if board^.incompleteWire.dragging
       then board^.finishWireDrag(pointOf(dragX+x,dragY+y),true);
     end;
 
-  PROCEDURE T_visualGate.outputMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE T_visualGate.outputMouseUp(Sender: TObject; button: TMouseButton;
+    Shift: TShiftState; X, Y: integer);
     begin
       if board=nil then exit;
       board^.finishWireDrag(pointOf(dragX+x,dragY+y));
     end;
 
-  FUNCTION T_visualGate.getInputPositionInGridSize(CONST index: longint): T_point;
+    FUNCTION T_visualGate.getInputPositionInGridSize(CONST index: longint
+    ): T_point;
     begin
       result[0]:=origin[0];
       result[1]:=origin[1]+(index*2-(numberOfInputs-1))+size[1] div 2;
     end;
 
-  FUNCTION T_visualGate.getOutputPositionInGridSize(CONST index: longint): T_point;
+    FUNCTION T_visualGate.getOutputPositionInGridSize(CONST index: longint
+    ): T_point;
     begin
       result[0]:=origin[0]+size[0];
       result[1]:=origin[1]+(index*2-(numberOfOutputs-1))+size[1] div 2;
     end;
 
-  PROCEDURE T_visualGate.Repaint;
+    PROCEDURE T_visualGate.Repaint;
     VAR k,newFontSize:longint;
         shapeIndex :longint=1;
         p:T_point;
@@ -589,7 +606,7 @@ end;
       labels[1].Left:=shapes[0].Left+round(board^.GUI.zoom*0.7);
     end;
 
-  PROCEDURE T_visualGate.updateIoVisuals;
+    PROCEDURE T_visualGate.updateIoVisuals;
     VAR shapeIndex:longint=1;
         i:longint;
         w:T_wireValue;
@@ -620,22 +637,31 @@ end;
       end;
     end;
 
-  FUNCTION T_visualGate.numberOfInputs: longint;
+    FUNCTION T_visualGate.numberOfInputs: longint;
     begin
       result:=behavior^.numberOfInputs;
     end;
 
-  FUNCTION T_visualGate.numberOfOutputs: longint;
+    FUNCTION T_visualGate.numberOfOutputs: longint;
     begin
       result:=behavior^.numberOfOutputs;
     end;
 
-  FUNCTION T_visualGate.isCompletelyInsideRect(CONST low,high:T_point):boolean;
+    FUNCTION T_visualGate.isCompletelyInsideRect(CONST low, high: T_point
+    ): boolean;
     begin
       result:=(origin[0]>=low[0])
           and (origin[1]>=low[1])
           and (origin[0]+size[0]<=high[0])
           and (origin[1]+size[1]<=high[1]);
     end;
+
+FUNCTION T_visualGate.getioBlock: T_ioBlock;
+  VAR i:longint;
+  begin
+    result.clear(origin,size,id_);
+    for i:=0 to numberOfInputs -1 do result.addInput (getInputPositionInGridSize (i));
+    for i:=0 to numberOfOutputs-1 do result.addOutput(getOutputPositionInGridSize(i));
+  end;
 
 {$endif}

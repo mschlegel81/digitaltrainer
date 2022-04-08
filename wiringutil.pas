@@ -69,6 +69,7 @@ TYPE
 
   { T_wireHelper }
 
+  P_wireHelper=^T_wireHelper;
   T_wireHelper=object
     private
       criticalSection:TRTLCriticalSection;
@@ -82,9 +83,12 @@ TYPE
           path:T_wirePath;
         end;
       end;
+
       threadKillRequrested:boolean;
-      threadIsUp:boolean;
-      pathsChanged:boolean;
+      threadIsUp          :boolean;
+      pathsChanged        :boolean;
+      blocksHaveChanged   :boolean;
+      PROCEDURE resetGraph;
       PROCEDURE ensureThread;
     public
       CONSTRUCTOR create;
@@ -265,6 +269,38 @@ PROCEDURE T_ioBlock.addOutput(CONST p: T_point);
   end;
 
 { T_wireHelper }
+PROCEDURE T_wireHelper.resetGraph;
+  VAR block:T_ioBlock;
+      x,y:longint;
+      p:T_point;
+  begin
+    enterCriticalSection(criticalSection);
+    graph.initDirections;
+    for block in blocks do begin
+      for x:=block.origin[0] to block.origin[0]+block.size[0] do
+      for y:=block.origin[1] to block.origin[1]+block.size[1] do
+      graph.dropNode(pointOf(x,y));
+      //Input connections:
+      for p in block.inputPoints do graph.addUnidirectionalEdge(p+wd_left,wd_right);
+      //Output connections:
+      for p in block.outputPoints do graph.addUnidirectionalEdge(p,wd_right);
+
+      x:=block.origin[0];
+      for y:=block.origin[1]+1 to block.origin[1]+block.size[1]-1 do graph.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
+      x:=block.origin[1]+1;
+      for y:=block.origin[1]+1 to block.origin[1]+block.size[1]-1 do graph.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
+    end;
+    leaveCriticalSection(criticalSection);
+  end;
+
+FUNCTION wireHelperThread(p:pointer):ptrint;
+  begin with P_wireHelper(p)^ do begin
+
+    enterCriticalSection(criticalSection);
+    threadIsUp:=false;
+    leaveCriticalSection(criticalSection);
+    result:=0;
+  end; end;
 
 PROCEDURE T_wireHelper.ensureThread;
   begin
@@ -275,8 +311,8 @@ PROCEDURE T_wireHelper.ensureThread;
       exit;
     end;
     threadIsUp:=true;
-    //TODO: Stub
-    //  BeginThread(...);
+    beginThread(@wireHelperThread,@self);
+
     leaveCriticalSection(criticalSection);
   end;
 
@@ -288,8 +324,9 @@ CONSTRUCTOR T_wireHelper.create;
     currentTotalCost:=infinity;
     setLength(logicWires,0);
     threadKillRequrested:=false;
-    threadIsUp:=false;
-    pathsChanged:=false;
+    threadIsUp          :=false;
+    pathsChanged        :=false;
+    blocksHaveChanged   :=false;
   end;
 
 DESTRUCTOR T_wireHelper.destroy;
@@ -360,7 +397,8 @@ PROCEDURE T_wireHelper.deleteBlock(CONST block: T_ioBlock);
     leaveCriticalSection(criticalSection);
   end;
 
-PROCEDURE T_wireHelper.addWire(CONST startBlockId, startOutputIndex, endBlockId, endInputIndex: longint);
+PROCEDURE T_wireHelper.addWire(CONST startBlockId, startOutputIndex,
+  endBlockId, endInputIndex: longint);
   VAR i:longint=0;
       j:longint=0;
       tripAdded:boolean=false;
@@ -387,13 +425,13 @@ PROCEDURE T_wireHelper.addWire(CONST startBlockId, startOutputIndex, endBlockId,
     leaveCriticalSection(criticalSection);
   end;
 
-PROCEDURE T_wireHelper.deleteWire(CONST startBlockId, startOutputIndex, endBlockId, endInputIndex: longint);
+PROCEDURE T_wireHelper.deleteWire(CONST startBlockId, startOutputIndex,
+  endBlockId, endInputIndex: longint);
   VAR i,j,k:longint;
   begin
     enterCriticalSection(criticalSection);
 
     leaveCriticalSection(criticalSection);
-    //TODO: Stub
   end;
 
 PROCEDURE T_wireHelper.logPathsUnchanged;
@@ -410,7 +448,8 @@ FUNCTION T_wireHelper.havePathsChanged: boolean;
     leaveCriticalSection(criticalSection);
   end;
 
-FUNCTION T_wireHelper.getDrawablePathsFrom(CONST startBlockId, startOutputIndex: longint): T_wirePathArray;
+FUNCTION T_wireHelper.getDrawablePathsFrom(CONST startBlockId,
+  startOutputIndex: longint): T_wirePathArray;
   FUNCTION constructFallback(CONST endBlockId,endInputIndex:longint):T_wirePath;
     VAR k :longint;
         startBlock,endBlock:T_ioBlock;
@@ -438,25 +477,23 @@ FUNCTION T_wireHelper.getDrawablePathsFrom(CONST startBlockId, startOutputIndex:
     i:=0;
     while (i<length(logicWires)) and ((logicWires[i].startPoint.blockId<>startBlockId) or (logicWires[i].startPoint.outputIdx<>startOutputIndex)) do inc(i);
     if i>=length(logicWires)-1 then begin
-    //  setLength(result,0);
-    //  leaveCriticalSection(criticalSection);
-    //  exit(result);
-    //end;
-    //with logicWires[i] do begin
-    //  setLength(result,length(trips));
-    //  for j:=0 to length(trips)-1 do begin
-    //    if length(trips[j].path)=0
-    //    then result:=constructFallback(trips[j].endPoint.blockId,trips[j].endPoint.inputIdx)
-    //    ...
-    //
-    //  end;
-    //  then result:=trips[j].path
-    //  else result:=constructFallback;
+      setLength(result,0);
+      leaveCriticalSection(criticalSection);
+      exit(result);
+    end;
+    with logicWires[i] do begin
+      setLength(result,length(trips));
+      for j:=0 to length(trips)-1 do begin
+        if length(trips[j].path)=0
+        then result[j]:=constructFallback(trips[j].endPoint.blockId,trips[j].endPoint.inputIdx)
+        else result[j]:=trips[j].path;
+      end;
     end;
     leaveCriticalSection(criticalSection);
   end;
 
-FUNCTION T_wireHelper.getPreviewPath(CONST startPoint, endPoint: T_point): T_wirePath;
+FUNCTION T_wireHelper.getPreviewPath(CONST startPoint, endPoint: T_point
+  ): T_wirePath;
   begin
     enterCriticalSection(criticalSection);
     if threadIsUp then begin
@@ -646,16 +683,25 @@ FUNCTION allPointsBetween(CONST startP,endP:T_point; OUT dir:T_wireDirection):T_
   end;
 
 PROCEDURE T_wireGraph.dropWireSection(CONST a, b: T_point; CONST diagonalsOnly:boolean=false);
-  CONST DIRECTIONS_TO_DROP:array[T_wireDirection] of T_wireDirectionSet=(
-  {wd_left     }[wd_left,wd_leftDown,        wd_rightDown,wd_right,wd_rightUp,      wd_leftUp],
-  {wd_leftDown }[wd_left,wd_leftDown,wd_down,             wd_right,wd_rightUp,wd_up          ],
-  {wd_down     }[        wd_leftDown,wd_down,wd_rightDown,         wd_rightUp,wd_up,wd_leftUp],
-  {wd_rightDown}[wd_left,            wd_down,wd_rightDown,wd_right,           wd_up,wd_leftUp],
-  {wd_right    }[wd_left,wd_leftDown,        wd_rightDown,wd_right,wd_rightUp,      wd_leftUp],
-  {wd_rightUp  }[wd_left,wd_leftDown,wd_down,             wd_right,wd_rightUp,wd_up          ],
-  {wd_up       }[        wd_leftDown,wd_down,wd_rightDown,         wd_rightUp,wd_up,wd_leftUp],
-  {wd_leftUp   }[wd_left,            wd_down,wd_rightDown,wd_right,           wd_up,wd_leftUp]);
+  //CONST DIRECTIONS_TO_DROP:array[T_wireDirection] of T_wireDirectionSet=(
+  //{wd_left     }[wd_left,wd_leftDown,        wd_rightDown,wd_right,wd_rightUp,      wd_leftUp],
+  //{wd_leftDown }[wd_left,wd_leftDown,wd_down,             wd_right,wd_rightUp,wd_up          ],
+  //{wd_down     }[        wd_leftDown,wd_down,wd_rightDown,         wd_rightUp,wd_up,wd_leftUp],
+  //{wd_rightDown}[wd_left,            wd_down,wd_rightDown,wd_right,           wd_up,wd_leftUp],
+  //{wd_right    }[wd_left,wd_leftDown,        wd_rightDown,wd_right,wd_rightUp,      wd_leftUp],
+  //{wd_rightUp  }[wd_left,wd_leftDown,wd_down,             wd_right,wd_rightUp,wd_up          ],
+  //{wd_up       }[        wd_leftDown,wd_down,wd_rightDown,         wd_rightUp,wd_up,wd_leftUp],
+  //{wd_leftUp   }[wd_left,            wd_down,wd_rightDown,wd_right,           wd_up,wd_leftUp]);
 
+  CONST DIRECTIONS_TO_DROP:array[T_wireDirection] of T_wireDirectionSet=(
+  {wd_left     }[wd_left,wd_right],
+  {wd_leftDown }[wd_leftDown,wd_rightUp],
+  {wd_down     }[wd_down,wd_up],
+  {wd_rightDown}[wd_rightDown,wd_leftUp],
+  {wd_right    }[wd_left,wd_right],
+  {wd_rightUp  }[wd_leftDown,wd_rightUp],
+  {wd_up       }[wd_down,wd_up],
+  {wd_leftUp   }[wd_rightDown,wd_leftUp]);
   VAR dir:T_wireDirection;
       len,i:longint;
   begin
@@ -680,7 +726,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
                                                         1,2,
                                                         1,2,
                                                         1,2);
-        ChangeDirectionPenalty=0.9;
+        ChangeDirectionPenalty=1.2;
   FUNCTION distance(CONST p:T_point):double;
     begin
       result:=0.8*sqrt(sqr(p[0]-endPoint[0])+sqr(p[1]-endPoint[1]));
