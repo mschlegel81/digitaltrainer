@@ -96,6 +96,7 @@ TYPE
       PROCEDURE WireImageMouseUp  (Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
       FUNCTION wrapGate(CONST origin:T_point;CONST g:P_abstractGate):P_visualGate;
       FUNCTION clone:P_circuitBoard;
+      FUNCTION usesBoard(CONST other:P_circuitBoard):boolean;
     public
       CONSTRUCTOR create;
       DESTRUCTOR destroy;  virtual;
@@ -1328,6 +1329,7 @@ FUNCTION T_circuitBoard.clone: P_circuitBoard;
     for i:=0 to length(logicWires)-1 do begin
       result^.logicWires[i].source:=
       convert(logicWires[i].source,result);
+      result^.logicWires[i].width:=logicWires[i].width;
       setLength(result^.logicWires[i].wires,length(logicWires[i].wires));
       for j:=0 to length(logicWires[i].wires)-1 do begin
         setLength(result^.logicWires[i].wires[j].visual,0);
@@ -1337,11 +1339,30 @@ FUNCTION T_circuitBoard.clone: P_circuitBoard;
     end;
   end;
 
+FUNCTION T_circuitBoard.usesBoard(CONST other:P_circuitBoard):boolean;
+  VAR gate:P_visualGate;
+  begin
+    result:=false;
+    for gate in gates do if (gate^.behavior^.gateType=gt_compound) and (P_customGate(gate^.behavior)^.prototype=other) then exit(true);
+  end;
+
 PROCEDURE T_workspace.removePaletteEntry(CONST index:longint);
   VAR j:longint;
+      usedBy:ansistring='';
   begin
-    //TODO: Entry may be used!
     if (index<0) or (index>length(paletteEntries)) then exit;
+    if currentBoard^.usesBoard(paletteEntries[index]) then usedBy:='Aktuelle Schaltung';
+
+    for j:=index+1 to length(paletteEntries)-1 do
+    if paletteEntries[j]^.usesBoard(paletteEntries[index]) then begin
+      if usedBy='' then usedBy:=     paletteEntries[j]^.name
+                   else usedBy+=', '+paletteEntries[j]^.name;
+    end;
+    if usedBy<>'' then begin
+      ShowMessage('Der Eintrag kann nicht gelöscht werden weil er verwendet wird von: '+usedBy);
+      exit;
+    end;
+
     dispose(paletteEntries[index],destroy);
     for j:=index to length(paletteEntries)-2 do begin
       paletteEntries[j]:=paletteEntries[j+1];
