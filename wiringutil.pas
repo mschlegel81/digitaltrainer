@@ -106,6 +106,7 @@ TYPE
     PROCEDURE add(CONST path:T_wirePath; CONST fScore:double);
     FUNCTION isEmpty:boolean;
     FUNCTION ExtractMin(OUT fScore:double):T_wirePath;
+    PROCEDURE cleanup;
   end;
 
 FUNCTION pointOf(CONST x,y:longint):T_point;
@@ -221,6 +222,7 @@ PROCEDURE T_priorityQueue.add(CONST path: T_wirePath; CONST fScore: double);
       setLength(unsortedEntries,k+1);
       unsortedEntries[k].path  :=path;
       unsortedEntries[k].estimatedCostToGoal:=fScore;
+      if length(unsortedEntries)>16 then cleanup;
     end;
   end;
 
@@ -230,37 +232,7 @@ FUNCTION T_priorityQueue.isEmpty: boolean;
           (length(unsortedEntries)=0)
   end;
 
-FUNCTION T_priorityQueue.ExtractMin(OUT fScore:double): T_wirePath;
-  PROCEDURE cleanup;
-    VAR tmp:T_priorityQueueElement;
-        i,j,k:longint;
-        copyOfSorted:array of T_priorityQueueElement;
-    begin
-      //Bubblesort unsorted...
-      for j:=1 to length(unsortedEntries)-1 do for i:=0 to j-1 do
-      if unsortedEntries[i].estimatedCostToGoal<unsortedEntries[j].estimatedCostToGoal
-      then begin
-        tmp               :=unsortedEntries[i];
-        unsortedEntries[i]:=unsortedEntries[j];
-        unsortedEntries[j]:=tmp;
-      end;
-      //Single Merge (as implemented for mergesort)
-      setLength(copyOfSorted,length(sortedEntries));
-      for i:=0 to length(sortedEntries)-1 do copyOfSorted[i]:=sortedEntries[i];
-      i:=0;
-      j:=0;
-      k:=0;
-      setLength(sortedEntries,length(copyOfSorted)+length(unsortedEntries));
-      while (i<length(copyOfSorted)) and (j<length(unsortedEntries)) do
-        if copyOfSorted[i].estimatedCostToGoal>=unsortedEntries[j].estimatedCostToGoal
-        then begin sortedEntries[k]:=copyOfSorted   [i]; inc(k); inc(i); end
-        else begin sortedEntries[k]:=unsortedEntries[j]; inc(k); inc(j); end;
-      while (i<length(copyOfSorted   )) do begin sortedEntries[k]:=copyOfSorted   [i]; inc(k); inc(i); end;
-      while (j<length(unsortedEntries)) do begin sortedEntries[k]:=unsortedEntries[j]; inc(k); inc(j); end;
-      setLength(unsortedEntries,0);
-      setLength(copyOfSorted,0);
-    end;
-
+FUNCTION T_priorityQueue.ExtractMin(OUT fScore: double): T_wirePath;
   VAR k:longint;
   begin
     cleanup;
@@ -268,6 +240,36 @@ FUNCTION T_priorityQueue.ExtractMin(OUT fScore:double): T_wirePath;
     result:=sortedEntries[k].path;
     fScore:=sortedEntries[k].estimatedCostToGoal;
     setLength(sortedEntries,k);
+  end;
+
+PROCEDURE T_priorityQueue.cleanup;
+  VAR tmp:T_priorityQueueElement;
+      i,j,k:longint;
+      copyOfSorted:array of T_priorityQueueElement;
+  begin
+    //Bubblesort unsorted...
+    for j:=1 to length(unsortedEntries)-1 do for i:=0 to j-1 do
+    if unsortedEntries[i].estimatedCostToGoal<unsortedEntries[j].estimatedCostToGoal
+    then begin
+      tmp               :=unsortedEntries[i];
+      unsortedEntries[i]:=unsortedEntries[j];
+      unsortedEntries[j]:=tmp;
+    end;
+    //Single Merge (as implemented for mergesort)
+    setLength(copyOfSorted,length(sortedEntries));
+    for i:=0 to length(sortedEntries)-1 do copyOfSorted[i]:=sortedEntries[i];
+    i:=0;
+    j:=0;
+    k:=0;
+    setLength(sortedEntries,length(copyOfSorted)+length(unsortedEntries));
+    while (i<length(copyOfSorted)) and (j<length(unsortedEntries)) do
+      if copyOfSorted[i].estimatedCostToGoal>=unsortedEntries[j].estimatedCostToGoal
+      then begin sortedEntries[k]:=copyOfSorted   [i]; inc(k); inc(i); end
+      else begin sortedEntries[k]:=unsortedEntries[j]; inc(k); inc(j); end;
+    while (i<length(copyOfSorted   )) do begin sortedEntries[k]:=copyOfSorted   [i]; inc(k); inc(i); end;
+    while (j<length(unsortedEntries)) do begin sortedEntries[k]:=unsortedEntries[j]; inc(k); inc(j); end;
+    setLength(unsortedEntries,0);
+    setLength(copyOfSorted,0);
   end;
 
 CONSTRUCTOR T_wireGraph.create;
@@ -424,34 +426,28 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
       entry  :T_aStarNodeInfo;
   PROCEDURE prime;
     VAR i,j,k:longint;
-        score:double;
         dir:T_wireDirection;
         pathUpToHere:T_wirePath;
         pointsBetween:T_wirePath;
 
     begin
-      //writeln(stderr,startPoint[0],',',startPoint[1],'-------------------------------------------------------------',endPoint[0],',',endPoint[1]);
+      initialize(pathUpToHere);
       for i:=0 to length(pathsToPrimeWith)-1 do if length(pathsToPrimeWith[i])>0 then begin
-        score:=-ChangeDirectionPenalty;
         setLength(pathUpToHere,1);
         pathUpToHere[0]:=pathsToPrimeWith[i,0];
-        openSet.add(pathUpToHere,score+distance(pathUpToHere[0]));
+        openSet.add(pathUpToHere,distance(pathUpToHere[0]));
         for j:=0 to length(pathsToPrimeWith[i])-2 do begin
-          score+=ChangeDirectionPenalty;
           pointsBetween :=allPointsBetween(pathsToPrimeWith[i,j],pathsToPrimeWith[i,j+1],dir);
           for k:=1 to length(pointsBetween)-1 do begin
-            score+=DirectionCost[dir];
             pathUpToHere:=continuePath(pathUpToHere,pointsBetween[k],k<=1);
-
-            if not(nodeMap.containsKey(pointsBetween[k],entry)) or (score<entry.costToGetThere) then begin
+            if not(nodeMap.containsKey(pointsBetween[k],entry)) then begin
               entry.p:=pointsBetween[k];
               entry.cameFrom:=dir;
-              entry.costToGetThere:=score;
-              entry.estimatedCostToGoal:=score+distance(pointsBetween[k]);
+              entry.costToGetThere:=0;
+              entry.estimatedCostToGoal:=distance(pointsBetween[k]);
               nodeMap.put(entry);
               openSet.add(pathUpToHere,entry.estimatedCostToGoal);
-              //writeln(stderr,'Prime: ',entry.p[0],',',entry.p[1],' ',score:0:20);
-            end;// else writeln(stderr,'Prime: ',entry.p[0],',',entry.p[1],' ',score:0:20,' skipped');
+            end;
           end;
         end;
       end;

@@ -17,8 +17,8 @@ TYPE
   T_visualGate=object
     private
       behavior:P_abstractGate;
-
       origin,size:T_point;
+
       board:P_circuitBoard;
       //visual
       labels:array of TLabel;
