@@ -819,11 +819,11 @@ PROCEDURE T_wireGraph.dropWire(CONST path:T_wirePath; CONST diagonalsOnly:boolea
     for i:=0 to length(path)-2 do dropWireSection(path[i],path[i+1],diagonalsOnly);
   end;
 
-CONST DirectionCost:array[T_wireDirection] of double=(1,2,
-                                                      1,2,
-                                                      1,2,
-                                                      1,2);
-      ChangeDirectionPenalty=1.2;
+CONST DirectionCost:array[T_wireDirection] of double=(1,1.5,
+                                                      1,1.5,
+                                                      1,1.5,
+                                                      1,1.5);
+      ChangeDirectionPenalty=0.8;
 
 FUNCTION pathScore(CONST path:T_wirePath):double;
   VAR i:longint;
@@ -963,17 +963,39 @@ FUNCTION T_wireGraph.findPath(CONST startPoint,endPoint:T_point):T_wirePath;
 FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wirePath):T_wirePathArray;
   VAR nextPath:T_wirePath;
       i:longint;
-      startTicks: qword;
+      anyImproved: boolean;
+  FUNCTION listExceptEntry(CONST list:T_wirePathArray; CONST indexToDrop:longint):T_wirePathArray;
+    VAR i:longint;
+        k:longint=0;
+    begin
+      setLength(result,length(list)-1);
+      for i:=0 to length(list)-1 do if i<>indexToDrop then begin
+        result[k]:=list[i];
+        k+=1;
+      end;
+    end;
+
   begin
-    startTicks:=GetTickCount64;
     setLength(result,0);
     for i:=0 to length(endPoints)-1 do begin
       nextPath:=findPath(startPoint,endPoints[i],result);
-      dropWire(nextPath,true);
       setLength(result,i+1);
       result[i]:=nextPath;
     end;
-    //writeln(stdErr,'T_wireGraph.findPaths finished in ',GetTickCount64-startticks,' ticks');
+    if length(endPoints)>1 then repeat
+      anyImproved:=false;
+      for i:=0 to length(endPoints)-1 do begin
+        if length(result[i])>0 then begin
+          nextPath:=findPath(startPoint,endPoints[i],listExceptEntry(result,i));
+          if pathScore(nextPath)<pathScore(result[i])
+          then begin
+            result[i]:=nextPath;
+            anyImproved:=true;
+          end;
+        end;
+      end;
+    until not(anyImproved);
+
   end;
 
 FUNCTION T_wireGraph.anyEdgeLeadsTo(CONST endPoint:T_point):boolean;
