@@ -60,6 +60,7 @@ TYPE
         selectionFrame:TShape;
         selectionStart:T_point;
         Clipboard:P_circuitBoard;
+        undoList,redoList:array of P_circuitBoard;
       end;
 
       gates      :array of P_visualGate;
@@ -117,12 +118,16 @@ TYPE
 
       PROCEDURE copySelectionToClipboard;
       PROCEDURE pasteFromClipboard;
-      PROCEDURE pasteFrom(CONST board:P_circuitBoard);
+      PROCEDURE pasteFrom(CONST board:P_circuitBoard; CONST fullCopy:boolean=false);
 
       PROPERTY lastClickedGate:P_visualGate read GUI.lastClickedGate;
       PROCEDURE reset;
       PROCEDURE getBoardExtend(OUT origin,size:T_point);
       PROCEDURE rewire(CONST forced:boolean=false);
+
+      PROCEDURE saveStateToUndoList;
+      PROCEDURE performUndo;
+      PROCEDURE preformRedo;
   end;
 
 {$undef includeInterface}
@@ -336,6 +341,8 @@ CONSTRUCTOR T_circuitBoard.create;
       container:=nil;
       wireImage:=nil;
       Clipboard:=nil;
+      setLength(undoList,0);
+      setLength(redoList,0);
     end;
     paletteIndex:=-1;
     name:=defaultBoardCaption;
@@ -377,6 +384,7 @@ PROCEDURE T_circuitBoard.attachGUI(CONST zoom: longint;
 
 PROCEDURE T_circuitBoard.detachGUI;
   VAR gate:P_visualGate;
+      i:longint;
   begin
     for gate in gates do gate^.disposeGuiElements;
     GUI.zoom:=1;
@@ -389,6 +397,10 @@ PROCEDURE T_circuitBoard.detachGUI;
       dispose(GUI.Clipboard,destroy);
       GUI.Clipboard:=nil;
     end;
+    for i:=0 to length(GUI.undoList)-1 do dispose(GUI.undoList[i],destroy);
+    setLength(GUI.undoList,0);
+    for i:=0 to length(GUI.redoList)-1 do dispose(GUI.redoList[i],destroy);
+    setLength(GUI.redoList,0);
   end;
 
 PROCEDURE T_circuitBoard.clear;
@@ -527,6 +539,7 @@ FUNCTION T_circuitBoard.positionNewGate(CONST gateToAdd: P_visualGate): boolean;
 
 PROCEDURE T_circuitBoard.deleteInvalidWires;
   VAR k,j,i:longint;
+      anyDeleted:boolean=false;
   begin
     for k:=0 to length(logicWires)-1 do with logicWires[k] do begin
       width:=source.gate^.behavior^.outputWidth(source.index);
@@ -536,7 +549,7 @@ PROCEDURE T_circuitBoard.deleteInvalidWires;
       then begin
         wires[j]:=wires[i];
         inc(j);
-      end;
+      end else anyDeleted:=true;
       setLength(wires,j);
     end;
     j:=0;
@@ -545,6 +558,7 @@ PROCEDURE T_circuitBoard.deleteInvalidWires;
       logicWires[j]:=logicWires[i];
       inc(j);
     end;
+    if anyDeleted then rewire(true);
     Repaint;
   end;
 
@@ -850,7 +864,7 @@ PROCEDURE T_circuitBoard.copySelectionToClipboard;
     end;
   end;
 
-PROCEDURE T_circuitBoard.addGateWithoutChecking(CONST gateToAdd:P_visualGate);
+PROCEDURE T_circuitBoard.addGateWithoutChecking(CONST gateToAdd: P_visualGate);
   begin
     setLength(gates,length(gates)+1);
     gates[length(gates)-1]:=gateToAdd;
@@ -862,7 +876,7 @@ PROCEDURE T_circuitBoard.pasteFromClipboard;
     pasteFrom(GUI.Clipboard);
   end;
 
-PROCEDURE T_circuitBoard.pasteFrom(CONST board:P_circuitBoard);
+PROCEDURE T_circuitBoard.pasteFrom(CONST board: P_circuitBoard; CONST fullCopy:boolean);
   VAR indexOfFirstGateAdded:longint;
   FUNCTION addLogicWire(CONST clipboardSource:T_visualGateConnector; CONST width:byte):longint;
     begin
@@ -899,10 +913,18 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board:P_circuitBoard);
       anyWireAdded:boolean=false;
   begin
     if board=nil then exit;
-    board^.getBoardExtend(clipOrigin,clipSize);
-    clipNewOrigin:=clipOrigin;
-    if repositionCustomRegion(clipNewOrigin,clipSize,true)=ro_noPositionFound then exit;
-    clipOffset:=clipNewOrigin-clipOrigin;
+    if fullCopy then begin
+      clear;
+      name        :=board^.name;
+      description :=board^.description;
+      paletteIndex:=board^.paletteIndex;
+      clipOffset  :=ZERO_POINT;
+    end else begin
+      board^.getBoardExtend(clipOrigin,clipSize);
+      clipNewOrigin:=clipOrigin;
+      if repositionCustomRegion(clipNewOrigin,clipSize,true)=ro_noPositionFound then exit;
+      clipOffset:=clipNewOrigin-clipOrigin;
+    end;
 
     indexOfFirstGateAdded:=length(gates);
     for gate in board^.gates do addGateWithoutChecking(wrapGate(gate^.origin+clipOffset,gate^.behavior^.clone));
@@ -928,7 +950,7 @@ PROCEDURE T_circuitBoard.reset;
     end;
   end;
 
-PROCEDURE T_circuitBoard.getBoardExtend(OUT origin,size:T_point);
+PROCEDURE T_circuitBoard.getBoardExtend(OUT origin, size: T_point);
   VAR gate:P_visualGate;
       maximum,tmp:T_point;
   begin
@@ -1192,6 +1214,58 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
         setLength(paths,0);
       end;
     fixWireImageSize;
+  end;
+
+PROCEDURE T_circuitBoard.saveStateToUndoList;
+  VAR k:longint;
+  begin
+    k:=length(GUI.undoList);
+    setLength(GUI.undoList,k+1);
+    GUI.undoList[k]:=clone;
+
+    if length(GUI.undoList)+length(GUI.redoList)>MAX_UNDO then begin
+      dispose(GUI.undoList[0],destroy);
+      for k:=0 to length(GUI.undoList)-2 do GUI.undoList[k]:=GUI.undoList[k+1];
+      setLength(GUI.undoList,length(GUI.undoList)-1);
+    end;
+  end;
+
+PROCEDURE T_circuitBoard.performUndo;
+  VAR k:longint;
+  begin
+    if length(GUI.undoList)=0 then exit;
+
+    k:=length(GUI.redoList);
+    setLength(GUI.redoList,k+1);
+    GUI.redoList[k]:=clone;
+
+    k:=length(GUI.undoList)-1;
+    pasteFrom(GUI.undoList[k],true);
+    dispose(GUI.undoList[k],destroy);
+    setLength(GUI.undoList,k);
+
+    rewire;
+    Repaint;
+    GUI.anyChangeCallback();
+  end;
+
+PROCEDURE T_circuitBoard.preformRedo;
+  VAR k:longint;
+  begin
+    if length(GUI.redoList)=0 then exit;
+
+    k:=length(GUI.undoList);
+    setLength(GUI.undoList,k+1);
+    GUI.undoList[k]:=clone;
+
+    k:=length(GUI.redoList)-1;
+    pasteFrom(GUI.redoList[k],true);
+    dispose(GUI.redoList[k],destroy);
+    setLength(GUI.redoList,k);
+
+    rewire;
+    Repaint;
+    GUI.anyChangeCallback();
   end;
 
 PROCEDURE T_circuitBoard.WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
