@@ -355,7 +355,7 @@ PROCEDURE TDigitaltrainerMainForm.miQuitClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miRedoClick(Sender: TObject);
   begin
-    workspace.currentBoard^.performUndo;
+    workspace.currentBoard^.performRedo;
     updateSidebar;
   end;
 

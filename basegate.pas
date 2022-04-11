@@ -127,7 +127,7 @@ TYPE
 
       PROCEDURE saveStateToUndoList;
       PROCEDURE performUndo;
-      PROCEDURE preformRedo;
+      PROCEDURE performRedo;
   end;
 
 {$undef includeInterface}
@@ -1255,7 +1255,7 @@ PROCEDURE T_circuitBoard.performUndo;
     GUI.anyChangeCallback();
   end;
 
-PROCEDURE T_circuitBoard.preformRedo;
+PROCEDURE T_circuitBoard.performRedo;
   VAR k:longint;
   begin
     if length(GUI.redoList)=0 then exit;
