@@ -6,7 +6,7 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ValEdit, Buttons,
-  StdCtrls,logicGates,gateProperties, Grids;
+  StdCtrls,logicGates,gateProperties, Grids,baseGate;
 
 TYPE
 
@@ -20,7 +20,7 @@ TYPE
   private
     propertyValues:T_gatePropertyValues;
   public
-    PROCEDURE showForGate(CONST gate:P_abstractGate);
+    FUNCTION showForGate(CONST gate:P_abstractGate; CONST inBoard:P_circuitBoard):boolean;
   end;
 
 VAR
@@ -41,7 +41,7 @@ PROCEDURE TgatePropertyDialog.ValueListEditorValidateEntry(Sender: TObject; aCol
     end;
   end;
 
-PROCEDURE TgatePropertyDialog.showForGate(CONST gate: P_abstractGate);
+FUNCTION TgatePropertyDialog.showForGate(CONST gate: P_abstractGate; CONST inBoard:P_circuitBoard):boolean;
   VAR i:longint;
   begin
     propertyValues.create(gate);
@@ -51,7 +51,11 @@ PROCEDURE TgatePropertyDialog.showForGate(CONST gate: P_abstractGate);
       ValueListEditor.Cells[0,i+1]:=propertyValues.key(i);
       ValueListEditor.Cells[1,i+1]:=propertyValues.value(i);
     end;
-    if ShowModal=mrOk then propertyValues.applyValues;
+    if ShowModal=mrOk then begin
+      inBoard^.saveStateToUndoList;
+      propertyValues.applyValues;
+      result:=true;
+    end else result:=false;
     propertyValues.destroy;
   end;
 

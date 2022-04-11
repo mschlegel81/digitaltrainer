@@ -358,6 +358,7 @@ PROCEDURE T_visualGate.mainShapeMouseMove(Sender: TObject; Shift: TShiftState; X
       then begin
         origin+=dragDelta;
         Repaint;
+        if not(movedDuringDrag) then board^.saveStateToUndoList;
         movedDuringDrag:=true;
       end;
     end else if dragging=drag_selection then begin
@@ -366,6 +367,7 @@ PROCEDURE T_visualGate.mainShapeMouseMove(Sender: TObject; Shift: TShiftState; X
       then allCanBeMoved:=allCanBeMoved and board^.canGateBeMovedBy(gate,dragDelta,false,false);
 
       if allCanBeMoved then begin
+        if not(movedDuringDrag) then board^.saveStateToUndoList;
         for gate in board^.gates do if gate^.marked then begin
           gate^.origin+=dragDelta;
           gate^.Repaint;

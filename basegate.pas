@@ -197,6 +197,7 @@ PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType);
   begin
     gateToAdd:=newBaseGate(gateType);
     if gateToAdd<>nil then begin
+      currentBoard^.saveStateToUndoList;
       case gateToAdd^.gateType of
         gt_input:  P_inputGate (gateToAdd)^.ioIndex:=numberOf(gt_input);
         gt_output: P_outputGate(gateToAdd)^.ioIndex:=numberOf(gt_output);
@@ -219,6 +220,7 @@ PROCEDURE T_workspace.addCustomGate(CONST index: longint);
   begin
     if (index>=0) and (index<length(paletteEntries)) then begin
       new(gateToAdd,create(paletteEntries[index]));
+      currentBoard^.saveStateToUndoList;
 
       if length(currentBoard^.gates)=0
       then p:=pointOf(5,5)
@@ -609,6 +611,8 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
       j:longint=0;
       ioDeleted:boolean=false;
   begin
+    saveStateToUndoList;
+
     GUI.lastClickedGate:=nil;
     for i:=0 to length(gates)-1 do begin
       if gates[i]^.marked
@@ -873,6 +877,7 @@ PROCEDURE T_circuitBoard.addGateWithoutChecking(CONST gateToAdd: P_visualGate);
 
 PROCEDURE T_circuitBoard.pasteFromClipboard;
   begin
+    saveStateToUndoList;
     pasteFrom(GUI.Clipboard);
   end;
 
@@ -1144,6 +1149,7 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previe
       drawTempWire(connector.gate^.getInputPositionInGridSize(connector.index));
       exit;
     end;
+    saveStateToUndoList;
 
     i:=0;
     while (i<length(logicWires)) and (logicWires[i].source<>incompleteWire.source) do inc(i);

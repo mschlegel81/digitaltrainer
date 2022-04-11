@@ -21,6 +21,8 @@ TYPE
     ButtonAdd1to8: TButton;
     ButtonAdd4to1: TButton;
     ButtonAddConstantFalse: TButton;
+    miUndo: TMenuItem;
+    miRedo: TMenuItem;
     miRewire: TMenuItem;
     miPaste: TMenuItem;
     miCopy: TMenuItem;
@@ -117,9 +119,11 @@ TYPE
     PROCEDURE miNewClick(Sender: TObject);
     PROCEDURE miPasteClick(Sender: TObject);
     PROCEDURE miQuitClick(Sender: TObject);
+    PROCEDURE miRedoClick(Sender: TObject);
     PROCEDURE miRewireClick(Sender: TObject);
     PROCEDURE miSaveClick(Sender: TObject);
     PROCEDURE miSelectAllClick(Sender: TObject);
+    PROCEDURE miUndoClick(Sender: TObject);
     PROCEDURE resetButtonClick(Sender: TObject);
     PROCEDURE SimTimerTimer(Sender: TObject);
     PROCEDURE speedTrackBarChange(Sender: TObject);
@@ -165,6 +169,7 @@ PROCEDURE TDigitaltrainerMainForm.DeleteButtonClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.descriptionMemoEditingDone(Sender: TObject);
   begin
+    workspace.currentBoard^.saveStateToUndoList;
     workspace.currentBoard^.description:=descriptionMemo.text;
   end;
 
@@ -232,6 +237,7 @@ PROCEDURE TDigitaltrainerMainForm.ButtonAddXorClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.captionEditEditingDone(Sender: TObject);
   begin
+    workspace.currentBoard^.saveStateToUndoList;
     workspace.currentBoard^.name:=captionEdit.text;
   end;
 
@@ -307,9 +313,10 @@ PROCEDURE TDigitaltrainerMainForm.miDeselectAllClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miGatePropertiesClick(Sender: TObject);
   begin
     if visualGateForContextPopup=nil then exit;
-    gatePropertyDialog.showForGate(visualGateForContextPopup^.getBehavior);
-    workspace.currentBoard^.deleteInvalidWires;
-    visualGateForContextPopup^.Repaint;
+    if gatePropertyDialog.showForGate(visualGateForContextPopup^.getBehavior,workspace.currentBoard) then begin
+      workspace.currentBoard^.deleteInvalidWires;
+      visualGateForContextPopup^.Repaint;
+    end;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
@@ -346,6 +353,12 @@ PROCEDURE TDigitaltrainerMainForm.miQuitClick(Sender: TObject);
     close;
   end;
 
+PROCEDURE TDigitaltrainerMainForm.miRedoClick(Sender: TObject);
+  begin
+    workspace.currentBoard^.performUndo;
+    updateSidebar;
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.miRewireClick(Sender: TObject);
   begin
     workspace.currentBoard^.rewire(true);
@@ -362,8 +375,15 @@ PROCEDURE TDigitaltrainerMainForm.miSelectAllClick(Sender: TObject);
     workspace.currentBoard^.setSelectForAll(true);
   end;
 
+PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
+  begin
+    workspace.currentBoard^.performUndo;
+    updateSidebar;
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.resetButtonClick(Sender: TObject);
   begin
+    workspace.currentBoard^.saveStateToUndoList;
     workspace.currentBoard^.reset;
     restartTimerCallback;
   end;
