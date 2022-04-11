@@ -1215,8 +1215,7 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
     fixWireImageSize;
   end;
 
-PROCEDURE T_circuitBoard.WireImageMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE T_circuitBoard.WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   FUNCTION wireHitsPoint(CONST p:T_point; CONST wire:T_wirePath):boolean;
     VAR i,j,len:longint;
         a,b,pointBetween:T_point;

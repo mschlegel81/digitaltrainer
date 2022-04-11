@@ -819,11 +819,13 @@ PROCEDURE T_wireGraph.dropWire(CONST path:T_wirePath; CONST diagonalsOnly:boolea
     for i:=0 to length(path)-2 do dropWireSection(path[i],path[i+1],diagonalsOnly);
   end;
 
-CONST DirectionCost:array[T_wireDirection] of double=(1,1.5,
-                                                      1,1.5,
-                                                      1,1.5,
-                                                      1,1.5);
-      ChangeDirectionPenalty=0.8;
+CONST DirectionCost:array[T_wireDirection] of double=(1,2,
+                                                      1,2,
+                                                      1,2,
+                                                      1,2);
+      ChangeDirectionPenalty=1;
+      //2+changeDirectionPenalty < diagonalCost+2*changeDirectionPenalty
+      //2 < diagonalCost+changeDirectionPenalty
 
 FUNCTION pathScore(CONST path:T_wirePath):double;
   VAR i:longint;
@@ -836,7 +838,7 @@ FUNCTION pathScore(CONST path:T_wirePath):double;
 FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsToPrimeWith:T_wirePathArray): T_wirePath;
   FUNCTION distance(CONST p:T_point):double;
     begin
-      result:=0.8*sqrt(sqr(p[0]-endPoint[0])+sqr(p[1]-endPoint[1]));
+      result:=sqrt(sqr(p[0]-endPoint[0])+sqr(p[1]-endPoint[1]));
     end;
   VAR nodeMap:T_nodeMap;
 
@@ -871,14 +873,17 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
         for j:=0 to length(pathsToPrimeWith[i])-2 do begin
           pointsBetween :=allPointsBetween(pathsToPrimeWith[i,j],pathsToPrimeWith[i,j+1],dir);
           for k:=1 to length(pointsBetween)-1 do begin
-            pathUpToHere:=continuePath(pathUpToHere,pointsBetween[k],k<=1);
-            if not(nodeMap.containsKey(pointsBetween[k],entry)) then begin
-              entry.p:=pointsBetween[k];
-              entry.cameFrom:=dir;
-              entry.costToGetThere:=0;
-              entry.estimatedCostToGoal:=distance(pointsBetween[k]);
-              nodeMap.put(entry);
-              openSet.add(pathUpToHere,entry.estimatedCostToGoal);
+            try
+              pathUpToHere:=continuePath(pathUpToHere,pointsBetween[k],k<=1);
+              if not(nodeMap.containsKey(pointsBetween[k],entry)) then begin
+                entry.p:=pointsBetween[k];
+                entry.cameFrom:=dir;
+                entry.costToGetThere:=0;
+                entry.estimatedCostToGoal:=distance(pointsBetween[k]);
+                nodeMap.put(entry);
+                openSet.add(pathUpToHere,entry.estimatedCostToGoal);
+              end;
+            except
             end;
           end;
         end;
@@ -886,27 +891,20 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
     end;
 
   VAR n,neighbor:T_point;
-      dir:T_wireDirection;
+      previousDirection,dir:T_wireDirection;
       score:double;
       scoreBasis:double;
-      directionChanged:boolean;
-
-      potentialResult:record
-        path:T_wirePath;
-        score:double;
-        seen:longint;
-        found:boolean;
-      end;
-
+      scanRadius:double;
+      directionChanged,knownPrevious,firstStep:boolean;
+      allowedByDirection:T_wireDirectionSet;
   begin
-    potentialResult.seen:=0;
-    potentialResult.score:=infinity;
-    potentialResult.found:=false;
     nodeMap.create;
     openSet.create;
+    scanRadius:=2*distance(startPoint);
 
     if length(pathsToPrimeWith)>0 then prime
     else begin
+      Initialize(result);
       setLength(result,1);
       result[0]:=startPoint;
       openSet.add(result,distance(startPoint));
@@ -915,25 +913,28 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
     while not openSet.isEmpty do begin
       result:=openSet.ExtractMin(scoreBasis);
       n:=result[length(result)-1];
-      if (n=endPoint) and (scoreBasis<potentialResult.score) then begin
-        potentialResult.found:=true;
-        potentialResult.score:=scoreBasis;
-        potentialResult.path :=result;
-      end;
-      with potentialResult do begin
-        if found then inc(seen);
-        if seen>length(path) then begin
-          openSet.destroy;
-          nodeMap.destroy;
-          exit(path);
-        end;
+      if (n=endPoint) then begin
+        openSet.destroy;
+        nodeMap.destroy;
+        exit(result);
       end;
       scoreBasis-=distance(n);
-      //TODO: Consider allowedSuccessiveDirection ?
-      for dir in allowedDirectionsPerPoint[n[0],n[1]] do begin
+
+      if nodeMap.containsKey(n,entry) then begin
+         firstStep:=entry.costToGetThere=0;
+         knownPrevious:=true;
+        previousDirection:=entry.cameFrom;
+        allowedByDirection:=allowedSuccessiveDirection[previousDirection];
+      end else begin
+        firstStep:=false;
+        knownPrevious:=false;
+        allowedByDirection:=AllDirections;
+      end;
+
+      for dir in allowedDirectionsPerPoint[n[0],n[1]]*allowedByDirection do begin
         score:=scoreBasis+DirectionCost[dir];
-        if nodeMap.containsKey(n,entry) and (entry.cameFrom<>dir) then begin
-          score+=ChangeDirectionPenalty;
+        if knownPrevious and (dir<>previousDirection) then begin
+          if not(firstStep) then score+=ChangeDirectionPenalty;
           directionChanged:=true;
         end else directionChanged:=false;
         neighbor:=n+dir;
@@ -943,13 +944,12 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
           entry.costToGetThere:=score;
           entry.estimatedCostToGoal:=score+distance(neighbor);
           nodeMap.put(entry);
-          if distance(neighbor)<2*distance(startPoint) then openSet.add(continuePath(result,neighbor,directionChanged),entry.estimatedCostToGoal);
+          if distance(neighbor)<scanRadius then openSet.add(continuePath(result,neighbor,directionChanged),entry.estimatedCostToGoal);
         end;
       end;
     end;
     openSet.destroy;
     nodeMap.destroy;
-    with potentialResult do if found then exit(path);
     setLength(result,0);
   end;
 
