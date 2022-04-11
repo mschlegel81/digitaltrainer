@@ -82,8 +82,10 @@ TYPE
         sourcePoint:T_point;
       end;
       wireGraph:P_wireGraph;
-      FUNCTION repositionGate(VAR origin:T_point; CONST size:T_point; CONST considerWires:boolean):T_repositionOutput;
-      FUNCTION repositionGate(CONST gateToCheck:P_visualGate; CONST considerWires:boolean):T_repositionOutput;
+      FUNCTION repositionCustomRegion(VAR origin:T_point; CONST size:T_point; CONST considerWires:boolean):T_repositionOutput;
+      FUNCTION canGateBeMovedBy(CONST gateToCheck:P_visualGate; CONST delta:T_point; CONST considerWires,considerMarkedGates:boolean):boolean;
+
+//      FUNCTION repositionGate(CONST gateToCheck:P_visualGate; CONST considerWires:boolean):T_repositionOutput;
       FUNCTION positionNewGate(CONST gateToAdd:P_visualGate):boolean;
       FUNCTION isInputConnected(CONST gate:P_visualGate; CONST inputIndex:longint):boolean;
       PROCEDURE initWireGraph(CONST start: T_visualGateConnector; CONST includeWires:boolean=true);
@@ -103,7 +105,6 @@ TYPE
       PROCEDURE setSelectForAll(CONST doSelect:boolean);
       PROCEDURE attachGUI(CONST zoom:longint; CONST container:TWinControl; CONST wireImage:TImage; CONST gatePopup:TPopupMenu; CONST anyChangeCallback:F_simpleCallback);
       PROCEDURE detachGUI;
-      PROCEDURE gateMoved(CONST gate:P_visualGate; CONST doneDragging:boolean);
       PROCEDURE anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
       PROCEDURE fixWireImageSize;
       PROCEDURE setZoom(CONST zoom:longint);
@@ -422,7 +423,7 @@ PROCEDURE T_circuitBoard.setSelectForAll(CONST doSelect: boolean);
     drawAllWires;
   end;
 
-FUNCTION T_circuitBoard.repositionGate(VAR origin:T_point; CONST size:T_point; CONST considerWires:boolean):T_repositionOutput;
+FUNCTION T_circuitBoard.repositionCustomRegion(VAR origin:T_point; CONST size:T_point; CONST considerWires:boolean):T_repositionOutput;
   FUNCTION isOriginValid(CONST o:T_point):boolean;
     VAR gate:P_visualGate;
         i,j,k,run:longint;
@@ -478,68 +479,47 @@ FUNCTION T_circuitBoard.repositionGate(VAR origin:T_point; CONST size:T_point; C
     result:=ro_noPositionFound;
   end;
 
-FUNCTION T_circuitBoard.repositionGate(CONST gateToCheck: P_visualGate; CONST considerWires: boolean): T_repositionOutput;
-  FUNCTION isOriginValid(CONST o:T_point):boolean;
-    VAR gate:P_visualGate;
-        i,j,k,run:longint;
-        p:T_point;
-        direction:T_wireDirection;
-    begin
-      if (o[0]<5) or (o[0]+gateToCheck^.size[0]>=BOARD_MAX_SIZE_IN_GRID_ENTRIES-5) or
-         (o[1]<5) or (o[1]+gateToCheck^.size[1]>=BOARD_MAX_SIZE_IN_GRID_ENTRIES-5)
-      then exit(false);
-      result:=true;
-      for gate in gates do
-      if (gate<>gateToCheck) and
-         (o[0]+gateToCheck^.size[0]>gate^.origin[0]) and (o[0]<gate^.origin[0]+gate^.size[0]) and
-         (o[1]+gateToCheck^.size[1]>gate^.origin[1]) and (o[1]<gate^.origin[1]+gate^.size[1])
-      then exit(false);
+FUNCTION T_circuitBoard.canGateBeMovedBy(CONST gateToCheck:P_visualGate; CONST delta:T_point; CONST considerWires,considerMarkedGates:boolean):boolean;
+  VAR gate:P_visualGate;
+      i,j,k,run:longint;
+      p,o:T_point;
+      direction:T_wireDirection;
+  begin
+    o:=gateToCheck^.origin+delta;
+    if (o[0]<5) or (o[0]+gateToCheck^.size[0]>=BOARD_MAX_SIZE_IN_GRID_ENTRIES-5) or
+       (o[1]<5) or (o[1]+gateToCheck^.size[1]>=BOARD_MAX_SIZE_IN_GRID_ENTRIES-5)
+    then exit(false);
+    result:=true;
+    for gate in gates do
+    if (gate<>gateToCheck) and (not(gate^.marked_) or not(considerMarkedGates))  and
+       (o[0]+gateToCheck^.size[0]>gate^.origin[0]) and (o[0]<gate^.origin[0]+gate^.size[0]) and
+       (o[1]+gateToCheck^.size[1]>gate^.origin[1]) and (o[1]<gate^.origin[1]+gate^.size[1])
+    then exit(false);
 
-      if considerWires then
-      for i:=0 to length(logicWires)-1 do
-      for j:=0 to length(logicWires[i].wires)-1 do
-      with logicWires[i].wires[j] do begin
-        for k:=0 to length(visual)-2 do begin
-          p:=visual[k];
-          direction:=directionBetween  (p,visual[k+1]);
-          for run:=0 to maxNormDistance(p,visual[k+1]) do begin
-            if (p[0]>=o[0]-1) and (p[0]<=o[0]+gateToCheck^.size[0]+1) and
-               (p[1]>=o[1]-1) and (p[1]<=o[1]+gateToCheck^.size[1]+1) then exit(false);
-            p+=direction;
-          end;
+    if considerWires then
+    for i:=0 to length(logicWires)-1 do
+    for j:=0 to length(logicWires[i].wires)-1 do
+    with logicWires[i].wires[j] do begin
+      for k:=0 to length(visual)-2 do begin
+        p:=visual[k];
+        direction:=directionBetween  (p,visual[k+1]);
+        for run:=0 to maxNormDistance(p,visual[k+1]) do begin
+          if (p[0]>=o[0]-1) and (p[0]<=o[0]+gateToCheck^.size[0]+1) and
+             (p[1]>=o[1]-1) and (p[1]<=o[1]+gateToCheck^.size[1]+1) then exit(false);
+          p+=direction;
         end;
       end;
     end;
-
-  VAR newOrigin:T_point;
-  FUNCTION applyOrigin:T_repositionOutput;
-    begin
-      gateToCheck^.origin:=newOrigin;
-      result:=ro_positionFound;
-    end;
-
-  VAR range:longint=1;
-      i:longint;
-  begin
-    newOrigin:=gateToCheck^.origin;
-    if isOriginValid(newOrigin)
-    then exit(ro_positionUnchanged)
-    else repeat
-      for i:=1 to range do begin newOrigin+=wd_right; if isOriginValid(newOrigin) then exit(applyOrigin); end;
-      for i:=1 to range do begin newOrigin+=wd_down;  if isOriginValid(newOrigin) then exit(applyOrigin); end;
-      range+=1;
-      for i:=1 to range do begin newOrigin+=wd_left;  if isOriginValid(newOrigin) then exit(applyOrigin); end;
-      for i:=1 to range do begin newOrigin+=wd_up;    if isOriginValid(newOrigin) then exit(applyOrigin); end;
-      range+=1;
-    until range>BOARD_MAX_SIZE_IN_GRID_ENTRIES;
-    result:=ro_noPositionFound;
   end;
 
 FUNCTION T_circuitBoard.positionNewGate(CONST gateToAdd: P_visualGate): boolean;
+  VAR gateOrigin:T_point;
   begin
-    if repositionGate(gateToAdd,true)<>ro_noPositionFound then begin
+    gateOrigin:=gateToAdd^.origin;
+    if repositionCustomRegion(gateOrigin,gateToAdd^.size,true)<>ro_noPositionFound then begin
       setLength(gates,length(gates)+1);
       gates[length(gates)-1]:=gateToAdd;
+      gateToAdd^.origin:=gateOrigin;
       result:=true;
       gateToAdd^.ensureGuiElements;
       gateToAdd^.Repaint;
@@ -917,7 +897,7 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board:P_circuitBoard);
     if board=nil then exit;
     board^.getBoardExtend(clipOrigin,clipSize);
     clipNewOrigin:=clipOrigin;
-    if repositionGate(clipNewOrigin,clipSize,true)=ro_noPositionFound then exit;
+    if repositionCustomRegion(clipNewOrigin,clipSize,true)=ro_noPositionFound then exit;
     clipOffset:=clipNewOrigin-clipOrigin;
 
     indexOfFirstGateAdded:=length(gates);
@@ -1075,13 +1055,6 @@ FUNCTION T_circuitBoard.findWirePath(CONST start: T_visualGateConnector; CONST e
     if wireGraph^.anyEdgeLeadsTo(endPoint)
     then result:=wireGraph^.findPath(start.gate^.getOutputPositionInGridSize(start.index),endPoint)
     else setLength(result,0);
-  end;
-
-PROCEDURE T_circuitBoard.gateMoved(CONST gate: P_visualGate; CONST doneDragging: boolean);
-  begin
-    repositionGate(gate,false);
-    if doneDragging then rewire;
-    Repaint;
   end;
 
 PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previewDuringDrag: boolean);
