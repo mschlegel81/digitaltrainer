@@ -943,7 +943,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
           entry.costToGetThere:=score;
           entry.estimatedCostToGoal:=score+distance(neighbor);
           nodeMap.put(entry);
-          openSet.add(continuePath(result,neighbor,directionChanged),entry.estimatedCostToGoal);
+          if distance(neighbor)<2*distance(startPoint) then openSet.add(continuePath(result,neighbor,directionChanged),entry.estimatedCostToGoal);
         end;
       end;
     end;
