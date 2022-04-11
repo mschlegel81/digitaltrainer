@@ -90,7 +90,6 @@ TYPE
       PROCEDURE drawAllWires;
       FUNCTION findWirePath(CONST start:T_visualGateConnector; CONST endPoint:T_point):T_wirePath;
       PROCEDURE finishWireDrag(CONST targetPoint:T_point; CONST previewDuringDrag:boolean=false);
-      PROCEDURE rewire;
       PROCEDURE WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
       PROCEDURE WireImageMouseMove(Sender: TObject; Shift: TShiftState; X,Y: integer);
       PROCEDURE WireImageMouseUp  (Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -123,6 +122,7 @@ TYPE
       PROPERTY lastClickedGate:P_visualGate read GUI.lastClickedGate;
       PROCEDURE reset;
       PROCEDURE getBoardExtend(OUT origin,size:T_point);
+      PROCEDURE rewire(CONST forced:boolean=false);
   end;
 
 {$undef includeInterface}
@@ -1163,7 +1163,7 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previe
     Repaint;
   end;
 
-PROCEDURE T_circuitBoard.rewire;
+PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
   VAR connector:T_visualGateConnector;
       i,j:longint;
 
@@ -1173,12 +1173,8 @@ PROCEDURE T_circuitBoard.rewire;
         targetPoints:T_wirePath;
         needRewire:boolean;
       end;
-
       paths:T_wirePathArray;
-      startTicks: qword;
   begin
-    //writeln(stdErr,'Rewire called...');
-    startTicks:=GetTickCount64;
     if wireGraph<>nil then dispose(wireGraph,destroy);
     connector.gate:=nil;
     connector.index:=0;
@@ -1186,7 +1182,7 @@ PROCEDURE T_circuitBoard.rewire;
     initialize(preview);
     setLength(preview,length(logicWires));
     for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
-      preview[i].needRewire:=false;
+      preview[i].needRewire:=forced;
       preview[i].startPoint:=source.gate^.getOutputPositionInGridSize(source.index);
       setLength(preview[i].targetPoints,length(wires));
       for j:=0 to length(preview[i].targetPoints)-1 do begin
@@ -1199,8 +1195,6 @@ PROCEDURE T_circuitBoard.rewire;
       end;
       needAnyRewire:=needAnyRewire or preview[i].needRewire;
     end;
-    //writeln(stdErr,'Rewire finished (without doing anything) after ',GetTickCount64-startTicks,' ticks');
-
     if not(needAnyRewire) then exit;
 
     for i:=0 to length(logicWires)-1 do
@@ -1218,7 +1212,6 @@ PROCEDURE T_circuitBoard.rewire;
         end;
         setLength(paths,0);
       end;
-    //writeln(stdErr,'Rewire finished after ',GetTickCount64-startTicks,' ticks');
     fixWireImageSize;
   end;
 

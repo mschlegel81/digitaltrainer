@@ -564,6 +564,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         Caption = '&Analysieren...'
         OnClick = miAnalyzeBoardClick
       end
+      object miRewire: TMenuItem
+        Caption = 'Verkabelung neu berechnen'
+        OnClick = miRewireClick
+      end
     end
     object MenuItem7: TMenuItem
       Caption = '&Bearbeiten'

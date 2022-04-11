@@ -19,6 +19,7 @@ TYPE
     ButtonAdd8to1: TButton;
     ButtonAdd1to8: TButton;
     ButtonAdd4to1: TButton;
+    miRewire: TMenuItem;
     miPaste: TMenuItem;
     miCopy: TMenuItem;
     miAnalyze: TMenuItem;
@@ -112,6 +113,7 @@ TYPE
     PROCEDURE miNewClick(Sender: TObject);
     PROCEDURE miPasteClick(Sender: TObject);
     PROCEDURE miQuitClick(Sender: TObject);
+    PROCEDURE miRewireClick(Sender: TObject);
     PROCEDURE miSaveClick(Sender: TObject);
     PROCEDURE miSelectAllClick(Sender: TObject);
     PROCEDURE resetButtonClick(Sender: TObject);
@@ -332,6 +334,12 @@ PROCEDURE TDigitaltrainerMainForm.miPasteClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miQuitClick(Sender: TObject);
   begin
     close;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miRewireClick(Sender: TObject);
+  begin
+    workspace.currentBoard^.rewire(true);
+    workspace.currentBoard^.Repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miSaveClick(Sender: TObject);
