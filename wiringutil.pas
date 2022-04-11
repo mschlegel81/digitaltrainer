@@ -781,25 +781,15 @@ FUNCTION allPointsBetween(CONST startP, endP: T_point; OUT dir: T_wireDirection
   end;
 
 PROCEDURE T_wireGraph.dropWireSection(CONST a, b: T_point; CONST diagonalsOnly:boolean=false);
-  //CONST DIRECTIONS_TO_DROP:array[T_wireDirection] of T_wireDirectionSet=(
-  //{wd_left     }[wd_left,wd_leftDown,        wd_rightDown,wd_right,wd_rightUp,      wd_leftUp],
-  //{wd_leftDown }[wd_left,wd_leftDown,wd_down,             wd_right,wd_rightUp,wd_up          ],
-  //{wd_down     }[        wd_leftDown,wd_down,wd_rightDown,         wd_rightUp,wd_up,wd_leftUp],
-  //{wd_rightDown}[wd_left,            wd_down,wd_rightDown,wd_right,           wd_up,wd_leftUp],
-  //{wd_right    }[wd_left,wd_leftDown,        wd_rightDown,wd_right,wd_rightUp,      wd_leftUp],
-  //{wd_rightUp  }[wd_left,wd_leftDown,wd_down,             wd_right,wd_rightUp,wd_up          ],
-  //{wd_up       }[        wd_leftDown,wd_down,wd_rightDown,         wd_rightUp,wd_up,wd_leftUp],
-  //{wd_leftUp   }[wd_left,            wd_down,wd_rightDown,wd_right,           wd_up,wd_leftUp]);
-
   CONST DIRECTIONS_TO_DROP:array[T_wireDirection] of T_wireDirectionSet=(
-  {wd_left     }[wd_left,wd_right],
-  {wd_leftDown }[wd_leftDown,wd_rightUp],
-  {wd_down     }[wd_down,wd_up],
-  {wd_rightDown}[wd_rightDown,wd_leftUp],
-  {wd_right    }[wd_left,wd_right],
-  {wd_rightUp  }[wd_leftDown,wd_rightUp],
-  {wd_up       }[wd_down,wd_up],
-  {wd_leftUp   }[wd_rightDown,wd_leftUp]);
+  {wd_left     }[wd_left,wd_leftDown,        wd_rightDown,wd_right,wd_rightUp,      wd_leftUp],
+  {wd_leftDown }[wd_left,wd_leftDown,wd_down,             wd_right,wd_rightUp,wd_up          ],
+  {wd_down     }[        wd_leftDown,wd_down,wd_rightDown,         wd_rightUp,wd_up,wd_leftUp],
+  {wd_rightDown}[wd_left,            wd_down,wd_rightDown,wd_right,           wd_up,wd_leftUp],
+  {wd_right    }[wd_left,wd_leftDown,        wd_rightDown,wd_right,wd_rightUp,      wd_leftUp],
+  {wd_rightUp  }[wd_left,wd_leftDown,wd_down,             wd_right,wd_rightUp,wd_up          ],
+  {wd_up       }[        wd_leftDown,wd_down,wd_rightDown,         wd_rightUp,wd_up,wd_leftUp],
+  {wd_leftUp   }[wd_left,            wd_down,wd_rightDown,wd_right,           wd_up,wd_leftUp]);
   VAR dir:T_wireDirection;
       len,i:longint;
   begin
@@ -904,7 +894,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
 
     if length(pathsToPrimeWith)>0 then prime
     else begin
-      Initialize(result);
+      initialize(result);
       setLength(result,1);
       result[0]:=startPoint;
       openSet.add(result,distance(startPoint));
