@@ -14,11 +14,13 @@ TYPE
 
   TDigitaltrainerMainForm = class(TForm)
     ButtonAdd1to4: TButton;
+    ButtonAddConstantTrue: TButton;
     ButtonAdd8to4: TButton;
     ButtonAdd4to8: TButton;
     ButtonAdd8to1: TButton;
     ButtonAdd1to8: TButton;
     ButtonAdd4to1: TButton;
+    ButtonAddConstantFalse: TButton;
     miRewire: TMenuItem;
     miPaste: TMenuItem;
     miCopy: TMenuItem;
@@ -82,6 +84,8 @@ TYPE
     PROCEDURE ButtonAdd8to1Click(Sender: TObject);
     PROCEDURE ButtonAdd8to4Click(Sender: TObject);
     PROCEDURE ButtonAddClockClick(Sender: TObject);
+    PROCEDURE ButtonAddConstantFalseClick(Sender: TObject);
+    PROCEDURE ButtonAddConstantTrueClick(Sender: TObject);
     PROCEDURE ButtonAddCustomClick(Sender: TObject);
     PROCEDURE ButtonAddAndClick(Sender: TObject);
     PROCEDURE ButtonAddInputClick(Sender: TObject);
@@ -213,6 +217,12 @@ PROCEDURE TDigitaltrainerMainForm.ButtonAdd8to4Click(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddClockClick(Sender: TObject);
   begin workspace.addBaseGate(gt_clock);end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddConstantFalseClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_false); end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddConstantTrueClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_true); end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddOutputClick(Sender: TObject);
   begin workspace.addBaseGate(gt_output);end;
@@ -433,7 +443,9 @@ PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.ZoomTrackBarChange(Sender: TObject);
   begin
+    BeginFormUpdate;
     workspace.currentBoard^.setZoom(ZoomTrackBar.position);
+    EndFormUpdate;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.updateSidebar;

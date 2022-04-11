@@ -21,7 +21,9 @@ TYPE
               gt_adapter1to8,
               gt_adapter8to1,
               gt_adapter4to8,
-              gt_adapter8to4);
+              gt_adapter8to4,
+              gt_true,
+              gt_false);
 
   T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
 
@@ -49,6 +51,25 @@ TYPE
       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual; abstract;
       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual; abstract;
     end;
+
+  { T_constantGate }
+  P_constantGate=^T_constantGate;
+  T_constantGate=object(T_abstractGate)
+    private
+      c:T_triStateValue;
+    public
+      CONSTRUCTOR create(CONST constantTrue:boolean);
+      PROCEDURE reset;                   virtual;
+      FUNCTION  clone:P_abstractGate;    virtual;
+      FUNCTION  caption:string;          virtual;
+      FUNCTION  numberOfInputs :longint; virtual;
+      FUNCTION  numberOfOutputs:longint; virtual;
+      FUNCTION  gateType:T_gateType;     virtual;
+      FUNCTION  simulateStep:boolean;    virtual;
+      FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
+      FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
+      FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
+  end;
 
   T_gateConnector=object
     gate:P_abstractGate;
@@ -350,8 +371,61 @@ FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
       gt_adapter8to1,
       gt_adapter4to8,
       gt_adapter8to4: new(P_adapter(result),create(gateType));
+      gt_true :new(P_constantGate(result),create(true ));
+      gt_false:new(P_constantGate(result),create(false));
       else result:=nil;
     end;
+  end;
+
+{ T_constantGate }
+
+CONSTRUCTOR T_constantGate.create(CONST constantTrue: boolean);
+  begin
+    inherited create;
+    if constantTrue then c:=tsv_true else c:=tsv_false;
+  end;
+
+PROCEDURE T_constantGate.reset;
+  begin end;
+
+FUNCTION T_constantGate.clone: P_abstractGate;
+  begin
+    new(P_constantGate(result),create(c=tsv_true));
+  end;
+
+FUNCTION T_constantGate.caption: string;
+  begin
+    case c of
+      tsv_true : result:='1';
+      tsv_false: result:='0';
+      else       result:='?';
+    end;
+  end;
+
+FUNCTION T_constantGate.numberOfInputs: longint;
+  begin result:=0; end;
+
+FUNCTION T_constantGate.numberOfOutputs: longint;
+  begin result:=1; end;
+
+FUNCTION T_constantGate.gateType: T_gateType;
+  begin
+    if c=tsv_true then result:=gt_true else result:=gt_false;
+  end;
+
+FUNCTION T_constantGate.simulateStep: boolean;
+  begin result:=false; end;
+
+FUNCTION T_constantGate.getOutput(CONST index: longint): T_wireValue;
+  begin result:=c; end;
+
+FUNCTION T_constantGate.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
+  begin result:=false; end;
+
+FUNCTION T_constantGate.getInput(CONST index: longint): T_wireValue;
+  begin
+    result.width:=1;
+    result.bit[0]:=tsv_undetermined;
   end;
 
 { T_adapter }

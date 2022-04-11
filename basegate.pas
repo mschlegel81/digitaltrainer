@@ -199,7 +199,7 @@ PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType);
 
       if length(currentBoard^.gates)=0
       then p:=pointOf(5,5)
-      else p:=currentBoard^.gates[length(currentBoard^.gates)-1]^.origin;
+      else p:=currentBoard^.gates[length(currentBoard^.gates)-1]^.nextGateAfter;
 
       visual:=currentBoard^.wrapGate(p,gateToAdd);
       if not currentBoard^.positionNewGate(visual)
@@ -217,7 +217,7 @@ PROCEDURE T_workspace.addCustomGate(CONST index: longint);
 
       if length(currentBoard^.gates)=0
       then p:=pointOf(5,5)
-      else p:=currentBoard^.gates[length(currentBoard^.gates)-1]^.origin;
+      else p:=currentBoard^.gates[length(currentBoard^.gates)-1]^.nextGateAfter;
 
       visual:=currentBoard^.wrapGate(p,gateToAdd);
       if not currentBoard^.positionNewGate(visual)
@@ -1059,9 +1059,9 @@ PROCEDURE T_circuitBoard.initWireGraph(CONST start: T_visualGateConnector; CONST
       do wireGraph^.addUnidirectionalEdge(gate^.getOutputPositionInGridSize(i),wd_right);
       //No diagonals right left and right of the gate (to prevent blocking of I/O)
       x:=gate^.origin[0];
-      for y:=gate^.origin[1]+1 to gate^.origin[1]+gate^.size[1]-1 do wireGraph^.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
+      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do wireGraph^.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
       x:=gate^.origin[1]+1;
-      for y:=gate^.origin[1]+1 to gate^.origin[1]+gate^.size[1]-1 do wireGraph^.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
+      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do wireGraph^.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
     end;
     if includeWires then
     for i:=0 to length(logicWires)-1 do

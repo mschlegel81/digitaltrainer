@@ -41,7 +41,9 @@ CONST
   {gt_adapter1to8} [gpe_caption],
   {gt_adapter8to1} [gpe_caption],
   {gt_adapter4to8} [gpe_caption],
-  {gt_adapter8to4} [gpe_caption]);
+  {gt_adapter8to4} [gpe_caption],
+                   [gpe_caption],
+                   [gpe_caption]);
 
 TYPE
   T_gatePropertyValue=record
