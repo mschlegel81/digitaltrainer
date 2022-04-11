@@ -6,7 +6,7 @@ USES ExtCtrls, Classes, Controls, StdCtrls, UITypes, wiringUtil,
 
 CONST defaultBoardCaption='unbenannt';
       TRI_STATE_NOT:array[T_triStateValue] of T_triStateValue=(tsv_true,tsv_false,tsv_false);
-
+      MAX_UNDO=32;
 TYPE
 {$define includeInterface}
   F_simpleCallback=PROCEDURE of object;
@@ -84,9 +84,8 @@ TYPE
       wireGraph:P_wireGraph;
       FUNCTION repositionCustomRegion(VAR origin:T_point; CONST size:T_point; CONST considerWires:boolean):T_repositionOutput;
       FUNCTION canGateBeMovedBy(CONST gateToCheck:P_visualGate; CONST delta:T_point; CONST considerWires,considerMarkedGates:boolean):boolean;
-
-//      FUNCTION repositionGate(CONST gateToCheck:P_visualGate; CONST considerWires:boolean):T_repositionOutput;
       FUNCTION positionNewGate(CONST gateToAdd:P_visualGate):boolean;
+      PROCEDURE addGateWithoutChecking(CONST gateToAdd:P_visualGate);
       FUNCTION isInputConnected(CONST gate:P_visualGate; CONST inputIndex:longint):boolean;
       PROCEDURE initWireGraph(CONST start: T_visualGateConnector; CONST includeWires:boolean=true);
       PROCEDURE drawAllWires;
@@ -435,8 +434,8 @@ FUNCTION T_circuitBoard.repositionCustomRegion(VAR origin:T_point; CONST size:T_
       then exit(false);
       result:=true;
       for gate in gates do
-      if (o[0]+size[0]>origin[0]) and (o[0]<origin[0]+size[0]) and
-         (o[1]+size[1]>origin[1]) and (o[1]<origin[1]+size[1])
+      if (o[0]+size[0]>gate^.origin[0]) and (o[0]<gate^.origin[0]+gate^.size[0]) and
+         (o[1]+size[1]>gate^.origin[1]) and (o[1]<gate^.origin[1]+gate^.size[1])
       then exit(false);
 
       if considerWires then
@@ -491,7 +490,7 @@ FUNCTION T_circuitBoard.canGateBeMovedBy(CONST gateToCheck:P_visualGate; CONST d
     then exit(false);
     result:=true;
     for gate in gates do
-    if (gate<>gateToCheck) and (not(gate^.marked_) or not(considerMarkedGates))  and
+    if (gate<>gateToCheck) and (not(gate^.marked_) or considerMarkedGates)  and
        (o[0]+gateToCheck^.size[0]>gate^.origin[0]) and (o[0]<gate^.origin[0]+gate^.size[0]) and
        (o[1]+gateToCheck^.size[1]>gate^.origin[1]) and (o[1]<gate^.origin[1]+gate^.size[1])
     then exit(false);
@@ -516,7 +515,7 @@ FUNCTION T_circuitBoard.positionNewGate(CONST gateToAdd: P_visualGate): boolean;
   VAR gateOrigin:T_point;
   begin
     gateOrigin:=gateToAdd^.origin;
-    if repositionCustomRegion(gateOrigin,gateToAdd^.size,true)<>ro_noPositionFound then begin
+    if repositionCustomRegion(gateOrigin,gateToAdd^.size,false)<>ro_noPositionFound then begin
       setLength(gates,length(gates)+1);
       gates[length(gates)-1]:=gateToAdd;
       gateToAdd^.origin:=gateOrigin;
@@ -686,8 +685,7 @@ FUNCTION T_circuitBoard.simulateSteps(CONST count: longint): boolean;
     for gate in gates do gate^.updateIoVisuals;
   end;
 
-FUNCTION T_circuitBoard.wrapGate(CONST origin: T_point; CONST g: P_abstractGate
-  ): P_visualGate;
+FUNCTION T_circuitBoard.wrapGate(CONST origin: T_point; CONST g: P_abstractGate): P_visualGate;
   begin
     case g^.gateType of
       gt_compound: new(P_visualGateForCustom(result),create(origin,g,@self));
@@ -811,7 +809,7 @@ PROCEDURE T_circuitBoard.copySelectionToClipboard;
   begin
     if GUI.Clipboard<>nil then dispose(GUI.Clipboard,destroy);
     new(GUI.Clipboard,create);
-    offset:=pointOf(0,0);
+    offset:=pointOf(BOARD_MAX_SIZE_IN_GRID_ENTRIES,BOARD_MAX_SIZE_IN_GRID_ENTRIES);
     initialize(gateToCopy);
     setLength(gateToCopy,0);
     for gate in gates do if gate^.marked then begin
@@ -823,7 +821,7 @@ PROCEDURE T_circuitBoard.copySelectionToClipboard;
     offset:=pointOf(5-offset[0],5-offset[1]);
 
     for gate in gateToCopy do
-      GUI.Clipboard^.positionNewGate(
+      GUI.Clipboard^.addGateWithoutChecking(
         GUI.Clipboard^.wrapGate(gate^.origin+offset,
                                 gate^.behavior^.clone));
 
@@ -850,6 +848,13 @@ PROCEDURE T_circuitBoard.copySelectionToClipboard;
       dispose(GUI.Clipboard,destroy);
       GUI.Clipboard:=nil;
     end;
+  end;
+
+PROCEDURE T_circuitBoard.addGateWithoutChecking(CONST gateToAdd:P_visualGate);
+  begin
+    setLength(gates,length(gates)+1);
+    gates[length(gates)-1]:=gateToAdd;
+    gateToAdd^.ensureGuiElements;
   end;
 
 PROCEDURE T_circuitBoard.pasteFromClipboard;
@@ -887,7 +892,6 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board:P_circuitBoard);
       clipNewOrigin,
       clipOffset:T_point;
 
-      newVisualGate:P_visualGate;
       gate:P_visualGate;
       i,j,
       lwi:longint;
@@ -901,13 +905,7 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board:P_circuitBoard);
     clipOffset:=clipNewOrigin-clipOrigin;
 
     indexOfFirstGateAdded:=length(gates);
-    for gate in board^.gates do begin
-      newVisualGate:=wrapGate(gate^.origin+clipOffset,gate^.behavior^.clone);
-      if not positionNewGate(newVisualGate) then begin
-        dispose(newVisualGate,destroy);
-        exit;
-      end;
-    end;
+    for gate in board^.gates do addGateWithoutChecking(wrapGate(gate^.origin+clipOffset,gate^.behavior^.clone));
 
     for i:=0 to length(board^.logicWires)-1 do begin
       lwi:=addLogicWire(board^.logicWires[i].source,board^.logicWires[i].width);
@@ -934,14 +932,20 @@ PROCEDURE T_circuitBoard.getBoardExtend(OUT origin,size:T_point);
   VAR gate:P_visualGate;
       maximum,tmp:T_point;
   begin
+    if length(gates)=0 then begin
+      origin:=ZERO_POINT;
+      size  :=ZERO_POINT;
+      exit;
+    end;
     origin:=pointOf(BOARD_MAX_SIZE_IN_GRID_ENTRIES+1,BOARD_MAX_SIZE_IN_GRID_ENTRIES+1);
     maximum:=pointOf(-1,-1);
     for gate in gates do begin
-      tmp:=gate^.origin+gate^.size;
-      origin [0]:=min(origin[0],gate^.origin[0]);
-      origin [1]:=min(origin[1],gate^.origin[1]);
-      maximum[0]:=max(origin[0],tmp[0]);
-      maximum[1]:=max(origin[1],tmp[1]);
+      tmp:=gate^.origin;
+      if tmp[0]<origin[0] then origin[0]:=tmp[0];
+      if tmp[1]<origin[1] then origin[1]:=tmp[1];
+      tmp+=gate^.size;
+      if tmp[0]>maximum[0] then maximum[0]:=tmp[0];
+      if tmp[1]>maximum[1] then maximum[1]:=tmp[1];
     end;
     size:=maximum-origin;
   end;
@@ -1149,6 +1153,8 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
       paths:T_wirePathArray;
   begin
     if wireGraph<>nil then dispose(wireGraph,destroy);
+    //TODO: If forced, logic wires may be re-sorted in a "smart" way...
+
     connector.gate:=nil;
     connector.index:=0;
     initWireGraph(connector,false);

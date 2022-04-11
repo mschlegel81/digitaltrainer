@@ -1,8 +1,5 @@
 {$ifdef includeInterface}
 P_visualGate=^T_visualGate;
-
-{ T_visualGate }
-
 T_visualGate=object
   private
     id_:longint;
@@ -386,7 +383,7 @@ PROCEDURE T_visualGate.mainShapeMouseUp(Sender: TObject; button: TMouseButton; S
       if movedDuringDrag then board^.rewire();
       dragging:=not_dragging;
       movedDuringDrag:=false;
-      Repaint;
+      board^.Repaint;
     end;
   end;
 
