@@ -297,21 +297,24 @@ VAR visualGateIdTally:longint=0;
       if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
     end;
 
-    PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject;
-    button: TMouseButton; Shift: TShiftState; X, Y: integer);
-    begin
-      if (button=mbLeft) then begin
-        if marked_ then dragging:=drag_selection
-                   else dragging:=drag_self;
-        movedDuringDrag:=false;
-        if (ssShift in Shift) or (ssCtrl in Shift) then marked:=not(marked);
-        shapes[0].Pen.style:=psDash;
-        dragX:=x;
-        dragY:=y;
-      end else if (button=mbRight) then begin
-        board^.GUI.lastClickedGate:=@self;
+PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  begin
+    if (button=mbLeft) then begin
+      if marked_
+      then dragging:=drag_selection
+      else begin
+        dragging:=drag_self;
+        board^.setSelectForAll(false);
       end;
+      movedDuringDrag:=false;
+      if (ssShift in Shift) or (ssCtrl in Shift) then marked:=not(marked);
+      shapes[0].Pen.style:=psDash;
+      dragX:=x;
+      dragY:=y;
+    end else if (button=mbRight) then begin
+      board^.GUI.lastClickedGate:=@self;
     end;
+  end;
 
 PROCEDURE T_visualGate.mainShapeMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
   VAR dx,dy:longint;
