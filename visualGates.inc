@@ -506,8 +506,7 @@ PROCEDURE T_visualGateForInput.Repaint;
     labels[0].caption:=caption;
     labels[0].visible:=true;
     inherited;
-    labels[0].visible:=false;
-
+    labels[0].Top:=shapes[0].top;
     button.top   :=shapes[0].top;
     button.Left  :=shapes[0].Left;
     button.width :=shapes[0].width;
