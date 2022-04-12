@@ -145,7 +145,7 @@ TYPE
 
 {$undef includeInterface}
 IMPLEMENTATION
-USES sysutils,math,myGenerics,Dialogs;
+USES sysutils,math,myGenerics,Dialogs,DateUtils;
 {$define includeImplementation}
 {$i visualGates.inc}
 {$i customGates.inc}
@@ -388,6 +388,8 @@ PROCEDURE T_workspace.addCurrentBoardToDrafts(CONST indexToOverwrite:longint=max
       i:=indexToOverwrite;
       dispose(draftEntries[i],destroy);
     end;
+
+    if currentBoard^.name=defaultBoardCaption then currentBoard^.name:='Unbenannter Entwurf vom '+FormatDateTime('dd.mm.yyyy - hh:nn',now);
 
     newDraft:=currentBoard;
     currentBoard   :=nil;
@@ -1515,9 +1517,12 @@ FUNCTION T_circuitBoard.clone(CONST includeWirePaths:boolean): P_circuitBoard;
 
 FUNCTION T_circuitBoard.usesBoard(CONST other:P_circuitBoard):boolean;
   VAR gate:P_visualGate;
+      board:P_circuitBoard;
   begin
     result:=false;
     for gate in gates do if (gate^.behavior^.gateType=gt_compound) and (P_customGate(gate^.behavior)^.prototype=other) then exit(true);
+    for board in GUI.undoList do if board^.usesBoard(other) then exit(true);
+    for board in GUI.redoList do if board^.usesBoard(other) then exit(true);
   end;
 
 PROCEDURE T_workspace.removePaletteEntry(CONST index:longint);
@@ -1574,10 +1579,11 @@ PROCEDURE T_workspace.editPaletteEntry(CONST index:longint; CONST resetPaletteIn
 
 PROCEDURE T_workspace.editDraftEntry  (CONST index:longint);
   VAR previous:P_circuitBoard;
+      j:longint;
   begin
     if (index<0) or (index>length(draftEntries)) then exit;
     previous:=currentBoard;
-    currentBoard:=draftEntries[index]^.clone(false);
+    currentBoard:=draftEntries[index];
     currentBoard^.attachGUI(
       previous^.GUI.zoom,
       previous^.GUI.container,
@@ -1586,6 +1592,8 @@ PROCEDURE T_workspace.editDraftEntry  (CONST index:longint);
       previous^.GUI.anyChangeCallback);
     currentBoard^.rewire;
     dispose(previous,destroy);
+    for j:=index to length(draftEntries)-2 do draftEntries[j]:=draftEntries[j+1];
+    setLength(draftEntries,length(draftEntries)-1);
     currentBoard^.Repaint;
   end;
 

@@ -1,68 +1,67 @@
 object DigitaltrainerMainForm: TDigitaltrainerMainForm
-  Left = 289
-  Height = 625
-  Top = 81
-  Width = 703
+  Left = 528
+  Height = 711
+  Top = 80
+  Width = 729
   Caption = 'Digitaltrainer'
-  ClientHeight = 605
-  ClientWidth = 703
+  ClientHeight = 686
+  ClientWidth = 729
+  DesignTimePPI = 120
   Menu = MainMenu
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnResize = FormResize
-  Position = poDesktopCenter
   LCLVersion = '2.0.12.0'
-  WindowState = wsMaximized
   object ScrollBox1: TScrollBox
     Cursor = crCross
-    Left = 175
-    Height = 605
+    Left = 218
+    Height = 686
     Top = 0
-    Width = 528
-    HorzScrollBar.Page = 90
-    VertScrollBar.Page = 90
+    Width = 511
+    HorzScrollBar.Page = 113
+    VertScrollBar.Page = 113
     Align = alClient
-    ClientHeight = 601
-    ClientWidth = 524
+    ClientHeight = 682
+    ClientWidth = 507
     ParentFont = False
     TabOrder = 0
     object WireImage: TImage
       Cursor = crCross
       Left = 0
-      Height = 601
+      Height = 682
       Top = 0
-      Width = 524
+      Width = 507
       Align = alClient
     end
   end
   object Panel1: TPanel
     Left = 0
-    Height = 605
+    Height = 686
     Top = 0
-    Width = 170
+    Width = 212
     Align = alLeft
     BevelOuter = bvNone
-    ClientHeight = 605
-    ClientWidth = 170
+    ClientHeight = 686
+    ClientWidth = 212
     ParentFont = False
     TabOrder = 1
     object GroupBox2: TGroupBox
       Left = 0
-      Height = 45
-      Top = 110
-      Width = 170
+      Height = 56
+      Top = 137
+      Width = 212
       Align = alTop
       AutoSize = True
       Caption = 'Zoom'
-      ClientHeight = 25
-      ClientWidth = 166
+      ClientHeight = 31
+      ClientWidth = 208
       ParentFont = False
       TabOrder = 1
       object ZoomTrackBar: TTrackBar
         Left = 0
-        Height = 25
+        Height = 31
         Top = 0
-        Width = 166
+        Width = 208
         Max = 80
         Min = 1
         OnChange = ZoomTrackBarChange
@@ -74,14 +73,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     end
     object DeleteButton: TButton
       Left = 0
-      Height = 25
-      Top = 215
-      Width = 170
+      Height = 31
+      Top = 269
+      Width = 212
       Align = alTop
       Caption = '🗑'
       Font.CharSet = ANSI_CHARSET
       Font.Color = clBlack
-      Font.Height = -22
+      Font.Height = -28
       Font.Name = 'Segoe UI'
       Font.Pitch = fpVariable
       Font.Quality = fqDraft
@@ -91,20 +90,20 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     end
     object GroupBox4: TGroupBox
       Left = 0
-      Height = 105
+      Height = 131
       Top = 0
-      Width = 170
+      Width = 212
       Align = alTop
       Caption = 'Name und Beschreibung'
-      ClientHeight = 85
-      ClientWidth = 166
+      ClientHeight = 106
+      ClientWidth = 208
       ParentFont = False
       TabOrder = 0
       object captionEdit: TEdit
         Left = 0
-        Height = 23
+        Height = 28
         Top = 0
-        Width = 166
+        Width = 208
         Align = alTop
         OnEditingDone = captionEditEditingDone
         ParentFont = False
@@ -113,9 +112,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
       object descriptionMemo: TMemo
         Left = 0
-        Height = 62
-        Top = 23
-        Width = 166
+        Height = 78
+        Top = 28
+        Width = 208
         Align = alClient
         OnEditingDone = descriptionMemoEditingDone
         ParentFont = False
@@ -125,28 +124,28 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     object Splitter2: TSplitter
       Cursor = crVSplit
       Left = 0
-      Height = 5
-      Top = 105
-      Width = 170
+      Height = 6
+      Top = 131
+      Width = 212
       Align = alTop
       ResizeAnchor = akTop
     end
     object GroupBox5: TGroupBox
       Left = 0
-      Height = 365
-      Top = 240
-      Width = 170
+      Height = 386
+      Top = 300
+      Width = 212
       Align = alClient
       Caption = 'Gatter hinzufügen...'
-      ClientHeight = 345
-      ClientWidth = 166
+      ClientHeight = 361
+      ClientWidth = 208
       ParentFont = False
       TabOrder = 4
       object CustomGateListBox: TListBox
         Left = 0
-        Height = 170
-        Top = 175
-        Width = 166
+        Height = 144
+        Top = 217
+        Width = 208
         Align = alClient
         ItemHeight = 0
         OnSelectionChange = CustomGateListBoxSelectionChange
@@ -158,9 +157,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
       object FlowPanel1: TFlowPanel
         Left = 0
-        Height = 150
+        Height = 186
         Top = 0
-        Width = 166
+        Width = 208
         Align = alTop
         AutoSize = True
         BevelOuter = bvNone
@@ -261,9 +260,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         TabOrder = 1
         object ButtonAddInput: TButton
           Left = 0
-          Height = 25
+          Height = 31
           Top = 0
-          Width = 48
+          Width = 60
           Anchors = []
           Caption = 'input'
           OnClick = ButtonAddInputClick
@@ -271,10 +270,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           TabOrder = 0
         end
         object ButtonAddOutput: TButton
-          Left = 48
-          Height = 25
+          Left = 60
+          Height = 31
           Top = 0
-          Width = 48
+          Width = 60
           Anchors = []
           Caption = 'output'
           OnClick = ButtonAddOutputClick
@@ -282,10 +281,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           TabOrder = 1
         end
         object ButtonAddAnd: TButton
-          Left = 96
-          Height = 25
+          Left = 120
+          Height = 31
           Top = 0
-          Width = 48
+          Width = 60
           Anchors = []
           Caption = 'and'
           OnClick = ButtonAddAndClick
@@ -294,9 +293,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         end
         object ButtonAddOr: TButton
           Left = 0
-          Height = 25
-          Top = 25
-          Width = 48
+          Height = 31
+          Top = 31
+          Width = 60
           Anchors = []
           Caption = 'or'
           OnClick = ButtonAddOrClick
@@ -304,10 +303,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           TabOrder = 3
         end
         object ButtonAddNot: TButton
-          Left = 48
-          Height = 25
-          Top = 25
-          Width = 48
+          Left = 60
+          Height = 31
+          Top = 31
+          Width = 60
           Anchors = []
           Caption = 'not'
           OnClick = ButtonAddNotClick
@@ -315,10 +314,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           TabOrder = 4
         end
         object ButtonAddXor: TButton
-          Left = 96
-          Height = 25
-          Top = 25
-          Width = 48
+          Left = 120
+          Height = 31
+          Top = 31
+          Width = 60
           Anchors = []
           Caption = 'xor'
           OnClick = ButtonAddXorClick
@@ -327,9 +326,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         end
         object ButtonAddNand: TButton
           Left = 0
-          Height = 25
-          Top = 50
-          Width = 48
+          Height = 31
+          Top = 62
+          Width = 60
           Anchors = []
           Caption = 'nand'
           OnClick = ButtonAddNandClick
@@ -337,10 +336,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           TabOrder = 6
         end
         object ButtonAddNor: TButton
-          Left = 48
-          Height = 25
-          Top = 50
-          Width = 48
+          Left = 60
+          Height = 31
+          Top = 62
+          Width = 60
           Anchors = []
           Caption = 'nor'
           OnClick = ButtonAddNorClick
@@ -348,10 +347,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           TabOrder = 7
         end
         object ButtonAddNxor: TButton
-          Left = 96
-          Height = 25
-          Top = 50
-          Width = 48
+          Left = 120
+          Height = 31
+          Top = 62
+          Width = 60
           Anchors = []
           Caption = 'nxor'
           OnClick = ButtonAddNxorClick
@@ -360,10 +359,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         end
         object ButtonAddClock: TButton
           Left = 0
-          Height = 25
+          Height = 31
           Hint = 'Clock'
-          Top = 75
-          Width = 48
+          Top = 93
+          Width = 60
           Anchors = []
           Caption = '🕑'
           OnClick = ButtonAddClockClick
@@ -373,10 +372,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           TabOrder = 9
         end
         object ButtonAdd1to4: TButton
-          Left = 48
-          Height = 25
-          Top = 75
-          Width = 48
+          Left = 60
+          Height = 31
+          Top = 93
+          Width = 60
           Anchors = []
           Caption = '1->4'
           OnClick = ButtonAdd1to4Click
@@ -384,10 +383,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           TabOrder = 10
         end
         object ButtonAdd4to1: TButton
-          Left = 96
-          Height = 25
-          Top = 75
-          Width = 48
+          Left = 120
+          Height = 31
+          Top = 93
+          Width = 60
           Anchors = []
           Caption = '4->1'
           OnClick = ButtonAdd4to1Click
@@ -396,9 +395,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         end
         object ButtonAdd1to8: TButton
           Left = 0
-          Height = 25
-          Top = 100
-          Width = 48
+          Height = 31
+          Top = 124
+          Width = 60
           Anchors = []
           Caption = '1->8'
           OnClick = ButtonAdd1to8Click
@@ -406,10 +405,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           TabOrder = 12
         end
         object ButtonAdd8to1: TButton
-          Left = 48
-          Height = 25
-          Top = 100
-          Width = 48
+          Left = 60
+          Height = 31
+          Top = 124
+          Width = 60
           Anchors = []
           Caption = '8->1'
           OnClick = ButtonAdd8to1Click
@@ -417,10 +416,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           TabOrder = 13
         end
         object ButtonAdd4to8: TButton
-          Left = 96
-          Height = 25
-          Top = 100
-          Width = 48
+          Left = 120
+          Height = 31
+          Top = 124
+          Width = 60
           Anchors = []
           Caption = '4->8'
           OnClick = ButtonAdd4to8Click
@@ -429,9 +428,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         end
         object ButtonAdd8to4: TButton
           Left = 0
-          Height = 25
-          Top = 125
-          Width = 48
+          Height = 31
+          Top = 155
+          Width = 60
           Anchors = []
           Caption = '8->4'
           OnClick = ButtonAdd8to4Click
@@ -439,10 +438,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           TabOrder = 15
         end
         object ButtonAddConstantTrue: TButton
-          Left = 48
-          Height = 25
-          Top = 125
-          Width = 48
+          Left = 60
+          Height = 31
+          Top = 155
+          Width = 60
           Anchors = []
           Caption = '1'
           OnClick = ButtonAddConstantTrueClick
@@ -450,10 +449,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           TabOrder = 16
         end
         object ButtonAddConstantFalse: TButton
-          Left = 96
-          Height = 25
-          Top = 125
-          Width = 48
+          Left = 120
+          Height = 31
+          Top = 155
+          Width = 60
           Anchors = []
           Caption = '0'
           OnClick = ButtonAddConstantFalseClick
@@ -463,9 +462,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
       object ButtonAddCustom: TButton
         Left = 0
-        Height = 25
-        Top = 150
-        Width = 166
+        Height = 31
+        Top = 186
+        Width = 208
         Align = alTop
         Caption = 'benutzerdefiniert'
         OnClick = ButtonAddCustomClick
@@ -475,21 +474,21 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     end
     object GroupBox3: TGroupBox
       Left = 0
-      Height = 60
-      Top = 155
-      Width = 170
+      Height = 76
+      Top = 193
+      Width = 212
       Align = alTop
       AutoSize = True
       Caption = 'Geschwindigkeit'
-      ClientHeight = 40
-      ClientWidth = 166
+      ClientHeight = 51
+      ClientWidth = 208
       ParentFont = False
       TabOrder = 2
       object SpeedTrackBar: TTrackBar
         Left = 0
-        Height = 25
+        Height = 31
         Top = 0
-        Width = 115
+        Width = 150
         Frequency = 2
         Max = 35
         OnChange = SpeedTrackBarChange
@@ -499,10 +498,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         TabOrder = 0
       end
       object resetButton: TButton
-        Left = 115
-        Height = 25
+        Left = 150
+        Height = 31
         Top = 0
-        Width = 51
+        Width = 58
         Align = alRight
         AutoSize = True
         Caption = 'reset'
@@ -512,9 +511,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
       object speedLabel: TLabel
         Left = 0
-        Height = 15
-        Top = 25
-        Width = 166
+        Height = 20
+        Top = 31
+        Width = 208
         Align = alBottom
         Alignment = taCenter
         Caption = 'gestoppt'
@@ -524,31 +523,31 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     end
   end
   object Splitter1: TSplitter
-    Left = 170
-    Height = 605
+    Left = 212
+    Height = 686
     Top = 0
-    Width = 5
+    Width = 6
   end
   object SimTimer: TTimer
     Enabled = False
     Interval = 100
     OnTimer = SimTimerTimer
-    Left = 392
-    Top = 24
+    Left = 490
+    Top = 30
   end
   object SaveDialog1: TSaveDialog
     Filter = 'Workspaces|*.workspace'
-    Left = 336
-    Top = 80
+    Left = 420
+    Top = 100
   end
   object OpenDialog1: TOpenDialog
     Filter = 'Workspaces|*.workspace'
-    Left = 336
-    Top = 24
+    Left = 420
+    Top = 30
   end
   object GateListBoxPopupMenu: TPopupMenu
-    Left = 264
-    Top = 80
+    Left = 330
+    Top = 100
     object MenuItem2: TMenuItem
       Caption = 'Eintrag löschen'
       OnClick = MenuItem2Click
@@ -557,14 +556,18 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       Caption = 'Bearbeiten'
       OnClick = MenuItem3Click
     end
+    object miEditCopyOfPaletteEntry: TMenuItem
+      Caption = '&Kopie bearbeiten'
+      OnClick = miEditCopyOfPaletteEntryClick
+    end
     object miAnalyze: TMenuItem
       Caption = 'Analysieren...'
       OnClick = miAnalyzeClick
     end
   end
   object MainMenu: TMainMenu
-    Left = 264
-    Top = 24
+    Left = 330
+    Top = 30
     object MenuItem1: TMenuItem
       Caption = '&Datei'
       object miNew: TMenuItem
@@ -593,6 +596,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         Caption = 'Zur &Palette hinzufügen'
         OnClick = miAddToPaletteClick
       end
+      object miAddToDrafts: TMenuItem
+        Caption = 'Als &Entwurf speichern'
+        OnClick = miAddToDraftsClick
+      end
       object miAnalyzeBoard: TMenuItem
         Caption = '&Analysieren...'
         OnClick = miAnalyzeBoardClick
@@ -600,6 +607,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       object miRewire: TMenuItem
         Caption = 'Verkabelung neu berechnen'
         OnClick = miRewireClick
+      end
+      object miDrafts: TMenuItem
+        Caption = 'Enwürfe...'
+        OnClick = miDraftsClick
       end
     end
     object MenuItem7: TMenuItem
@@ -642,8 +653,8 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   end
   object AnyGatePopupMenu: TPopupMenu
     OnPopup = AnyGatePopupMenuPopup
-    Left = 264
-    Top = 152
+    Left = 330
+    Top = 190
     object miGateProperties: TMenuItem
       Caption = 'Eigenschaften...'
       OnClick = miGatePropertiesClick

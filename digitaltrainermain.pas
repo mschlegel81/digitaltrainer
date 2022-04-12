@@ -6,7 +6,7 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
-  StdCtrls, Buttons, Menus,baseGate,logicGates,propertyDialog,analysisDialog;
+  StdCtrls, Buttons, Menus,baseGate,logicGates,propertyDialog,analysisDialog,draftFormUnit;
 
 TYPE
 
@@ -21,6 +21,9 @@ TYPE
     ButtonAdd1to8: TButton;
     ButtonAdd4to1: TButton;
     ButtonAddConstantFalse: TButton;
+    miDrafts: TMenuItem;
+    miAddToDrafts: TMenuItem;
+    miEditCopyOfPaletteEntry: TMenuItem;
     miUndo: TMenuItem;
     miRedo: TMenuItem;
     miRewire: TMenuItem;
@@ -107,6 +110,7 @@ TYPE
     PROCEDURE FormResize(Sender: TObject);
     PROCEDURE MenuItem2Click(Sender: TObject);
     PROCEDURE MenuItem3Click(Sender: TObject);
+    PROCEDURE miAddToDraftsClick(Sender: TObject);
     PROCEDURE miAddToPaletteClick(Sender: TObject);
     PROCEDURE miAnalyzeBoardClick(Sender: TObject);
     PROCEDURE miAnalyzeClick(Sender: TObject);
@@ -114,6 +118,8 @@ TYPE
     PROCEDURE miCopyClick(Sender: TObject);
     PROCEDURE miDeleteClick(Sender: TObject);
     PROCEDURE miDeselectAllClick(Sender: TObject);
+    PROCEDURE miDraftsClick(Sender: TObject);
+    PROCEDURE miEditCopyOfPaletteEntryClick(Sender: TObject);
     PROCEDURE miGatePropertiesClick(Sender: TObject);
     PROCEDURE miLoadClick(Sender: TObject);
     PROCEDURE miNewClick(Sender: TObject);
@@ -271,6 +277,13 @@ PROCEDURE TDigitaltrainerMainForm.MenuItem3Click(Sender: TObject);
     restartTimerCallback;
   end;
 
+PROCEDURE TDigitaltrainerMainForm.miAddToDraftsClick(Sender: TObject);
+  begin
+    workspace.addCurrentBoardToDrafts();
+    updateSidebar;
+    workspace.currentBoard^.Repaint;
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
   begin
     workspace.addCurrentBoardToPalette;
@@ -309,6 +322,19 @@ PROCEDURE TDigitaltrainerMainForm.miDeleteClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miDeselectAllClick(Sender: TObject);
   begin
     workspace.currentBoard^.setSelectForAll(false);
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miDraftsClick(Sender: TObject);
+  begin
+    draftsForm.updateAndShow(@workspace);
+    updateSidebar;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miEditCopyOfPaletteEntryClick(Sender: TObject);
+  begin
+    workspace.editPaletteEntry(CustomGateListBox.ItemIndex,true);
+    updateSidebar;
+    restartTimerCallback;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miGatePropertiesClick(Sender: TObject);
