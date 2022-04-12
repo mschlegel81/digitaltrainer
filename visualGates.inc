@@ -161,8 +161,8 @@ PROCEDURE T_visualGate.updateIoVisuals;
     end;
     for i:=0 to numberOfOutputs-1 do begin
       w:=behavior^.getOutput(i);
-      if w.width>1 then   shapes[shapeIndex].Brush.color:=clBlue;
-      case w.bit[0]  of
+      if w.width>1 then   shapes[shapeIndex].Brush.color:=clBlue
+      else case w.bit[0]  of
         tsv_true        : shapes[shapeIndex].Brush.color:=clLime;
         tsv_false       : shapes[shapeIndex].Brush.color:=clGray;
         tsv_undetermined: shapes[shapeIndex].Brush.color:=clBtnFace;
