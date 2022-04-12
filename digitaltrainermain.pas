@@ -465,11 +465,25 @@ CONST SPEED_SETTING:array[0..35] of record
            (timerInterval:  40; simSteps:5243; labelCaption:'131.1kHz'));
 
 PROCEDURE TDigitaltrainerMainForm.SimTimerTimer(Sender: TObject);
+  VAR  startTicks: qword;
   begin
-    if not(workspace.currentBoard^.simulateSteps(stepsPerTimer)) then begin
+    startTicks:=GetTickCount64;
+    if workspace.currentBoard^.simulateSteps(stepsPerTimer)
+    then begin
+      if GetTickCount64-startTicks>SPEED_SETTING[speedTrackBar.position].timerInterval
+      then begin
+        speedTrackBar.position:=speedTrackBar.position-1;
+        with SPEED_SETTING[speedTrackBar.position] do begin
+          SimTimer.interval :=timerInterval;
+          stepsPerTimer     :=simSteps;
+          speedLabel.caption:=labelCaption;
+        end;
+      end;
+
+    end else begin
       SimTimer.enabled:=false;
       speedLabel.caption:=SPEED_SETTING[speedTrackBar.position].labelCaption+' (pausiert)';
-    end;
+    end
   end;
 
 PROCEDURE TDigitaltrainerMainForm.restartTimerCallback;
