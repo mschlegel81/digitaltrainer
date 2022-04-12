@@ -99,7 +99,7 @@ TYPE
       PROCEDURE WireImageMouseMove(Sender: TObject; Shift: TShiftState; X,Y: integer);
       PROCEDURE WireImageMouseUp  (Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
       FUNCTION wrapGate(CONST origin:T_point;CONST g:P_abstractGate):P_visualGate;
-      FUNCTION clone:P_circuitBoard;
+      FUNCTION clone(CONST includeWirePaths:boolean):P_circuitBoard;
       FUNCTION usesBoard(CONST other:P_circuitBoard):boolean;
     public
       CONSTRUCTOR create;
@@ -899,8 +899,8 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board: P_circuitBoard; CONST fullCopy:b
       setLength(logicWires[result].wires,0);
     end;
 
-  PROCEDURE addWire(CONST logicWireIndex:longint; CONST clipboardSink:T_visualGateConnector);
-    VAR k:longint;
+  PROCEDURE addWire(CONST logicWireIndex:longint; CONST clipboardSink:T_visualGateConnector; CONST path:T_wirePath);
+    VAR k,i:longint;
     begin
       k:=length(logicWires[logicWireIndex].wires);
       setLength(logicWires[logicWireIndex].wires,k+1);
@@ -908,7 +908,10 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board: P_circuitBoard; CONST fullCopy:b
         sink.gate :=gates[indexOfFirstGateAdded+clipboardSink.gateIndex(board)];
         sink.index:=clipboardSink.index;
         marked:=false;
-        setLength(visual,0);
+        if fullCopy then begin
+          setLength(visual,length(path));
+          for i:=0 to length(path)-1 do visual[i]:=path[i];
+        end else setLength(visual,0);
       end;
     end;
 
@@ -943,7 +946,7 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board: P_circuitBoard; CONST fullCopy:b
     for i:=0 to length(board^.logicWires)-1 do begin
       lwi:=addLogicWire(board^.logicWires[i].source,board^.logicWires[i].width);
       for j:=0 to length(board^.logicWires[i].wires)-1 do begin
-        addWire(lwi,board^.logicWires[i].wires[j].sink);
+        addWire(lwi,board^.logicWires[i].wires[j].sink,board^.logicWires[i].wires[j].visual);
         anyWireAdded:=true;
       end;
     end;
@@ -1265,7 +1268,7 @@ PROCEDURE T_circuitBoard.saveStateToUndoList;
   begin
     k:=length(GUI.undoList);
     setLength(GUI.undoList,k+1);
-    GUI.undoList[k]:=clone;
+    GUI.undoList[k]:=clone(true);
 
     if length(GUI.undoList)+length(GUI.redoList)>MAX_UNDO then begin
       dispose(GUI.undoList[0],destroy);
@@ -1281,14 +1284,13 @@ PROCEDURE T_circuitBoard.performUndo;
 
     k:=length(GUI.redoList);
     setLength(GUI.redoList,k+1);
-    GUI.redoList[k]:=clone;
+    GUI.redoList[k]:=clone(true);
 
     k:=length(GUI.undoList)-1;
     pasteFrom(GUI.undoList[k],true);
     dispose(GUI.undoList[k],destroy);
     setLength(GUI.undoList,k);
 
-    rewire;
     Repaint;
     GUI.anyChangeCallback();
   end;
@@ -1300,14 +1302,13 @@ PROCEDURE T_circuitBoard.performRedo;
 
     k:=length(GUI.undoList);
     setLength(GUI.undoList,k+1);
-    GUI.undoList[k]:=clone;
+    GUI.undoList[k]:=clone(true);
 
     k:=length(GUI.redoList)-1;
     pasteFrom(GUI.redoList[k],true);
     dispose(GUI.redoList[k],destroy);
     setLength(GUI.redoList,k);
 
-    rewire;
     Repaint;
     GUI.anyChangeCallback();
   end;
@@ -1400,13 +1401,22 @@ PROCEDURE T_circuitBoard.WireImageMouseUp(Sender: TObject;
     end;
   end;
 
-FUNCTION T_circuitBoard.clone: P_circuitBoard;
+FUNCTION T_circuitBoard.clone(CONST includeWirePaths:boolean): P_circuitBoard;
   FUNCTION convert(CONST connector:T_visualGateConnector; CONST tgt:P_circuitBoard):T_visualGateConnector;
     VAR gateIndex:longint=0;
     begin
       while (gateIndex<length(gates)) and (connector.gate<>gates[gateIndex]) do inc(gateIndex);
       result.gate:=tgt^.gates[gateIndex];
       result.index:=connector.index;
+    end;
+
+  PROCEDURE copyPath(CONST source:T_wirePath; VAR target:T_wirePath);
+    VAR i:longint;
+    begin
+      if includeWirePaths then begin
+        setLength(target,length(source));
+        for i:=0 to length(target)-1 do target[i]:=source[i];
+      end else setLength(target,0);
     end;
 
   VAR i,j:longint;
@@ -1431,6 +1441,8 @@ FUNCTION T_circuitBoard.clone: P_circuitBoard;
         setLength(result^.logicWires[i].wires[j].visual,0);
         result^.logicWires[i].wires[j].sink:=
         convert(logicWires[i].wires[j].sink,result);
+        copyPath(logicWires[i].wires[j].visual,
+         result^.logicWires[i].wires[j].visual);
       end;
     end;
   end;
@@ -1472,7 +1484,7 @@ PROCEDURE T_workspace.editPaletteEntry(CONST index:longint);
   begin
     if (index<0) or (index>length(paletteEntries)) then exit;
     previous:=currentBoard;
-    currentBoard:=paletteEntries[index]^.clone;
+    currentBoard:=paletteEntries[index]^.clone(false);
     currentBoard^.attachGUI(
       previous^.GUI.zoom,
       previous^.GUI.container,

@@ -355,14 +355,19 @@ PROCEDURE TDigitaltrainerMainForm.miQuitClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miRedoClick(Sender: TObject);
   begin
+    BeginFormUpdate;
     workspace.currentBoard^.performRedo;
     updateSidebar;
+    EndFormUpdate;
+    workspace.currentBoard^.Repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miRewireClick(Sender: TObject);
   begin
     workspace.currentBoard^.rewire(true);
+    BeginFormUpdate;
     workspace.currentBoard^.Repaint;
+    EndFormUpdate;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miSaveClick(Sender: TObject);
@@ -377,8 +382,11 @@ PROCEDURE TDigitaltrainerMainForm.miSelectAllClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
   begin
+    BeginFormUpdate;
     workspace.currentBoard^.performUndo;
     updateSidebar;
+    EndFormUpdate;
+    workspace.currentBoard^.Repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.resetButtonClick(Sender: TObject);
