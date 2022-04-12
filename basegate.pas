@@ -693,15 +693,18 @@ FUNCTION T_circuitBoard.simulateSteps(CONST count: longint): boolean;
   VAR gate:P_visualGate;
       i,j,step:longint;
       output:T_wireValue;
+      anythingHappenedInThisStep:boolean=true;
   begin
     result:=false;
-    for step:=1 to count do begin
-      for gate in gates do result:=gate^.behavior^.simulateStep or result;
+    for step:=1 to count do if anythingHappenedInThisStep then begin
+      anythingHappenedInThisStep:=false;
+      for gate in gates do anythingHappenedInThisStep:=gate^.behavior^.simulateStep or anythingHappenedInThisStep;
       for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
         output:=source.gate^.behavior^.getOutput(source.index);
         if isFullyDefined(output) then for j:=0 to length(wires)-1 do
-          result:=wires[j].sink.gate^.behavior^.setInput(wires[j].sink.index,output) or result;
+          anythingHappenedInThisStep:=wires[j].sink.gate^.behavior^.setInput(wires[j].sink.index,output) or anythingHappenedInThisStep;
       end;
+      result:=result or anythingHappenedInThisStep;
     end;
     for gate in gates do gate^.updateIoVisuals;
   end;
