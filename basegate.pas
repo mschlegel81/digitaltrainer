@@ -10,7 +10,7 @@ CONST defaultBoardCaption='unbenannt';
       MultiBitColor  :TColor=$FF8800;
       TrueColor      :TColor=$00FF00;
       FalseColor     :TColor=$FFFFFF;
-      BackgroundColor:TColor=$EEEEEE;
+      BackgroundColor:TColor=$DDDDDD;
 TYPE
 {$define includeInterface}
   F_simpleCallback=PROCEDURE of object;
@@ -30,7 +30,8 @@ TYPE
 
   T_workspace=object(T_serializable)
     paletteEntries:array of P_circuitBoard;
-    currentBoard:P_circuitBoard;
+    draftEntries  :array of P_circuitBoard;
+    currentBoard  :P_circuitBoard;
 
     CONSTRUCTOR create;
     DESTRUCTOR destroy;
@@ -40,10 +41,14 @@ TYPE
     FUNCTION getSerialVersion:dword; virtual;
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
-    PROCEDURE addCurrentBoardToPalette;
 
+    PROCEDURE addCurrentBoardToPalette;
     PROCEDURE removePaletteEntry(CONST index:longint);
-    PROCEDURE editPaletteEntry(CONST index:longint);
+    PROCEDURE editPaletteEntry(CONST index:longint; CONST resetPaletteIndex:boolean);
+
+    PROCEDURE addCurrentBoardToDrafts(CONST indexToOverwrite:longint=maxLongint);
+    PROCEDURE removeDraftEntry(CONST index:longint);
+    PROCEDURE editDraftEntry  (CONST index:longint);
   end;
 
   T_wireTrip=record
@@ -105,6 +110,7 @@ TYPE
       FUNCTION wrapGate(CONST origin:T_point;CONST g:P_abstractGate):P_visualGate;
       FUNCTION clone(CONST includeWirePaths:boolean):P_circuitBoard;
       FUNCTION usesBoard(CONST other:P_circuitBoard):boolean;
+      PROCEDURE enumerateIo;
     public
       CONSTRUCTOR create;
       DESTRUCTOR destroy;  virtual;
@@ -177,6 +183,7 @@ PROCEDURE T_visualGateConnector.saveToStream(CONST board: P_circuitBoard; VAR st
 CONSTRUCTOR T_workspace.create;
   begin
     setLength(paletteEntries,0);
+    setLength(draftEntries,0);
     new(currentBoard,create);
   end;
 
@@ -241,7 +248,7 @@ PROCEDURE T_workspace.addCustomGate(CONST index: longint);
 
 FUNCTION T_workspace.getSerialVersion: dword;
   begin
-    result:=5;
+    result:=6;
   end;
 
 FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
@@ -265,6 +272,20 @@ FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): b
         end;
       end;
     end else exit(false);
+    count:=stream.readNaturalNumber;
+    result:=true;
+    if (count<maxLongint) then begin
+      for i:=0 to longint(count)-1 do begin
+        new(board,create);
+        if board^.loadFromStream(@self,stream) then begin
+          setLength(draftEntries,i+1);
+          draftEntries[i]:=board;
+        end else begin
+          dispose(board,destroy);
+          exit(false);
+        end;
+      end;
+    end else exit(false);
     result:=currentBoard^.loadFromStream(@self,stream);
     result:=result and stream.allOkay;
   end;
@@ -275,6 +296,8 @@ PROCEDURE T_workspace.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
     inherited;
     stream.writeNaturalNumber(length(paletteEntries));
     for i:=0 to length(paletteEntries)-1 do paletteEntries[i]^.saveToStream(stream);
+    stream.writeNaturalNumber(length(draftEntries));
+    for i:=0 to length(draftEntries)-1 do draftEntries[i]^.saveToStream(stream);
     currentBoard^.saveToStream(stream);
   end;
 
@@ -339,6 +362,44 @@ PROCEDURE T_workspace.addCurrentBoardToPalette;
       paletteEntries[i]:=newPaletteEntry;
       newPaletteEntry^.paletteIndex:=i;
     end;
+
+    //bubble up...
+    while (i>0) and not(paletteEntries[i]^.usesBoard(paletteEntries[i-1])) do begin
+      newPaletteEntry    :=paletteEntries[i-1];
+      paletteEntries[i-1]:=paletteEntries[i];
+      paletteEntries[i  ]:=newPaletteEntry;
+
+      paletteEntries[i-1]^.paletteIndex:=i-1;
+      paletteEntries[i  ]^.paletteIndex:=i;
+      dec(i);
+    end;
+  end;
+
+PROCEDURE T_workspace.addCurrentBoardToDrafts(CONST indexToOverwrite:longint=maxLongint);
+  VAR i:longint;
+      newDraft: P_circuitBoard;
+  begin
+    if (indexToOverwrite<0) or (indexToOverwrite>length(draftEntries))
+    then begin
+      i:=length(draftEntries);
+      setLength(draftEntries,i+1);
+    end
+    else begin
+      i:=indexToOverwrite;
+      dispose(draftEntries[i],destroy);
+    end;
+
+    newDraft:=currentBoard;
+    currentBoard   :=nil;
+    new(currentBoard,create);
+    currentBoard^.attachGUI(
+      newDraft^.GUI.zoom,
+      newDraft^.GUI.container,
+      newDraft^.GUI.wireImage,
+      newDraft^.GUI.gateContextMenu,
+      newDraft^.GUI.anyChangeCallback);
+    newDraft^.detachGUI;
+    draftEntries[i]:=newDraft;
   end;
 
 { T_circuitBoard }
@@ -571,6 +632,24 @@ PROCEDURE T_circuitBoard.deleteInvalidWires;
     Repaint;
   end;
 
+PROCEDURE T_circuitBoard.enumerateIo;
+  VAR gate:P_visualGate;
+      inputIndex:longint=0;
+      outputIndex:longint=0;
+  begin
+    for gate in gates do
+    case gate^.behavior^.gateType of
+      gt_input: begin
+        P_inputGate(gate^.behavior)^.ioIndex:=inputIndex;
+        inc(inputIndex);
+      end;
+      gt_output: begin
+        P_outputGate(gate^.behavior)^.ioIndex:=outputIndex;
+        inc(outputIndex);
+      end;
+    end;
+  end;
+
 PROCEDURE T_circuitBoard.deleteMarkedElements;
   PROCEDURE removeAssociatedWires(CONST gateToDelete:P_visualGate);
     VAR i:longint;
@@ -594,24 +673,6 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
         end;
       end;
       setLength(logicWires,j);
-    end;
-
-  PROCEDURE enumerateIo;
-    VAR gate:P_visualGate;
-        inputIndex:longint=0;
-        outputIndex:longint=0;
-    begin
-      for gate in gates do
-      case gate^.behavior^.gateType of
-        gt_input: begin
-          P_inputGate(gate^.behavior)^.ioIndex:=inputIndex;
-          inc(inputIndex);
-        end;
-        gt_output: begin
-          P_outputGate(gate^.behavior)^.ioIndex:=outputIndex;
-          inc(outputIndex);
-        end;
-      end;
     end;
 
   VAR k,i:longint;
@@ -883,6 +944,7 @@ PROCEDURE T_circuitBoard.addGateWithoutChecking(CONST gateToAdd: P_visualGate);
     setLength(gates,length(gates)+1);
     gates[length(gates)-1]:=gateToAdd;
     gateToAdd^.ensureGuiElements;
+    if gateToAdd^.behavior^.gateType in [gt_input,gt_output] then enumerateIo;
   end;
 
 PROCEDURE T_circuitBoard.pasteFromClipboard;
@@ -1483,12 +1545,39 @@ PROCEDURE T_workspace.removePaletteEntry(CONST index:longint);
     setLength(paletteEntries,length(paletteEntries)-1);
   end;
 
-PROCEDURE T_workspace.editPaletteEntry(CONST index:longint);
+PROCEDURE T_workspace.removeDraftEntry(CONST index:longint);
+  VAR j:longint;
+  begin
+    if (index<0) or (index>length(draftEntries)) then exit;
+    dispose(draftEntries[index],destroy);
+    for j:=index to length(draftEntries)-2 do draftEntries[j]:=draftEntries[j+1];
+    setLength(draftEntries,length(draftEntries)-1);
+  end;
+
+PROCEDURE T_workspace.editPaletteEntry(CONST index:longint; CONST resetPaletteIndex:boolean);
   VAR previous:P_circuitBoard;
   begin
     if (index<0) or (index>length(paletteEntries)) then exit;
     previous:=currentBoard;
     currentBoard:=paletteEntries[index]^.clone(false);
+    if resetPaletteIndex then currentBoard^.paletteIndex:=-1;
+    currentBoard^.attachGUI(
+      previous^.GUI.zoom,
+      previous^.GUI.container,
+      previous^.GUI.wireImage,
+      previous^.GUI.gateContextMenu,
+      previous^.GUI.anyChangeCallback);
+    currentBoard^.rewire;
+    dispose(previous,destroy);
+    currentBoard^.Repaint;
+  end;
+
+PROCEDURE T_workspace.editDraftEntry  (CONST index:longint);
+  VAR previous:P_circuitBoard;
+  begin
+    if (index<0) or (index>length(draftEntries)) then exit;
+    previous:=currentBoard;
+    currentBoard:=draftEntries[index]^.clone(false);
     currentBoard^.attachGUI(
       previous^.GUI.zoom,
       previous^.GUI.container,

@@ -1,11 +1,11 @@
 object DigitaltrainerMainForm: TDigitaltrainerMainForm
-  Left = 1050
-  Height = 569
-  Top = 73
-  Width = 583
+  Left = 289
+  Height = 625
+  Top = 81
+  Width = 703
   Caption = 'Digitaltrainer'
-  ClientHeight = 549
-  ClientWidth = 583
+  ClientHeight = 605
+  ClientWidth = 703
   Menu = MainMenu
   OnCreate = FormCreate
   OnDestroy = FormDestroy
@@ -16,33 +16,33 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   object ScrollBox1: TScrollBox
     Cursor = crCross
     Left = 175
-    Height = 549
+    Height = 605
     Top = 0
-    Width = 408
+    Width = 528
     HorzScrollBar.Page = 90
     VertScrollBar.Page = 90
     Align = alClient
-    ClientHeight = 545
-    ClientWidth = 404
+    ClientHeight = 601
+    ClientWidth = 524
     ParentFont = False
     TabOrder = 0
     object WireImage: TImage
       Cursor = crCross
       Left = 0
-      Height = 545
+      Height = 601
       Top = 0
-      Width = 404
+      Width = 524
       Align = alClient
     end
   end
   object Panel1: TPanel
     Left = 0
-    Height = 549
+    Height = 605
     Top = 0
     Width = 170
     Align = alLeft
     BevelOuter = bvNone
-    ClientHeight = 549
+    ClientHeight = 605
     ClientWidth = 170
     ParentFont = False
     TabOrder = 1
@@ -133,18 +133,18 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     end
     object GroupBox5: TGroupBox
       Left = 0
-      Height = 309
+      Height = 365
       Top = 240
       Width = 170
       Align = alClient
       Caption = 'Gatter hinzufügen...'
-      ClientHeight = 289
+      ClientHeight = 345
       ClientWidth = 166
       ParentFont = False
       TabOrder = 4
       object CustomGateListBox: TListBox
         Left = 0
-        Height = 114
+        Height = 170
         Top = 175
         Width = 166
         Align = alClient
@@ -525,7 +525,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   end
   object Splitter1: TSplitter
     Left = 170
-    Height = 549
+    Height = 605
     Top = 0
     Width = 5
   end

@@ -266,7 +266,7 @@ PROCEDURE TDigitaltrainerMainForm.MenuItem2Click(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.MenuItem3Click(Sender: TObject);
   begin
-    workspace.editPaletteEntry(CustomGateListBox.ItemIndex);
+    workspace.editPaletteEntry(CustomGateListBox.ItemIndex,false);
     updateSidebar;
     restartTimerCallback;
   end;

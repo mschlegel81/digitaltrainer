@@ -662,8 +662,14 @@ FUNCTION T_visualGate.getioBlock: T_ioBlock;
 
 FUNCTION T_visualGate.nextGateAfter:T_point;
   begin
-    result[0]:=origin[0];
-    result[1]:=origin[1]+size[1];
+    if origin[0]+size[0]+2<origin[1]+size[1]
+    then begin
+      result[0]:=origin[0]+size[0]+2;
+      result[1]:=origin[1];
+    end else begin
+      result[0]:=origin[0];
+      result[1]:=origin[1]+size[1];
+    end;
   end;
 
 {$endif}
