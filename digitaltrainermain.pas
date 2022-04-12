@@ -153,6 +153,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     workspace.create;
     workspace.loadFromFile(workspaceFilename);
     workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
+    ScrollBox1.color:=BackgroundColor;
     updateSidebar;
   end;
 

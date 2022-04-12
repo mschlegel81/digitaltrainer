@@ -3,7 +3,6 @@ object analysisForm: TanalysisForm
   Height = 619
   Top = 176
   Width = 697
-  BorderStyle = bsDialog
   Caption = 'Analyse'
   ClientHeight = 619
   ClientWidth = 697

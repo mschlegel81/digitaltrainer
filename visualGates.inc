@@ -141,32 +141,32 @@ PROCEDURE T_visualGateForInput.disposeGuiElements;
   end;
 
 PROCEDURE T_visualGate.updateIoVisuals;
+  FUNCTION colorOf(CONST w:T_wireValue):TColor;
+    begin
+      if w.width>1 then begin
+        if isFullyDefined(w)
+        then result:=MultiBitColor
+        else result:=BackgroundColor;
+      end else case w.bit[0] of
+        tsv_true        : result:=TrueColor;
+        tsv_false       : result:=FalseColor;
+        tsv_undetermined: result:=BackgroundColor;
+      end;
+    end;
+
   VAR shapeIndex:longint=1;
       i:longint;
-      w:T_wireValue;
   begin
     if (length(shapes)=0) then begin
       ensureGuiElements;
       Repaint;
     end;
     for i:=0 to numberOfInputs-1 do begin
-      w:=behavior^.getInput(i);
-      if w.width>1 then   shapes[shapeIndex].Brush.color:=clBlue
-      else case w.bit[0] of
-        tsv_true        : shapes[shapeIndex].Brush.color:=clLime;
-        tsv_false       : shapes[shapeIndex].Brush.color:=clGray;
-        tsv_undetermined: shapes[shapeIndex].Brush.color:=clBtnFace;
-      end;
+      shapes[shapeIndex].Brush.color:=colorOf(behavior^.getInput(i));
       inc(shapeIndex);
     end;
     for i:=0 to numberOfOutputs-1 do begin
-      w:=behavior^.getOutput(i);
-      if w.width>1 then   shapes[shapeIndex].Brush.color:=clBlue
-      else case w.bit[0]  of
-        tsv_true        : shapes[shapeIndex].Brush.color:=clLime;
-        tsv_false       : shapes[shapeIndex].Brush.color:=clGray;
-        tsv_undetermined: shapes[shapeIndex].Brush.color:=clBtnFace;
-      end;
+      shapes[shapeIndex].Brush.color:=colorOf(behavior^.getOutput(i));
       inc(shapeIndex);
     end;
   end;

@@ -2,11 +2,15 @@ UNIT baseGate;
 {$mode objfpc}{$H+}
 INTERFACE
 USES ExtCtrls, Classes, Controls, StdCtrls, UITypes, wiringUtil,
-     serializationUtil, logicGates,Menus;
+     serializationUtil, logicGates,Graphics,Menus;
 
 CONST defaultBoardCaption='unbenannt';
       TRI_STATE_NOT:array[T_triStateValue] of T_triStateValue=(tsv_true,tsv_false,tsv_false);
       MAX_UNDO=32;
+      MultiBitColor  :TColor=$FF8800;
+      TrueColor      :TColor=$00FF00;
+      FalseColor     :TColor=$FFFFFF;
+      BackgroundColor:TColor=$EEEEEE;
 TYPE
 {$define includeInterface}
   F_simpleCallback=PROCEDURE of object;
@@ -135,7 +139,7 @@ TYPE
 
 {$undef includeInterface}
 IMPLEMENTATION
-USES sysutils,math,Graphics,myGenerics,Dialogs;
+USES sysutils,math,myGenerics,Dialogs;
 {$define includeImplementation}
 {$i visualGates.inc}
 {$i customGates.inc}
@@ -677,7 +681,7 @@ PROCEDURE T_circuitBoard.fixWireImageSize;
       width +=1; width *=GUI.zoom; width +=max(1,round(GUI.zoom*0.15));
       height+=1; height*=GUI.zoom; height+=max(1,round(GUI.zoom*0.15));
       GUI.wireImage.SetBounds(0,0,width,height);
-      GUI.wireImage.picture.Bitmap.Canvas.Brush.color:=clBtnFace;
+      GUI.wireImage.picture.Bitmap.Canvas.Brush.color:=BackgroundColor;
       GUI.wireImage.picture.Bitmap.setSize(width,height);
       GUI.wireImage.picture.Bitmap.Canvas.clear;
     end;
@@ -1035,7 +1039,7 @@ PROCEDURE T_circuitBoard.drawAllWires;
   begin
     if GUI.wireImage=nil then exit;
     with GUI.wireImage.Canvas do begin
-      Brush.color:=clBtnFace;
+      Brush.color:=BackgroundColor;
       clear;
       for i:=0 to length(logicWires)-1 do begin
         case logicWires[i].width of
@@ -1052,7 +1056,7 @@ PROCEDURE T_circuitBoard.drawAllWires;
             gapWidth :=max(1,round(GUI.zoom*0.55));
           end;
         end;
-        Pen.color:=clBtnFace; Pen.width:=gapWidth;
+        Pen.color:=BackgroundColor; Pen.width:=gapWidth;
         drawWires(i,false);
 
         Pen.width:=wireWidth;
@@ -1192,7 +1196,7 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
       start:=b.source.gate^.getOutputPositionInGridSize(b.source.index);
       for trip in b.wires do bDist+=maxNormDistance(start,trip.sink.gate^.getInputPositionInGridSize(trip.sink.index));
 
-      result:=aDist>bDist;
+      result:=aDist<bDist;
     end;
 
   PROCEDURE ensureSorting;
