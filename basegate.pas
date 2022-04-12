@@ -42,6 +42,19 @@ TYPE
     PROCEDURE editPaletteEntry(CONST index:longint);
   end;
 
+  T_wireTrip=record
+    sink:   T_visualGateConnector;
+    visual: T_wirePath;
+    marked: boolean;
+  end;
+
+  T_logicWire=record
+    //One source can be associated with many sinks
+    source:   T_visualGateConnector;
+    width:byte; //Nonpersistent!
+    wires:array of T_wireTrip;
+  end;
+
   T_repositionOutput=(ro_positionUnchanged,ro_positionFound,ro_noPositionFound);
   {$i customGates.inc}
   T_circuitBoard=object
@@ -50,6 +63,9 @@ TYPE
       description:string;
       paletteIndex:longint;
     private
+      gates      :array of P_visualGate;
+      logicWires:array of T_logicWire;
+
       GUI:record
         zoom:longint;
         container:TWinControl;
@@ -61,19 +77,6 @@ TYPE
         selectionStart:T_point;
         Clipboard:P_circuitBoard;
         undoList,redoList:array of P_circuitBoard;
-      end;
-
-      gates      :array of P_visualGate;
-
-      //One source can be associated with many sinks
-      logicWires:array of record
-        source:   T_visualGateConnector;
-        width:byte; //Nonpersistent!
-        wires:array of record
-          sink:   T_visualGateConnector;
-          visual: T_wirePath; //Nonpersistent!
-          marked: boolean;    //Nonpersistent!
-        end;
       end;
 
       incompleteWire:record
@@ -1169,6 +1172,38 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previe
   end;
 
 PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
+  FUNCTION hasHigherPrio(CONST a,b:T_logicWire):boolean;
+    VAR aDist:int64=0;
+        bDist:int64=0;
+        trip:T_wireTrip;
+        start:T_point;
+    begin
+      if length(a.wires)>length(b.wires) then exit(true) else
+      if length(a.wires)<length(b.wires) then exit(false);
+
+      start:=a.source.gate^.getOutputPositionInGridSize(a.source.index);
+      for trip in a.wires do aDist+=maxNormDistance(start,trip.sink.gate^.getInputPositionInGridSize(trip.sink.index));
+      start:=b.source.gate^.getOutputPositionInGridSize(b.source.index);
+      for trip in b.wires do bDist+=maxNormDistance(start,trip.sink.gate^.getInputPositionInGridSize(trip.sink.index));
+
+      result:=aDist>bDist;
+    end;
+
+  PROCEDURE ensureSorting;
+    VAR alreadySorted:boolean=true;
+        i,j:longint;
+        tmp:T_logicWire;
+    begin
+      for i:=0 to length(logicWires)-2 do alreadySorted:=alreadySorted and not(hasHigherPrio(logicWires[i+1],logicWires[i]));
+      if alreadySorted then exit;
+      for j:=1 to length(logicWires)-1 do
+      for i:=0 to j-1 do if hasHigherPrio(logicWires[j],logicWires[i]) then begin
+        tmp          :=logicWires[i];
+        logicWires[i]:=logicWires[j];
+        logicWires[j]:=tmp;
+      end;
+    end;
+
   VAR connector:T_visualGateConnector;
       i,j:longint;
 
@@ -1181,7 +1216,7 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
       paths:T_wirePathArray;
   begin
     if wireGraph<>nil then dispose(wireGraph,destroy);
-    //TODO: If forced, logic wires may be re-sorted in a "smart" way...
+    if forced then ensureSorting;
 
     connector.gate:=nil;
     connector.index:=0;
