@@ -1,10 +1,12 @@
 {$ifdef includeInterface}
+T_simpleConnection=record source,sink:T_gateConnector end;
+
 P_customGate=^T_customGate;
 T_customGate=object(T_abstractGate)
   prototype  :P_circuitBoard;
   gates      :array of P_abstractGate;
   name       :string;
-  connections:array of record source,sink:T_gateConnector end;
+  connections:array of T_simpleConnection;
   inputConnections :array of record
                       caption:string;
                       width:byte;
@@ -35,7 +37,13 @@ end;
 {$endif}
 {$ifdef includeImplementation}
 CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
-  FUNCTION myCorrespondingGate(CONST original:T_visualGateConnector):T_gateConnector;
+  TYPE T_annotatedConnection=record
+         con:T_simpleConnection;
+         srcIdx,tgtIdx:longint;
+         level:longint;
+       end;
+
+  FUNCTION myCorrespondingGate(CONST original:T_visualGateConnector; OUT gateIndex:longint):T_gateConnector;
     VAR i:longint;
     begin
       for i:=0 to length(origin^.gates)-1 do begin
@@ -43,16 +51,21 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
         then begin
           result.gate:=gates[i];
           result.index:=original.index;
+          gateIndex:=i;
           exit(result);
         end;
       end;
       raise Exception.create('Connection cannot be reproduced!');
     end;
 
-  PROCEDURE addConnection(CONST src,tgt:T_gateConnector);
+  VAR gateLevel:array of longint;
+      aConnections:array of T_annotatedConnection;
+  PROCEDURE addConnection(CONST src,tgt:T_gateConnector; CONST srcIdx,tgtIdx:longint);
     VAR k,ioIdx,i:longint;
     begin
       if src.gate^.gateType=gt_input then begin
+        gateLevel[srcIdx]:=-1;
+        gateLevel[tgtIdx]:=0;
         ioIdx:=P_inputGate(src.gate)^.ioIndex;
         if length(inputConnections)<=ioIdx then begin
           k:=length(inputConnections);
@@ -82,28 +95,47 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
         outputConnections[ioIdx].width    :=P_outputGate(tgt.gate)^.width;
         outputConnections[ioIdx].caption  :=P_outputGate(tgt.gate)^.caption;
       end else begin
-        k:=length(connections);
-        setLength(connections,k+1);
-        connections[k].source:=src;
-        connections[k].sink  :=tgt;
+        k:=length(aConnections);
+        setLength(aConnections,k+1);
+        gateLevel[tgtIdx]:=min(gateLevel[tgtIdx],gateLevel[srcIdx]+1);
+        aConnections[k].con.source:=src;
+        aConnections[k].con.sink  :=tgt;
+        aConnections[k].srcIdx:=srcIdx;
+        aConnections[k].tgtIdx:=tgtIdx;
       end;
     end;
 
-  FUNCTION anyOutputUndetermined:boolean;
-    VAR k,j:longint;
-        w:T_wireValue;
-
+  PROCEDURE sortConnectionsAndCleanup;
+    VAR anyGateLevelSet:boolean=true;
+        c:T_annotatedConnection;
+        i,j:longint;
     begin
-      for k:=0 to numberOfOutputs-1 do begin
-        w:=getOutput(k);
-        for j:=0 to w.width-1 do
-        if w.bit[j]=tsv_undetermined then exit(true);
+      while anyGateLevelSet do begin
+        anyGateLevelSet:=false;
+        for c in aConnections do with c do begin
+          if gateLevel[tgtIdx]>gateLevel[srcIdx]+1 then begin
+            anyGateLevelSet:=true;
+            gateLevel[tgtIdx]:=gateLevel[srcIdx]+1;
+          end;
+        end;
       end;
-      result:=false;
+      for i:=0 to length(aConnections)-1 do with aConnections[i] do level:=gateLevel[srcIdx];
+
+      for i:=1 to length(aConnections)-1 do for j:=0 to i-1 do if aConnections[i].level<aConnections[j].level then begin
+        c              :=aConnections[i];
+        aConnections[i]:=aConnections[j];
+        aConnections[j]:=c;
+      end;
+
+      setLength(connections,length(aConnections));
+      for i:=0 to length(connections)-1 do connections[i]:=aConnections[i].con;
+      setLength(aConnections,0);
+      setLength(gateLevel,0);
     end;
 
   VAR i,j:longint;
       src,tgt:T_gateConnector;
+      srcIndex,tgtIndex:longint;
   begin
     inherited create;
     prototype:=origin;
@@ -111,17 +143,22 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
     setLength(connections      ,0);
     setLength(inputConnections ,0);
     setLength(outputConnections,0);
-    setLength(gates,length(origin^.gates));
+    setLength(aConnections,0);
+    setLength(gateLevel,length(origin^.gates));
+    for i:=0 to length(gateLevel)-1 do gateLevel[i]:=length(gateLevel);
+    setLength(gates    ,length(origin^.gates));
     for i:=0 to length(gates)-1 do gates[i]:=origin^.gates[i]^.behavior^.clone;
     name:=origin^.name;
 
     for i:=0 to length(origin^.logicWires)-1 do begin
-      src:=myCorrespondingGate(origin^.logicWires[i].source);
+      src:=myCorrespondingGate(origin^.logicWires[i].source,srcIndex);
       for j:=0 to length(origin^.logicWires[i].wires)-1 do begin
-        tgt:=myCorrespondingGate(origin^.logicWires[i].wires[j].sink);
-        addConnection(src,tgt);
+        tgt:=myCorrespondingGate(origin^.logicWires[i].wires[j].sink,tgtIndex);
+        addConnection(src,tgt,srcIndex,tgtIndex);
       end;
     end;
+
+    sortConnectionsAndCleanup;
 
     j:=0;
     //Actually we do not need input and output gates, so we drop them again...
@@ -188,8 +225,6 @@ FUNCTION T_customGate.simulateStep:boolean;
       i:longint;
       tgt:T_gateConnector;
       v:T_wireValue;
-      wired:boolean;
-      wireLoopCounter:longint;
   begin
     result:=false;
     for i:=0 to length(inputConnections)-1 do begin
@@ -198,15 +233,10 @@ FUNCTION T_customGate.simulateStep:boolean;
       then for tgt in inputConnections[i].goesTo do result:=tgt.setInputValue(v) or result;
     end;
     for gate in gates do result:=gate^.simulateStep or result;
-    for wireLoopCounter:=0 to 99 do begin
-      wired:=false;
-      for i:=0 to length(connections)-1 do with connections[i] do begin
-        v:=source.getOutputValue;
-        if isFullyDefined(v)
-        then wired:=sink.setInputValue(v) or wired;
-      end;
-      result:=result or wired;
-      if not wired then exit(result);
+    for i:=0 to length(connections)-1 do with connections[i] do begin
+      v:=source.getOutputValue;
+      if isFullyDefined(v)
+      then result:=sink.setInputValue(v) or result;
     end;
   end;
 

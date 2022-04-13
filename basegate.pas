@@ -761,24 +761,24 @@ FUNCTION T_circuitBoard.simulateSteps(CONST count: longint): boolean;
       i,j,wireLoopCounter,step:longint;
       output:T_wireValue;
       anythingHappenedInThisStep:boolean=true;
-      wired:boolean;
+      adapterValueChanged:boolean;
   begin
     result:=false;
     for step:=1 to count do if anythingHappenedInThisStep then begin
       anythingHappenedInThisStep:=false;
-
       for gate in gates do anythingHappenedInThisStep:=gate^.behavior^.simulateStep or anythingHappenedInThisStep;
-
-      wired:=true;
-      for wireLoopCounter:=0 to 99 do if wired then begin
-        wired:=false;
+      adapterValueChanged:=true;
+      for wireLoopCounter:=0 to 99 do if adapterValueChanged then begin
+        adapterValueChanged:=false;
         for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
           output:=source.gate^.behavior^.getOutput(source.index);
-          if isFullyDefined(output) then for j:=0 to length(wires)-1 do
-            wired:=wires[j].sink.gate^.behavior^.setInput(wires[j].sink.index,output)
-              or wired;
+          if isFullyDefined(output) then
+          for j:=0 to length(wires)-1 do
+          if wires[j].sink.gate^.behavior^.setInput(wires[j].sink.index,output) then begin
+            if wires[j].sink.gate^.behavior^.gateType in C_adatperTypes then adapterValueChanged:=true;
+            anythingHappenedInThisStep:=true;
+          end;
         end;
-        anythingHappenedInThisStep:=anythingHappenedInThisStep or wired;
       end;
       result:=result or anythingHappenedInThisStep;
     end;
