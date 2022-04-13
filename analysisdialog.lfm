@@ -1,7 +1,7 @@
 object analysisForm: TanalysisForm
-  Left = 757
+  Left = 422
   Height = 619
-  Top = 176
+  Top = 260
   Width = 697
   Caption = 'Analyse'
   ClientHeight = 619

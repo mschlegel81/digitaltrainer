@@ -9,9 +9,6 @@ USES
   StdCtrls,logicGates,baseGate;
 
 TYPE
-
-  { TanalysisForm }
-
   TanalysisForm = class(TForm)
     ResetCheckBox: TCheckBox;
     GroupBox1: TGroupBox;
@@ -45,13 +42,15 @@ IMPLEMENTATION
 { TanalysisForm }
 
 PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
+  CONST ONE_MINUTE=1/(24*60);
   VAR input:array of boolean;
       inputsGenerated:longint=0;
+      generationDeadline:double;
   FUNCTION nextInput:boolean;
     VAR k:longint=0;
     begin
       inc(inputsGenerated);
-      if (inputsGenerated>1000) or (length(input)=0) then exit(false);
+      if (inputsGenerated>1000) or (length(input)=0) or (now>generationDeadline) then exit(false);
       if rbSimOrdered.checked then begin
         //Counting up in binary ;-)
         repeat
@@ -85,6 +84,7 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       end;
       startTicks: qword;
   begin
+    generationDeadline:=now+ONE_MINUTE;
     startTicks:=GetTickCount64;
     StringGrid.rowCount:=1;
     c:=0;

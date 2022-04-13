@@ -1,6 +1,6 @@
 UNIT logicGates;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}
 
 INTERFACE
 CONST WIRE_MAX_WIDTH=8;
@@ -24,7 +24,8 @@ TYPE
               gt_adapter8to4,
               gt_true,
               gt_false);
-
+CONST C_adatperTypes:set of T_gateType=[gt_adapter1to4,gt_adapter4to1,gt_adapter1to8,gt_adapter8to1,gt_adapter4to8,gt_adapter8to4];
+TYPE
   T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
 
   T_wireValue=record
@@ -130,7 +131,6 @@ TYPE
       FUNCTION  gateType:T_gateType;     virtual;
   end;
 
-  { T_adapter }
   P_adapter=^T_adapter;
   T_adapter=object(T_abstractGate)
     private

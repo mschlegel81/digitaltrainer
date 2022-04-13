@@ -135,6 +135,7 @@ TYPE
     PROCEDURE speedTrackBarChange(Sender: TObject);
     PROCEDURE ZoomTrackBarChange(Sender: TObject);
   private
+    currentBoardIsDraft:boolean;
     workspace:T_workspace;
     visualGateForContextPopup:P_visualGate;
     stepsPerTimer:longint;
@@ -160,6 +161,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     workspace.loadFromFile(workspaceFilename);
     workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
     ScrollBox1.color:=BackgroundColor;
+    currentBoardIsDraft:=workspace.currentBoard^.paletteIndex<0;
     updateSidebar;
   end;
 
