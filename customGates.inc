@@ -188,6 +188,8 @@ FUNCTION T_customGate.simulateStep:boolean;
       i:longint;
       tgt:T_gateConnector;
       v:T_wireValue;
+      wired:boolean;
+      wireLoopCounter:longint;
   begin
     result:=false;
     for i:=0 to length(inputConnections)-1 do begin
@@ -196,10 +198,15 @@ FUNCTION T_customGate.simulateStep:boolean;
       then for tgt in inputConnections[i].goesTo do result:=tgt.setInputValue(v) or result;
     end;
     for gate in gates do result:=gate^.simulateStep or result;
-    for i:=0 to length(connections)-1 do with connections[i] do begin
-      v:=source.getOutputValue;
-      if isFullyDefined(v)
-      then result:=sink.setInputValue(v) or result;
+    for wireLoopCounter:=0 to 99 do begin
+      wired:=false;
+      for i:=0 to length(connections)-1 do with connections[i] do begin
+        v:=source.getOutputValue;
+        if isFullyDefined(v)
+        then wired:=sink.setInputValue(v) or wired;
+      end;
+      result:=result or wired;
+      if not wired then exit(result);
     end;
   end;
 

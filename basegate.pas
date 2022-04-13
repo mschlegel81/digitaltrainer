@@ -1,5 +1,5 @@
 UNIT baseGate;
-{$mode objfpc}{$H+}
+{$mode objfpc}
 INTERFACE
 USES ExtCtrls, Classes, Controls, StdCtrls, UITypes, wiringUtil,
      serializationUtil, logicGates,Graphics,Menus;
@@ -758,18 +758,27 @@ PROCEDURE T_circuitBoard.setZoom(CONST zoom: longint);
 
 FUNCTION T_circuitBoard.simulateSteps(CONST count: longint): boolean;
   VAR gate:P_visualGate;
-      i,j,step:longint;
+      i,j,wireLoopCounter,step:longint;
       output:T_wireValue;
       anythingHappenedInThisStep:boolean=true;
+      wired:boolean;
   begin
     result:=false;
     for step:=1 to count do if anythingHappenedInThisStep then begin
       anythingHappenedInThisStep:=false;
+
       for gate in gates do anythingHappenedInThisStep:=gate^.behavior^.simulateStep or anythingHappenedInThisStep;
-      for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
-        output:=source.gate^.behavior^.getOutput(source.index);
-        if isFullyDefined(output) then for j:=0 to length(wires)-1 do
-          anythingHappenedInThisStep:=wires[j].sink.gate^.behavior^.setInput(wires[j].sink.index,output) or anythingHappenedInThisStep;
+
+      wired:=true;
+      for wireLoopCounter:=0 to 99 do if wired then begin
+        wired:=false;
+        for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
+          output:=source.gate^.behavior^.getOutput(source.index);
+          if isFullyDefined(output) then for j:=0 to length(wires)-1 do
+            wired:=wires[j].sink.gate^.behavior^.setInput(wires[j].sink.index,output)
+              or wired;
+        end;
+        anythingHappenedInThisStep:=anythingHappenedInThisStep or wired;
       end;
       result:=result or anythingHappenedInThisStep;
     end;
