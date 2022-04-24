@@ -2,7 +2,7 @@ UNIT baseGate;
 {$mode objfpc}
 INTERFACE
 USES ExtCtrls, Classes, Controls, StdCtrls, UITypes, wiringUtil,
-     serializationUtil, logicGates,Graphics,Menus;
+     serializationUtil, logicGates,Graphics,Menus,ComCtrls;
 
 CONST defaultBoardCaption='unbenannt';
       TRI_STATE_NOT:array[T_triStateValue] of T_triStateValue=(tsv_true,tsv_false,tsv_false);
@@ -26,31 +26,7 @@ TYPE
     PROCEDURE saveToStream(CONST board:P_circuitBoard; VAR stream:T_bufferedOutputStreamWrapper);
   end;
 
-  { T_workspace }
-
-  T_workspace=object(T_serializable)
-    paletteEntries:array of P_circuitBoard;
-    draftEntries  :array of P_circuitBoard;
-    currentBoard  :P_circuitBoard;
-
-    CONSTRUCTOR create;
-    DESTRUCTOR destroy;
-    PROCEDURE addBaseGate(CONST gateType:T_gateType);
-    PROCEDURE addCustomGate(CONST index:longint);
-
-    FUNCTION getSerialVersion:dword; virtual;
-    FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
-    PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
-
-    PROCEDURE addCurrentBoardToPalette;
-    PROCEDURE removePaletteEntry(CONST index:longint);
-    PROCEDURE editPaletteEntry(CONST index:longint; CONST resetPaletteIndex:boolean);
-
-    PROCEDURE addCurrentBoardToDrafts(CONST indexToOverwrite:longint=maxLongint);
-    PROCEDURE removeDraftEntry(CONST index:longint);
-    PROCEDURE editDraftEntry  (CONST index:longint);
-  end;
-
+  {$i workspaces.inc}
   T_wireTrip=record
     sink:   T_visualGateConnector;
     visual: T_wirePath;
@@ -70,7 +46,7 @@ TYPE
     public
       name       :string;
       description:string;
-      paletteIndex:longint;
+      paletteIndex,categoryIndex:longint;
     private
       gates      :array of P_visualGate;
       logicWires:array of T_logicWire;
@@ -109,7 +85,6 @@ TYPE
       PROCEDURE WireImageMouseUp  (Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
       FUNCTION wrapGate(CONST origin:T_point;CONST g:P_abstractGate):P_visualGate;
       FUNCTION clone(CONST includeWirePaths:boolean):P_circuitBoard;
-      FUNCTION usesBoard(CONST other:P_circuitBoard):boolean;
       PROCEDURE enumerateIo;
     public
       CONSTRUCTOR create;
@@ -141,6 +116,7 @@ TYPE
       PROCEDURE saveStateToUndoList;
       PROCEDURE performUndo;
       PROCEDURE performRedo;
+      FUNCTION usesBoard(CONST other:P_circuitBoard; CONST recurse:boolean=false):boolean;
   end;
 
 {$undef includeInterface}
@@ -149,6 +125,7 @@ USES sysutils,math,myGenerics,Dialogs,DateUtils;
 {$define includeImplementation}
 {$i visualGates.inc}
 {$i customGates.inc}
+{$i workspaces.inc}
 {$undef includeImplementation}
 
 OPERATOR =(CONST x,y:T_visualGateConnector):boolean;
@@ -180,232 +157,6 @@ PROCEDURE T_visualGateConnector.saveToStream(CONST board: P_circuitBoard; VAR st
     stream.writeNaturalNumber(index);
   end;
 
-CONSTRUCTOR T_workspace.create;
-  begin
-    setLength(paletteEntries,0);
-    setLength(draftEntries,0);
-    new(currentBoard,create);
-  end;
-
-DESTRUCTOR T_workspace.destroy;
-  VAR i:longint;
-  begin
-    for i:=0 to length(paletteEntries)-1 do dispose(paletteEntries[i],destroy);
-    dispose(currentBoard,destroy);
-  end;
-
-PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType);
-  FUNCTION numberOf(CONST gateType:T_gateType):longint;
-    VAR gate:P_visualGate;
-    begin
-      result:=0;
-      for gate in currentBoard^.gates do
-      if gate^.behavior^.gateType=gateType
-      then inc(result);
-    end;
-
-  VAR gateToAdd:P_abstractGate=nil;
-      visual:P_visualGate;
-
-      p:T_point;
-  begin
-    gateToAdd:=newBaseGate(gateType);
-    if gateToAdd<>nil then begin
-      currentBoard^.saveStateToUndoList;
-      case gateToAdd^.gateType of
-        gt_input:  P_inputGate (gateToAdd)^.ioIndex:=numberOf(gt_input);
-        gt_output: P_outputGate(gateToAdd)^.ioIndex:=numberOf(gt_output);
-      end;
-
-      if length(currentBoard^.gates)=0
-      then p:=pointOf(5,5)
-      else p:=currentBoard^.gates[length(currentBoard^.gates)-1]^.nextGateAfter;
-
-      visual:=currentBoard^.wrapGate(p,gateToAdd);
-      if not currentBoard^.positionNewGate(visual)
-      then dispose(visual,destroy);
-    end;
-  end;
-
-PROCEDURE T_workspace.addCustomGate(CONST index: longint);
-  VAR visual:P_visualGate;
-      gateToAdd:P_customGate;
-      p: T_point;
-  begin
-    if (index>=0) and (index<length(paletteEntries)) then begin
-      new(gateToAdd,create(paletteEntries[index]));
-      currentBoard^.saveStateToUndoList;
-
-      if length(currentBoard^.gates)=0
-      then p:=pointOf(5,5)
-      else p:=currentBoard^.gates[length(currentBoard^.gates)-1]^.nextGateAfter;
-
-      visual:=currentBoard^.wrapGate(p,gateToAdd);
-      if not currentBoard^.positionNewGate(visual)
-      then dispose(visual,destroy);
-    end;
-  end;
-
-FUNCTION T_workspace.getSerialVersion: dword;
-  begin
-    result:=6;
-  end;
-
-FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
-  VAR i:longint;
-      count: qword;
-      board:P_circuitBoard;
-  begin
-    if not(inherited) then exit(false);
-    count:=stream.readNaturalNumber;
-    result:=true;
-    if (count<maxLongint) then begin
-      for i:=0 to longint(count)-1 do begin
-        new(board,create);
-        if board^.loadFromStream(@self,stream) then begin
-          setLength(paletteEntries,i+1);
-          paletteEntries[i]:=board;
-          board^.paletteIndex:=i;
-        end else begin
-          dispose(board,destroy);
-          exit(false);
-        end;
-      end;
-    end else exit(false);
-    count:=stream.readNaturalNumber;
-    result:=true;
-    if (count<maxLongint) then begin
-      for i:=0 to longint(count)-1 do begin
-        new(board,create);
-        if board^.loadFromStream(@self,stream) then begin
-          setLength(draftEntries,i+1);
-          draftEntries[i]:=board;
-        end else begin
-          dispose(board,destroy);
-          exit(false);
-        end;
-      end;
-    end else exit(false);
-    result:=currentBoard^.loadFromStream(@self,stream);
-    result:=result and stream.allOkay;
-  end;
-
-PROCEDURE T_workspace.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
-  VAR i:longint;
-  begin
-    inherited;
-    stream.writeNaturalNumber(length(paletteEntries));
-    for i:=0 to length(paletteEntries)-1 do paletteEntries[i]^.saveToStream(stream);
-    stream.writeNaturalNumber(length(draftEntries));
-    for i:=0 to length(draftEntries)-1 do draftEntries[i]^.saveToStream(stream);
-    currentBoard^.saveToStream(stream);
-  end;
-
-PROCEDURE T_workspace.addCurrentBoardToPalette;
-  VAR i:longint;
-      gate:P_visualGate;
-      anyOut:boolean=false;
-      newPaletteEntry:P_circuitBoard;
-      doReplace: TModalResult;
-  begin
-    if currentBoard^.name=defaultBoardCaption then begin
-      ShowMessage('Die aktuelle Schaltung muss erst noch benannt werden.');
-      exit;
-    end;
-    for gate in currentBoard^.gates do begin
-      anyOut:=anyOut or (gate^.behavior^.gateType=gt_output);
-      for i:=0 to gate^.numberOfInputs-1 do
-      if not(currentBoard^.isInputConnected(gate,i))
-      then begin
-        ShowMessage('Es gibt unbelegte Eingänge in der Schaltung.');
-        exit;
-      end;
-    end;
-    if not(anyOut) then begin
-      ShowMessage('Die Schaltung hat keine Ausgänge.');
-      exit;
-    end;
-
-    if currentBoard^.paletteIndex>=0 then begin
-      doReplace:=QuestionDlg('Ersetzen?','Soll die Schaltung in der Palette aktualisiert werden?',TMsgDlgType.mtConfirmation,[mrYes, 'Ja', mrNo, 'Nein', 'IsDefault'],'');
-    end else doReplace:=mrNo;
-
-    if (doReplace=mrNo) then
-    for i:=0 to length(paletteEntries)-1 do if paletteEntries[i]^.name=currentBoard^.name
-    then begin
-      ShowMessage('Es gibt schon eine Schaltung mit diesem Namen in der Palette.');
-      exit;
-    end;
-
-    if doReplace=mrYes then begin
-      i:=currentBoard^.paletteIndex;
-      paletteEntries[i]^.clear;
-      paletteEntries[i]^.pasteFrom(currentBoard);
-      paletteEntries[i]^.paletteIndex:=i;
-      paletteEntries[i]^.name        :=currentBoard^.name;
-      paletteEntries[i]^.description :=currentBoard^.description;
-      currentBoard^.clear;
-    end else begin
-      newPaletteEntry:=currentBoard;
-      currentBoard   :=nil;
-      new(currentBoard,create);
-      currentBoard^.attachGUI(
-        newPaletteEntry^.GUI.zoom,
-        newPaletteEntry^.GUI.container,
-        newPaletteEntry^.GUI.wireImage,
-        newPaletteEntry^.GUI.gateContextMenu,
-        newPaletteEntry^.GUI.anyChangeCallback);
-      newPaletteEntry^.detachGUI;
-
-      i:=length(paletteEntries);
-      setLength(paletteEntries,i+1);
-      paletteEntries[i]:=newPaletteEntry;
-      newPaletteEntry^.paletteIndex:=i;
-    end;
-
-    //bubble up...
-    while (i>0) and not(paletteEntries[i]^.usesBoard(paletteEntries[i-1])) do begin
-      newPaletteEntry    :=paletteEntries[i-1];
-      paletteEntries[i-1]:=paletteEntries[i];
-      paletteEntries[i  ]:=newPaletteEntry;
-
-      paletteEntries[i-1]^.paletteIndex:=i-1;
-      paletteEntries[i  ]^.paletteIndex:=i;
-      dec(i);
-    end;
-  end;
-
-PROCEDURE T_workspace.addCurrentBoardToDrafts(CONST indexToOverwrite:longint=maxLongint);
-  VAR i:longint;
-      newDraft: P_circuitBoard;
-  begin
-    if (indexToOverwrite<0) or (indexToOverwrite>length(draftEntries))
-    then begin
-      i:=length(draftEntries);
-      setLength(draftEntries,i+1);
-    end
-    else begin
-      i:=indexToOverwrite;
-      dispose(draftEntries[i],destroy);
-    end;
-
-    if currentBoard^.name=defaultBoardCaption then currentBoard^.name:='Unbenannter Entwurf vom '+FormatDateTime('dd.mm.yyyy - hh:nn',now);
-
-    newDraft:=currentBoard;
-    currentBoard   :=nil;
-    new(currentBoard,create);
-    currentBoard^.attachGUI(
-      newDraft^.GUI.zoom,
-      newDraft^.GUI.container,
-      newDraft^.GUI.wireImage,
-      newDraft^.GUI.gateContextMenu,
-      newDraft^.GUI.anyChangeCallback);
-    newDraft^.detachGUI;
-    draftEntries[i]:=newDraft;
-  end;
-
-{ T_circuitBoard }
-
 CONSTRUCTOR T_circuitBoard.create;
   begin
     with GUI do begin
@@ -417,6 +168,7 @@ CONSTRUCTOR T_circuitBoard.create;
       setLength(redoList,0);
     end;
     paletteIndex:=-1;
+    categoryIndex:=-1;
     name:=defaultBoardCaption;
     description:='';
     setLength(gates,0);
@@ -489,6 +241,7 @@ PROCEDURE T_circuitBoard.clear;
     if wireGraph<>nil then dispose(wireGraph,destroy);
     wireGraph:=nil;
     paletteIndex:=-1;
+    categoryIndex:=-1;
     description:='';
     name:=defaultBoardCaption;
     Repaint;
@@ -795,8 +548,7 @@ FUNCTION T_circuitBoard.wrapGate(CONST origin: T_point; CONST g: P_abstractGate)
     end;
   end;
 
-FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace;
-  VAR stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i:longint;
       gateType: T_gateType;
       k:longint;
@@ -807,6 +559,8 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace;
     name:=stream.readShortString;
     description:=stream.readShortString;
     paletteIndex:=stream.readLongint;
+    categoryIndex:=stream.readLongint;
+
     if not(stream.allOkay) then exit(false);
     setLength(gates,0);
     gateCount:=stream.readNaturalNumber;
@@ -862,6 +616,7 @@ PROCEDURE T_circuitBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper)
     stream.writeShortString(name);
     stream.writeShortString(description);
     stream.writeLongint(paletteIndex);
+    stream.writeLongint(categoryIndex);
     stream.writeNaturalNumber(length(gates));
     for i:=0 to length(gates)-1 do begin
       stream.writeByte(byte(gates[i]^.behavior^.gateType));
@@ -1010,10 +765,11 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board: P_circuitBoard; CONST fullCopy:b
     if board=nil then exit;
     if fullCopy then begin
       clear;
-      name        :=board^.name;
-      description :=board^.description;
-      paletteIndex:=board^.paletteIndex;
-      clipOffset  :=ZERO_POINT;
+      name         :=board^.name;
+      description  :=board^.description;
+      paletteIndex :=board^.paletteIndex;
+      categoryIndex:=board^.categoryIndex;
+      clipOffset   :=ZERO_POINT;
     end else begin
       board^.getBoardExtend(clipOrigin,clipSize);
       clipNewOrigin:=clipOrigin;
@@ -1503,10 +1259,10 @@ FUNCTION T_circuitBoard.clone(CONST includeWirePaths:boolean): P_circuitBoard;
   VAR i,j:longint;
   begin
     new(result,create);
-    result^.name:=name;
-    result^.description:=description;
-    result^.paletteIndex:=paletteIndex;
-
+    result^.name         :=name;
+    result^.description  :=description;
+    result^.paletteIndex :=paletteIndex;
+    result^.categoryIndex:=categoryIndex;
     setLength(result^.gates,length(gates));
     for i:=0 to length(gates)-1 do begin
       result^.gates[i]:=result^.wrapGate(gates[i]^.origin,gates[i]^.behavior^.clone);
@@ -1528,86 +1284,17 @@ FUNCTION T_circuitBoard.clone(CONST includeWirePaths:boolean): P_circuitBoard;
     end;
   end;
 
-FUNCTION T_circuitBoard.usesBoard(CONST other:P_circuitBoard):boolean;
+FUNCTION T_circuitBoard.usesBoard(CONST other:P_circuitBoard; CONST recurse:boolean=false):boolean;
   VAR gate:P_visualGate;
       board:P_circuitBoard;
   begin
     result:=false;
-    for gate in gates do if (gate^.behavior^.gateType=gt_compound) and (P_customGate(gate^.behavior)^.prototype=other) then exit(true);
+    for gate in gates do
+    if (gate^.behavior^.gateType=gt_compound) and
+       ((P_customGate(gate^.behavior)^.prototype=other) or
+        (recurse and P_customGate(gate^.behavior)^.prototype^.usesBoard(other,recurse))) then exit(true);
     for board in GUI.undoList do if board^.usesBoard(other) then exit(true);
     for board in GUI.redoList do if board^.usesBoard(other) then exit(true);
-  end;
-
-PROCEDURE T_workspace.removePaletteEntry(CONST index:longint);
-  VAR j:longint;
-      usedBy:ansistring='';
-  begin
-    if (index<0) or (index>length(paletteEntries)) then exit;
-    if currentBoard^.usesBoard(paletteEntries[index]) then usedBy:='Aktuelle Schaltung';
-
-    for j:=index+1 to length(paletteEntries)-1 do
-    if paletteEntries[j]^.usesBoard(paletteEntries[index]) then begin
-      if usedBy='' then usedBy:=     paletteEntries[j]^.name
-                   else usedBy+=', '+paletteEntries[j]^.name;
-    end;
-    if usedBy<>'' then begin
-      ShowMessage('Der Eintrag kann nicht gelöscht werden weil er verwendet wird von: '+usedBy);
-      exit;
-    end;
-
-    dispose(paletteEntries[index],destroy);
-    for j:=index to length(paletteEntries)-2 do begin
-      paletteEntries[j]:=paletteEntries[j+1];
-      paletteEntries[j]^.paletteIndex:=j;
-    end;
-    setLength(paletteEntries,length(paletteEntries)-1);
-  end;
-
-PROCEDURE T_workspace.removeDraftEntry(CONST index:longint);
-  VAR j:longint;
-  begin
-    if (index<0) or (index>length(draftEntries)) then exit;
-    dispose(draftEntries[index],destroy);
-    for j:=index to length(draftEntries)-2 do draftEntries[j]:=draftEntries[j+1];
-    setLength(draftEntries,length(draftEntries)-1);
-  end;
-
-PROCEDURE T_workspace.editPaletteEntry(CONST index:longint; CONST resetPaletteIndex:boolean);
-  VAR previous:P_circuitBoard;
-  begin
-    if (index<0) or (index>length(paletteEntries)) then exit;
-    previous:=currentBoard;
-    currentBoard:=paletteEntries[index]^.clone(false);
-    if resetPaletteIndex then currentBoard^.paletteIndex:=-1;
-    currentBoard^.attachGUI(
-      previous^.GUI.zoom,
-      previous^.GUI.container,
-      previous^.GUI.wireImage,
-      previous^.GUI.gateContextMenu,
-      previous^.GUI.anyChangeCallback);
-    currentBoard^.rewire;
-    dispose(previous,destroy);
-    currentBoard^.Repaint;
-  end;
-
-PROCEDURE T_workspace.editDraftEntry  (CONST index:longint);
-  VAR previous:P_circuitBoard;
-      j:longint;
-  begin
-    if (index<0) or (index>length(draftEntries)) then exit;
-    previous:=currentBoard;
-    currentBoard:=draftEntries[index];
-    currentBoard^.attachGUI(
-      previous^.GUI.zoom,
-      previous^.GUI.container,
-      previous^.GUI.wireImage,
-      previous^.GUI.gateContextMenu,
-      previous^.GUI.anyChangeCallback);
-    currentBoard^.rewire;
-    dispose(previous,destroy);
-    for j:=index to length(draftEntries)-2 do draftEntries[j]:=draftEntries[j+1];
-    setLength(draftEntries,length(draftEntries)-1);
-    currentBoard^.Repaint;
   end;
 
 end.

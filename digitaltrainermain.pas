@@ -21,6 +21,7 @@ TYPE
     ButtonAdd1to8: TButton;
     ButtonAdd4to1: TButton;
     ButtonAddConstantFalse: TButton;
+    miSetCategoryRoot: TMenuItem;
     miDrafts: TMenuItem;
     miAddToDrafts: TMenuItem;
     miEditCopyOfPaletteEntry: TMenuItem;
@@ -55,11 +56,10 @@ TYPE
     GroupBox4: TGroupBox;
     descriptionMemo: TMemo;
     GroupBox5: TGroupBox;
-    CustomGateListBox: TListBox;
     MainMenu: TMainMenu;
     MenuItem1: TMenuItem;
-    MenuItem2: TMenuItem;
-    MenuItem3: TMenuItem;
+    miDeletePaletteEntry: TMenuItem;
+    miEditPaletteEntry: TMenuItem;
     miGateProperties: TMenuItem;
     MenuItem7: TMenuItem;
     miDelete: TMenuItem;
@@ -75,6 +75,7 @@ TYPE
     SaveDialog1: TSaveDialog;
     SimTimer: TTimer;
     Splitter2: TSplitter;
+    PaletteTreeView: TTreeView;
     wireImage: TImage;
     Panel1: TPanel;
     ScrollBox1: TScrollBox;
@@ -102,14 +103,13 @@ TYPE
     PROCEDURE ButtonAddOutputClick(Sender: TObject);
     PROCEDURE ButtonAddXorClick(Sender: TObject);
     PROCEDURE captionEditEditingDone(Sender: TObject);
-    PROCEDURE CustomGateListBoxSelectionChange(Sender: TObject; user: boolean);
     PROCEDURE DeleteButtonClick(Sender: TObject);
     PROCEDURE descriptionMemoEditingDone(Sender: TObject);
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE FormDestroy(Sender: TObject);
     PROCEDURE FormResize(Sender: TObject);
-    PROCEDURE MenuItem2Click(Sender: TObject);
-    PROCEDURE MenuItem3Click(Sender: TObject);
+    PROCEDURE miDeletePaletteEntryClick(Sender: TObject);
+    PROCEDURE miEditPaletteEntryClick(Sender: TObject);
     PROCEDURE miAddToDraftsClick(Sender: TObject);
     PROCEDURE miAddToPaletteClick(Sender: TObject);
     PROCEDURE miAnalyzeBoardClick(Sender: TObject);
@@ -157,7 +157,7 @@ FUNCTION workspaceFilename:string;
 
 PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
   begin
-    workspace.create;
+    workspace.create(miSetCategoryRoot,PaletteTreeView);
     workspace.loadFromFile(workspaceFilename);
     workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
     ScrollBox1.color:=BackgroundColor;
@@ -204,7 +204,11 @@ PROCEDURE TDigitaltrainerMainForm.ButtonAddAndClick(Sender: TObject);
   begin workspace.addBaseGate(gt_andGate);end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddCustomClick(Sender: TObject);
-  begin workspace.addCustomGate(CustomGateListBox.ItemIndex); end;
+  begin
+    //TODO: stub
+    //if PaletteTreeView.Selected.Data=nil then exit;
+    //workspace.addCustomGate(P_paletteTreeData(PaletteTreeView.Selected.Data)^.index);
+  end;
 
 PROCEDURE TDigitaltrainerMainForm.AnyGatePopupMenuPopup(Sender: TObject);
   begin
@@ -250,33 +254,35 @@ PROCEDURE TDigitaltrainerMainForm.captionEditEditingDone(Sender: TObject);
     workspace.currentBoard^.name:=captionEdit.text;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.CustomGateListBoxSelectionChange(Sender: TObject; user: boolean);
-  VAR i:longint;
-  begin
-    i:=CustomGateListBox.ItemIndex;
-    if (i>=0) and (i<length(workspace.paletteEntries)) then begin
-      CustomGateListBox.Hint:=workspace.paletteEntries[i]^.description;
-      ButtonAddCustom.enabled:=true;
-    end else ButtonAddCustom.enabled:=false;
-  end;
+//PROCEDURE TDigitaltrainerMainForm.CustomGateListBoxSelectionChange(Sender: TObject; user: boolean);
+//  VAR i:longint;
+//  begin
+//    i:=CustomGateListBox.ItemIndex;
+//    if (i>=0) and (i<length(workspace.paletteEntries)) then begin
+//      CustomGateListBox.Hint:=workspace.paletteEntries[i]^.description;
+//      ButtonAddCustom.enabled:=true;
+//    end else ButtonAddCustom.enabled:=false;
+//  end;
 
 PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
   begin
     workspace.currentBoard^.Repaint;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.MenuItem2Click(Sender: TObject);
+PROCEDURE TDigitaltrainerMainForm.miDeletePaletteEntryClick(Sender: TObject);
   begin
-    if QuestionDlg('Löschen?','Soll der Eintrag wirklich endgültig gelöscht werden?',TMsgDlgType.mtConfirmation,[mrYes, 'Ja', mrNo, 'Nein', 'IsDefault'],'')=mrNo then exit;
-    workspace.removePaletteEntry(CustomGateListBox.ItemIndex);
-    updateSidebar;
+        //TODO: stub
+    //if QuestionDlg('Löschen?','Soll der Eintrag wirklich endgültig gelöscht werden?',TMsgDlgType.mtConfirmation,[mrYes, 'Ja', mrNo, 'Nein', 'IsDefault'],'')=mrNo then exit;
+    //workspace.removePaletteEntry(CustomGateListBox.ItemIndex);
+    //updateSidebar;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.MenuItem3Click(Sender: TObject);
+PROCEDURE TDigitaltrainerMainForm.miEditPaletteEntryClick(Sender: TObject);
   begin
-    workspace.editPaletteEntry(CustomGateListBox.ItemIndex,false);
-    updateSidebar;
-    restartTimerCallback;
+    //TODO: stub
+    //workspace.editPaletteEntry(CustomGateListBox.ItemIndex,false);
+    //updateSidebar;
+    //restartTimerCallback;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAddToDraftsClick(Sender: TObject);
@@ -300,9 +306,10 @@ PROCEDURE TDigitaltrainerMainForm.miAnalyzeBoardClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miAnalyzeClick(Sender: TObject);
   begin
-    if (CustomGateListBox.ItemIndex>=0) and
-       (CustomGateListBox.ItemIndex<length(workspace.paletteEntries))
-    then analysisForm.showForBoard(workspace.paletteEntries[CustomGateListBox.ItemIndex]);
+    //TODO: stub
+    //if (CustomGateListBox.ItemIndex>=0) and
+    //   (CustomGateListBox.ItemIndex<length(workspace.paletteEntries))
+    //then analysisForm.showForBoard(workspace.paletteEntries[CustomGateListBox.ItemIndex]);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAnalyzeGateClick(Sender: TObject);
@@ -334,9 +341,11 @@ PROCEDURE TDigitaltrainerMainForm.miDraftsClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miEditCopyOfPaletteEntryClick(Sender: TObject);
   begin
-    workspace.editPaletteEntry(CustomGateListBox.ItemIndex,true);
-    updateSidebar;
-    restartTimerCallback;
+    //TODO: stub
+//    if PaletteTreeView.Selected.Data=nil then exit;
+//    workspace.editPaletteEntry(P_paletteTreeData(PaletteTreeView.Selected.Data)^.index,true);
+//    updateSidebar;
+//    restartTimerCallback;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miGatePropertiesClick(Sender: TObject);
@@ -352,10 +361,10 @@ PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
   VAR temp:T_workspace;
   begin
     if OpenDialog1.execute then begin
-      temp.create;
+      temp.create(miSetCategoryRoot,PaletteTreeView);
       if temp.loadFromFile(OpenDialog1.fileName) then begin
         workspace.destroy;
-        workspace.create;
+        workspace.create(miSetCategoryRoot,PaletteTreeView);
         workspace.loadFromFile(OpenDialog1.fileName);
         workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
         workspace.currentBoard^.Repaint;
@@ -521,17 +530,31 @@ PROCEDURE TDigitaltrainerMainForm.ZoomTrackBarChange(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.updateSidebar;
   VAR i:longint;
+      root: TTreeNode;
+
   begin
     descriptionMemo.text:=workspace.currentBoard^.description;
     captionEdit    .text:=workspace.currentBoard^.name;
 
-    CustomGateListBox.items.clear;
-    for i:=0 to length(workspace.paletteEntries)-1 do
-    if (workspace.currentBoard^.paletteIndex=-1) or
-       (workspace.currentBoard^.paletteIndex>i)
-    then CustomGateListBox.items.add(workspace.paletteEntries[i]^.name);
 
-    if (CustomGateListBox.items.count=0) then ButtonAddCustom.enabled:=false;
+
+    PaletteTreeView.Items.Clear;
+    root:=PaletteTreeView.Items.Add(nil,'<root>');
+    PaletteTreeView.Items.Add(nil,'Other...');
+
+//    for i:=0 to length(workspace.paletteEntries)-1 do if not(workspace.paletteEntries[i]^.usesBoard(workspace.currentBoard,true))
+//    then begin
+//      PaletteTreeView.Items.AddChild(root,workspace.paletteEntries[i]^.name);
+//    end;
+
+
+    //CustomGateListBox.items.clear;
+    //for i:=0 to length(workspace.paletteEntries)-1 do
+    //if (workspace.currentBoard^.paletteIndex=-1) or
+    //   (workspace.currentBoard^.paletteIndex>i)
+    //then CustomGateListBox.items.add(workspace.paletteEntries[i]^.name);
+    //
+    //if (CustomGateListBox.items.count=0) then ButtonAddCustom.enabled:=false;
   end;
 
 end.
