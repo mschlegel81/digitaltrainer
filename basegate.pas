@@ -802,13 +802,16 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace;
       k:longint;
       origin: T_point;
       behavior: P_abstractGate;
+      gateCount: qword;
   begin
     name:=stream.readShortString;
     description:=stream.readShortString;
     paletteIndex:=stream.readLongint;
     if not(stream.allOkay) then exit(false);
-    setLength(gates,stream.readNaturalNumber);
-    for i:=0 to length(gates)-1 do begin
+    setLength(gates,0);
+    gateCount:=stream.readNaturalNumber;
+    if (gateCount>maxLongint) then exit(false);
+    for i:=0 to longint(gateCount)-1 do begin
       gateType:=T_gateType(stream.readByte([byte(low(T_gateType))..byte(high(T_gateType))]));
 
       if not(stream.allOkay) then exit(false);
@@ -836,6 +839,7 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace;
       end;
       origin:=readPoint(stream);
       behavior^.reset;
+      setLength(gates,i+1);
       gates[i]:=wrapGate(origin,behavior);
     end;
 

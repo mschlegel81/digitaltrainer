@@ -6,6 +6,7 @@ TYPE
   T_gatePropertyType=(pt_number,pt_string,pt_wireWidth);
   T_gatePropertyEnum=(gpe_caption,
                       gpe_description,
+                      gpe_ioIndex,
                       gpe_editableLabel,
                       gpe_intervalGreaterZero,
                       gpe_widthInBits);
@@ -21,6 +22,7 @@ CONST
   C_gateProperty:array[T_gatePropertyEnum] of T_gateProperty=
   ((name:'Name'        ;            typ:pt_string; minValue:0; maxValue:   0; readonly:true),
    (name:'Beschreibung';            typ:pt_string; minValue:0; maxValue:   0; readonly:true),
+   (name:'Nummer';                  typ:pt_number; minValue:0; maxValue:   0; readonly:true),
    (name:'Label';                   typ:pt_string; minValue:0; maxValue:   0; readonly:false),
    (name:'Intervall';               typ:pt_number; minValue:1; maxValue:1024; readonly:false),
    (name:'Anschlussbreite in bits'; typ:pt_wireWidth; minValue:1; maxValue:8; readonly:false));
@@ -32,8 +34,8 @@ CONST
   {gt_nandGate} [gpe_caption],
   {gt_norGate}  [gpe_caption],
   {gt_nxorGate} [gpe_caption],
-  {gt_input}    [gpe_editableLabel,gpe_widthInBits],
-  {gt_output}   [gpe_editableLabel,gpe_widthInBits],
+  {gt_input}    [gpe_editableLabel,gpe_widthInBits,gpe_ioIndex],
+  {gt_output}   [gpe_editableLabel,gpe_widthInBits,gpe_ioIndex],
   {gt_compound} [gpe_caption,gpe_description],
   {gt_clock}    [gpe_caption,gpe_intervalGreaterZero],
   {gt_adapter1to4} [gpe_caption],
@@ -86,17 +88,22 @@ FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum): T_gate
     result.n:=0;
     result.s:='';
     case prop of
-      gpe_caption: result.s:=gate^.caption;
-      gpe_description: result.s:=gate^.getDescription;
-      gpe_editableLabel: if gate^.gateType in [gt_input,gt_output] then begin
-        result.s:=P_inputGate(gate)^.caption;
-      end;
-      gpe_widthInBits: if gate^.gateType in [gt_input,gt_output] then begin
-        result.n:=P_inputGate(gate)^.width;
-      end;
-      gpe_intervalGreaterZero: if gate^.gateType=gt_clock then begin
-        result.n:=P_clock(gate)^.interval;
-      end;
+      gpe_caption:
+        result.s:=gate^.caption;
+      gpe_description:
+        result.s:=gate^.getDescription;
+      gpe_editableLabel:
+        if gate^.gateType in [gt_input,gt_output]
+        then result.s:=P_inputGate(gate)^.caption;
+      gpe_widthInBits:
+        if gate^.gateType in [gt_input,gt_output]
+        then result.n:=P_inputGate(gate)^.width;
+      gpe_intervalGreaterZero:
+        if gate^.gateType=gt_clock
+        then result.n:=P_clock(gate)^.interval;
+      gpe_ioIndex:
+        if gate^.gateType in [gt_input,gt_output]
+        then result.n:=P_inputGate(gate)^.ioIndex;
     end;
   end;
 
@@ -126,6 +133,7 @@ CONSTRUCTOR T_gatePropertyValues.create(CONST gate_: P_abstractGate);
       setLength(entry,i+1);
       entry[i].prop:=p;
       entry[i].value:=fetchValue(p);
+      entry[i].modified:=false;
       inc(i);
     end;
   end;
@@ -162,22 +170,24 @@ FUNCTION T_gatePropertyValues.acceptNewValue(CONST index: longint; CONST newValu
         newNumber:=StrToInt64Def(newValue,int64(maxLongint)+1);
         if (newNumber>C_gateProperty[entry[index].prop].maxValue) or
            (newNumber<C_gateProperty[entry[index].prop].minValue) then exit(false);
+        entry[index].modified:=entry[index].value.n<>newNumber;
         entry[index].value.n:=longint(newNumber);
         result:=true;
       end;
       pt_wireWidth: begin
         newNumber:=StrToInt64Def(newValue,int64(maxLongint)+1);
         if not((newNumber=1) or (newNumber=4) or (newNumber=8)) then exit(false);
+        entry[index].modified:=entry[index].value.n<>newNumber;
         entry[index].value.n:=byte(newNumber);
         result:=true;
       end;
       pt_string: begin
+        entry[index].modified:=entry[index].value.s<>newValue;
         entry[index].value.s:=newValue;
         result:=true;
       end;
       else result:=false;
     end;
-    if result then entry[index].modified:=true;
   end;
 
 PROCEDURE T_gatePropertyValues.applyValues;

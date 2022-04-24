@@ -568,7 +568,7 @@ CONSTRUCTOR T_clock.create;
   begin
     inherited;
     tick:=true;
-    interval:=1;
+    interval:=50;
     counter:=0;
   end;
 
