@@ -2,7 +2,6 @@
 P_visualGate=^T_visualGate;
 T_visualGate=object
   private
-    id_:longint;
     behavior:P_abstractGate;
     origin,size:T_point;
 
@@ -39,10 +38,8 @@ T_visualGate=object
     FUNCTION numberOfOutputs:longint;
     FUNCTION isCompletelyInsideRect(CONST low,high:T_point):boolean;
   public
-    FUNCTION getioBlock:T_ioBlock;
     PROCEDURE Repaint; virtual;
     PROPERTY getBehavior:P_abstractGate read behavior;
-    PROPERTY id:longint read id_;
     FUNCTION nextGateAfter:T_point;
 end;
 
@@ -89,10 +86,8 @@ private
 end;
 {$endif}
 {$ifdef includeImplementation}
-VAR visualGateIdTally:longint=0;
 CONSTRUCTOR T_visualGate.create(CONST origin_: T_point; CONST gateToWrap: P_abstractGate; CONST board_: P_circuitBoard);
   begin
-    id_:=interLockedIncrement(visualGateIdTally);
     origin:=origin_;
     behavior:=gateToWrap;
     size:=pointOf(4,max(2,2*max(numberOfInputs,numberOfOutputs)));
@@ -651,14 +646,6 @@ FUNCTION T_visualGate.isCompletelyInsideRect(CONST low, high: T_point): boolean;
           and (origin[0]+size[0]<=high[0])
           and (origin[1]+size[1]<=high[1]);
     end;
-
-FUNCTION T_visualGate.getioBlock: T_ioBlock;
-  VAR i:longint;
-  begin
-    result.clear(origin,size,id_);
-    for i:=0 to numberOfInputs -1 do result.addInput (getInputPositionInGridSize (i));
-    for i:=0 to numberOfOutputs-1 do result.addOutput(getOutputPositionInGridSize(i));
-  end;
 
 FUNCTION T_visualGate.nextGateAfter:T_point;
   begin
