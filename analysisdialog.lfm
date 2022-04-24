@@ -1,179 +1,317 @@
 object analysisForm: TanalysisForm
-  Left = 422
-  Height = 619
-  Top = 260
-  Width = 697
+  Left = 734
+  Height = 774
+  Top = 122
+  Width = 871
   Caption = 'Analyse'
-  ClientHeight = 619
-  ClientWidth = 697
+  ClientHeight = 774
+  ClientWidth = 871
+  DesignTimePPI = 120
   LCLVersion = '2.0.12.0'
   object PageControl1: TPageControl
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = GroupBox1
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
     Left = 0
-    Height = 619
-    Top = 0
-    Width = 697
-    ActivePage = TabSheet1
-    Align = alClient
-    TabIndex = 0
+    Height = 672
+    Top = 102
+    Width = 871
+    ActivePage = TabSheet2
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    ParentFont = False
+    TabIndex = 1
     TabOrder = 0
     object TabSheet1: TTabSheet
       Caption = 'Tabelle'
-      ClientHeight = 591
-      ClientWidth = 689
+      ClientHeight = 639
+      ClientWidth = 863
+      ParentFont = False
       object StringGrid: TStringGrid
-        AnchorSideLeft.Control = TabSheet1
-        AnchorSideTop.Control = GroupBox1
-        AnchorSideTop.Side = asrBottom
-        AnchorSideRight.Control = TabSheet1
-        AnchorSideRight.Side = asrBottom
-        AnchorSideBottom.Control = TabSheet1
-        AnchorSideBottom.Side = asrBottom
         Left = 0
-        Height = 510
-        Top = 81
-        Width = 689
-        Align = alCustom
-        Anchors = [akTop, akLeft, akRight, akBottom]
+        Height = 639
+        Top = 0
+        Width = 863
+        Align = alClient
         FixedCols = 0
         Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing, goDblClickAutoSize, goSmoothScroll]
+        ParentFont = False
         TabOrder = 0
       end
-      object GroupBox1: TGroupBox
-        AnchorSideLeft.Control = TabSheet1
-        AnchorSideTop.Control = TabSheet1
+    end
+    object TabSheet2: TTabSheet
+      Caption = 'Graph'
+      ClientHeight = 639
+      ClientWidth = 863
+      object Image1: TImage
         Left = 0
-        Height = 81
+        Height = 557
+        Top = 56
+        Width = 863
+        Align = alClient
+      end
+      object ScrollBar1: TScrollBar
+        Left = 0
+        Height = 26
+        Top = 613
+        Width = 863
+        Align = alBottom
+        PageSize = 0
+        TabOrder = 0
+      end
+      object GroupBox4: TGroupBox
+        Left = 0
+        Height = 56
         Top = 0
-        Width = 175
-        Align = alCustom
+        Width = 863
+        Align = alTop
         AutoSize = True
-        Caption = 'Darstellung'
-        ClientHeight = 61
-        ClientWidth = 171
+        Caption = 'Zoom'
+        ClientHeight = 31
+        ClientWidth = 859
         TabOrder = 1
-        object rbBinary: TRadioButton
-          AnchorSideLeft.Control = GroupBox1
-          AnchorSideTop.Control = GroupBox1
-          Left = 4
-          Height = 19
-          Top = 4
-          Width = 47
-          Align = alCustom
-          BorderSpacing.Left = 4
-          BorderSpacing.Top = 4
-          Caption = 'Binär'
-          Checked = True
-          TabOrder = 2
-          TabStop = True
-        end
-        object rbPositive: TRadioButton
-          AnchorSideLeft.Control = rbBinary
-          AnchorSideTop.Control = rbBinary
-          AnchorSideTop.Side = asrBottom
-          Left = 4
-          Height = 19
-          Top = 23
-          Width = 167
-          Align = alCustom
-          Caption = 'Dezimal (positiv ganzzahlig)'
+        object TrackBar1: TTrackBar
+          Left = 0
+          Height = 31
+          Top = 0
+          Width = 859
+          Max = 50
+          Min = 2
+          Position = 2
+          Align = alTop
           TabOrder = 0
-        end
-        object rb2Complement: TRadioButton
-          AnchorSideLeft.Control = rbPositive
-          AnchorSideTop.Control = rbPositive
-          AnchorSideTop.Side = asrBottom
-          Left = 4
-          Height = 19
-          Top = 42
-          Width = 163
-          Align = alCustom
-          Caption = 'Dezimal (2er-Komplement)'
-          TabOrder = 1
-        end
-      end
-      object UpdateTableButton: TButton
-        AnchorSideLeft.Control = GroupBox2
-        AnchorSideLeft.Side = asrBottom
-        AnchorSideTop.Control = GroupBox2
-        AnchorSideBottom.Control = GroupBox2
-        AnchorSideBottom.Side = asrBottom
-        Left = 432
-        Height = 81
-        Top = 0
-        Width = 94
-        Align = alCustom
-        Anchors = [akTop, akLeft, akBottom]
-        AutoSize = True
-        Caption = 'Aktualisieren'
-        OnClick = UpdateTableButtonClick
-        TabOrder = 2
-      end
-      object GroupBox2: TGroupBox
-        AnchorSideLeft.Control = GroupBox1
-        AnchorSideLeft.Side = asrBottom
-        AnchorSideTop.Control = TabSheet1
-        AnchorSideBottom.Control = GroupBox1
-        AnchorSideBottom.Side = asrBottom
-        Left = 175
-        Height = 81
-        Top = 0
-        Width = 257
-        Align = alCustom
-        Anchors = [akTop, akLeft, akBottom]
-        Caption = 'Simulation'
-        ClientHeight = 61
-        ClientWidth = 253
-        TabOrder = 3
-        object rbSimOrdered: TRadioButton
-          AnchorSideLeft.Control = GroupBox2
-          AnchorSideTop.Control = GroupBox2
-          Left = 4
-          Height = 19
-          Top = 4
-          Width = 98
-          Align = alCustom
-          BorderSpacing.Left = 4
-          BorderSpacing.Top = 4
-          Caption = 'der Reihe nach'
-          Checked = True
-          TabOrder = 3
-          TabStop = True
-        end
-        object rbBitFlip: TRadioButton
-          AnchorSideLeft.Control = rbSimOrdered
-          AnchorSideTop.Control = rbSimOrdered
-          AnchorSideTop.Side = asrBottom
-          Left = 4
-          Height = 19
-          Top = 23
-          Width = 109
-          Caption = 'zufälliger Bit-Flip'
-          TabOrder = 0
-        end
-        object rbSimRandom: TRadioButton
-          AnchorSideLeft.Control = rbBitFlip
-          AnchorSideTop.Control = rbBitFlip
-          AnchorSideTop.Side = asrBottom
-          Left = 4
-          Height = 19
-          Top = 42
-          Width = 58
-          Caption = 'zufällig'
-          TabOrder = 1
-        end
-        object ResetCheckBox: TCheckBox
-          AnchorSideLeft.Control = rbSimOrdered
-          AnchorSideLeft.Side = asrBottom
-          AnchorSideTop.Control = GroupBox2
-          Left = 102
-          Height = 19
-          Top = 3
-          Width = 141
-          BorderSpacing.Top = 3
-          Caption = 'Reset vor jedem Schritt'
-          TabOrder = 2
         end
       end
     end
+  end
+  object GroupBox1: TGroupBox
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    Left = 0
+    Height = 102
+    Top = 0
+    Width = 222
+    Align = alCustom
+    AutoSize = True
+    Caption = 'Darstellung'
+    ClientHeight = 77
+    ClientWidth = 218
+    ParentFont = False
+    TabOrder = 1
+    object rbBinary: TRadioButton
+      AnchorSideLeft.Control = GroupBox1
+      AnchorSideTop.Control = GroupBox1
+      Left = 5
+      Height = 24
+      Top = 5
+      Width = 58
+      Align = alCustom
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 5
+      Caption = 'Binär'
+      Checked = True
+      OnChange = rbBinaryChange
+      ParentFont = False
+      TabOrder = 2
+      TabStop = True
+    end
+    object rbPositive: TRadioButton
+      AnchorSideLeft.Control = rbBinary
+      AnchorSideTop.Control = rbBinary
+      AnchorSideTop.Side = asrBottom
+      Left = 5
+      Height = 24
+      Top = 29
+      Width = 213
+      Align = alCustom
+      Caption = 'Dezimal (positiv ganzzahlig)'
+      OnChange = rbBinaryChange
+      ParentFont = False
+      TabOrder = 0
+    end
+    object rb2Complement: TRadioButton
+      AnchorSideLeft.Control = rbPositive
+      AnchorSideTop.Control = rbPositive
+      AnchorSideTop.Side = asrBottom
+      Left = 5
+      Height = 24
+      Top = 53
+      Width = 206
+      Align = alCustom
+      Caption = 'Dezimal (2er-Komplement)'
+      OnChange = rbBinaryChange
+      ParentFont = False
+      TabOrder = 1
+    end
+  end
+  object GroupBox2: TGroupBox
+    AnchorSideLeft.Control = GroupBox1
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = Owner
+    AnchorSideBottom.Control = GroupBox1
+    AnchorSideBottom.Side = asrBottom
+    Left = 222
+    Height = 102
+    Top = 0
+    Width = 257
+    Align = alCustom
+    Anchors = [akTop, akLeft, akBottom]
+    Caption = 'Simulation'
+    ClientHeight = 77
+    ClientWidth = 253
+    ParentFont = False
+    TabOrder = 2
+    object rbSimOrdered: TRadioButton
+      AnchorSideLeft.Control = GroupBox2
+      AnchorSideTop.Control = GroupBox2
+      Left = 5
+      Height = 24
+      Top = 5
+      Width = 122
+      Align = alCustom
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 5
+      Caption = 'der Reihe nach'
+      Checked = True
+      ParentFont = False
+      TabOrder = 3
+      TabStop = True
+    end
+    object rbBitFlip: TRadioButton
+      AnchorSideLeft.Control = rbSimOrdered
+      AnchorSideTop.Control = rbSimOrdered
+      AnchorSideTop.Side = asrBottom
+      Left = 5
+      Height = 24
+      Top = 29
+      Width = 138
+      Caption = 'zufälliger Bit-Flip'
+      ParentFont = False
+      TabOrder = 0
+    end
+    object rbSimRandom: TRadioButton
+      AnchorSideLeft.Control = rbBitFlip
+      AnchorSideTop.Control = rbBitFlip
+      AnchorSideTop.Side = asrBottom
+      Left = 5
+      Height = 24
+      Top = 53
+      Width = 73
+      Caption = 'zufällig'
+      ParentFont = False
+      TabOrder = 1
+    end
+    object ResetCheckBox: TCheckBox
+      AnchorSideLeft.Control = rbSimOrdered
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = GroupBox2
+      Left = 127
+      Height = 24
+      Top = 4
+      Width = 177
+      BorderSpacing.Top = 4
+      Caption = 'Reset vor jedem Schritt'
+      ParentFont = False
+      TabOrder = 2
+    end
+  end
+  object UpdateTableButton: TButton
+    AnchorSideLeft.Control = GroupBox3
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = GroupBox3
+    AnchorSideBottom.Side = asrBottom
+    Left = 591
+    Height = 30
+    Top = 0
+    Width = 280
+    Align = alCustom
+    Anchors = [akTop, akLeft, akRight]
+    AutoSize = True
+    Caption = 'Aktualisieren'
+    OnClick = UpdateTableButtonClick
+    ParentFont = False
+    TabOrder = 3
+  end
+  object GroupBox3: TGroupBox
+    AnchorSideLeft.Control = GroupBox2
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = Owner
+    AnchorSideBottom.Control = GroupBox2
+    AnchorSideBottom.Side = asrBottom
+    Left = 479
+    Height = 102
+    Top = 0
+    Width = 112
+    Anchors = [akTop, akLeft, akBottom]
+    AutoSize = True
+    Caption = 'Antwortzeiten'
+    ClientHeight = 77
+    ClientWidth = 108
+    TabOrder = 4
+    object Minimum: TLabel
+      AnchorSideLeft.Control = GroupBox3
+      AnchorSideTop.Control = GroupBox3
+      Left = 4
+      Height = 20
+      Top = 4
+      Width = 63
+      Align = alCustom
+      BorderSpacing.Left = 4
+      BorderSpacing.Top = 4
+      Caption = 'Minimum'
+      ParentColor = False
+    end
+    object Maximum: TLabel
+      AnchorSideLeft.Control = Minimum
+      AnchorSideTop.Control = Minimum
+      AnchorSideTop.Side = asrBottom
+      Left = 4
+      Height = 20
+      Top = 24
+      Width = 66
+      Caption = 'Maximum'
+      ParentColor = False
+    end
+    object minResponseTimeLabel: TLabel
+      AnchorSideLeft.Control = maxResponseTimeLabel
+      AnchorSideTop.Control = Minimum
+      Left = 78
+      Height = 20
+      Top = 4
+      Width = 7
+      Caption = '?'
+      ParentColor = False
+    end
+    object maxResponseTimeLabel: TLabel
+      AnchorSideLeft.Control = Maximum
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = Maximum
+      Left = 78
+      Height = 20
+      Top = 24
+      Width = 7
+      BorderSpacing.Left = 8
+      Caption = '?'
+      ParentColor = False
+    end
+  end
+  object ProgressBar1: TProgressBar
+    AnchorSideLeft.Control = UpdateTableButton
+    AnchorSideTop.Control = UpdateTableButton
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = UpdateTableButton
+    AnchorSideRight.Side = asrBottom
+    Left = 591
+    Height = 25
+    Top = 30
+    Width = 280
+    Anchors = [akTop, akLeft, akRight]
+    TabOrder = 5
   end
 end

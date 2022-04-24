@@ -846,8 +846,7 @@ FUNCTION T_circuitBoard.isInputConnected(CONST gate: P_visualGate; CONST inputIn
           then exit(true);
   end;
 
-PROCEDURE T_circuitBoard.anyMouseUp(Sender: TObject; button: TMouseButton;
-  Shift: TShiftState; X, Y: integer);
+PROCEDURE T_circuitBoard.anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     dispose(wireGraph,destroy);
     incompleteWire.dragging:=false;
