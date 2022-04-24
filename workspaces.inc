@@ -2,23 +2,26 @@
 P_paletteTreeData=^T_paletteTreeData;
 T_paletteTreeData=object
   private
-    isLeaf:boolean;
-    name,description:string;
-    index:longint;
+    board:P_circuitBoard;
+    catName:string;
+    catIndex:longint;
     children: array of P_paletteTreeData;
-    PROCEDURE addBoard(CONST board:P_circuitBoard);
+    FUNCTION addBoard(CONST board_:P_circuitBoard):P_paletteTreeData;
   public
     CONSTRUCTOR create(CONST name_:string; CONST index_:longint);
-    CONSTRUCTOR createLeaf(CONST board:P_circuitBoard);
+    CONSTRUCTOR createLeaf(CONST board_:P_circuitBoard);
     DESTRUCTOR destroy;
     PROCEDURE updateName(CONST newName:string; CONST workspace:P_workspace);
-    PROPERTY isBoard:boolean read isLeaf;
+    FUNCTION getName:string;
+    PROPERTY getBoard:P_circuitBoard read board;
 end;
 
 T_workspace=object(T_serializable)
   private
     paletteEntries:array of P_circuitBoard;
     paletteCategories:array of string;
+    currentBoard  :P_circuitBoard;
+    draftEntries  :array of P_circuitBoard;
 
     //For GUI-Interaction:
     currentPalette:array of P_paletteTreeData;
@@ -27,56 +30,64 @@ T_workspace=object(T_serializable)
 
     PROCEDURE rebuildTree;
     PROCEDURE rebuildMenu;
+    PROCEDURE addBoardToTree(CONST board:P_circuitBoard);
+    PROCEDURE setBoardCategoryEvent(Sender: TObject);
+    PROCEDURE paletteViewEdited(Sender: TObject; node: TTreeNode; VAR S: ansistring);
+    PROCEDURE removePaletteEntry(CONST index:longint);
+    PROCEDURE setBoardCategory(CONST paletteIndex,categoryIndex:longint);
+    PROCEDURE deleteCategory(CONST categoryIndex:longint);
   public
-    currentBoard  :P_circuitBoard;
-    draftEntries  :array of P_circuitBoard;
     CONSTRUCTOR create(CONST categoryRootItem_:TMenuItem; CONST paletteView_:TTreeView);
     DESTRUCTOR destroy;
     PROCEDURE addBaseGate(CONST gateType:T_gateType);
-    PROCEDURE addCustomGate(CONST index:longint);
+    PROCEDURE addSelectedCustomGate;
 
     FUNCTION getSerialVersion:dword; virtual;
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
 
     PROCEDURE addCurrentBoardToPalette;
-    PROCEDURE removePaletteEntry(CONST index:longint);
+    PROCEDURE deleteSelectedTreeItem;
+    PROCEDURE editSelectedTreeItem(CONST resetPaletteIndex:boolean);
     PROCEDURE editPaletteEntry(CONST index:longint; CONST resetPaletteIndex:boolean);
 
     PROCEDURE addCurrentBoardToDrafts(CONST indexToOverwrite:longint=maxLongint);
     PROCEDURE removeDraftEntry(CONST index:longint);
     PROCEDURE editDraftEntry  (CONST index:longint);
+    FUNCTION  numberOfDraftEntries:longint;
+    FUNCTION  draftEntryName(CONST index:longint):string;
 
-    PROCEDURE setBoardCategory(CONST paletteIndex,categoryIndex:longint);
-    PROCEDURE deleteCategory(CONST categoryIndex:longint);
     PROCEDURE addCategory;
+
+    PROPERTY getCurrentBoard:P_circuitBoard read currentBoard;
 end;
 
 {$endif}
 {$ifdef includeImplementation}
 CONSTRUCTOR T_paletteTreeData.create(CONST name_:string; CONST index_:longint);
   begin
-    name:=name_;
-    index:=index_;
-    description:='';
-    isLeaf:=false;
+    board:=nil;
+    catName:=name_;
+    catIndex:=index_;
     setLength(children,0);
   end;
 
-CONSTRUCTOR T_paletteTreeData.createLeaf(CONST board:P_circuitBoard);
+CONSTRUCTOR T_paletteTreeData.createLeaf(CONST board_:P_circuitBoard);
   begin
-    name:=board^.name;
-    index:=board^.paletteIndex;
-    description:=board^.description;
-    isLeaf:=true;
+    board:=board_;
+    catName:='';
+    catIndex:=-1;
     setLength(children,0);
   end;
 
-PROCEDURE T_paletteTreeData.addBoard(CONST board:P_circuitBoard);
+FUNCTION T_paletteTreeData.addBoard(CONST board_:P_circuitBoard):P_paletteTreeData;
   VAR k:longint;
   begin
+    if board<>nil then exit;
+    new(result,createLeaf(board_));
     k:=length(children);
-    new(children[k],createLeaf(board));
+    setLength(children,k+1);
+    children[k]:=result;
   end;
 
 DESTRUCTOR T_paletteTreeData.destroy;
@@ -89,15 +100,22 @@ DESTRUCTOR T_paletteTreeData.destroy;
 PROCEDURE T_paletteTreeData.updateName(CONST newName:string; CONST workspace:P_workspace);
   VAR i:longint;
   begin
-    if isLeaf then begin
-      for i:=0 to length(workspace^.paletteEntries)-1 do if (i<>index) and (workspace^.paletteEntries[i]^.name=newName) then exit;
-      workspace^.paletteEntries[index]^.name:=newName;
-      name:=newName;
+    if board<>nil then begin
+      for i:=0 to length(workspace^.paletteEntries)-1 do if (workspace^.paletteEntries[i]<>board) and (workspace^.paletteEntries[i]^.name=newName) then exit;
+      board^.name:=newName;
     end else begin
-      for i:=0 to length(workspace^.paletteCategories)-1 do if (i<>index) and (workspace^.paletteCategories[i]=newName) then exit;
-      workspace^.paletteCategories[index]:=newName;
-      name:=newName;
+      for i:=0 to length(workspace^.paletteCategories)-1 do if (i<>catIndex) and (workspace^.paletteCategories[i]=newName) then exit;
+      workspace^.paletteCategories[catIndex]:=newName;
+      catName:=newName;
+      workspace^.rebuildMenu;
     end;
+    with workspace^.paletteView do
+    for i:=0 to items.count-1 do if items[i].data=@self then items[i].text:=getName;
+  end;
+
+FUNCTION T_paletteTreeData.getName:string;
+  begin
+    if board=nil then result:=catName else result:=board^.name;
   end;
 
 CONSTRUCTOR T_workspace.create(CONST categoryRootItem_:TMenuItem; CONST paletteView_:TTreeView);
@@ -108,12 +126,16 @@ CONSTRUCTOR T_workspace.create(CONST categoryRootItem_:TMenuItem; CONST paletteV
     categoryRootItem:=categoryRootItem_;
     paletteView:=paletteView_;
     new(currentBoard,create);
+    rebuildMenu;
+    rebuildTree;
   end;
 
 DESTRUCTOR T_workspace.destroy;
   VAR i:longint;
   begin
     for i:=0 to length(paletteEntries)-1 do dispose(paletteEntries[i],destroy);
+    for i:=0 to length(draftEntries)  -1 do dispose(draftEntries  [i],destroy);
+    for i:=0 to length(currentPalette)-1 do dispose(currentPalette[i],destroy);
     dispose(currentBoard,destroy);
   end;
 
@@ -150,23 +172,48 @@ PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType);
     end;
   end;
 
-PROCEDURE T_workspace.addCustomGate(CONST index: longint);
+//PROCEDURE T_workspace.addCustomGate(CONST index: longint);
+//  VAR visual:P_visualGate;
+//      gateToAdd:P_customGate;
+//      p: T_point;
+//  begin
+//    if (index>=0) and (index<length(paletteEntries)) then begin
+//      new(gateToAdd,create(paletteEntries[index]));
+//      currentBoard^.saveStateToUndoList;
+//
+//      if length(currentBoard^.gates)=0
+//      then p:=pointOf(5,5)
+//      else p:=currentBoard^.gates[length(currentBoard^.gates)-1]^.nextGateAfter;
+//
+//      visual:=currentBoard^.wrapGate(p,gateToAdd);
+//      if not currentBoard^.positionNewGate(visual)
+//      then dispose(visual,destroy);
+//    end;
+//  end;
+
+PROCEDURE T_workspace.addSelectedCustomGate;
+  VAR node:TTreeNode;
+      data:P_paletteTreeData;
   VAR visual:P_visualGate;
       gateToAdd:P_customGate;
       p: T_point;
   begin
-    if (index>=0) and (index<length(paletteEntries)) then begin
-      new(gateToAdd,create(paletteEntries[index]));
-      currentBoard^.saveStateToUndoList;
+    node:=paletteView.Selected;
+    if node=nil then exit;
+    data:=P_paletteTreeData(node.data);
+    if data^.board=nil then exit;
 
-      if length(currentBoard^.gates)=0
-      then p:=pointOf(5,5)
-      else p:=currentBoard^.gates[length(currentBoard^.gates)-1]^.nextGateAfter;
+    new(gateToAdd,create(data^.board));
+    currentBoard^.saveStateToUndoList;
 
-      visual:=currentBoard^.wrapGate(p,gateToAdd);
-      if not currentBoard^.positionNewGate(visual)
-      then dispose(visual,destroy);
-    end;
+    if length(currentBoard^.gates)=0
+    then p:=pointOf(5,5)
+    else p:=currentBoard^.gates[length(currentBoard^.gates)-1]^.nextGateAfter;
+
+    visual:=currentBoard^.wrapGate(p,gateToAdd);
+    if not currentBoard^.positionNewGate(visual)
+    then dispose(visual,destroy);
+
   end;
 
 FUNCTION T_workspace.getSerialVersion: dword;
@@ -218,6 +265,10 @@ FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): b
 
     result:=currentBoard^.loadFromStream(@self,stream);
     result:=result and stream.allOkay;
+    if result then begin
+      rebuildMenu;
+      rebuildTree;
+    end;
   end;
 
 PROCEDURE T_workspace.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
@@ -293,6 +344,8 @@ PROCEDURE T_workspace.addCurrentBoardToPalette;
       setLength(paletteEntries,i+1);
       paletteEntries[i]:=newPaletteEntry;
       newPaletteEntry^.paletteIndex:=i;
+
+      addBoardToTree(newPaletteEntry);
     end;
   end;
 
@@ -348,6 +401,21 @@ PROCEDURE T_workspace.removePaletteEntry(CONST index:longint);
       paletteEntries[j]^.paletteIndex:=j;
     end;
     setLength(paletteEntries,length(paletteEntries)-1);
+
+    rebuildTree;
+  end;
+
+PROCEDURE T_workspace.deleteSelectedTreeItem;
+  VAR node:TTreeNode;
+      data:P_paletteTreeData;
+  begin
+    node:=paletteView.Selected;
+    if node=nil then exit;
+    data:=P_paletteTreeData(node.data);
+
+    if data^.board=nil
+    then deleteCategory(data^.catIndex)
+    else removePaletteEntry(data^.board^.paletteIndex);
   end;
 
 PROCEDURE T_workspace.removeDraftEntry(CONST index:longint);
@@ -357,6 +425,18 @@ PROCEDURE T_workspace.removeDraftEntry(CONST index:longint);
     dispose(draftEntries[index],destroy);
     for j:=index to length(draftEntries)-2 do draftEntries[j]:=draftEntries[j+1];
     setLength(draftEntries,length(draftEntries)-1);
+  end;
+
+PROCEDURE T_workspace.editSelectedTreeItem(CONST resetPaletteIndex:boolean);
+  VAR node:TTreeNode;
+      data:P_paletteTreeData;
+  begin
+    node:=paletteView.Selected;
+    if node=nil then exit;
+    data:=P_paletteTreeData(node.data);
+
+    if data^.board=nil then exit;
+    editPaletteEntry(data^.board^.paletteIndex,resetPaletteIndex);
   end;
 
 PROCEDURE T_workspace.editPaletteEntry(CONST index:longint; CONST resetPaletteIndex:boolean);
@@ -375,6 +455,8 @@ PROCEDURE T_workspace.editPaletteEntry(CONST index:longint; CONST resetPaletteIn
     currentBoard^.rewire;
     dispose(previous,destroy);
     currentBoard^.Repaint;
+
+    rebuildTree;
   end;
 
 PROCEDURE T_workspace.editDraftEntry  (CONST index:longint);
@@ -395,17 +477,108 @@ PROCEDURE T_workspace.editDraftEntry  (CONST index:longint);
     for j:=index to length(draftEntries)-2 do draftEntries[j]:=draftEntries[j+1];
     setLength(draftEntries,length(draftEntries)-1);
     currentBoard^.Repaint;
+
+    rebuildTree;
+  end;
+
+FUNCTION T_workspace.numberOfDraftEntries:longint;
+  begin
+    result:=length(draftEntries);
+  end;
+
+FUNCTION T_workspace.draftEntryName(CONST index:longint):string;
+  begin
+    result:=draftEntries[index]^.name;
+  end;
+
+PROCEDURE T_workspace.addBoardToTree(CONST board:P_circuitBoard);
+  VAR parentData,
+      nodeData:P_paletteTreeData;
+      parent,
+      node:TTreeNode;
+      i:longint;
+  begin
+    parent:=nil;
+    parentData:=nil;
+    if board^.categoryIndex<0 then begin
+      new(nodeData,createLeaf(board));
+      node:=paletteView.items.add(nil,nodeData^.getName);
+      node.data:=nodeData;
+    end else begin
+      for i:=0 to paletteView.items.count-1 do
+      if (paletteView.items[i].data<>nil) and
+         (P_paletteTreeData(paletteView.items[i].data)^.board=nil) and
+         (P_paletteTreeData(paletteView.items[i].data)^.catIndex=board^.categoryIndex) then begin
+        parent:=paletteView.items[i];
+        parentData:=P_paletteTreeData(paletteView.items[i].data);
+      end;
+      nodeData:=parentData^.addBoard(board);
+      node:=paletteView.items.addChild(parent,nodeData^.getName);
+      node.data:=nodeData;
+    end;
+    i:=length(currentPalette);
+    setLength(currentPalette,i+1);
+    currentPalette[i]:=nodeData;
+  end;
+
+PROCEDURE T_workspace.setBoardCategoryEvent(Sender: TObject);
+  VAR board:P_circuitBoard;
+  begin
+    board:=P_paletteTreeData(paletteView.Selected.data)^.board;
+    if board=nil then exit;
+    setBoardCategory(board^.paletteIndex,TMenuItem(Sender).Tag);
   end;
 
 PROCEDURE T_workspace.rebuildTree;
+  VAR i:longint;
+      nodeData:P_paletteTreeData;
+      node: TTreeNode;
   begin
-    //paletteView.drop;
-    //TODO: Stub
+    for i:=0 to length(currentPalette)-1 do dispose(currentPalette[i],destroy);
+    paletteView.items.clear;
+    for i:=0 to length(paletteEntries)-1 do
+    if (paletteEntries[i]^.categoryIndex<0) and
+       not(paletteEntries[i]^.usesBoard(currentBoard,true))
+    then addBoardToTree(paletteEntries[i]);
+
+    for i:=0 to length(paletteCategories)-1 do begin
+      new(nodeData,create(paletteCategories[i],i));
+      node:=paletteView.items.add(nil,nodeData^.getName);
+      node.data:=nodeData;
+    end;
+
+    for i:=0 to length(paletteEntries)-1 do
+    if (paletteEntries[i]^.categoryIndex>=0) and
+       not(paletteEntries[i]^.usesBoard(currentBoard,true))
+    then addBoardToTree(paletteEntries[i]);
+    paletteView.FullExpand;
+
+    paletteView.OnEdited:=@paletteViewEdited;
+  end;
+
+PROCEDURE T_workspace.paletteViewEdited(Sender: TObject; node: TTreeNode; VAR S: ansistring);
+  begin
+    P_paletteTreeData(node.data)^.updateName(s,@self);
   end;
 
 PROCEDURE T_workspace.rebuildMenu;
+  VAR i:longint;
+      item:TMenuItem;
   begin
-    //TODO: Stub
+    categoryRootItem.clear;
+    item:=TMenuItem.create(categoryRootItem);
+    item.caption:='<keine>';
+    item.Tag:=-1;
+    item.OnClick:=@setBoardCategoryEvent;
+    categoryRootItem.add(item);
+
+    for i:=0 to length(paletteCategories)-1 do begin
+      item:=TMenuItem.create(categoryRootItem);
+      item.caption:=paletteCategories[i];
+      item.Tag:=i;
+      categoryRootItem.add(item);
+      item.OnClick:=@setBoardCategoryEvent;
+    end;
   end;
 
 PROCEDURE T_workspace.setBoardCategory(CONST paletteIndex,categoryIndex:longint);
@@ -419,12 +592,35 @@ PROCEDURE T_workspace.setBoardCategory(CONST paletteIndex,categoryIndex:longint)
   end;
 
 PROCEDURE T_workspace.deleteCategory(CONST categoryIndex:longint);
+  VAR i:longint;
   begin
-    //TODO: Stub
+    if (categoryIndex<0) or (categoryIndex>=length(paletteCategories)) then exit;
+
+    //Remove category from all boards (set to -1 = "unassigned")
+    for i:=0 to length(paletteEntries)-1 do begin
+      if      paletteEntries[i]^.categoryIndex=categoryIndex then paletteEntries[i]^.categoryIndex:=-1
+      else if paletteEntries[i]^.categoryIndex>categoryIndex then paletteEntries[i]^.categoryIndex-= 1;
+    end;
+    for i:=categoryIndex to length(paletteCategories)-2 do paletteCategories[i]:=paletteCategories[i+1];
+    setLength(paletteCategories,length(paletteCategories)-1);
+
+    rebuildTree;
+    rebuildMenu;
   end;
 
 PROCEDURE T_workspace.addCategory;
+  VAR k:longint;
+      nodeData:P_paletteTreeData;
+      node: TTreeNode;
   begin
-    //TODO: Stub
+    k:=length(paletteCategories);
+    setLength(paletteCategories,k+1);
+    paletteCategories[k]:='<Unbenannte Kategorie '+intToStr(k+1)+'>';
+
+    rebuildMenu;
+
+    new(nodeData,create(paletteCategories[k],k));
+    node:=paletteView.items.add(nil,nodeData^.getName);
+    node.data:=nodeData;
   end;
 {$endif}

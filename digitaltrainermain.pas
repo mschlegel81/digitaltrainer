@@ -21,6 +21,7 @@ TYPE
     ButtonAdd1to8: TButton;
     ButtonAdd4to1: TButton;
     ButtonAddConstantFalse: TButton;
+    miAddNewCategory: TMenuItem;
     miSetCategoryRoot: TMenuItem;
     miDrafts: TMenuItem;
     miAddToDrafts: TMenuItem;
@@ -108,6 +109,7 @@ TYPE
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE FormDestroy(Sender: TObject);
     PROCEDURE FormResize(Sender: TObject);
+    PROCEDURE miAddNewCategoryClick(Sender: TObject);
     PROCEDURE miDeletePaletteEntryClick(Sender: TObject);
     PROCEDURE miEditPaletteEntryClick(Sender: TObject);
     PROCEDURE miAddToDraftsClick(Sender: TObject);
@@ -159,9 +161,9 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
   begin
     workspace.create(miSetCategoryRoot,PaletteTreeView);
     workspace.loadFromFile(workspaceFilename);
-    workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
+    workspace.getCurrentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
     ScrollBox1.color:=BackgroundColor;
-    currentBoardIsDraft:=workspace.currentBoard^.paletteIndex<0;
+    currentBoardIsDraft:=workspace.getCurrentBoard^.paletteIndex<0;
     updateSidebar;
   end;
 
@@ -173,13 +175,13 @@ PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.DeleteButtonClick(Sender: TObject);
   begin
-    workspace.currentBoard^.deleteMarkedElements;
+    workspace.getCurrentBoard^.deleteMarkedElements;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.descriptionMemoEditingDone(Sender: TObject);
   begin
-    workspace.currentBoard^.saveStateToUndoList;
-    workspace.currentBoard^.description:=descriptionMemo.text;
+    workspace.getCurrentBoard^.saveStateToUndoList;
+    workspace.getCurrentBoard^.description:=descriptionMemo.text;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddInputClick(Sender: TObject);
@@ -205,14 +207,12 @@ PROCEDURE TDigitaltrainerMainForm.ButtonAddAndClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddCustomClick(Sender: TObject);
   begin
-    //TODO: stub
-    //if PaletteTreeView.Selected.Data=nil then exit;
-    //workspace.addCustomGate(P_paletteTreeData(PaletteTreeView.Selected.Data)^.index);
+    workspace.addSelectedCustomGate;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.AnyGatePopupMenuPopup(Sender: TObject);
   begin
-    visualGateForContextPopup:=workspace.currentBoard^.lastClickedGate;
+    visualGateForContextPopup:=workspace.getCurrentBoard^.lastClickedGate;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAdd1to4Click(Sender: TObject);
@@ -250,66 +250,61 @@ PROCEDURE TDigitaltrainerMainForm.ButtonAddXorClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.captionEditEditingDone(Sender: TObject);
   begin
-    workspace.currentBoard^.saveStateToUndoList;
-    workspace.currentBoard^.name:=captionEdit.text;
+    workspace.getCurrentBoard^.saveStateToUndoList;
+    workspace.getCurrentBoard^.name:=captionEdit.text;
   end;
-
-//PROCEDURE TDigitaltrainerMainForm.CustomGateListBoxSelectionChange(Sender: TObject; user: boolean);
-//  VAR i:longint;
-//  begin
-//    i:=CustomGateListBox.ItemIndex;
-//    if (i>=0) and (i<length(workspace.paletteEntries)) then begin
-//      CustomGateListBox.Hint:=workspace.paletteEntries[i]^.description;
-//      ButtonAddCustom.enabled:=true;
-//    end else ButtonAddCustom.enabled:=false;
-//  end;
 
 PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
   begin
-    workspace.currentBoard^.Repaint;
+    workspace.getCurrentBoard^.Repaint;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miAddNewCategoryClick(Sender: TObject);
+  begin
+    workspace.addCategory;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miDeletePaletteEntryClick(Sender: TObject);
   begin
-        //TODO: stub
-    //if QuestionDlg('Löschen?','Soll der Eintrag wirklich endgültig gelöscht werden?',TMsgDlgType.mtConfirmation,[mrYes, 'Ja', mrNo, 'Nein', 'IsDefault'],'')=mrNo then exit;
-    //workspace.removePaletteEntry(CustomGateListBox.ItemIndex);
-    //updateSidebar;
+    if QuestionDlg('Löschen?','Soll der Eintrag wirklich endgültig gelöscht werden?',TMsgDlgType.mtConfirmation,[mrYes, 'Ja', mrNo, 'Nein', 'IsDefault'],'')=mrNo then exit;
+    workspace.deleteSelectedTreeItem;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miEditPaletteEntryClick(Sender: TObject);
   begin
-    //TODO: stub
-    //workspace.editPaletteEntry(CustomGateListBox.ItemIndex,false);
-    //updateSidebar;
-    //restartTimerCallback;
+    workspace.editSelectedTreeItem(false);
+    updateSidebar;
+    restartTimerCallback;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAddToDraftsClick(Sender: TObject);
   begin
     workspace.addCurrentBoardToDrafts();
     updateSidebar;
-    workspace.currentBoard^.Repaint;
+    workspace.getCurrentBoard^.Repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
   begin
     workspace.addCurrentBoardToPalette;
     updateSidebar;
-    workspace.currentBoard^.Repaint;
+    workspace.getCurrentBoard^.Repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAnalyzeBoardClick(Sender: TObject);
   begin
-    analysisForm.showForBoard(workspace.currentBoard);
+    analysisForm.showForBoard(workspace.getCurrentBoard);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAnalyzeClick(Sender: TObject);
+  VAR node:TTreeNode;
+      data:P_paletteTreeData;
   begin
-    //TODO: stub
-    //if (CustomGateListBox.ItemIndex>=0) and
-    //   (CustomGateListBox.ItemIndex<length(workspace.paletteEntries))
-    //then analysisForm.showForBoard(workspace.paletteEntries[CustomGateListBox.ItemIndex]);
+    node:=PaletteTreeView.Selected;
+    if node=nil then exit;
+    data:=P_paletteTreeData(node.data);
+    if (data=nil) or (data^.getBoard=nil) then exit;
+    analysisForm.showForBoard(data^.getBoard);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAnalyzeGateClick(Sender: TObject);
@@ -320,17 +315,17 @@ PROCEDURE TDigitaltrainerMainForm.miAnalyzeGateClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miCopyClick(Sender: TObject);
   begin
-    workspace.currentBoard^.copySelectionToClipboard;
+    workspace.getCurrentBoard^.copySelectionToClipboard;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miDeleteClick(Sender: TObject);
   begin
-    workspace.currentBoard^.deleteMarkedElements;
+    workspace.getCurrentBoard^.deleteMarkedElements;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miDeselectAllClick(Sender: TObject);
   begin
-    workspace.currentBoard^.setSelectForAll(false);
+    workspace.getCurrentBoard^.setSelectForAll(false);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miDraftsClick(Sender: TObject);
@@ -341,18 +336,16 @@ PROCEDURE TDigitaltrainerMainForm.miDraftsClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miEditCopyOfPaletteEntryClick(Sender: TObject);
   begin
-    //TODO: stub
-//    if PaletteTreeView.Selected.Data=nil then exit;
-//    workspace.editPaletteEntry(P_paletteTreeData(PaletteTreeView.Selected.Data)^.index,true);
-//    updateSidebar;
-//    restartTimerCallback;
+    workspace.editSelectedTreeItem(true);
+    updateSidebar;
+    restartTimerCallback;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miGatePropertiesClick(Sender: TObject);
   begin
     if visualGateForContextPopup=nil then exit;
-    if gatePropertyDialog.showForGate(visualGateForContextPopup^.getBehavior,workspace.currentBoard) then begin
-      workspace.currentBoard^.deleteInvalidWires;
+    if gatePropertyDialog.showForGate(visualGateForContextPopup^.getBehavior,workspace.getCurrentBoard) then begin
+      workspace.getCurrentBoard^.deleteInvalidWires;
       visualGateForContextPopup^.Repaint;
     end;
   end;
@@ -366,8 +359,8 @@ PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
         workspace.destroy;
         workspace.create(miSetCategoryRoot,PaletteTreeView);
         workspace.loadFromFile(OpenDialog1.fileName);
-        workspace.currentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
-        workspace.currentBoard^.Repaint;
+        workspace.getCurrentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
+        workspace.getCurrentBoard^.Repaint;
         updateSidebar;
         restartTimerCallback;
       end;
@@ -377,13 +370,13 @@ PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miNewClick(Sender: TObject);
   begin
-    workspace.currentBoard^.clear;
+    workspace.getCurrentBoard^.clear;
     updateSidebar;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miPasteClick(Sender: TObject);
   begin
-    workspace.currentBoard^.pasteFromClipboard;
+    workspace.getCurrentBoard^.pasteFromClipboard;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miQuitClick(Sender: TObject);
@@ -394,17 +387,17 @@ PROCEDURE TDigitaltrainerMainForm.miQuitClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miRedoClick(Sender: TObject);
   begin
     BeginFormUpdate;
-    workspace.currentBoard^.performRedo;
+    workspace.getCurrentBoard^.performRedo;
     updateSidebar;
     EndFormUpdate;
-    workspace.currentBoard^.Repaint;
+    workspace.getCurrentBoard^.Repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miRewireClick(Sender: TObject);
   begin
-    workspace.currentBoard^.rewire(true);
+    workspace.getCurrentBoard^.rewire(true);
     BeginFormUpdate;
-    workspace.currentBoard^.Repaint;
+    workspace.getCurrentBoard^.Repaint;
     EndFormUpdate;
   end;
 
@@ -415,22 +408,22 @@ PROCEDURE TDigitaltrainerMainForm.miSaveClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miSelectAllClick(Sender: TObject);
   begin
-    workspace.currentBoard^.setSelectForAll(true);
+    workspace.getCurrentBoard^.setSelectForAll(true);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
   begin
     BeginFormUpdate;
-    workspace.currentBoard^.performUndo;
+    workspace.getCurrentBoard^.performUndo;
     updateSidebar;
     EndFormUpdate;
-    workspace.currentBoard^.Repaint;
+    workspace.getCurrentBoard^.Repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.resetButtonClick(Sender: TObject);
   begin
-    workspace.currentBoard^.saveStateToUndoList;
-    workspace.currentBoard^.reset;
+    workspace.getCurrentBoard^.saveStateToUndoList;
+    workspace.getCurrentBoard^.reset;
     restartTimerCallback;
   end;
 
@@ -479,7 +472,7 @@ PROCEDURE TDigitaltrainerMainForm.SimTimerTimer(Sender: TObject);
   VAR  startTicks: qword;
   begin
     startTicks:=GetTickCount64;
-    if workspace.currentBoard^.simulateSteps(stepsPerTimer)
+    if workspace.getCurrentBoard^.simulateSteps(stepsPerTimer)
     then begin
       if GetTickCount64-startTicks>SPEED_SETTING[speedTrackBar.position].timerInterval
       then begin
@@ -524,37 +517,14 @@ PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.ZoomTrackBarChange(Sender: TObject);
   begin
     BeginFormUpdate;
-    workspace.currentBoard^.setZoom(ZoomTrackBar.position);
+    workspace.getCurrentBoard^.setZoom(ZoomTrackBar.position);
     EndFormUpdate;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.updateSidebar;
-  VAR i:longint;
-      root: TTreeNode;
-
   begin
-    descriptionMemo.text:=workspace.currentBoard^.description;
-    captionEdit    .text:=workspace.currentBoard^.name;
-
-
-
-    PaletteTreeView.Items.Clear;
-    root:=PaletteTreeView.Items.Add(nil,'<root>');
-    PaletteTreeView.Items.Add(nil,'Other...');
-
-//    for i:=0 to length(workspace.paletteEntries)-1 do if not(workspace.paletteEntries[i]^.usesBoard(workspace.currentBoard,true))
-//    then begin
-//      PaletteTreeView.Items.AddChild(root,workspace.paletteEntries[i]^.name);
-//    end;
-
-
-    //CustomGateListBox.items.clear;
-    //for i:=0 to length(workspace.paletteEntries)-1 do
-    //if (workspace.currentBoard^.paletteIndex=-1) or
-    //   (workspace.currentBoard^.paletteIndex>i)
-    //then CustomGateListBox.items.add(workspace.paletteEntries[i]^.name);
-    //
-    //if (CustomGateListBox.items.count=0) then ButtonAddCustom.enabled:=false;
+    descriptionMemo.text:=workspace.getCurrentBoard^.description;
+    captionEdit    .text:=workspace.getCurrentBoard^.name;
   end;
 
 end.

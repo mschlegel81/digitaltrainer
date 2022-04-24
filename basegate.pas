@@ -52,6 +52,7 @@ TYPE
       logicWires:array of T_logicWire;
 
       GUI:record
+        //TODO: Refactor to dedicated GUI-Object
         zoom:longint;
         container:TWinControl;
         wireImage:TImage;
@@ -123,7 +124,7 @@ TYPE
 IMPLEMENTATION
 USES sysutils,math,myGenerics,Dialogs,DateUtils;
 {$define includeImplementation}
-{$i visualGates.inc}
+{$i visualgates.inc}
 {$i customGates.inc}
 {$i workspaces.inc}
 {$undef includeImplementation}

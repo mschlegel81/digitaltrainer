@@ -464,6 +464,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         Width = 208
         Align = alClient
         HideSelection = False
+        PopupMenu = GateListBoxPopupMenu
         TabOrder = 2
         Options = [tvoAutoItemHeight, tvoKeepCollapsedNodes, tvoShowButtons, tvoShowLines, tvoShowRoot, tvoToolTips, tvoThemedDraw]
       end
@@ -562,6 +563,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     end
     object miSetCategoryRoot: TMenuItem
       Caption = 'Kategorie ändern'
+    end
+    object miAddNewCategory: TMenuItem
+      Caption = 'Neue Kategorie'
+      OnClick = miAddNewCategoryClick
     end
   end
   object MainMenu: TMainMenu
