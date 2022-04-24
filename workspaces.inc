@@ -504,6 +504,10 @@ PROCEDURE T_workspace.addBoardToTree(CONST board:P_circuitBoard);
       new(nodeData,createLeaf(board));
       node:=paletteView.items.add(nil,nodeData^.getName);
       node.data:=nodeData;
+
+      i:=length(currentPalette);
+      setLength(currentPalette,i+1);
+      currentPalette[i]:=nodeData;
     end else begin
       for i:=0 to paletteView.items.count-1 do
       if (paletteView.items[i].data<>nil) and
@@ -516,9 +520,6 @@ PROCEDURE T_workspace.addBoardToTree(CONST board:P_circuitBoard);
       node:=paletteView.items.addChild(parent,nodeData^.getName);
       node.data:=nodeData;
     end;
-    i:=length(currentPalette);
-    setLength(currentPalette,i+1);
-    currentPalette[i]:=nodeData;
   end;
 
 PROCEDURE T_workspace.setBoardCategoryEvent(Sender: TObject);
@@ -535,6 +536,8 @@ PROCEDURE T_workspace.rebuildTree;
       node: TTreeNode;
   begin
     for i:=0 to length(currentPalette)-1 do dispose(currentPalette[i],destroy);
+    setLength(currentPalette,0);
+
     paletteView.items.clear;
     for i:=0 to length(paletteEntries)-1 do
     if (paletteEntries[i]^.categoryIndex<0) and
@@ -545,14 +548,16 @@ PROCEDURE T_workspace.rebuildTree;
       new(nodeData,create(paletteCategories[i],i));
       node:=paletteView.items.add(nil,nodeData^.getName);
       node.data:=nodeData;
+      setLength(currentPalette,length(currentPalette)+1);
+      currentPalette[length(currentPalette)-1]:=nodeData;
     end;
 
     for i:=0 to length(paletteEntries)-1 do
     if (paletteEntries[i]^.categoryIndex>=0) and
        not(paletteEntries[i]^.usesBoard(currentBoard,true))
     then addBoardToTree(paletteEntries[i]);
-    paletteView.FullExpand;
 
+    paletteView.FullExpand;
     paletteView.OnEdited:=@paletteViewEdited;
   end;
 
@@ -620,6 +625,11 @@ PROCEDURE T_workspace.addCategory;
     rebuildMenu;
 
     new(nodeData,create(paletteCategories[k],k));
+
+    k:=length(currentPalette);
+    setLength(currentPalette,k+1);
+    currentPalette[k]:=nodeData;
+
     node:=paletteView.items.add(nil,nodeData^.getName);
     node.data:=nodeData;
   end;
