@@ -60,7 +60,7 @@ TYPE
     Image1: TImage;
     maxResponseTimeLabel: TLabel;
     minResponseTimeLabel: TLabel;
-    Maximum: TLabel;
+    maximum: TLabel;
     Minimum: TLabel;
     ProgressBar1: TProgressBar;
     ResetCheckBox: TCheckBox;
@@ -79,7 +79,7 @@ TYPE
     PageControl1: TPageControl;
     StringGrid: TStringGrid;
     TabSheet1: TTabSheet;
-    procedure rbBinaryChange(Sender: TObject);
+    PROCEDURE rbBinaryChange(Sender: TObject);
     PROCEDURE UpdateTableButtonClick(Sender: TObject);
   private
     clonedGate:P_abstractGate;
@@ -102,7 +102,7 @@ IMPLEMENTATION
 
 { T_graphMetaData }
 
-procedure T_graphMetaData.initialize(const gate: P_abstractGate);
+PROCEDURE T_graphMetaData.initialize(CONST gate: P_abstractGate);
   VAR i:longint;
   begin
     if (gate^.gateType=gt_compound) then with P_customGate(gate)^ do begin
@@ -130,8 +130,8 @@ procedure T_graphMetaData.initialize(const gate: P_abstractGate);
     end;
   end;
 
-procedure T_graphMetaData.update(const scaleType: T_scaleType; const imageHeight: longint);
-  PROCEdure updateEntry(VAR entry:T_graphMetaDataEntry; CONST zoomFactor:double; VAR yTally:longint);
+PROCEDURE T_graphMetaData.update(CONST scaleType: T_scaleType; CONST imageHeight: longint);
+  PROCEDURE updateEntry(VAR entry:T_graphMetaDataEntry; CONST zoomFactor:double; VAR yTally:longint);
     VAR weightPerRow:double;
         yOffset:double=0;
         dyFactor:double;
@@ -186,7 +186,6 @@ procedure T_graphMetaData.update(const scaleType: T_scaleType; const imageHeight
   begin
     //20 pixels space at the top, distribute the rest evenly, negate y-axis ("high" values are represented as "low" pixel coordinates)
 
-
     //1. increase zoom until representation is too high
     verticalZoom:=1;
     repeat
@@ -209,20 +208,19 @@ procedure T_graphMetaData.update(const scaleType: T_scaleType; const imageHeight
 
     //TODO: RECENTER!!!
 
-
   end;
 
 { T_simulationOutput }
 
-constructor T_simulationOutput.create(const firstStepIndex: longint);
+CONSTRUCTOR T_simulationOutput.create(CONST firstStepIndex: longint);
   begin
     setLength(inputs,0);
-    SetLength(outputHistory,0);
+    setLength(outputHistory,0);
     startAtStep:=firstStepIndex;
     endAtStep:=firstStepIndex;
   end;
 
-destructor T_simulationOutput.destroy;
+DESTRUCTOR T_simulationOutput.destroy;
   VAR i:longint;
   begin
     setLength(inputs,0);
@@ -230,7 +228,7 @@ destructor T_simulationOutput.destroy;
     setLength(outputHistory,0);
   end;
 
-procedure T_simulationOutput.addInput(const v: T_wireValue);
+PROCEDURE T_simulationOutput.addInput(CONST v: T_wireValue);
   VAR k:longint;
   begin
     k:=length(inputs);
@@ -238,7 +236,7 @@ procedure T_simulationOutput.addInput(const v: T_wireValue);
     inputs[k]:=v;
   end;
 
-procedure T_simulationOutput.addOutput(const stepIndex, outputIndex: longint; const v: T_wireValue);
+PROCEDURE T_simulationOutput.addOutput(CONST stepIndex, outputIndex: longint; CONST v: T_wireValue);
   VAR k:longint;
   begin
     if outputIndex<0 then exit;
@@ -252,7 +250,7 @@ procedure T_simulationOutput.addOutput(const stepIndex, outputIndex: longint; co
     end;
   end;
 
-procedure T_simulationOutput.finishRun;
+PROCEDURE T_simulationOutput.finishRun;
   VAR outputIndex:longint;
       k:longint;
       maxSteps:longint=0;
@@ -275,7 +273,7 @@ procedure T_simulationOutput.finishRun;
     endAtStep:=startAtStep+maxSteps;
   end;
 
-procedure T_simulationOutput.updateTable(const scaleType: T_scaleType; const rowIndex: longint; const table: TStringGrid);
+PROCEDURE T_simulationOutput.updateTable(CONST scaleType: T_scaleType; CONST rowIndex: longint; CONST table: TStringGrid);
   FUNCTION getIoString(CONST wire:T_wireValue):string;
     begin
       case scaleType of
@@ -288,7 +286,7 @@ procedure T_simulationOutput.updateTable(const scaleType: T_scaleType; const row
   VAR col:longint=0;
       i,k:longint;
   begin
-    if table.RowCount<=rowIndex then table.RowCount:=rowIndex+1;
+    if table.rowCount<=rowIndex then table.rowCount:=rowIndex+1;
 
     col:=0;
     for i:=0 to length(inputs)-1 do begin
@@ -308,44 +306,66 @@ procedure T_simulationOutput.updateTable(const scaleType: T_scaleType; const row
     end;
   end;
 
-procedure T_simulationOutput.paint(CONST scaleType:T_scaleType; CONST meta:T_graphMetaData; CONST zoom,startIndex:longint; CONST image:TImage);
+PROCEDURE T_simulationOutput.paint(CONST scaleType:T_scaleType; CONST meta:T_graphMetaData; CONST zoom,startIndex:longint; CONST image:TImage);
+  VAR i:longint;
+      RED:boolean=true;
   begin
-    //TODO: Paint it, y-axis is based on meta, x-axis is based on zoom and startIndex
+    if startIndex                      >endAtStep   then exit;
+    if startIndex+(image.width-20)*zoom<startAtStep then exit;
+
+    //image.Picture.Bitmap.Canvas.Font.Color:=clBlack;
+    //image.Picture.Bitmap.Canvas.Font.Orientation:=0;
+    //image.Picture.Bitmap.Canvas.TextOut(startAtStep-startIndex,3,'Lauf #'+intTos...);
+
+    for i:=0 to length(inputs)-1 do begin
+      if RED then image.picture.Bitmap.Canvas.Pen.color:=clRed
+             else image.picture.Bitmap.Canvas.Pen.color:=clBlue;
+      RED:=not(RED);
+      //...
+
+    end;
+    for i:=0 to length(outputHistory)-1 do begin
+      if RED then image.picture.Bitmap.Canvas.Pen.color:=clRed
+             else image.picture.Bitmap.Canvas.Pen.color:=clBlue;
+      RED:=not(RED);
+      //...
+    end;
+
   end;
 
-procedure T_simulationOutput.paintCaptions(CONST scaleType:T_scaleType; VAR meta:T_graphMetaData; CONST image:TImage);
+PROCEDURE T_simulationOutput.paintCaptions(CONST scaleType:T_scaleType; VAR meta:T_graphMetaData; CONST image:TImage);
   VAR i:longint;
-      red:boolean=true;
+      RED:boolean=true;
   begin
-    image.Picture.Bitmap.SetSize(image.Width,image.Height);
+    image.picture.Bitmap.setSize(image.width,image.height);
     image.picture.Bitmap.Canvas.Brush.color:=clBtnFace;
     image.picture.Bitmap.Canvas.clear;
 
-    meta.update(scaleType,image.Height);
+    meta.update(scaleType,image.height);
 
-    image.Picture.Bitmap.Canvas.Font.Orientation:=900;
+    image.picture.Bitmap.Canvas.Font.Orientation:=900;
     for i:=0 to length(meta.input)-1 do begin
-      if red then image.Picture.Bitmap.Canvas.Font.Color:=clRed
-             else image.Picture.Bitmap.Canvas.font.Color:=clBlue;
-      red:=not(red);
-      image.Picture.Bitmap.Canvas.TextOut(0,meta.input[i].plotY0,meta.input[i].caption);
+      if RED then image.picture.Bitmap.Canvas.Font.color:=clRed
+             else image.picture.Bitmap.Canvas.Font.color:=clBlue;
+      RED:=not(RED);
+      image.picture.Bitmap.Canvas.textOut(0,meta.input[i].plotY0,meta.input[i].caption);
     end;
     for i:=0 to length(meta.output)-1 do begin
-      if red then image.Picture.Bitmap.Canvas.Font.Color:=clRed
-             else image.Picture.Bitmap.Canvas.font.Color:=clBlue;
-      red:=not(red);
-      image.Picture.Bitmap.Canvas.TextOut(0,meta.output[i].plotY0,meta.output[i].caption);
+      if RED then image.picture.Bitmap.Canvas.Font.color:=clRed
+             else image.picture.Bitmap.Canvas.Font.color:=clBlue;
+      RED:=not(RED);
+      image.picture.Bitmap.Canvas.textOut(0,meta.output[i].plotY0,meta.output[i].caption);
     end;
   end;
 
-function T_simulationOutput.stepsTotal: longint;
+FUNCTION T_simulationOutput.stepsTotal: longint;
   begin
     result:=endAtStep-startAtStep;
   end;
 
 { TanalysisForm }
 
-procedure TanalysisForm.UpdateTableButtonClick(Sender: TObject);
+PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
   CONST ONE_MINUTE=1/(24*60);
   VAR input:array of boolean;
       inputsGenerated:longint=0;
@@ -358,11 +378,11 @@ procedure TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       //progress by time:
       // 100*(now-start)/(generationDeadline-start) ; start=generationDeadline-ONE_MINUTE;
       //=100*(now-generationDeadline+ONE_MINUTE)/ONE_MINUTE;
-      progress:=round(ProgressBar1.Max*(now-generationDeadline+ONE_MINUTE)/ONE_MINUTE);
-      k:=round(inputsGenerated/expectedTotalInputs*ProgressBar1.Max);
+      progress:=round(ProgressBar1.max*(now-generationDeadline+ONE_MINUTE)/ONE_MINUTE);
+      k:=round(inputsGenerated/expectedTotalInputs*ProgressBar1.max);
       if k>progress then progress:=k;
-      if progress<0 then progress:=0 else if progress>ProgressBar1.Max then progress:=ProgressBar1.Max;
-      ProgressBar1.Position:=progress;
+      if progress<0 then progress:=0 else if progress>ProgressBar1.max then progress:=ProgressBar1.max;
+      ProgressBar1.position:=progress;
 
       inc(inputsGenerated);
       if (inputsGenerated>1000) or (length(input)=0) or (now>generationDeadline) then exit(false);
@@ -386,11 +406,10 @@ procedure TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       end;
     end;
 
-
   VAR i,stepCount:longint;
       simulationStartStep:longint=0;
       simIndex:longint=0;
-      minResponseTime:longint=MaxLongint;
+      minResponseTime:longint=maxLongint;
       maxResponseTime:longint=0;
       c:longint;
       wIn:array of record
@@ -400,8 +419,8 @@ procedure TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       startTicks: qword;
       scaleType:T_scaleType;
   begin
-    if rbBinary.Checked then scaleType:=st_binary
-    else if rbPositive.Checked then scaleType:=st_unsigned
+    if rbBinary.checked then scaleType:=st_binary
+    else if rbPositive.checked then scaleType:=st_unsigned
     else scaleType:=st_signed;
 
     for i:=0 to length(simulationOutputs)-1 do simulationOutputs[i].destroy;
@@ -447,11 +466,11 @@ procedure TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       simulationOutputs[simIndex].finishRun;
       if simulationOutputs[simIndex].stepsTotal<minResponseTime then begin
         minResponseTime:=simulationOutputs[simIndex].stepsTotal;
-        minResponseTimeLabel.Caption:=IntToStr(minResponseTime);
+        minResponseTimeLabel.caption:=intToStr(minResponseTime);
       end;
       if simulationOutputs[simIndex].stepsTotal>maxResponseTime then begin
         maxResponseTime:=simulationOutputs[simIndex].stepsTotal;
-        maxResponseTimeLabel.Caption:=IntToStr(maxResponseTime);
+        maxResponseTimeLabel.caption:=intToStr(maxResponseTime);
       end;
       simulationStartStep:=simulationOutputs[simIndex].endAtStep;
       simulationOutputs[simIndex].updateTable(scaleType,simIndex+1,StringGrid);
@@ -466,30 +485,30 @@ procedure TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       inc(simIndex);
     until not(nextInput);
     StringGrid.EndUpdate();
-    ProgressBar1.Position:=0;
+    ProgressBar1.position:=0;
 
-    if TrackBar1.Position*simulationStartStep>Image1.Width
-    then TrackBar1.Position:=Trunc(Image1.Width/simulationStartStep);
-    ScrollBar1.Position:=0;
-    ScrollBar1.Min:=0;
-    i:=simulationStartStep-trunc(image1.Width/TrackBar1.Position);
+    if TrackBar1.position*simulationStartStep>Image1.width
+    then TrackBar1.position:=trunc(Image1.width/simulationStartStep);
+    ScrollBar1.position:=0;
+    ScrollBar1.min:=0;
+    i:=simulationStartStep-trunc(Image1.width/TrackBar1.position);
     if i<=0 then begin
-      ScrollBar1.Position:=0;
-      ScrollBar1.Visible:=false;
+      ScrollBar1.position:=0;
+      ScrollBar1.visible:=false;
     end else begin
-      ScrollBar1.Max:=i;
-      ScrollBar1.Visible:=true;
+      ScrollBar1.max:=i;
+      ScrollBar1.visible:=true;
     end;
     repaintGraph;
   end;
 
-procedure TanalysisForm.rbBinaryChange(Sender: TObject);
+PROCEDURE TanalysisForm.rbBinaryChange(Sender: TObject);
   begin
     repaintTable;
     repaintGraph;
   end;
 
-procedure TanalysisForm.setupTable;
+PROCEDURE TanalysisForm.setupTable;
   VAR colIndex:longint=0;
       i:longint;
   begin
@@ -500,8 +519,8 @@ procedure TanalysisForm.setupTable;
 
     StringGrid.colCount:=clonedGate^.numberOfInputs+clonedGate^.numberOfOutputs+1;
     StringGrid.rowCount:=1;
-    minResponseTimeLabel.Caption:='?';
-    maxResponseTimeLabel.Caption:='?';
+    minResponseTimeLabel.caption:='?';
+    maxResponseTimeLabel.caption:='?';
 
     for i:=0 to length(graphMetaData.input)-1 do begin
       StringGrid.Cells[colIndex,0]:=graphMetaData.input[i].caption;
@@ -515,29 +534,30 @@ procedure TanalysisForm.setupTable;
     end;
   end;
 
-procedure TanalysisForm.repaintTable;
+PROCEDURE TanalysisForm.repaintTable;
   VAR simIndex:longint;
       scaleType: T_scaleType;
   begin
-    if rbBinary.Checked then scaleType:=st_binary
-    else if rbPositive.Checked then scaleType:=st_unsigned
+    if rbBinary.checked then scaleType:=st_binary
+    else if rbPositive.checked then scaleType:=st_unsigned
     else scaleType:=st_signed;
     for simIndex:=0 to length(simulationOutputs)-1 do simulationOutputs[simIndex].updateTable(scaleType,simIndex+1,StringGrid);
   end;
 
-procedure TanalysisForm.repaintGraph;
+PROCEDURE TanalysisForm.repaintGraph;
   VAR simIndex:longint;
       scaleType: T_scaleType;
   begin
-    if rbBinary.Checked then scaleType:=st_binary
-    else if rbPositive.Checked then scaleType:=st_unsigned
+    if length(simulationOutputs)=0 then exit;
+    if rbBinary.checked then scaleType:=st_binary
+    else if rbPositive.checked then scaleType:=st_unsigned
     else scaleType:=st_signed;
 
     simulationOutputs[0].paintCaptions(scaleType,graphMetaData,Image1);
-    for simIndex:=0 to length(simulationOutputs)-1 do simulationOutputs[simIndex].paint(scaleType,graphMetaData,TrackBar1.Position,ScrollBar1.Position,Image1);
+    for simIndex:=0 to length(simulationOutputs)-1 do simulationOutputs[simIndex].paint(scaleType,graphMetaData,TrackBar1.position,ScrollBar1.position,Image1);
   end;
 
-procedure TanalysisForm.showForGate(const gate: P_abstractGate);
+PROCEDURE TanalysisForm.showForGate(CONST gate: P_abstractGate);
   begin
     clonedGate:=gate^.clone;
     setupTable;
@@ -545,7 +565,7 @@ procedure TanalysisForm.showForGate(const gate: P_abstractGate);
     dispose(clonedGate,destroy);
   end;
 
-procedure TanalysisForm.showForBoard(const board: P_circuitBoard);
+PROCEDURE TanalysisForm.showForBoard(CONST board: P_circuitBoard);
   begin
     new(P_customGate(clonedGate),create(board));
     setupTable;
