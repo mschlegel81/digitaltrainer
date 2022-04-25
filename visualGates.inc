@@ -41,7 +41,7 @@ T_visualGate=object
     PROCEDURE Repaint; virtual;
     PROPERTY getBehavior:P_abstractGate read behavior;
     FUNCTION nextGateAfter:T_point;
-    PROCEDURE forcedFullRepaint;
+    PROCEDURE forcedFullRepaint; virtual;
 end;
 
 P_visualGateForCustom=^T_visualGateForCustom;
@@ -61,6 +61,7 @@ protected
   CONSTRUCTOR create(CONST origin_:T_point; CONST gateToWrap:P_abstractGate; CONST board_:P_circuitBoard);
 public
   PROCEDURE Repaint; virtual;
+  PROCEDURE forcedFullRepaint; virtual;
 end;
 
 T_inputMode=(im_bin,im_dec,im_2complement);
@@ -77,6 +78,7 @@ protected
   CONSTRUCTOR create(CONST origin_:T_point; CONST gateToWrap:P_abstractGate; CONST board_:P_circuitBoard);
 public
   PROCEDURE Repaint; virtual;
+  PROCEDURE forcedFullRepaint; virtual;
 private
   //Events...
   PROCEDURE updateText;
@@ -105,12 +107,12 @@ CONSTRUCTOR T_visualGateForCustom.create(CONST origin_: T_point; CONST gateToWra
 
 CONSTRUCTOR T_visualGateForInput.create(CONST origin_: T_point; CONST gateToWrap: P_abstractGate; CONST board_: P_circuitBoard);
   begin
-    inherited; size[0]+=1; size[1]+=1;
+    inherited; size:=pointOf(6,3);
     inputMode:=im_bin;
   end;
 
 CONSTRUCTOR T_visualGateForOutput.create(CONST origin_: T_point; CONST gateToWrap: P_abstractGate; CONST board_: P_circuitBoard);
-  begin inherited; size[1]+=1; end;
+  begin inherited; size:=pointOf(6,3);  end;
 
 DESTRUCTOR T_visualGate.destroy;
   begin
@@ -664,6 +666,22 @@ PROCEDURE T_visualGate.forcedFullRepaint;
   begin
     disposeGuiElements;
     size:=pointOf(4,max(2,2*max(numberOfInputs,numberOfOutputs)));
+    ensureGuiElements;
+    Repaint;
+  end;
+
+PROCEDURE T_visualGateForOutput.forcedFullRepaint;
+  begin
+    disposeGuiElements;
+    size:=pointOf(6,3);
+    ensureGuiElements;
+    Repaint;
+  end;
+
+PROCEDURE T_visualGateForInput.forcedFullRepaint;
+  begin
+    disposeGuiElements;
+    size:=pointOf(6,3);
     ensureGuiElements;
     Repaint;
   end;

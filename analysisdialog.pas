@@ -296,14 +296,20 @@ PROCEDURE T_graphMetaData.update(CONST scaleType: T_scaleType; CONST imageHeight
         st_unsigned: begin
           setLength(entry.ranges,1);
           case entry.bitWidth of
-            8: begin dyFactor:=8/256; dynamicRange:=256; end;
-            4: begin dyFactor:=4/16;  dynamicRange:=16;  end;
+           16: begin dyFactor:=16/65536; dynamicRange:=65536; end;
+            8: begin dyFactor:= 8/  256; dynamicRange:=256; end;
+            4: begin dyFactor:= 4/   16; dynamicRange:=16;  end;
           else dyFactor:=1;
           end;
         end;
         st_signed: begin
           setLength(entry.ranges,1);
           case entry.bitWidth of
+            16: begin
+                 dyFactor:=16/65536;
+                 yOffset :=dyFactor*32768;
+                 dynamicRange:=65536;
+               end;
             8: begin
                  dyFactor:=8/256;
                  yOffset :=dyFactor*128;
@@ -322,7 +328,7 @@ PROCEDURE T_graphMetaData.update(CONST scaleType: T_scaleType; CONST imageHeight
         end;
       end;
       for k:=0 to length(entry.ranges)-1 do begin
-        entry.ranges[k].y0:=round(yTally+yOffset);
+        entry.ranges[k].y0:=round(yTally-yOffset*zoomFactor);
         entry.ranges[k].dy:=-dyFactor*zoomFactor;
         yTally+=round(0.5+1.1*entry.ranges[k].dy*dynamicRange);
       end;
