@@ -543,7 +543,7 @@ PROCEDURE T_visualGateForInput.Repaint;
         w:T_wireValue;
     begin
       w:=behavior^.getInput(0);
-      for i:=0 to 7 do w.bit[i]:=TRI_STATE_NOT[w.bit[i]];
+      for i:=0 to WIRE_MAX_WIDTH-1 do w.bit[i]:=TRI_STATE_NOT[w.bit[i]];
       behavior^.setInput(0,w);
       updateIoVisuals;
       if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
