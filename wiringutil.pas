@@ -7,6 +7,7 @@ USES serializationUtil;
 CONST BOARD_MAX_SIZE_IN_GRID_ENTRIES=200;
 TYPE T_wireDirection=(wd_left,wd_leftDown,wd_down,wd_rightDown,wd_right,wd_rightUp,wd_up,wd_leftUp);
      T_wireDirectionSet=bitpacked set of T_wireDirection;
+     T_wireDirections=array of T_wireDirection;
      T_point=array[0..1] of longint;
      T_wirePath=array of T_point;
      T_wirePathArray=array of T_wirePath;
@@ -397,10 +398,10 @@ PROCEDURE T_wireGraph.dropWire(CONST path:T_wirePath; CONST diagonalsOnly:boolea
     for i:=0 to length(path)-2 do dropWireSection(path[i],path[i+1],diagonalsOnly);
   end;
 
-CONST DirectionCost:array[T_wireDirection] of double=(1,2,
-                                                      1,2,
-                                                      1,2,
-                                                      1,2);
+CONST DirectionCost:array[T_wireDirection] of double=(1,1.5,
+                                                      1,1.5,
+                                                      1,1.5,
+                                                      1,1.5);
       ChangeDirectionPenalty=1;
       //2+changeDirectionPenalty < diagonalCost+2*changeDirectionPenalty
       //2 < diagonalCost+changeDirectionPenalty
@@ -436,6 +437,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
 
   VAR openSet:T_priorityQueue;
       entry  :T_aStarNodeInfo;
+      successfullyPrimed:boolean=false;
   PROCEDURE prime;
     VAR i,j,k:longint;
         dir:T_wireDirection;
@@ -464,8 +466,22 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
             except
             end;
           end;
+          successfullyPrimed:=true;
         end;
       end;
+    end;
+
+  FUNCTION sortedDirection(CONST preferred:T_wireDirection; CONST allowed:T_wireDirectionSet):T_wireDirections;
+    VAR d:T_wireDirection;
+        i:longint=1;
+    begin
+      setLength(result,8);
+      if preferred in allowed then result[0]:=preferred else i:=0;
+      for d in allowed do if (d<>preferred) then begin
+        result[i]:=d;
+        inc(i);
+      end;
+      setLength(result,i);
     end;
 
   VAR n,neighbor:T_point;
@@ -474,14 +490,14 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
       scoreBasis:double;
       scanRadius:double;
       directionChanged,knownPrevious,firstStep:boolean;
-      allowedByDirection:T_wireDirectionSet;
+      nextDirections:T_wireDirections;
   begin
     nodeMap.create;
     openSet.create;
     scanRadius:=2*distance(startPoint);
 
-    if length(pathsToPrimeWith)>0 then prime
-    else begin
+    if length(pathsToPrimeWith)>0 then prime;
+    if not(successfullyPrimed) then begin
       initialize(result);
       setLength(result,1);
       result[0]:=startPoint;
@@ -499,17 +515,20 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
       scoreBasis-=distance(n);
 
       if nodeMap.containsKey(n,entry) then begin
-         firstStep:=entry.costToGetThere=0;
-         knownPrevious:=true;
+        firstStep:=entry.costToGetThere=0;
+        knownPrevious:=true;
         previousDirection:=entry.cameFrom;
-        allowedByDirection:=allowedSuccessiveDirection[previousDirection];
+        nextDirections:=sortedDirection(previousDirection,
+          allowedSuccessiveDirection[previousDirection]*
+          allowedDirectionsPerPoint[n[0],n[1]]*
+          allowedSuccessiveDirection[previousDirection]);
       end else begin
         firstStep:=false;
         knownPrevious:=false;
-        allowedByDirection:=AllDirections;
+        nextDirections:=sortedDirection(wd_right,allowedDirectionsPerPoint[n[0],n[1]]);
       end;
 
-      for dir in allowedDirectionsPerPoint[n[0],n[1]]*allowedByDirection do begin
+      for dir in nextDirections do begin
         score:=scoreBasis+DirectionCost[dir];
         if knownPrevious and (dir<>previousDirection) then begin
           if not(firstStep) then score+=ChangeDirectionPenalty;
@@ -539,8 +558,15 @@ FUNCTION T_wireGraph.findPath(CONST startPoint,endPoint:T_point):T_wirePath;
   end;
 
 FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wirePath):T_wirePathArray;
+  TYPE T_indexAndDist=record
+         idx:longint;
+         dist:double;
+       end;
+
   VAR nextPath:T_wirePath;
-      i:longint;
+      initialRun:array of T_indexAndDist;
+      swapTemp:T_indexAndDist;
+      i,j:longint;
       anyImproved: boolean;
   FUNCTION listExceptEntry(CONST list:T_wirePathArray; CONST indexToDrop:longint):T_wirePathArray;
     VAR i:longint;
@@ -553,13 +579,25 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wireP
       end;
     end;
 
+
+
   begin
-    setLength(result,0);
+    setLength(initialRun,length(endPoints));
     for i:=0 to length(endPoints)-1 do begin
-      nextPath:=findPath(startPoint,endPoints[i],result);
-      setLength(result,i+1);
-      result[i]:=nextPath;
+      initialRun[i].idx:=i;
+      initialRun[i].dist:=sqr(startPoint[0]-endPoints[i,0])+sqr(startPoint[1]-endPoints[i,1]);
+      for j:=0 to i-1 do if initialRun[i].dist<initialRun[j].dist then begin
+        swapTemp     :=initialRun[i];
+        initialRun[i]:=initialRun[j];
+        initialRun[j]:=swapTemp;
+      end;
     end;
+
+    setLength(result,length(endPoints));
+    for swapTemp in initialRun do with swapTemp do
+      result[idx]:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx));
+    SetLength(initialRun,0);
+
     if length(endPoints)>1 then repeat
       anyImproved:=false;
       for i:=0 to length(endPoints)-1 do begin
