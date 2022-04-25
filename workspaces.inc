@@ -580,7 +580,7 @@ PROCEDURE T_workspace.rebuildTree;
        not(paletteEntries[i]^.usesBoard(currentBoard,true))
     then addBoardToTree(paletteEntries[i]);
 
-    for node in paletteView.Items do if node.HasChildren then node.AlphaSort;
+    for node in paletteView.items do if node.HasChildren then node.AlphaSort;
 
     paletteView.FullExpand;
     paletteView.OnEdited:=@paletteViewEdited;

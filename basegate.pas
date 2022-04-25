@@ -263,9 +263,7 @@ PROCEDURE T_circuitBoard.setSelectForAll(CONST doSelect: boolean);
 FUNCTION T_circuitBoard.repositionCustomRegion(VAR origin:T_point; CONST size:T_point; CONST considerWires:boolean):T_repositionOutput;
   FUNCTION isOriginValid(CONST o:T_point):boolean;
     VAR gate:P_visualGate;
-        i,j,k,run:longint;
-        p:T_point;
-        direction:T_wireDirection;
+        i,j,k:longint;
     begin
       if (o[0]<5) or (o[0]+size[0]>=BOARD_MAX_SIZE_IN_GRID_ENTRIES-5) or
          (o[1]<5) or (o[1]+size[1]>=BOARD_MAX_SIZE_IN_GRID_ENTRIES-5)
@@ -280,15 +278,9 @@ FUNCTION T_circuitBoard.repositionCustomRegion(VAR origin:T_point; CONST size:T_
       for i:=0 to length(logicWires)-1 do
       for j:=0 to length(logicWires[i].wires)-1 do
       with logicWires[i].wires[j] do begin
-        for k:=0 to length(visual)-2 do begin
-          p:=visual[k];
-          direction:=directionBetween  (p,visual[k+1]);
-          for run:=0 to maxNormDistance(p,visual[k+1]) do begin
-            if (p[0]>=o[0]-1) and (p[0]<=o[0]+size[0]+1) and
-               (p[1]>=o[1]-1) and (p[1]<=o[1]+size[1]+1) then exit(false);
-            p+=direction;
-          end;
-        end;
+        for k:=0 to length(visual)-2 do
+        if lineCrossesRectangle(visual[k],visual[k+1],o,size)
+        then exit(false);
       end;
     end;
 
@@ -318,9 +310,8 @@ FUNCTION T_circuitBoard.repositionCustomRegion(VAR origin:T_point; CONST size:T_
 
 FUNCTION T_circuitBoard.canGateBeMovedBy(CONST gateToCheck:P_visualGate; CONST delta:T_point; CONST considerWires,considerMarkedGates:boolean):boolean;
   VAR gate:P_visualGate;
-      i,j,k,run:longint;
-      p,o:T_point;
-      direction:T_wireDirection;
+      i,j,k:longint;
+      o:T_point;
   begin
     o:=gateToCheck^.origin+delta;
     if (o[0]<5) or (o[0]+gateToCheck^.size[0]>=BOARD_MAX_SIZE_IN_GRID_ENTRIES-5) or
@@ -337,15 +328,9 @@ FUNCTION T_circuitBoard.canGateBeMovedBy(CONST gateToCheck:P_visualGate; CONST d
     for i:=0 to length(logicWires)-1 do
     for j:=0 to length(logicWires[i].wires)-1 do
     with logicWires[i].wires[j] do begin
-      for k:=0 to length(visual)-2 do begin
-        p:=visual[k];
-        direction:=directionBetween  (p,visual[k+1]);
-        for run:=0 to maxNormDistance(p,visual[k+1]) do begin
-          if (p[0]>=o[0]-1) and (p[0]<=o[0]+gateToCheck^.size[0]+1) and
-             (p[1]>=o[1]-1) and (p[1]<=o[1]+gateToCheck^.size[1]+1) then exit(false);
-          p+=direction;
-        end;
-      end;
+      for k:=0 to length(visual)-2 do
+      if lineCrossesRectangle(visual[k],visual[k+1],o,gateToCheck^.size)
+      then exit(false);
     end;
   end;
 
@@ -1126,23 +1111,25 @@ PROCEDURE T_circuitBoard.performRedo;
 
 PROCEDURE T_circuitBoard.WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   FUNCTION wireHitsPoint(CONST p:T_point; CONST wire:T_wirePath):boolean;
-    VAR i,j,len:longint;
-        a,b,pointBetween:T_point;
-        dir:T_wireDirection;
+    VAR i:longint;
+        a,b:T_point;
+        t:double;
     begin
       for i:=0 to length(wire)-2 do begin
         a:=wire[i];
         b:=wire[i+1];
-        if (a=p) or (b=p) then exit(true);
-        len:=maxNormDistance(a,b);
-        if len>1 then begin
-          dir:=directionBetween(a,b);
-          pointBetween:=a;
-          for j:=1 to len-1 do begin
-            pointBetween+=dir;
-            if p=pointBetween then exit(true);
-          end;
-        end;
+
+        //distance(t)=(a-p)+(b-a)*t
+        //minimize distance(t) ->
+        // 0 = d ((a-p)+(b-a)*t)² / dt
+        //   = d ((a-p)²+2*(a-p)*(b-a)*t+  (b-a)²*t²) / dt
+        //   =           2*(a-p)*(b-a)  +2*(b-a)²*t
+        // -(a-p)*(b-a)/(b-a)² =  t
+        // accept only if 0<=t<=1 !!
+
+        t:=-((a-p)*(b-a))/((b-a)*(b-a));
+        if (0<t) and (t<1) and (sqr((a[0]-p[0])+(b[0]-a[0])*t)
+                               +sqr((a[1]-p[1])+(b[1]-a[1])*t)<1) then exit(true);
       end;
       result:=false;
     end;
