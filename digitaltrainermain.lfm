@@ -142,7 +142,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       TabOrder = 4
       object FlowPanel1: TFlowPanel
         Left = 0
-        Height = 150
+        Height = 125
         Top = 0
         Width = 166
         Align = alTop
@@ -200,44 +200,19 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
             Index = 9
           end        
           item
-            Control = ButtonAdd1to4
+            Control = ButtonAddAdapter
             WrapAfter = waAuto
             Index = 10
           end        
           item
-            Control = ButtonAdd4to1
+            Control = ButtonAddConstantTrue
             WrapAfter = waAuto
             Index = 11
           end        
           item
-            Control = ButtonAdd1to8
-            WrapAfter = waAuto
-            Index = 12
-          end        
-          item
-            Control = ButtonAdd8to1
-            WrapAfter = waAuto
-            Index = 13
-          end        
-          item
-            Control = ButtonAdd4to8
-            WrapAfter = waAuto
-            Index = 14
-          end        
-          item
-            Control = ButtonAdd8to4
-            WrapAfter = waAuto
-            Index = 15
-          end        
-          item
-            Control = ButtonAddConstantTrue
-            WrapAfter = waAuto
-            Index = 16
-          end        
-          item
             Control = ButtonAddConstantFalse
             WrapAfter = waAuto
-            Index = 17
+            Index = 12
           end>
         FlowLayout = tlTop
         FlowStyle = fsLeftRightTopBottom
@@ -356,99 +331,44 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           ShowHint = True
           TabOrder = 9
         end
-        object ButtonAdd1to4: TButton
+        object ButtonAddAdapter: TButton
           Left = 48
           Height = 25
           Top = 75
           Width = 48
           Anchors = []
-          Caption = '1->4'
-          OnClick = ButtonAdd1to4Click
+          Caption = 'adapter'
+          OnClick = ButtonAddAdapterClick
           ParentFont = False
           TabOrder = 10
         end
-        object ButtonAdd4to1: TButton
+        object ButtonAddConstantTrue: TButton
           Left = 96
           Height = 25
           Top = 75
-          Width = 48
-          Anchors = []
-          Caption = '4->1'
-          OnClick = ButtonAdd4to1Click
-          ParentFont = False
-          TabOrder = 11
-        end
-        object ButtonAdd1to8: TButton
-          Left = 0
-          Height = 25
-          Top = 100
-          Width = 48
-          Anchors = []
-          Caption = '1->8'
-          OnClick = ButtonAdd1to8Click
-          ParentFont = False
-          TabOrder = 12
-        end
-        object ButtonAdd8to1: TButton
-          Left = 48
-          Height = 25
-          Top = 100
-          Width = 48
-          Anchors = []
-          Caption = '8->1'
-          OnClick = ButtonAdd8to1Click
-          ParentFont = False
-          TabOrder = 13
-        end
-        object ButtonAdd4to8: TButton
-          Left = 96
-          Height = 25
-          Top = 100
-          Width = 48
-          Anchors = []
-          Caption = '4->8'
-          OnClick = ButtonAdd4to8Click
-          ParentFont = False
-          TabOrder = 14
-        end
-        object ButtonAdd8to4: TButton
-          Left = 0
-          Height = 25
-          Top = 125
-          Width = 48
-          Anchors = []
-          Caption = '8->4'
-          OnClick = ButtonAdd8to4Click
-          ParentFont = False
-          TabOrder = 15
-        end
-        object ButtonAddConstantTrue: TButton
-          Left = 48
-          Height = 25
-          Top = 125
           Width = 48
           Anchors = []
           Caption = '1'
           OnClick = ButtonAddConstantTrueClick
           ParentFont = False
-          TabOrder = 16
+          TabOrder = 11
         end
         object ButtonAddConstantFalse: TButton
-          Left = 96
+          Left = 0
           Height = 25
-          Top = 125
+          Top = 100
           Width = 48
           Anchors = []
           Caption = '0'
           OnClick = ButtonAddConstantFalseClick
           ParentFont = False
-          TabOrder = 17
+          TabOrder = 12
         end
       end
       object ButtonAddCustom: TButton
         Left = 0
         Height = 25
-        Top = 150
+        Top = 125
         Width = 166
         Align = alTop
         Caption = 'benutzerdefiniert'
@@ -458,8 +378,8 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
       object PaletteTreeView: TTreeView
         Left = 0
-        Height = 114
-        Top = 175
+        Height = 139
+        Top = 150
         Width = 166
         Align = alClient
         HideSelection = False

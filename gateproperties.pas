@@ -3,13 +3,15 @@ UNIT gateProperties;
 INTERFACE
 USES serializationUtil,logicGates;
 TYPE
-  T_gatePropertyType=(pt_number,pt_string,pt_wireWidth);
+  T_gatePropertyType=(pt_number,pt_string,pt_wireWidth,pt_connectionCount);
   T_gatePropertyEnum=(gpe_caption,
                       gpe_description,
-                      gpe_ioIndex,
                       gpe_editableLabel,
+                      gpe_ioIndex,
                       gpe_intervalGreaterZero,
-                      gpe_widthInBits);
+                      gpe_inputWidth,
+                      gpe_outputWidth,
+                      gpe_inputCount);
   T_gatePropertyEnums=set of T_gatePropertyEnum;
   T_gateProperty=record
     name:string;
@@ -22,30 +24,27 @@ CONST
   C_gateProperty:array[T_gatePropertyEnum] of T_gateProperty=
   ((name:'Name'        ;            typ:pt_string; minValue:0; maxValue:   0; readonly:true),
    (name:'Beschreibung';            typ:pt_string; minValue:0; maxValue:   0; readonly:true),
-   (name:'Nummer';                  typ:pt_number; minValue:0; maxValue:   0; readonly:true),
    (name:'Label';                   typ:pt_string; minValue:0; maxValue:   0; readonly:false),
+   (name:'Nummer';                  typ:pt_number; minValue:0; maxValue:   0; readonly:true),
    (name:'Intervall';               typ:pt_number; minValue:1; maxValue:1024; readonly:false),
-   (name:'Anschlussbreite in bits'; typ:pt_wireWidth; minValue:1; maxValue:8; readonly:false));
+   (name:'Breite Eingang (bits)';   typ:pt_wireWidth; minValue:1; maxValue:WIRE_MAX_WIDTH; readonly:false),
+   (name:'Breite Ausgang (bits)';   typ:pt_wireWidth; minValue:1; maxValue:WIRE_MAX_WIDTH; readonly:false),
+   (name:'Anzahl Eingänge';         typ:pt_connectionCount; minValue:2; maxValue:WIRE_MAX_WIDTH; readonly:false));
   C_availableProperies:array[T_gateType] of T_gatePropertyEnums=
   {gt_notGate} ([gpe_caption],
-  {gt_andGate}  [gpe_caption],
-  {gt_orGate}   [gpe_caption],
-  {gt_xorGate}  [gpe_caption],
-  {gt_nandGate} [gpe_caption],
-  {gt_norGate}  [gpe_caption],
-  {gt_nxorGate} [gpe_caption],
-  {gt_input}    [gpe_editableLabel,gpe_widthInBits,gpe_ioIndex],
-  {gt_output}   [gpe_editableLabel,gpe_widthInBits,gpe_ioIndex],
+  {gt_andGate}  [gpe_caption,gpe_inputCount],
+  {gt_orGate}   [gpe_caption,gpe_inputCount],
+  {gt_xorGate}  [gpe_caption,gpe_inputCount],
+  {gt_nandGate} [gpe_caption,gpe_inputCount],
+  {gt_norGate}  [gpe_caption,gpe_inputCount],
+  {gt_nxorGate} [gpe_caption,gpe_inputCount],
+  {gt_input}    [gpe_editableLabel,gpe_outputWidth,gpe_ioIndex],
+  {gt_output}   [gpe_editableLabel,gpe_inputWidth,gpe_ioIndex],
   {gt_compound} [gpe_caption,gpe_description],
   {gt_clock}    [gpe_caption,gpe_intervalGreaterZero],
-  {gt_adapter1to4} [gpe_caption],
-  {gt_adapter4to1} [gpe_caption],
-  {gt_adapter1to8} [gpe_caption],
-  {gt_adapter8to1} [gpe_caption],
-  {gt_adapter4to8} [gpe_caption],
-  {gt_adapter8to4} [gpe_caption],
-                   [gpe_caption],
-                   [gpe_caption]);
+  {gt_adapter}  [gpe_caption,gpe_inputWidth,gpe_outputWidth],
+                [gpe_caption],
+                [gpe_caption]);
 
 TYPE
   T_gatePropertyValue=record
@@ -95,15 +94,26 @@ FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum): T_gate
       gpe_editableLabel:
         if gate^.gateType in [gt_input,gt_output]
         then result.s:=P_inputGate(gate)^.caption;
-      gpe_widthInBits:
-        if gate^.gateType in [gt_input,gt_output]
-        then result.n:=P_inputGate(gate)^.width;
       gpe_intervalGreaterZero:
         if gate^.gateType=gt_clock
         then result.n:=P_clock(gate)^.interval;
       gpe_ioIndex:
         if gate^.gateType in [gt_input,gt_output]
         then result.n:=P_inputGate(gate)^.ioIndex;
+
+      gpe_inputWidth:
+        case gate^.gateType of
+          gt_output: result.n:=P_outputGate(gate)^.width;
+          gt_adapter: result.n:=P_adapter(gate)^.inputWidth(0);
+        end;
+      gpe_outputWidth:
+        case gate^.gateType of
+          gt_input: result.n:=P_inputGate(gate)^.width;
+          gt_adapter: result.n:=P_adapter(gate)^.outputWidth(0);
+        end;
+      gpe_inputCount :
+        if gate^.gateType in [gt_andGate,gt_orGate,gt_xorGate,gt_nandGate,gt_norGate,gt_nxorGate]
+        then result.n:=P_binaryBaseGate(gate)^.inputCount;
     end;
   end;
 
@@ -116,10 +126,20 @@ PROCEDURE T_gatePropertyValues.applyValue(CONST prop: T_gatePropertyEnum; CONST 
       gpe_intervalGreaterZero: if gate^.gateType=gt_clock then begin
         P_clock(gate)^.interval:=value.n;
       end;
-      gpe_widthInBits: if gate^.gateType in [gt_input,gt_output] then begin
-        P_inputGate(gate)^.width:=value.n;
-        P_inputGate(gate)^.reset;
-      end;
+
+      gpe_inputWidth:
+        case gate^.gateType of
+          gt_output: P_outputGate(gate)^.width:=value.n;
+          gt_adapter: P_adapter(gate)^.setIoWidth(value.n,gate^.outputWidth(0));
+        end;
+      gpe_outputWidth:
+        case gate^.gateType of
+          gt_input: P_inputGate(gate)^.width:=value.n;
+          gt_adapter: P_adapter(gate)^.setIoWidth(gate^.inputWidth(0),value.n);
+        end;
+      gpe_inputCount :
+        if gate^.gateType in [gt_andGate,gt_orGate,gt_xorGate,gt_nandGate,gt_norGate,gt_nxorGate]
+        then P_binaryBaseGate(gate)^.inputCount:=value.n;
     end;
   end;
 
@@ -156,7 +176,7 @@ FUNCTION T_gatePropertyValues.key(CONST index: longint): string;
 FUNCTION T_gatePropertyValues.value(CONST index: longint): string;
   begin
     case C_gateProperty[entry[index].prop].typ of
-      pt_number,pt_wireWidth: result:=intToStr(entry[index].value.n);
+      pt_number,pt_wireWidth,pt_connectionCount: result:=intToStr(entry[index].value.n);
       pt_string: result:=         entry[index].value.s;
     end;
   end;
@@ -170,19 +190,26 @@ FUNCTION T_gatePropertyValues.acceptNewValue(CONST index: longint; CONST newValu
         newNumber:=StrToInt64Def(newValue,int64(maxLongint)+1);
         if (newNumber>C_gateProperty[entry[index].prop].maxValue) or
            (newNumber<C_gateProperty[entry[index].prop].minValue) then exit(false);
-        entry[index].modified:=entry[index].value.n<>newNumber;
+        entry[index].modified:=entry[index].modified or (entry[index].value.n<>newNumber);
         entry[index].value.n:=longint(newNumber);
         result:=true;
       end;
       pt_wireWidth: begin
         newNumber:=StrToInt64Def(newValue,int64(maxLongint)+1);
-        if not((newNumber=1) or (newNumber=4) or (newNumber=8)) then exit(false);
-        entry[index].modified:=entry[index].value.n<>newNumber;
+        if not((newNumber=1) or (newNumber=4) or (newNumber=8) or (newNumber=16)) then exit(false);
+        entry[index].modified:=entry[index].modified or (entry[index].value.n<>newNumber);
+        entry[index].value.n:=byte(newNumber);
+        result:=true;
+      end;
+      pt_connectionCount: begin
+        newNumber:=StrToInt64Def(newValue,int64(maxLongint)+1);
+        if (newNumber<2) or (newNumber>WIRE_MAX_WIDTH) then exit(false);
+        entry[index].modified:=entry[index].modified or (entry[index].value.n<>newNumber);
         entry[index].value.n:=byte(newNumber);
         result:=true;
       end;
       pt_string: begin
-        entry[index].modified:=entry[index].value.s<>newValue;
+        entry[index].modified:=entry[index].modified or (entry[index].value.s<>newValue);
         entry[index].value.s:=newValue;
         result:=true;
       end;

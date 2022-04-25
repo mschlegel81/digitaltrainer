@@ -13,13 +13,8 @@ TYPE
   { TDigitaltrainerMainForm }
 
   TDigitaltrainerMainForm = class(TForm)
-    ButtonAdd1to4: TButton;
+    ButtonAddAdapter: TButton;
     ButtonAddConstantTrue: TButton;
-    ButtonAdd8to4: TButton;
-    ButtonAdd4to8: TButton;
-    ButtonAdd8to1: TButton;
-    ButtonAdd1to8: TButton;
-    ButtonAdd4to1: TButton;
     ButtonAddConstantFalse: TButton;
     miAddNewCategory: TMenuItem;
     miSetCategoryRoot: TMenuItem;
@@ -84,12 +79,7 @@ TYPE
     zoomTrackBar: TTrackBar;
     speedTrackBar: TTrackBar;
     PROCEDURE AnyGatePopupMenuPopup(Sender: TObject);
-    PROCEDURE ButtonAdd1to4Click(Sender: TObject);
-    PROCEDURE ButtonAdd1to8Click(Sender: TObject);
-    PROCEDURE ButtonAdd4to1Click(Sender: TObject);
-    PROCEDURE ButtonAdd4to8Click(Sender: TObject);
-    PROCEDURE ButtonAdd8to1Click(Sender: TObject);
-    PROCEDURE ButtonAdd8to4Click(Sender: TObject);
+    PROCEDURE ButtonAddAdapterClick(Sender: TObject);
     PROCEDURE ButtonAddClockClick(Sender: TObject);
     PROCEDURE ButtonAddConstantFalseClick(Sender: TObject);
     PROCEDURE ButtonAddConstantTrueClick(Sender: TObject);
@@ -215,23 +205,8 @@ PROCEDURE TDigitaltrainerMainForm.AnyGatePopupMenuPopup(Sender: TObject);
     visualGateForContextPopup:=workspace.getCurrentBoard^.lastClickedGate;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.ButtonAdd1to4Click(Sender: TObject);
-  begin workspace.addBaseGate(gt_adapter1to4); end;
-
-PROCEDURE TDigitaltrainerMainForm.ButtonAdd1to8Click(Sender: TObject);
-  begin workspace.addBaseGate(gt_adapter1to8); end;
-
-PROCEDURE TDigitaltrainerMainForm.ButtonAdd4to1Click(Sender: TObject);
-  begin workspace.addBaseGate(gt_adapter4to1); end;
-
-PROCEDURE TDigitaltrainerMainForm.ButtonAdd4to8Click(Sender: TObject);
-  begin workspace.addBaseGate(gt_adapter4to8); end;
-
-PROCEDURE TDigitaltrainerMainForm.ButtonAdd8to1Click(Sender: TObject);
-  begin workspace.addBaseGate(gt_adapter8to1); end;
-
-PROCEDURE TDigitaltrainerMainForm.ButtonAdd8to4Click(Sender: TObject);
-  begin workspace.addBaseGate(gt_adapter8to4); end;
+PROCEDURE TDigitaltrainerMainForm.ButtonAddAdapterClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_adapter); end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddClockClick(Sender: TObject);
   begin workspace.addBaseGate(gt_clock);end;
@@ -345,8 +320,8 @@ PROCEDURE TDigitaltrainerMainForm.miGatePropertiesClick(Sender: TObject);
   begin
     if visualGateForContextPopup=nil then exit;
     if gatePropertyDialog.showForGate(visualGateForContextPopup^.getBehavior,workspace.getCurrentBoard) then begin
+      visualGateForContextPopup^.forcedFullRepaint;
       workspace.getCurrentBoard^.deleteInvalidWires;
-      visualGateForContextPopup^.Repaint;
     end;
   end;
 

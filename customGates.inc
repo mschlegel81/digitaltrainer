@@ -33,6 +33,8 @@ T_customGate=object(T_abstractGate)
   FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
   FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
   FUNCTION  clone:P_abstractGate; virtual;
+
+  PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
 end;
 {$endif}
 {$ifdef includeImplementation}
@@ -260,4 +262,11 @@ FUNCTION T_customGate.clone: P_abstractGate;
   begin
     new(P_customGate(result),create(prototype));
   end;
+
+PROCEDURE T_customGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+  begin
+    inherited;
+    stream.writeNaturalNumber(prototype^.paletteIndex);
+  end;
+
 {$endif}

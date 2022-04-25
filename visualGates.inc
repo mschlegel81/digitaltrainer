@@ -41,6 +41,7 @@ T_visualGate=object
     PROCEDURE Repaint; virtual;
     PROPERTY getBehavior:P_abstractGate read behavior;
     FUNCTION nextGateAfter:T_point;
+    PROCEDURE forcedFullRepaint;
 end;
 
 P_visualGateForCustom=^T_visualGateForCustom;
@@ -657,6 +658,14 @@ FUNCTION T_visualGate.nextGateAfter:T_point;
       result[0]:=origin[0];
       result[1]:=origin[1]+size[1];
     end;
+  end;
+
+PROCEDURE T_visualGate.forcedFullRepaint;
+  begin
+    disposeGuiElements;
+    size:=pointOf(4,max(2,2*max(numberOfInputs,numberOfOutputs)));
+    ensureGuiElements;
+    Repaint;
   end;
 
 {$endif}

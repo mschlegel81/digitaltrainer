@@ -353,6 +353,7 @@ PROCEDURE T_workspace.addCurrentBoardToPalette;
 
       addBoardToTree(newPaletteEntry);
     end;
+    rebuildTree;
   end;
 
 PROCEDURE T_workspace.addCurrentBoardToDrafts(CONST indexToOverwrite:longint=maxLongint);
@@ -370,6 +371,7 @@ PROCEDURE T_workspace.addCurrentBoardToDrafts(CONST indexToOverwrite:longint=max
     end;
 
     if currentBoard^.name=defaultBoardCaption then currentBoard^.name:='Unbenannter Entwurf vom '+FormatDateTime('dd.mm.yyyy - hh:nn',now);
+    currentBoard^.paletteIndex:=-1;
 
     newDraft:=currentBoard;
     currentBoard   :=nil;
@@ -382,6 +384,7 @@ PROCEDURE T_workspace.addCurrentBoardToDrafts(CONST indexToOverwrite:longint=max
       newDraft^.GUI.anyChangeCallback);
     newDraft^.detachGUI;
     draftEntries[i]:=newDraft;
+    rebuildTree;
   end;
 
 PROCEDURE T_workspace.removePaletteEntry(CONST index:longint);

@@ -371,7 +371,8 @@ PROCEDURE T_circuitBoard.deleteInvalidWires;
       width:=source.gate^.behavior^.outputWidth(source.index);
       j:=0;
       for i:=0 to length(wires)-1 do
-      if wires[i].sink.gate^.behavior^.inputWidth(wires[i].sink.index)=width
+      if (wires[i].sink.gate^.behavior^.numberOfInputs>wires[i].sink.index) and
+         (wires[i].sink.gate^.behavior^.inputWidth    (wires[i].sink.index)=width)
       then begin
         wires[j]:=wires[i];
         inc(j);
@@ -529,7 +530,7 @@ FUNCTION T_circuitBoard.simulateSteps(CONST count: longint): boolean;
           if isFullyDefined(output) then
           for j:=0 to length(wires)-1 do
           if wires[j].sink.gate^.behavior^.setInput(wires[j].sink.index,output) then begin
-            if wires[j].sink.gate^.behavior^.gateType in C_adatperTypes then adapterValueChanged:=true;
+            if wires[j].sink.gate^.behavior^.gateType=gt_adapter then adapterValueChanged:=true;
             anythingHappenedInThisStep:=true;
           end;
         end;
@@ -578,19 +579,7 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream:
         new(P_customGate(behavior),create(workspace^.paletteEntries[k]));
       end else begin
         behavior:=newBaseGate(gateType);
-        case gateType of
-          gt_input : begin
-            P_inputGate (behavior)^.ioIndex:=stream.readNaturalNumber;
-            P_inputGate (behavior)^.ioLabel:=stream.readShortString;
-            P_inputGate (behavior)^.width  :=stream.readByte;
-          end;
-          gt_output: begin
-            P_outputGate(behavior)^.ioIndex:=stream.readNaturalNumber;
-            P_outputGate(behavior)^.ioLabel:=stream.readShortString;
-            P_inputGate (behavior)^.width  :=stream.readByte;
-          end;
-          gt_clock   : P_clock(behavior)^.interval:=stream.readNaturalNumber;
-        end;
+        behavior^.readMetaDataFromStream(stream);
       end;
       origin:=readPoint(stream);
       behavior^.reset;
@@ -620,22 +609,7 @@ PROCEDURE T_circuitBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper)
     stream.writeLongint(categoryIndex);
     stream.writeNaturalNumber(length(gates));
     for i:=0 to length(gates)-1 do begin
-      stream.writeByte(byte(gates[i]^.behavior^.gateType));
-      case gates[i]^.behavior^.gateType of
-        gt_input   : begin
-          stream.writeNaturalNumber(P_inputGate (gates[i]^.behavior)^.ioIndex);
-          stream.writeShortString  (P_inputGate (gates[i]^.behavior)^.ioLabel);
-          stream.writeByte         (P_inputGate (gates[i]^.behavior)^.width);
-        end;
-        gt_output  : begin
-          stream.writeNaturalNumber(P_outputGate(gates[i]^.behavior)^.ioIndex);
-          stream.writeShortString  (P_outputGate(gates[i]^.behavior)^.ioLabel);
-          stream.writeByte         (P_outputGate(gates[i]^.behavior)^.width);
-        end;
-        gt_clock   : stream.writeNaturalNumber(P_clock     (gates[i]^.behavior)^.interval);
-        gt_compound: stream.writeNaturalNumber(P_customGate(gates[i]^.behavior)^.prototype^.paletteIndex);
-      end;
-
+      gates[i]^.behavior^.writeToStream(stream);
       writePointToStream(stream,gates[i]^.origin);
     end;
     stream.writeNaturalNumber(length(logicWires));

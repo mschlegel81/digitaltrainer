@@ -3,7 +3,8 @@ UNIT logicGates;
 {$mode objfpc}
 
 INTERFACE
-CONST WIRE_MAX_WIDTH=8;
+USES serializationUtil;
+CONST WIRE_MAX_WIDTH=16;
 TYPE
   T_gateType=(gt_notGate,
               gt_andGate,
@@ -16,15 +17,9 @@ TYPE
               gt_output,
               gt_compound,
               gt_clock,
-              gt_adapter1to4,
-              gt_adapter4to1,
-              gt_adapter1to8,
-              gt_adapter8to1,
-              gt_adapter4to8,
-              gt_adapter8to4,
+              gt_adapter,
               gt_true,
               gt_false);
-CONST C_adatperTypes:set of T_gateType=[gt_adapter1to4,gt_adapter4to1,gt_adapter1to8,gt_adapter8to1,gt_adapter4to8,gt_adapter8to4];
 TYPE
   T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
 
@@ -51,6 +46,9 @@ TYPE
       FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual; abstract;
       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual; abstract;
       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual; abstract;
+
+      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+      PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
     end;
 
   { T_constantGate }
@@ -118,6 +116,9 @@ TYPE
       FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
+
+      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+      PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
   end;
 
   P_outputGate=^T_outputGate;
@@ -134,10 +135,10 @@ TYPE
   P_adapter=^T_adapter;
   T_adapter=object(T_abstractGate)
     private
+      inWidth,outWidth,inCount,outCount:byte;
       io:T_wireValue;
-      subtype:T_gateType;
     public
-      CONSTRUCTOR create(CONST subtype_:T_gateType);
+      CONSTRUCTOR create(CONST inW,outW:byte);
       PROCEDURE reset;                   virtual;
       FUNCTION  clone:P_abstractGate;    virtual;
       FUNCTION  caption:string;          virtual;
@@ -150,13 +151,19 @@ TYPE
       FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
+      PROCEDURE setIoWidth(CONST inW,outW:byte);
+
+      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+      PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
   end;
 
+  P_binaryBaseGate=^T_binaryBaseGate;
   T_binaryBaseGate=object(T_abstractGate)
      private
-       input:array[0..1] of T_triStateValue;
+       input:array[0..WIRE_MAX_WIDTH-1] of T_triStateValue;
        output:T_triStateValue;
      public
+       inputCount:byte;
        CONSTRUCTOR create;
        PROCEDURE reset;                   virtual;
        FUNCTION  numberOfInputs :longint; virtual;
@@ -164,6 +171,9 @@ TYPE
        FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
        FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
        FUNCTION  getInput(CONST index:longint):T_wireValue;              virtual;
+
+       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
    end;
 
    P_andGate=^T_andGate;
@@ -236,6 +246,9 @@ TYPE
       FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
+
+      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+      PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
     end;
 
 FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
@@ -397,6 +410,9 @@ OPERATOR =(CONST x,y:T_gateConnector):boolean;
     result:=(x.gate=y.gate) and (x.index=y.index);
   end;
 
+VAR lastAdapterInputWidth:byte=1;
+    lastAdapterOutputWidth:byte=4;
+
 FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
   begin
     case gateType of
@@ -410,12 +426,7 @@ FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
       gt_input   : new(P_inputGate (result),create);
       gt_output  : new(P_outputGate(result),create);
       gt_clock   : new(P_clock     (result),create);
-      gt_adapter1to4,
-      gt_adapter4to1,
-      gt_adapter1to8,
-      gt_adapter8to1,
-      gt_adapter4to8,
-      gt_adapter8to4: new(P_adapter(result),create(gateType));
+      gt_adapter : new(P_adapter(result),create(lastAdapterInputWidth,lastAdapterOutputWidth));
       gt_true :new(P_constantGate(result),create(true ));
       gt_false:new(P_constantGate(result),create(false));
       else result:=nil;
@@ -475,24 +486,9 @@ FUNCTION T_constantGate.getInput(CONST index: longint): T_wireValue;
 
 { T_adapter }
 
-CONSTRUCTOR T_adapter.create(CONST subtype_: T_gateType);
+CONSTRUCTOR T_adapter.create(CONST inW, outW: byte);
   begin
-    if subtype_ in [gt_adapter1to4,
-                    gt_adapter4to1,
-                    gt_adapter1to8,
-                    gt_adapter8to1,
-                    gt_adapter4to8,
-                    gt_adapter8to4]
-    then subtype:=subtype_
-    else subtype:=gt_adapter1to4;
-    case subtype of
-      gt_adapter1to4,
-      gt_adapter4to1: io.width:=4;
-      gt_adapter1to8,
-      gt_adapter8to1,
-      gt_adapter4to8,
-      gt_adapter8to4: io.width:=8;
-    end;
+    setIoWidth(inW,outW);
     reset;
   end;
 
@@ -503,37 +499,25 @@ PROCEDURE T_adapter.reset;
   end;
 
 FUNCTION T_adapter.clone: P_abstractGate;
-  begin new(P_adapter(result),create(subtype)); end;
+  begin new(P_adapter(result),create(inWidth,outWidth)); end;
 
 FUNCTION T_adapter.caption: string;
-  CONST R:array[gt_adapter1to4..gt_adapter8to4] of string=('4x1 to 1x4',
-                                                           '1x4 to 4x1',
-                                                           '8x1 to 1x8',
-                                                           '1x8 to 8x1',
-                                                           '2x4 to 8x1',
-                                                           '8x1 to 2x4');
-  begin result:='Adapter'+LineEnding+R[subtype]; end;
+  begin result:='Adapter'+LineEnding+intToStr(inWidth)+'bit -> '+intToStr(outWidth)+'bit'; end;
 
 FUNCTION T_adapter.numberOfInputs: longint;
-  CONST R:array[gt_adapter1to4..gt_adapter8to4] of longint=(4,1,8,1,2,1);
-  begin result:=R[subtype]; end;
+  begin result:=inCount; end;
 
 FUNCTION T_adapter.numberOfOutputs: longint;
-  CONST R:array[gt_adapter1to4..gt_adapter8to4] of longint=(1,4,1,8,1,2);
-  begin result:=R[subtype]; end;
+  begin result:=outCount; end;
 
 FUNCTION T_adapter.inputWidth(CONST index: longint): byte;
-  CONST R:array[gt_adapter1to4..gt_adapter8to4] of byte=(1,4,1,8,4,8);
-  begin result:=R[subtype]; end;
+  begin result:=inWidth; end;
 
 FUNCTION T_adapter.outputWidth(CONST index: longint): byte;
-  CONST R:array[gt_adapter1to4..gt_adapter8to4] of byte=(4,1,8,1,8,4);
-  begin result:=R[subtype]; end;
+  begin result:=outWidth; end;
 
 FUNCTION T_adapter.gateType: T_gateType;
-  begin
-    result:=subtype;
-  end;
+  begin result:=gt_adapter; end;
 
 FUNCTION T_adapter.simulateStep: boolean;
   begin result:=false; end;
@@ -541,48 +525,28 @@ FUNCTION T_adapter.simulateStep: boolean;
 FUNCTION T_adapter.getOutput(CONST index: longint): T_wireValue;
   VAR k0,k:longint;
   begin
-    case subtype of
-      gt_adapter1to4,
-      gt_adapter1to8,
-      gt_adapter4to8:result:=io;
-      gt_adapter4to1,
-      gt_adapter8to1: begin
-        result.width:=1;
-        result.bit[0]:=io.bit[index];
-      end;
-      gt_adapter8to4: begin
-        result.width:=4;
-        k0:=4*index;
-        for k:=0 to 3 do result.bit[k]:=io.bit[k+k0];
-      end;
+    if outCount=1 then result:=io
+    else begin
+      result.width:=outWidth;
+      k0:=outWidth*index;
+      for k:=0 to result.width-1 do result.bit[k]:=io.bit[k+k0];
     end;
   end;
 
 FUNCTION T_adapter.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
   VAR k0,k:longint;
   begin
-    case subtype of
-      gt_adapter4to1,
-      gt_adapter8to1,
-      gt_adapter8to4: begin
-        result:=
-        io<>value;
-        io:=value;
-      end;
-      gt_adapter1to4,
-      gt_adapter1to8: begin
-        result:=
-        io.bit[index]<>value.bit[0];
-        io.bit[index]:=value.bit[0];
-      end;
-      gt_adapter4to8: begin
-        k0:=4*index;
-        result:=false;
-        for k:=0 to 3 do begin
-          result:=result or
-          (io.bit[k+k0]<>value.bit[k]);
-           io.bit[k+k0]:=value.bit[k] ;
-        end;
+    if inCount=1 then begin
+      result:=
+      io<>value;
+      io:=value;
+    end else begin
+      k0:=inWidth*index;
+      result:=false;
+      for k:=0 to inWidth-1 do begin
+        result:=result or
+       (io.bit[k+k0]<>value.bit[k]);
+        io.bit[k+k0]:=value.bit[k]
       end;
     end;
   end;
@@ -590,21 +554,45 @@ FUNCTION T_adapter.setInput(CONST index: longint; CONST value: T_wireValue): boo
 FUNCTION T_adapter.getInput(CONST index: longint): T_wireValue;
   VAR k0,k:longint;
   begin
-    case subtype of
-      gt_adapter4to1,
-      gt_adapter8to1,
-      gt_adapter8to4: result:=io;
-      gt_adapter1to4,
-      gt_adapter1to8: begin
-        result.width:=1;
-        result.bit[0]:=io.bit[index]
-      end;
-      gt_adapter4to8: begin
-        k0:=4*index;
-        result.width:=4;
-        for k:=0 to 3 do result.bit[k]:=io.bit[k+k0];
-      end;
+    if inCount=1 then result:=io
+    else begin
+      result.width:=inWidth;
+      k0:=inWidth*index;
+      for k:=0 to inWidth-1 do
+        result.bit[k]:=io.bit[k+k0];
     end;
+  end;
+
+PROCEDURE T_adapter.setIoWidth(CONST inW, outW: byte);
+  begin
+    inWidth:=inW;
+    outWidth:=outW;
+    if inWidth>outWidth then begin
+      inCount:=1;
+      io.width:=inWidth;
+      outCount:=inWidth div outWidth;
+    end else begin
+      outCount:=1;
+      io.width:=outWidth;
+      inCount:=outWidth div inWidth;
+    end;
+    lastAdapterInputWidth :=inWidth;
+    lastAdapterOutputWidth:=outWidth;
+  end;
+
+PROCEDURE T_adapter.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+  begin
+    inherited;
+    stream.writeByte(inWidth);
+    stream.writeByte(outWidth);
+  end;
+
+PROCEDURE T_adapter.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
+  VAR iw,ow:byte;
+  begin
+    iw:=stream.readByte;
+    ow:=stream.readByte;
+    setIoWidth(iw,ow);
   end;
 
 { T_clock }
@@ -687,6 +675,17 @@ FUNCTION T_clock.setInput(CONST index: longint; CONST value: T_wireValue):boolea
 FUNCTION T_clock.getInput(CONST index: longint): T_wireValue;
   begin result:=tsv_undetermined; end;
 
+PROCEDURE T_clock.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+  begin
+    inherited;
+    stream.writeNaturalNumber(interval);
+  end;
+
+PROCEDURE T_clock.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
+  begin
+    interval:=stream.readNaturalNumber;
+  end;
+
 { T_outputGate }
 
 CONSTRUCTOR T_outputGate.create;
@@ -763,6 +762,21 @@ FUNCTION T_inputGate.setInput(CONST index: longint; CONST value: T_wireValue): b
 FUNCTION T_inputGate.getInput(CONST index: longint): T_wireValue;
   begin result:=io; end;
 
+PROCEDURE T_inputGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+  begin
+    inherited;
+    stream.writeShortString(ioLabel);
+    stream.writeNaturalNumber(ioIndex);
+    stream.writeByte(width);
+  end;
+
+PROCEDURE T_inputGate.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
+  begin
+    ioLabel:=stream.readShortString;
+    ioIndex:=stream.readNaturalNumber;
+    width:=stream.readByte;
+  end;
+
 { T_abstractGate }
 
 CONSTRUCTOR T_abstractGate.create;
@@ -779,6 +793,15 @@ FUNCTION T_abstractGate.inputWidth(CONST index:longint):byte;
 
 FUNCTION T_abstractGate.outputWidth(CONST index:longint):byte;
   begin result:=1; end;
+
+PROCEDURE T_abstractGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+  begin
+    stream.writeByte(byte(gateType));
+  end;
+
+PROCEDURE T_abstractGate.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
+  begin
+  end;
 
 FUNCTION T_gateConnector.getOutputValue: T_wireValue;
   begin
@@ -808,12 +831,28 @@ FUNCTION T_notGate.numberOfOutputs: longint;
 FUNCTION T_notGate.gateType: T_gateType;
   begin result:=gt_notGate; end;
 
+CONST NOT_TABLE:array[T_triStateValue] of T_triStateValue=(tsv_true,tsv_undetermined,tsv_false);
+      OR_TABLE :array[T_triStateValue,T_triStateValue] of T_triStateValue=
+                   //0                ?                1
+                {0}((tsv_false       ,tsv_undetermined,tsv_true),
+                {?} (tsv_undetermined,tsv_undetermined,tsv_true),
+                {1} (tsv_true        ,tsv_true        ,tsv_true));
+      XOR_TABLE:array[T_triStateValue,T_triStateValue] of T_triStateValue=
+                   //0                ?                1
+                {0}((tsv_false       ,tsv_undetermined,tsv_true        ),
+                {?} (tsv_undetermined,tsv_undetermined,tsv_undetermined),
+                {1} (tsv_true        ,tsv_undetermined,tsv_false       ));
+      AND_TABLE:array[T_triStateValue,T_triStateValue] of T_triStateValue=
+                   //0         ?                1
+                {0}((tsv_false,tsv_false       ,tsv_false       ),
+                {?} (tsv_false,tsv_undetermined,tsv_undetermined),
+                {1} (tsv_false,tsv_undetermined,tsv_true        ));
+
 FUNCTION T_notGate.simulateStep:boolean;
-  CONST F:array[T_triStateValue] of T_triStateValue=(tsv_true,tsv_undetermined,tsv_false);
   VAR previous:T_triStateValue;
   begin
     previous:=output;
-    output:=F[input];
+    output:=NOT_TABLE[input];
     result:=output<>previous;
   end;
 
@@ -830,12 +869,12 @@ FUNCTION T_notGate.getInput(CONST index: longint): T_wireValue;
   begin result:=input; end;
 
 CONSTRUCTOR T_binaryBaseGate.create;
-  begin inherited; input[0]:=tsv_undetermined; input[1]:=tsv_undetermined; output:=tsv_undetermined; end;
+  begin inherited; inputCount:=2; input[0]:=tsv_undetermined; input[1]:=tsv_undetermined; output:=tsv_undetermined; end;
 PROCEDURE T_binaryBaseGate.reset;
   begin input[0]:=tsv_undetermined; input[1]:=tsv_undetermined; output:=tsv_undetermined; end;
 
 FUNCTION T_binaryBaseGate.numberOfInputs: longint;
-  begin result:=2; end;
+  begin result:=inputCount; end;
 
 FUNCTION T_binaryBaseGate.numberOfOutputs: longint;
   begin result:=1; end;
@@ -852,6 +891,17 @@ FUNCTION T_binaryBaseGate.setInput(CONST index: longint; CONST value: T_wireValu
 FUNCTION T_binaryBaseGate.getInput(CONST index: longint): T_wireValue;
   begin result:=input[index]; end;
 
+PROCEDURE T_binaryBaseGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+  begin
+    inherited;
+    stream.writeByte(inputCount);
+  end;
+
+PROCEDURE T_binaryBaseGate.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
+  begin
+    inputCount:=stream.readByte;
+  end;
+
 CONSTRUCTOR T_nxorGate.create; begin inherited; end;
 CONSTRUCTOR T_norGate .create; begin inherited; end;
 CONSTRUCTOR T_nandGate.create; begin inherited; end;
@@ -867,80 +917,56 @@ FUNCTION T_orGate  .caption: string; begin result:='OR';   end;
 FUNCTION T_andGate .caption: string; begin result:='AND';  end;
 
 FUNCTION T_nxorGate.simulateStep:boolean;
-  CONST F:array[T_triStateValue,T_triStateValue] of T_triStateValue=
-          //0                ?                1
-       {0}((tsv_true        ,tsv_undetermined,tsv_false       ),
-       {?} (tsv_undetermined,tsv_undetermined,tsv_undetermined),
-       {1} (tsv_false       ,tsv_undetermined,tsv_true        ));
   VAR previous:T_triStateValue;
+      i:longint;
   begin
     previous:=output;
-    output:=F[input[0],input[1]];
+    output:=input[0]; for i:=1 to inputCount-1 do output:=XOR_TABLE[output,input[i]]; output:=NOT_TABLE[output];
     result:=output<>previous;
   end;
 
 FUNCTION T_norGate .simulateStep:boolean;
-  CONST F:array[T_triStateValue,T_triStateValue] of T_triStateValue=
-          //0                ?                1
-       {0}((tsv_true        ,tsv_undetermined,tsv_false),
-       {?} (tsv_undetermined,tsv_undetermined,tsv_false),
-       {1} (tsv_false       ,tsv_false       ,tsv_false));
   VAR previous:T_triStateValue;
+      i:longint;
   begin
     previous:=output;
-    output:=F[input[0],input[1]];
+    output:=input[0]; for i:=1 to inputCount-1 do output:=OR_TABLE[output,input[i]]; output:=NOT_TABLE[output];
     result:=output<>previous;
   end;
 
 FUNCTION T_nandGate.simulateStep:boolean;
-  CONST F:array[T_triStateValue,T_triStateValue] of T_triStateValue=
-          //0        ?                1
-       {0}((tsv_true,tsv_true        ,tsv_true        ),
-       {?} (tsv_true,tsv_undetermined,tsv_undetermined),
-       {1} (tsv_true,tsv_undetermined,tsv_false       ));
   VAR previous:T_triStateValue;
+      i:longint;
   begin
     previous:=output;
-    output:=F[input[0],input[1]];
+    output:=input[0]; for i:=1 to inputCount-1 do output:=AND_TABLE[output,input[i]]; output:=NOT_TABLE[output];
     result:=output<>previous;
   end;
 
 FUNCTION T_xorGate .simulateStep:boolean;
-  CONST F:array[T_triStateValue,T_triStateValue] of T_triStateValue=
-          //0                ?                1
-       {0}((tsv_false       ,tsv_undetermined,tsv_true        ),
-       {?} (tsv_undetermined,tsv_undetermined,tsv_undetermined),
-       {1} (tsv_true        ,tsv_undetermined,tsv_false       ));
   VAR previous:T_triStateValue;
+      i:longint;
   begin
     previous:=output;
-    output:=F[input[0],input[1]];
+    output:=input[0]; for i:=1 to inputCount-1 do output:=XOR_TABLE[output,input[i]];
     result:=output<>previous;
   end;
 
 FUNCTION T_orGate  .simulateStep:boolean;
-  CONST F:array[T_triStateValue,T_triStateValue] of T_triStateValue=
-          //0                ?                1
-       {0}((tsv_false       ,tsv_undetermined,tsv_true),
-       {?} (tsv_undetermined,tsv_undetermined,tsv_true),
-       {1} (tsv_true        ,tsv_true        ,tsv_true));
   VAR previous:T_triStateValue;
+      i:longint;
   begin
     previous:=output;
-    output:=F[input[0],input[1]];
+    output:=input[0]; for i:=1 to inputCount-1 do output:=OR_TABLE[output,input[i]];
     result:=output<>previous;
   end;
 
 FUNCTION T_andGate .simulateStep:boolean;
-  CONST F:array[T_triStateValue,T_triStateValue] of T_triStateValue=
-          //0         ?                1
-       {0}((tsv_false,tsv_false       ,tsv_false       ),
-       {?} (tsv_false,tsv_undetermined,tsv_undetermined),
-       {1} (tsv_false,tsv_undetermined,tsv_true        ));
   VAR previous:T_triStateValue;
+      i:longint;
   begin
     previous:=output;
-    output:=F[input[0],input[1]];
+    output:=input[0]; for i:=1 to inputCount-1 do output:=AND_TABLE[output,input[i]];
     result:=output<>previous;
   end;
 
@@ -950,14 +976,13 @@ FUNCTION T_nandGate.gateType: T_gateType; begin result:=gt_nandGate; end;
 FUNCTION T_xorGate .gateType: T_gateType; begin result:=gt_xorGate;  end;
 FUNCTION T_orGate  .gateType: T_gateType; begin result:=gt_orGate;   end;
 FUNCTION T_andGate .gateType: T_gateType; begin result:=gt_andGate;  end;
-
-FUNCTION T_notGate   .clone:P_abstractGate; begin new(P_notGate (result),create); end;
-FUNCTION T_nxorGate  .clone:P_abstractGate; begin new(P_nxorGate(result),create); end;
-FUNCTION T_norGate   .clone:P_abstractGate; begin new(P_norGate (result),create); end;
-FUNCTION T_nandGate  .clone:P_abstractGate; begin new(P_nandGate(result),create); end;
-FUNCTION T_xorGate   .clone:P_abstractGate; begin new(P_xorGate (result),create); end;
-FUNCTION T_orGate    .clone:P_abstractGate; begin new(P_orGate  (result),create); end;
-FUNCTION T_andGate   .clone:P_abstractGate; begin new(P_andGate (result),create); end;
+FUNCTION T_notGate   .clone:P_abstractGate; begin new(P_notGate (result),create);  end;
+FUNCTION T_nxorGate  .clone:P_abstractGate; begin new(P_nxorGate(result),create); P_nxorGate(result)^.inputCount:=inputCount; end;
+FUNCTION T_norGate   .clone:P_abstractGate; begin new(P_norGate (result),create); P_norGate (result)^.inputCount:=inputCount; end;
+FUNCTION T_nandGate  .clone:P_abstractGate; begin new(P_nandGate(result),create); P_nandGate(result)^.inputCount:=inputCount; end;
+FUNCTION T_xorGate   .clone:P_abstractGate; begin new(P_xorGate (result),create); P_xorGate (result)^.inputCount:=inputCount; end;
+FUNCTION T_orGate    .clone:P_abstractGate; begin new(P_orGate  (result),create); P_orGate  (result)^.inputCount:=inputCount; end;
+FUNCTION T_andGate   .clone:P_abstractGate; begin new(P_andGate (result),create); P_andGate (result)^.inputCount:=inputCount; end;
 FUNCTION T_inputGate.clone: P_abstractGate; begin new(P_inputGate (result),create); P_inputGate (result)^.ioIndex:=ioIndex; P_inputGate (result)^.ioLabel:=ioLabel; P_inputGate (result)^.width:=width; result^.reset; end;
 FUNCTION T_outputGate.clone:P_abstractGate; begin new(P_outputGate(result),create); P_outputGate(result)^.ioIndex:=ioIndex; P_outputGate(result)^.ioLabel:=ioLabel; P_outputGate(result)^.width:=width; result^.reset; end;
 
