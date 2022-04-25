@@ -14,6 +14,7 @@ TYPE
 
   TDigitaltrainerMainForm = class(TForm)
     ButtonAddAdapter: TButton;
+    ButtonAddGatedClock: TButton;
     ButtonAddConstantTrue: TButton;
     ButtonAddConstantFalse: TButton;
     miAddNewCategory: TMenuItem;
@@ -85,6 +86,7 @@ TYPE
     PROCEDURE ButtonAddConstantTrueClick(Sender: TObject);
     PROCEDURE ButtonAddCustomClick(Sender: TObject);
     PROCEDURE ButtonAddAndClick(Sender: TObject);
+    PROCEDURE ButtonAddGatedClockClick(Sender: TObject);
     PROCEDURE ButtonAddInputClick(Sender: TObject);
     PROCEDURE ButtonAddNandClick(Sender: TObject);
     PROCEDURE ButtonAddNorClick(Sender: TObject);
@@ -194,6 +196,9 @@ PROCEDURE TDigitaltrainerMainForm.ButtonAddOrClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddAndClick(Sender: TObject);
   begin workspace.addBaseGate(gt_andGate);end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddGatedClockClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_gatedClock); end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddCustomClick(Sender: TObject);
   begin

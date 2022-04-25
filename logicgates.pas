@@ -19,7 +19,8 @@ TYPE
               gt_clock,
               gt_adapter,
               gt_true,
-              gt_false);
+              gt_false,
+              gt_gatedClock);
 TYPE
   T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
 
@@ -251,6 +252,20 @@ TYPE
       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
     end;
 
+   P_gatedClock=^T_gatedClock;
+   T_gatedClock=object(T_clock)
+      enable:T_triStateValue;
+      CONSTRUCTOR create;
+      PROCEDURE reset;                   virtual;
+      FUNCTION  clone:P_abstractGate;    virtual;
+      FUNCTION  caption:string;          virtual;
+      FUNCTION  numberOfInputs :longint; virtual;
+      FUNCTION  gateType:T_gateType;     virtual;
+      FUNCTION  simulateStep:boolean;    virtual;
+      FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
+      FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
+   end;
+
 FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
 OPERATOR =(CONST x,y:T_gateConnector):boolean;
 OPERATOR :=(CONST x:T_triStateValue):T_wireValue;
@@ -429,8 +444,63 @@ FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
       gt_adapter : new(P_adapter(result),create(lastAdapterInputWidth,lastAdapterOutputWidth));
       gt_true :new(P_constantGate(result),create(true ));
       gt_false:new(P_constantGate(result),create(false));
+      gt_gatedClock: new(P_gatedClock(result),create);
       else result:=nil;
     end;
+  end;
+
+{ T_gatedClock }
+
+CONSTRUCTOR T_gatedClock.create;
+  begin
+    inherited;
+  end;
+
+PROCEDURE T_gatedClock.reset;
+  begin
+    inherited;
+    enable:=tsv_undetermined;
+  end;
+
+FUNCTION T_gatedClock.clone: P_abstractGate;
+  begin
+    new(P_gatedClock(result),create);
+    P_gatedClock(result)^.interval:=interval;
+  end;
+
+FUNCTION T_gatedClock.caption: string;
+  begin
+    result:='G'+inherited;
+  end;
+
+FUNCTION T_gatedClock.numberOfInputs: longint;
+  begin
+    result:=1;
+  end;
+
+FUNCTION T_gatedClock.gateType: T_gateType;
+  begin
+    result:=gt_gatedClock;
+  end;
+
+FUNCTION T_gatedClock.simulateStep: boolean;
+  begin
+    if enable=tsv_true
+    then result:=inherited
+    else result:=false;
+  end;
+
+FUNCTION T_gatedClock.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
+  begin
+    result:=
+    enable<>value.bit[0];
+    enable:=value.bit[0];
+  end;
+
+FUNCTION T_gatedClock.getInput(CONST index: longint): T_wireValue;
+  begin
+    result.width:=1;
+    result.bit[0]:=enable;
   end;
 
 { T_constantGate }

@@ -44,7 +44,8 @@ CONST
   {gt_clock}    [gpe_caption,gpe_intervalGreaterZero],
   {gt_adapter}  [gpe_caption,gpe_inputWidth,gpe_outputWidth],
                 [gpe_caption],
-                [gpe_caption]);
+                [gpe_caption],
+  {gt_gatedCl..}[gpe_caption,gpe_intervalGreaterZero]);
 
 TYPE
   T_gatePropertyValue=record
@@ -95,7 +96,7 @@ FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum): T_gate
         if gate^.gateType in [gt_input,gt_output]
         then result.s:=P_inputGate(gate)^.caption;
       gpe_intervalGreaterZero:
-        if gate^.gateType=gt_clock
+        if gate^.gateType in [gt_clock,gt_gatedClock]
         then result.n:=P_clock(gate)^.interval;
       gpe_ioIndex:
         if gate^.gateType in [gt_input,gt_output]
@@ -123,7 +124,7 @@ PROCEDURE T_gatePropertyValues.applyValue(CONST prop: T_gatePropertyEnum; CONST 
       gpe_editableLabel: if gate^.gateType in [gt_input,gt_output] then begin
         P_inputGate(gate)^.ioLabel:=value.s;
       end;
-      gpe_intervalGreaterZero: if gate^.gateType=gt_clock then begin
+      gpe_intervalGreaterZero: if gate^.gateType in [gt_clock,gt_gatedClock] then begin
         P_clock(gate)^.interval:=value.n;
       end;
 
