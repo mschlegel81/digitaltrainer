@@ -245,7 +245,9 @@ FUNCTION isFullyDefined(CONST w:T_wireValue):boolean;
 OPERATOR =(CONST x,y:T_wireValue):boolean;
 FUNCTION getBinaryString(CONST wire:T_wireValue):string;
 FUNCTION getDecimalString(CONST wire:T_wireValue):string;
+FUNCTION getDecimalValue(CONST wire:T_wireValue; OUT valid:boolean):longint;
 FUNCTION get2ComplementString(CONST wire:T_wireValue):string;
+FUNCTION get2ComplementValue(CONST wire:T_wireValue; OUT valid:boolean):longint;
 
 FUNCTION parseWireBin        (CONST s:string; CONST width:byte):T_wireValue;
 FUNCTION parseWireDecimal    (CONST s:string; CONST width:byte):T_wireValue;
@@ -279,6 +281,25 @@ FUNCTION getDecimalString(CONST wire:T_wireValue):string;
     result:=intToStr(k);
   end;
 
+FUNCTION getDecimalValue(CONST wire:T_wireValue; OUT valid:boolean):longint;
+  VAR i:longint;
+      k:int64=0;
+  begin
+    valid:=true;
+    for i:=wire.width-1 downto 0 do begin
+      k:=k shl 1;
+      case wire.bit[i] of
+        tsv_true        : inc(k);
+        tsv_false       : begin end;
+        tsv_undetermined: begin
+          valid:=false;
+          exit(1 shl (wire.width-1));
+        end;
+      end;
+    end;
+    result:=k;
+  end;
+
 FUNCTION get2ComplementString(CONST wire:T_wireValue):string;
   VAR i:longint;
       k:int64=0;
@@ -297,6 +318,30 @@ FUNCTION get2ComplementString(CONST wire:T_wireValue):string;
       if k>maxVal then k-=maxVal+maxVal;
     end;
     result:=intToStr(k);
+  end;
+
+FUNCTION get2ComplementValue(CONST wire:T_wireValue; OUT valid:boolean):longint;
+  VAR i:longint;
+      k:int64=0;
+      maxVal:int64;
+  begin
+    valid:=true;
+    for i:=wire.width-1 downto 0 do begin
+      k:=k shl 1;
+      case wire.bit[i] of
+        tsv_true        : inc(k);
+        tsv_false       : begin end;
+        tsv_undetermined: begin
+          valid:=false;
+          exit(0);
+        end;
+      end;
+    end;
+    if (wire.width>1) then begin
+      maxVal:=1 shl (wire.width-1);
+      if k>maxVal then k-=maxVal+maxVal;
+    end;
+    result:=k;
   end;
 
 FUNCTION parseWireBin(CONST s: string; CONST width: byte): T_wireValue;

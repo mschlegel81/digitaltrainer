@@ -1288,7 +1288,7 @@ FUNCTION T_circuitBoard.usesBoard(CONST other:P_circuitBoard; CONST recurse:bool
   VAR gate:P_visualGate;
       board:P_circuitBoard;
   begin
-    result:=false;
+    result:=(other=@self) or (other^.paletteIndex=paletteIndex);
     for gate in gates do
     if (gate^.behavior^.gateType=gt_compound) and
        ((P_customGate(gate^.behavior)^.prototype=other) or

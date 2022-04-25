@@ -41,6 +41,7 @@ T_workspace=object(T_serializable)
     DESTRUCTOR destroy;
     PROCEDURE addBaseGate(CONST gateType:T_gateType);
     PROCEDURE addSelectedCustomGate;
+    PROCEDURE clearCurrentBoard;
 
     FUNCTION getSerialVersion:dword; virtual;
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
@@ -213,7 +214,12 @@ PROCEDURE T_workspace.addSelectedCustomGate;
     visual:=currentBoard^.wrapGate(p,gateToAdd);
     if not currentBoard^.positionNewGate(visual)
     then dispose(visual,destroy);
+  end;
 
+PROCEDURE T_workspace.clearCurrentBoard;
+  begin
+    currentBoard^.clear;
+    rebuildTree;
   end;
 
 FUNCTION T_workspace.getSerialVersion: dword;

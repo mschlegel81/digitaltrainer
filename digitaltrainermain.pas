@@ -81,7 +81,7 @@ TYPE
     Panel1: TPanel;
     ScrollBox1: TScrollBox;
     Splitter1: TSplitter;
-    ZoomTrackBar: TTrackBar;
+    zoomTrackBar: TTrackBar;
     speedTrackBar: TTrackBar;
     PROCEDURE AnyGatePopupMenuPopup(Sender: TObject);
     PROCEDURE ButtonAdd1to4Click(Sender: TObject);
@@ -161,7 +161,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
   begin
     workspace.create(miSetCategoryRoot,PaletteTreeView);
     workspace.loadFromFile(workspaceFilename);
-    workspace.getCurrentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
+    workspace.getCurrentBoard^.attachGUI(zoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
     ScrollBox1.color:=BackgroundColor;
     currentBoardIsDraft:=workspace.getCurrentBoard^.paletteIndex<0;
     updateSidebar;
@@ -359,7 +359,7 @@ PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
         workspace.destroy;
         workspace.create(miSetCategoryRoot,PaletteTreeView);
         workspace.loadFromFile(OpenDialog1.fileName);
-        workspace.getCurrentBoard^.attachGUI(ZoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
+        workspace.getCurrentBoard^.attachGUI(zoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
         workspace.getCurrentBoard^.Repaint;
         updateSidebar;
         restartTimerCallback;
@@ -370,7 +370,7 @@ PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miNewClick(Sender: TObject);
   begin
-    workspace.getCurrentBoard^.clear;
+    workspace.clearCurrentBoard;
     updateSidebar;
   end;
 
@@ -517,7 +517,7 @@ PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.ZoomTrackBarChange(Sender: TObject);
   begin
     BeginFormUpdate;
-    workspace.getCurrentBoard^.setZoom(ZoomTrackBar.position);
+    workspace.getCurrentBoard^.setZoom(zoomTrackBar.position);
     EndFormUpdate;
   end;
 

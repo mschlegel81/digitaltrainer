@@ -16,11 +16,13 @@ TYPE
     dy:double;
   end;
 
-  T_graphMetaDataEntry=record
+  T_graphMetaDataEntry=object
     caption:string;
     bitWidth:longint;
     plotY0:longint;
     ranges:T_ranges;
+
+    FUNCTION transformY(CONST v:T_wireValue; CONST scaleType:T_scaleType; OUT determinedValue:boolean; CONST bitIndex:longint=0):longint;
   end;
 
   { T_graphMetaData }
@@ -30,6 +32,17 @@ TYPE
 
     PROCEDURE initialize(CONST gate:P_abstractGate);
     PROCEDURE update(CONST scaleType:T_scaleType; CONST imageHeight:longint);
+    FUNCTION ioMeta(CONST index:longint):T_graphMetaDataEntry;
+  end;
+
+  T_paintable=object
+    rows:array of array of record x:longint; v:T_wireValue; end;
+    simSplits:array of record x,simIndex:longint; end;
+    CONSTRUCTOR create;
+    DESTRUCTOR destroy;
+    PROCEDURE addSimStart(CONST stepIndex,simIndex:longint);
+    PROCEDURE addValue(CONST rowIndex,stepIndex:longint; CONST value:T_wireValue);
+    PROCEDURE paint(CONST startIndex,zoom:longint; CONST scaleType:T_scaleType; CONST meta:T_graphMetaData; CONST Canvas:TCanvas);
   end;
 
   T_simulationOutput=object
@@ -47,8 +60,7 @@ TYPE
     PROCEDURE finishRun;
 
     PROCEDURE updateTable(CONST scaleType:T_scaleType; CONST rowIndex:longint; CONST table:TStringGrid);
-    PROCEDURE paint(CONST scaleType:T_scaleType; CONST meta:T_graphMetaData; CONST zoom,startIndex:longint; CONST image:TImage);
-    PROCEDURE paintCaptions(CONST scaleType:T_scaleType; VAR meta:T_graphMetaData; CONST image:TImage);
+    PROCEDURE collectPaintable(CONST startIndex,endIndex,simIndex:longint; VAR paintable:T_paintable);
     FUNCTION stepsTotal:longint;
   end;
 
@@ -72,15 +84,18 @@ TYPE
     rbBinary: TRadioButton;
     rbPositive: TRadioButton;
     rb2Complement: TRadioButton;
-    ScrollBar1: TScrollBar;
+    TimeScrollBar: TScrollBar;
     TabSheet2: TTabSheet;
-    TrackBar1: TTrackBar;
+    zoomTrackBar: TTrackBar;
     UpdateTableButton: TButton;
     PageControl1: TPageControl;
     StringGrid: TStringGrid;
     TabSheet1: TTabSheet;
+    PROCEDURE FormResize(Sender: TObject);
     PROCEDURE rbBinaryChange(Sender: TObject);
+    PROCEDURE TimeScrollBarChange(Sender: TObject);
     PROCEDURE UpdateTableButtonClick(Sender: TObject);
+    PROCEDURE ZoomTrackBarChange(Sender: TObject);
   private
     clonedGate:P_abstractGate;
     graphMetaData:T_graphMetaData;
@@ -97,8 +112,142 @@ VAR
   analysisForm: TanalysisForm;
 
 IMPLEMENTATION
+FUNCTION screenXToTimestep(CONST zoom,timestepOffset,x:longint):longint;
+  begin
+    result:=round((x-20)/zoom+timestepOffset);
+  end;
+
+FUNCTION timestepToScreenX(CONST zoom,timestepOffset,timeStep:longint):longint;
+  begin
+    result:=(timeStep-timestepOffset)*zoom+20;
+  end;
 
 {$R *.lfm}
+
+{ T_graphMetaDataEntry }
+
+FUNCTION T_graphMetaDataEntry.transformY(CONST v: T_wireValue; CONST scaleType: T_scaleType; OUT determinedValue:boolean; CONST bitIndex: longint): longint;
+  begin
+    case scaleType of
+      st_binary: begin
+        case v.bit[bitIndex] of
+          tsv_false       : begin result:=      ranges[bitIndex].y0;                          determinedValue:=true ; end;
+          tsv_undetermined: begin result:=round(ranges[bitIndex].y0+0.5*ranges[bitIndex].dy); determinedValue:=false; end;
+          tsv_true        : begin result:=round(ranges[bitIndex].y0+    ranges[bitIndex].dy); determinedValue:=true ; end;
+        end;
+      end;
+      st_unsigned: result:=round(ranges[0].y0+ranges[0].dy*getDecimalValue    (v,determinedValue));
+      st_signed  : result:=round(ranges[0].y0+ranges[0].dy*get2ComplementValue(v,determinedValue));
+    end;
+  end;
+
+{ T_paintable }
+
+CONSTRUCTOR T_paintable.create;
+  begin
+    setLength(rows,0);
+    setLength(simSplits,0);
+  end;
+
+DESTRUCTOR T_paintable.destroy;
+  VAR i:longint;
+  begin
+    for i:=0 to length(rows)-1 do setLength(rows[i],0);
+    setLength(rows,0);
+    setLength(simSplits,0);
+  end;
+
+PROCEDURE T_paintable.addSimStart(CONST stepIndex, simIndex: longint);
+  VAR k:longint;
+  begin
+    k:=length(simSplits);
+    setLength(simSplits,k+1);
+    simSplits[k].x       :=stepIndex;
+    simSplits[k].simIndex:=simIndex;
+  end;
+
+PROCEDURE T_paintable.addValue(CONST rowIndex, stepIndex: longint; CONST value: T_wireValue);
+  VAR k:longint;
+  begin
+    if rowIndex>=length(rows) then setLength(rows,rowIndex+1);
+    k:=length(rows[rowIndex]);
+    setLength(rows[rowIndex],k+1);
+    rows[rowIndex,k].x:=stepIndex;
+    rows[rowIndex,k].v:=value;
+  end;
+
+PROCEDURE T_paintable.paint(CONST startIndex, zoom: longint; CONST scaleType:T_scaleType; CONST meta: T_graphMetaData; CONST Canvas: TCanvas);
+  FUNCTION attenuatedColor(CONST foreground:longint):TColor;
+    begin
+      result:=ColorToRGB(clBtnFace);
+      result:=round(( result         and 255)*0.7 + ( foreground         and 255)*0.3)
+          or (round(((result shr  8) and 255)*0.7 + ((foreground shr  8) and 255)*0.3) shl  8)
+          or (round(((result shr 16) and 255)*0.7 + ((foreground shr 16) and 255)*0.3) shl 16);
+    end;
+
+  VAR colorTab:array[false..true,false..true] of TColor;
+
+      i,bitIdx,k:longint;
+      x,y:longint;
+      red:boolean=true;
+      rowMeta: T_graphMetaDataEntry;
+      determinedValue: boolean;
+
+  begin
+    colorTab[false,false]:=attenuatedColor(clBlue);
+    colorTab[false,true ]:=                clBlue ;
+    colorTab[true ,false]:=attenuatedColor(clRed);
+    colorTab[true ,true ]:=                clRed ;
+
+    //Grid
+    Canvas.Font.Orientation:=0;
+    Canvas.Font.color:=clBlack;
+    Canvas.Pen.style:=psSolid;
+    Canvas.Pen.color:=attenuatedColor(clBlack);
+    for i:=0 to length(simSplits)-1 do begin
+      x:=timestepToScreenX(zoom,startIndex,simSplits[i].x);
+      Canvas.line(x,Canvas.height-1,x,20);
+      Canvas.textOut(x,5,'#'+intToStr(simSplits[i].simIndex));
+    end;
+    if length(meta.output)>0 then begin
+      i:=meta.output[0].plotY0+5;
+      Canvas.line(20,i,Canvas.width-1,i);
+    end;
+
+    //Data rows
+    for i:=0 to length(rows)-1 do begin
+      rowMeta:=meta.ioMeta(i);
+      if scaleType=st_binary then begin
+        for bitIdx:=0 to rowMeta.bitWidth-1 do begin
+          x:=timestepToScreenX(zoom,startIndex,rows[i,0].x);
+          y:=rowMeta.transformY(rows[i,0].v,scaleType,determinedValue,bitIdx);
+          Canvas.MoveTo(x,y);
+          Canvas.Pen.color:=colorTab[red,determinedValue];
+          for k:=1 to length(rows[i])-1 do begin
+            x:=timestepToScreenX(zoom,startIndex,rows[i,k].x);
+            Canvas.LineTo(x,y);
+            y:=rowMeta.transformY(rows[i,k].v,scaleType,determinedValue,bitIdx);
+            Canvas.Pen.color:=colorTab[red,determinedValue];
+            Canvas.LineTo(x,y);
+          end;
+        end;
+      end else begin
+        x:=timestepToScreenX(zoom,startIndex,rows[i,0].x);
+        y:=rowMeta.transformY(rows[i,0].v,scaleType,determinedValue);
+        Canvas.MoveTo(x,y);
+        Canvas.Pen.color:=colorTab[red,determinedValue];
+        for k:=1 to length(rows[i])-1 do begin
+          x:=timestepToScreenX(zoom,startIndex,rows[i,k].x);
+          Canvas.LineTo(x,y);
+          y:=rowMeta.transformY(rows[i,k].v,scaleType,determinedValue);
+          Canvas.Pen.color:=colorTab[red,determinedValue];
+          Canvas.LineTo(x,y);
+        end;
+      end;
+      red:=not(red);
+    end;
+
+  end;
 
 { T_graphMetaData }
 
@@ -154,7 +303,6 @@ PROCEDURE T_graphMetaData.update(CONST scaleType: T_scaleType; CONST imageHeight
         end;
         st_signed: begin
           setLength(entry.ranges,1);
-          dyFactor:=weightPerRow/256;
           case entry.bitWidth of
             8: begin
                  dyFactor:=8/256;
@@ -175,8 +323,8 @@ PROCEDURE T_graphMetaData.update(CONST scaleType: T_scaleType; CONST imageHeight
       end;
       for k:=0 to length(entry.ranges)-1 do begin
         entry.ranges[k].y0:=round(yTally+yOffset);
-        entry.ranges[k].dy:=dyFactor*zoomFactor;
-        yTally-=round(0.5+1.1*entry.ranges[k].dy*dynamicRange);
+        entry.ranges[k].dy:=-dyFactor*zoomFactor;
+        yTally+=round(0.5+1.1*entry.ranges[k].dy*dynamicRange);
       end;
     end;
 
@@ -208,6 +356,13 @@ PROCEDURE T_graphMetaData.update(CONST scaleType: T_scaleType; CONST imageHeight
 
     //TODO: RECENTER!!!
 
+  end;
+
+FUNCTION T_graphMetaData.ioMeta(CONST index: longint): T_graphMetaDataEntry;
+  begin
+    if index<length(input)
+    then result:=input[index]
+    else result:=output[index-length(input)];
   end;
 
 { T_simulationOutput }
@@ -270,7 +425,7 @@ PROCEDURE T_simulationOutput.finishRun;
       end;
     end;
 
-    endAtStep:=startAtStep+maxSteps;
+    endAtStep:=maxSteps;
   end;
 
 PROCEDURE T_simulationOutput.updateTable(CONST scaleType: T_scaleType; CONST rowIndex: longint; CONST table: TStringGrid);
@@ -306,55 +461,22 @@ PROCEDURE T_simulationOutput.updateTable(CONST scaleType: T_scaleType; CONST row
     end;
   end;
 
-PROCEDURE T_simulationOutput.paint(CONST scaleType:T_scaleType; CONST meta:T_graphMetaData; CONST zoom,startIndex:longint; CONST image:TImage);
-  VAR i:longint;
-      RED:boolean=true;
+PROCEDURE T_simulationOutput.collectPaintable(CONST startIndex,endIndex,simIndex:longint; VAR paintable:T_paintable);
+  VAR r:longint=0;
+      i,k:longint;
   begin
-    if startIndex                      >endAtStep   then exit;
-    if startIndex+(image.width-20)*zoom<startAtStep then exit;
-
-    //image.Picture.Bitmap.Canvas.Font.Color:=clBlack;
-    //image.Picture.Bitmap.Canvas.Font.Orientation:=0;
-    //image.Picture.Bitmap.Canvas.TextOut(startAtStep-startIndex,3,'Lauf #'+intTos...);
-
+    if startIndex>endAtStep   then exit;
+    if endIndex  <startAtStep then exit;
+    paintable.addSimStart(startAtStep,simIndex);
     for i:=0 to length(inputs)-1 do begin
-      if RED then image.picture.Bitmap.Canvas.Pen.color:=clRed
-             else image.picture.Bitmap.Canvas.Pen.color:=clBlue;
-      RED:=not(RED);
-      //...
-
+      paintable.addValue(r,startAtStep,inputs[i]);
+      paintable.addValue(r,endAtStep  ,inputs[i]);
+      inc(r);
     end;
     for i:=0 to length(outputHistory)-1 do begin
-      if RED then image.picture.Bitmap.Canvas.Pen.color:=clRed
-             else image.picture.Bitmap.Canvas.Pen.color:=clBlue;
-      RED:=not(RED);
-      //...
-    end;
-
-  end;
-
-PROCEDURE T_simulationOutput.paintCaptions(CONST scaleType:T_scaleType; VAR meta:T_graphMetaData; CONST image:TImage);
-  VAR i:longint;
-      RED:boolean=true;
-  begin
-    image.picture.Bitmap.setSize(image.width,image.height);
-    image.picture.Bitmap.Canvas.Brush.color:=clBtnFace;
-    image.picture.Bitmap.Canvas.clear;
-
-    meta.update(scaleType,image.height);
-
-    image.picture.Bitmap.Canvas.Font.Orientation:=900;
-    for i:=0 to length(meta.input)-1 do begin
-      if RED then image.picture.Bitmap.Canvas.Font.color:=clRed
-             else image.picture.Bitmap.Canvas.Font.color:=clBlue;
-      RED:=not(RED);
-      image.picture.Bitmap.Canvas.textOut(0,meta.input[i].plotY0,meta.input[i].caption);
-    end;
-    for i:=0 to length(meta.output)-1 do begin
-      if RED then image.picture.Bitmap.Canvas.Font.color:=clRed
-             else image.picture.Bitmap.Canvas.Font.color:=clBlue;
-      RED:=not(RED);
-      image.picture.Bitmap.Canvas.textOut(0,meta.output[i].plotY0,meta.output[i].caption);
+      for k:=0 to length(outputHistory[i])-1 do
+        paintable.addValue(r,outputHistory[i,k].stepIndex,outputHistory[i,k].value);
+      inc(r);
     end;
   end;
 
@@ -458,12 +580,16 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       end;
       stepCount:=0;
       while (stepCount<=1000) and clonedGate^.simulateStep do begin
-        for i:=0 to clonedGate^.numberOfOutputs-1 do
-        simulationOutputs[simIndex].addOutput(stepCount,i,clonedGate^.getOutput(i));
         inc(stepCount);
+        for i:=0 to clonedGate^.numberOfOutputs-1 do
+        simulationOutputs[simIndex].addOutput(stepCount+simulationStartStep,i,clonedGate^.getOutput(i));
       end;
+      inc(stepCount);
+      for i:=0 to clonedGate^.numberOfOutputs-1 do
+      simulationOutputs[simIndex].addOutput(stepCount+simulationStartStep,i,clonedGate^.getOutput(i));
 
       simulationOutputs[simIndex].finishRun;
+
       if simulationOutputs[simIndex].stepsTotal<minResponseTime then begin
         minResponseTime:=simulationOutputs[simIndex].stepsTotal;
         minResponseTimeLabel.caption:=intToStr(minResponseTime);
@@ -472,7 +598,7 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
         maxResponseTime:=simulationOutputs[simIndex].stepsTotal;
         maxResponseTimeLabel.caption:=intToStr(maxResponseTime);
       end;
-      simulationStartStep:=simulationOutputs[simIndex].endAtStep;
+      simulationStartStep:=simulationOutputs[simIndex].endAtStep+1;
       simulationOutputs[simIndex].updateTable(scaleType,simIndex+1,StringGrid);
 
       if GetTickCount64>startTicks+200 then begin
@@ -487,24 +613,53 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
     StringGrid.EndUpdate();
     ProgressBar1.position:=0;
 
-    if TrackBar1.position*simulationStartStep>Image1.width
-    then TrackBar1.position:=trunc(Image1.width/simulationStartStep);
-    ScrollBar1.position:=0;
-    ScrollBar1.min:=0;
-    i:=simulationStartStep-trunc(Image1.width/TrackBar1.position);
+    if zoomTrackBar.position*simulationStartStep>Image1.width
+    then zoomTrackBar.position:=trunc(Image1.width/simulationStartStep);
+    TimeScrollBar.position:=0;
+    TimeScrollBar.min:=0;
+    i:=simulationStartStep-trunc(Image1.width/zoomTrackBar.position);
     if i<=0 then begin
-      ScrollBar1.position:=0;
-      ScrollBar1.visible:=false;
+      TimeScrollBar.position:=0;
+      TimeScrollBar.enabled:=false;
     end else begin
-      ScrollBar1.max:=i;
-      ScrollBar1.visible:=true;
+      TimeScrollBar.max:=i;
+      TimeScrollBar.enabled:=true;
     end;
+    repaintGraph;
+  end;
+
+PROCEDURE TanalysisForm.ZoomTrackBarChange(Sender: TObject);
+  VAR lastPointInTime:longint;
+      newMax:longint;
+  begin
+    if length(simulationOutputs)=0 then exit;
+    lastPointInTime:=simulationOutputs[length(simulationOutputs)-1].endAtStep;
+
+    newMax:=lastPointInTime-trunc(Image1.width/zoomTrackBar.position);
+    if newMax<=0 then begin
+      TimeScrollBar.position:=0;
+      TimeScrollBar.enabled:=false;
+    end else begin
+      TimeScrollBar.max:=newMax;
+      TimeScrollBar.enabled:=true;
+    end;
+
     repaintGraph;
   end;
 
 PROCEDURE TanalysisForm.rbBinaryChange(Sender: TObject);
   begin
     repaintTable;
+    repaintGraph;
+  end;
+
+PROCEDURE TanalysisForm.FormResize(Sender: TObject);
+  begin
+    repaintGraph;
+  end;
+
+PROCEDURE TanalysisForm.TimeScrollBarChange(Sender: TObject);
+  begin
     repaintGraph;
   end;
 
@@ -547,14 +702,41 @@ PROCEDURE TanalysisForm.repaintTable;
 PROCEDURE TanalysisForm.repaintGraph;
   VAR simIndex:longint;
       scaleType: T_scaleType;
+      i:longint;
+      red:boolean=true;
+      paintable:T_paintable;
   begin
     if length(simulationOutputs)=0 then exit;
     if rbBinary.checked then scaleType:=st_binary
     else if rbPositive.checked then scaleType:=st_unsigned
     else scaleType:=st_signed;
 
-    simulationOutputs[0].paintCaptions(scaleType,graphMetaData,Image1);
-    for simIndex:=0 to length(simulationOutputs)-1 do simulationOutputs[simIndex].paint(scaleType,graphMetaData,TrackBar1.position,ScrollBar1.position,Image1);
+    Image1.picture.Bitmap.setSize(Image1.width,Image1.height);
+    Image1.picture.Bitmap.Canvas.Brush.color:=clBtnFace;
+    Image1.picture.Bitmap.Canvas.FillRect(0,0,Image1.width,Image1.height);
+
+    graphMetaData.update(scaleType,Image1.height);
+
+    Image1.picture.Bitmap.Canvas.Font.Orientation:=900;
+    for i:=0 to length(graphMetaData.input)-1 do begin
+      if red then Image1.picture.Bitmap.Canvas.Font.color:=clRed
+             else Image1.picture.Bitmap.Canvas.Font.color:=clBlue;
+      red:=not(red);
+      Image1.picture.Bitmap.Canvas.textOut(0,graphMetaData.input[i].plotY0,graphMetaData.input[i].caption);
+    end;
+    for i:=0 to length(graphMetaData.output)-1 do begin
+      if red then Image1.picture.Bitmap.Canvas.Font.color:=clRed
+             else Image1.picture.Bitmap.Canvas.Font.color:=clBlue;
+      red:=not(red);
+      Image1.picture.Bitmap.Canvas.textOut(0,graphMetaData.output[i].plotY0,graphMetaData.output[i].caption);
+    end;
+
+    paintable.create;
+    i:=screenXToTimestep(zoomTrackBar.position,TimeScrollBar.position,Image1.width)+1;
+    for simIndex:=0 to length(simulationOutputs)-1 do simulationOutputs[simIndex].collectPaintable(TimeScrollBar.position,i,simIndex,paintable);
+    paintable.paint(TimeScrollBar.position,zoomTrackBar.position,scaleType,graphMetaData,Image1.picture.Bitmap.Canvas);
+    paintable.destroy;
+
   end;
 
 PROCEDURE TanalysisForm.showForGate(CONST gate: P_abstractGate);
