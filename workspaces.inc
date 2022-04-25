@@ -271,15 +271,29 @@ FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): b
 
     result:=currentBoard^.loadFromStream(@self,stream);
     result:=result and stream.allOkay;
-    if result then begin
-      rebuildMenu;
-      rebuildTree;
-    end;
+
+    rebuildMenu;
+    rebuildTree;
   end;
 
 PROCEDURE T_workspace.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
-  VAR i:longint;
+  VAR i,j:longint;
+      swapTmp:P_circuitBoard;
   begin
+    //Sorting helps preventing errors on restore.
+    //The reason is that custom gates can only be constructed successfully when their prototype-board is already available.
+    for j:=1 to length(paletteEntries)-1 do begin
+      i:=j;
+      while (i>0) and not(paletteEntries[i]^.usesBoard(paletteEntries[i-1])) do begin
+        swapTmp            :=paletteEntries[i-1];
+        paletteEntries[i-1]:=paletteEntries[i];
+        paletteEntries[i  ]:=swapTmp;
+        paletteEntries[i-1]^.paletteIndex:=i-1;
+        paletteEntries[i  ]^.paletteIndex:=i;
+        dec(i);
+      end;
+    end;
+
     inherited;
     stream.writeNaturalNumber(length(paletteCategories));
     for i:=0 to length(paletteCategories)-1 do stream.writeShortString(paletteCategories[i]);
@@ -565,6 +579,8 @@ PROCEDURE T_workspace.rebuildTree;
     if (paletteEntries[i]^.categoryIndex>=0) and
        not(paletteEntries[i]^.usesBoard(currentBoard,true))
     then addBoardToTree(paletteEntries[i]);
+
+    for node in paletteView.Items do if node.HasChildren then node.AlphaSort;
 
     paletteView.FullExpand;
     paletteView.OnEdited:=@paletteViewEdited;
