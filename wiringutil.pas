@@ -124,18 +124,29 @@ FUNCTION linesIntersect(CONST a0,a1,b0,b1:T_point):boolean;
     Q:=a1-a0; Q:=pointOf(-Q[1],Q[0]);
     P:=b0-a0;
     R:=b1-a0;
-    if Q[0]*P[0]+Q[1]*P[1]+
-       Q[0]*R[0]+Q[1]*R[1]<0 then begin
+    if Q*P+Q*R<0 then begin
       Q:=b1-b0; Q:=pointOf(-Q[1],Q[0]);
       P:=a0-b0;
       R:=a1-b0;
-      result:=Q[0]*P[0]+Q[1]*P[1]+
-              Q[0]*R[0]+Q[1]*R[1]<0;
+      result:=Q*P+Q*R<0;
     end else result:=false;
+
+//    writeln('[',a0[0],',',a0[1],'],',
+//            '[',a1[0],',',a1[1],'],',
+//            '[',b0[0],',',b0[1],'],',
+//            '[',b1[0],',',b1[1],'],',result);
+
+
   end;
 
 FUNCTION lineCrossesRectangle(CONST a0,a1,rectangleOrigin,rectangleExtend:T_point):boolean;
   begin
+    if (a0[0]<=rectangleOrigin[0]                   ) and (a1[0]<=rectangleOrigin[0]                   ) then exit(false);
+    if (a0[0]>=rectangleOrigin[0]+rectangleExtend[0]) and (a1[0]>=rectangleOrigin[0]+rectangleExtend[0]) then exit(false);
+    if (a0[1]<=rectangleOrigin[1]                   ) and (a1[1]<=rectangleOrigin[1]                   ) then exit(false);
+    if (a0[1]>=rectangleOrigin[1]+rectangleExtend[1]) and (a1[1]>=rectangleOrigin[1]+rectangleExtend[1]) then exit(false);
+
+
     result:=linesIntersect(a0,a1,rectangleOrigin                ,pointOf(rectangleOrigin[0]+rectangleExtend[0],rectangleOrigin[1]))
          or linesIntersect(a0,a1,rectangleOrigin+rectangleExtend,pointOf(rectangleOrigin[0]+rectangleExtend[0],rectangleOrigin[1]))
          or linesIntersect(a0,a1,rectangleOrigin+rectangleExtend,pointOf(rectangleOrigin[0]                   ,rectangleOrigin[1]+rectangleExtend[1]))
@@ -444,11 +455,18 @@ FUNCTION T_wireGraph.isPathFree(CONST startPoint,endPoint:T_point; VAR path:T_wi
                  round( startPoint[1]   *(1-w)+ endPoint[1]   *w));
       if allowedDirectionsPerPoint[p[0],p[1]]=[] then exit(false);
     end;
-    setLength(path,4);
-    path[0]:=startPoint;
-    path[1]:=pointOf(startPoint[0]+1,startPoint[1]);
-    path[2]:=pointOf(endPoint[0]-1,endPoint[1]);
-    path[3]:=endPoint;
+    if startPoint[1]=endPoint[1] then begin
+      setLength(path,2);
+      path[0]:=startPoint;
+      path[1]:=endPoint;
+    end else begin
+      setLength(path,4);
+      path[0]:=startPoint;
+      path[1]:=pointOf(startPoint[0]+1,startPoint[1]);
+      path[2]:=pointOf(endPoint  [0]-1,endPoint  [1]);
+      path[3]:=endPoint;
+    end;
+
     result:=true;
   end;
 

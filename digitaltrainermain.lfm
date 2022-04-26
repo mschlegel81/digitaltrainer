@@ -19,18 +19,25 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Top = 0
     Width = 408
     HorzScrollBar.Page = 90
+    HorzScrollBar.Smooth = True
+    HorzScrollBar.Range = 900
+    HorzScrollBar.Tracking = True
     VertScrollBar.Page = 90
+    VertScrollBar.Smooth = True
+    VertScrollBar.Range = 900
+    VertScrollBar.Tracking = True
     Align = alClient
-    ClientHeight = 545
-    ClientWidth = 404
+    AutoScroll = False
+    ClientHeight = 528
+    ClientWidth = 387
     ParentFont = False
     TabOrder = 0
     object WireImage: TImage
       Cursor = crCross
       Left = 0
-      Height = 545
+      Height = 900
       Top = 0
-      Width = 404
+      Width = 900
       Align = alClient
     end
   end

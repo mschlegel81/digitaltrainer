@@ -8,7 +8,6 @@ USES
   {$endif}{$endif}
   Interfaces, // this includes the LCL widgetset
   Forms, digitaltrainerMain, propertyDialog, analysisDialog, draftFormUnit;
-  { you can add units after this };
 
 {$R *.res}
 

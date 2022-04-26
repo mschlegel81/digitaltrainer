@@ -645,7 +645,7 @@ PROCEDURE T_circuitBoard.copySelectionToClipboard;
     for gate in gateToCopy do
       GUI.Clipboard^.addGateWithoutChecking(
         GUI.Clipboard^.wrapGate(gate^.origin+offset,
-                                gate^.behavior^.clone(true),gate));
+                                gate^.behavior^.clone(true)));
 
     ic:=0;
     for i:=0 to length(logicWires)-1 do if canConvertConnector(logicWires[i].source,clipboardSourceConnector) then begin

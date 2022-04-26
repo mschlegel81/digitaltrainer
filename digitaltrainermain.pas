@@ -526,9 +526,28 @@ PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ZoomTrackBarChange(Sender: TObject);
+  VAR r:longint;
   begin
     BeginFormUpdate;
     workspace.getCurrentBoard^.setZoom(zoomTrackBar.position);
+    r:=BOARD_MAX_SIZE_IN_GRID_ENTRIES*zoomTrackBar.Position;
+    if r<=scrollBox1.Height then begin
+      ScrollBox1.VertScrollBar.Visible:=false;
+      ScrollBox1.VertScrollBar.Position:=0;
+    end else begin
+      ScrollBox1.VertScrollBar.Visible:=true;
+      ScrollBox1.VertScrollBar.Range:=r;
+    end;
+
+    r:=BOARD_MAX_SIZE_IN_GRID_ENTRIES*zoomTrackBar.Position;
+    if r<=scrollBox1.Width then begin
+      ScrollBox1.HorzScrollBar.Visible:=false;
+      ScrollBox1.HorzScrollBar.Position:=0;
+    end else begin
+      ScrollBox1.HorzScrollBar.Visible:=true;
+      ScrollBox1.HorzScrollBar.Range:=r;
+    end;
+
     EndFormUpdate;
   end;
 
