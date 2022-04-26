@@ -173,25 +173,6 @@ PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType);
     end;
   end;
 
-//PROCEDURE T_workspace.addCustomGate(CONST index: longint);
-//  VAR visual:P_visualGate;
-//      gateToAdd:P_customGate;
-//      p: T_point;
-//  begin
-//    if (index>=0) and (index<length(paletteEntries)) then begin
-//      new(gateToAdd,create(paletteEntries[index]));
-//      currentBoard^.saveStateToUndoList;
-//
-//      if length(currentBoard^.gates)=0
-//      then p:=pointOf(5,5)
-//      else p:=currentBoard^.gates[length(currentBoard^.gates)-1]^.nextGateAfter;
-//
-//      visual:=currentBoard^.wrapGate(p,gateToAdd);
-//      if not currentBoard^.positionNewGate(visual)
-//      then dispose(visual,destroy);
-//    end;
-//  end;
-
 PROCEDURE T_workspace.addSelectedCustomGate;
   VAR node:TTreeNode;
       data:P_paletteTreeData;
@@ -204,7 +185,7 @@ PROCEDURE T_workspace.addSelectedCustomGate;
     data:=P_paletteTreeData(node.data);
     if data^.board=nil then exit;
 
-    new(gateToAdd,create(data^.board));
+    new(gateToAdd,createFromBoard(data^.board));
     currentBoard^.saveStateToUndoList;
 
     if length(currentBoard^.gates)=0

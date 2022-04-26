@@ -24,6 +24,7 @@ CONST ZERO_POINT:T_point=(0,0);
       {wd_leftUp   } (-1,-1));
       OppositeDirection:array[T_wireDirection] of T_wireDirection=(wd_right,wd_rightUp,wd_up,wd_leftUp,wd_left,wd_leftDown,wd_down,wd_rightDown);
       AllDirections=[wd_left..wd_leftUp];
+      StraightDirections=[wd_left,wd_up,wd_right,wd_down];
 
       allowedSuccessiveDirection:array[T_wireDirection] of T_wireDirectionSet=
           {wd_left     }([wd_left,wd_leftDown,wd_down             ,                    wd_up,wd_leftUp],
@@ -41,7 +42,7 @@ TYPE
   T_wireGraph=object
     private
       allowedDirectionsPerPoint:bitpacked array[0..BOARD_MAX_SIZE_IN_GRID_ENTRIES-1,0..BOARD_MAX_SIZE_IN_GRID_ENTRIES-1] of T_wireDirectionSet;
-      FUNCTION findPath(CONST startPoint,endPoint:T_point; CONST pathsToPrimeWith:T_wirePathArray):T_wirePath;
+      FUNCTION findPath(CONST startPoint,endPoint:T_point; CONST pathsToPrimeWith:T_wirePathArray; CONST directionMask:T_wireDirectionSet=AllDirections):T_wirePath;
       PROCEDURE dropWireSection(CONST a,b:T_point; CONST diagonalsOnly:boolean=false);
       FUNCTION isPathFree(CONST startPoint,endPoint:T_point; VAR path:T_wirePath):boolean;
     public
@@ -75,6 +76,8 @@ FUNCTION pathScore(CONST path:T_wirePath):double;
 FUNCTION linesIntersect(CONST a0,a1,b0,b1:T_point):boolean;
 FUNCTION lineCrossesRectangle(CONST a0,a1,rectangleOrigin,rectangleExtend:T_point):boolean;
 
+VAR enableShortcuts:boolean=true;
+    allowDiagonals :boolean=true;
 IMPLEMENTATION
 USES math,sysutils;
 TYPE
@@ -326,9 +329,14 @@ DESTRUCTOR T_wireGraph.destroy;
 
 PROCEDURE T_wireGraph.initDirections;
   VAR x,y:longint;
+      dirs:T_wireDirectionSet;
   begin
+    if allowDiagonals
+    then dirs:=AllDirections
+    else dirs:=StraightDirections;
+
     for x:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do
-    for y:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do allowedDirectionsPerPoint[x,y]:=AllDirections;
+    for y:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do allowedDirectionsPerPoint[x,y]:=dirs;
     y:=BOARD_MAX_SIZE_IN_GRID_ENTRIES-1;
     for x:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do begin
       allowedDirectionsPerPoint[x,0]-=[wd_up  ,wd_leftUp  ,wd_rightUp  ];
@@ -423,7 +431,7 @@ FUNCTION T_wireGraph.isPathFree(CONST startPoint,endPoint:T_point; VAR path:T_wi
       w:double;
       p:T_point;
   begin
-    if endPoint[0]<startPoint[0] then exit(false);
+    if not(enableShortcuts) or (endPoint[0]<startPoint[0]+2) then exit(false);
     if endPoint=startPoint then begin
       setLength(path,1);
       path[0]:=startPoint;
@@ -466,7 +474,7 @@ FUNCTION pathScore(CONST path:T_wirePath):double;
     end;
   end;
 
-FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsToPrimeWith:T_wirePathArray): T_wirePath;
+FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsToPrimeWith:T_wirePathArray; CONST directionMask:T_wireDirectionSet=AllDirections): T_wirePath;
   FUNCTION distance(CONST p:T_point):double;
     begin
       result:=sqrt(sqr(p[0]-endPoint[0])+sqr(p[1]-endPoint[1]));
@@ -621,6 +629,7 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wireP
       swapTemp:T_indexAndDist;
       i,j:longint;
       anyImproved: boolean;
+      mask:T_wireDirectionSet;
   FUNCTION listExceptEntry(CONST list:T_wirePathArray; CONST indexToDrop:longint):T_wirePathArray;
     VAR i:longint;
         k:longint=0;
@@ -650,16 +659,22 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wireP
       end;
     end;
 
+    if length(endPoints)>1
+    then mask:=StraightDirections
+    else mask:=AllDirections;
+
     setLength(result,length(endPoints));
     for swapTemp in initialRun do with swapTemp do
-      result[idx]:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx));
+      result[idx]:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),mask);
     setLength(initialRun,0);
+
+    if length(endPoints)<4 then mask:=AllDirections;
 
     if length(endPoints)>1 then repeat
       anyImproved:=false;
       for i:=0 to length(endPoints)-1 do begin
         if length(result[i])>0 then begin
-          nextPath:=findPath(startPoint,endPoints[i],listExceptEntry(result,i));
+          nextPath:=findPath(startPoint,endPoints[i],listExceptEntry(result,i),mask);
           if pathScore(nextPath)<pathScore(result[i])
           then begin
             result[i]:=nextPath;

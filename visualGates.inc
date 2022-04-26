@@ -302,6 +302,8 @@ PROCEDURE T_visualGateForInput.ensureGuiElements;
       labels[1].caption:='bin:';
       labels[1].OnClick:=@inputModeClick;
       labels[1].Font.size:=10;
+
+      updateIoVisuals;
     end;
   end;
 
@@ -331,7 +333,7 @@ PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton;
       then dragging:=drag_selection
       else dragging:=drag_self;
       movedDuringDrag:=false;
-      if (ssShift in Shift) or (ssCtrl in Shift)
+      if (ssCtrl in Shift)
       then marked:=not(marked);
       shapes[0].Pen.style:=psDash;
       dragX:=x;
@@ -354,9 +356,9 @@ PROCEDURE T_visualGate.mainShapeMouseMove(Sender: TObject; Shift: TShiftState; X
     if dragging=drag_self then begin
       if board^.canGateBeMovedBy(@self,dragDelta,false,false)
       then begin
+        if not(movedDuringDrag) then board^.saveStateToUndoList;
         origin+=dragDelta;
         Repaint;
-        if not(movedDuringDrag) then board^.saveStateToUndoList;
         movedDuringDrag:=true;
       end;
     end else if dragging=drag_selection then begin
@@ -515,7 +517,7 @@ PROCEDURE T_visualGateForInput.Repaint;
 
     button.Font.size:=labels[0].Font.size;
 
-    newFontSize:=min(round(labels[1].Font.size*shapes[0].width *0.25/labels[1].width),
+    newFontSize:=min(round(labels[1].Font.size*shapes[0].width *0.15/labels[1].width),
                      round(labels[1].Font.size*shapes[0].height*0.5 /labels[1].height));
     if abs(newFontSize-labels[1].Font.size)>0 then begin
       labels[1].Font.size:=newFontSize;
@@ -529,63 +531,63 @@ PROCEDURE T_visualGateForInput.Repaint;
     edit.width    :=(shapes[0].Left+shapes[0].width-4)-edit.Left ;
   end;
 
-  PROCEDURE T_visualGateForInput.updateText;
-   begin
-     case inputMode of
-       im_bin:         edit.text:=getBinaryString (behavior^.getOutput(0));
-       im_dec:         edit.text:=getDecimalString(behavior^.getOutput(0));
-       im_2complement: edit.text:=get2ComplementString(behavior^.getOutput(0));
-     end;
+PROCEDURE T_visualGateForInput.updateText;
+ begin
+   case inputMode of
+     im_bin:         edit.text:=getBinaryString (behavior^.getOutput(0));
+     im_dec:         edit.text:=getDecimalString(behavior^.getOutput(0));
+     im_2complement: edit.text:=get2ComplementString(behavior^.getOutput(0));
    end;
+ end;
 
-  PROCEDURE T_visualGateForInput.ButtonClick(Sender: TObject);
-    VAR i:longint;
-        w:T_wireValue;
-    begin
-      w:=behavior^.getInput(0);
-      for i:=0 to WIRE_MAX_WIDTH-1 do w.bit[i]:=TRI_STATE_NOT[w.bit[i]];
-      behavior^.setInput(0,w);
-      updateIoVisuals;
-      if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
-    end;
+PROCEDURE T_visualGateForInput.ButtonClick(Sender: TObject);
+  VAR i:longint;
+      w:T_wireValue;
+  begin
+    w:=behavior^.getInput(0);
+    for i:=0 to WIRE_MAX_WIDTH-1 do w.bit[i]:=TRI_STATE_NOT[w.bit[i]];
+    behavior^.setInput(0,w);
+    updateIoVisuals;
+    if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
+  end;
 
-  PROCEDURE T_visualGateForInput.inputModeClick(Sender: TObject);
-    begin
-      case inputMode of
-        im_bin        : begin inputMode:=im_dec        ; labels[1].caption:='dec:'; end;
-        im_dec        : begin inputMode:=im_2complement; labels[1].caption:='neg:'; end;
-        im_2complement: begin inputMode:=im_bin        ; labels[1].caption:='bin:'; end;
-      end;
-      updateText;
+PROCEDURE T_visualGateForInput.inputModeClick(Sender: TObject);
+  begin
+    case inputMode of
+      im_bin        : begin inputMode:=im_dec        ; labels[1].caption:='dec:'; end;
+      im_dec        : begin inputMode:=im_2complement; labels[1].caption:='neg:'; end;
+      im_2complement: begin inputMode:=im_bin        ; labels[1].caption:='bin:'; end;
     end;
+    updateText;
+  end;
 
-  PROCEDURE T_visualGateForInput.inputEditEditingDone(Sender: TObject);
-    VAR w:T_wireValue;
-    begin
-      case inputMode of
-        im_bin:         w:=parseWireBin        (edit.text,behavior^.inputWidth(0));
-        im_dec:         w:=parseWireDecimal    (edit.text,behavior^.inputWidth(0));
-        im_2complement: w:=parseWire2Complement(edit.text,behavior^.inputWidth(0));
-      end;
-      behavior^.setInput(0,w);
-      updateText;
-      updateIoVisuals;
-      if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
+PROCEDURE T_visualGateForInput.inputEditEditingDone(Sender: TObject);
+  VAR w:T_wireValue;
+  begin
+    case inputMode of
+      im_bin:         w:=parseWireBin        (edit.text,behavior^.inputWidth(0));
+      im_dec:         w:=parseWireDecimal    (edit.text,behavior^.inputWidth(0));
+      im_2complement: w:=parseWire2Complement(edit.text,behavior^.inputWidth(0));
     end;
+    behavior^.setInput(0,w);
+    updateText;
+    updateIoVisuals;
+    if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
+  end;
 
-  PROCEDURE T_visualGateForInput.inputEditKeyEvent(Sender: TObject; VAR key: char);
-    VAR AllowedKeys:array[T_inputMode] of set of char=
-        {im_bin        } ([#8,'0','1'],
-        {im_dec        }  [#8,'0'..'9'],
-        {im_2complement}  [#8,'-','0'..'9']);
-    begin
-      if key=#13 then begin
-        inputEditEditingDone(Sender);
-        key:=#0;
-        exit;
-      end;
-      if not(key in AllowedKeys[inputMode]) then key:=#0;
+PROCEDURE T_visualGateForInput.inputEditKeyEvent(Sender: TObject; VAR key: char);
+  VAR AllowedKeys:array[T_inputMode] of set of char=
+      {im_bin        } ([#8,'0','1'],
+      {im_dec        }  [#8,'0'..'9'],
+      {im_2complement}  [#8,'-','0'..'9']);
+  begin
+    if key=#13 then begin
+      inputEditEditingDone(Sender);
+      key:=#0;
+      exit;
     end;
+    if not(key in AllowedKeys[inputMode]) then key:=#0;
+  end;
 
 PROCEDURE T_visualGateForOutput.Repaint;
   VAR k,newFontSize:longint;

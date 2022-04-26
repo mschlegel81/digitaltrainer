@@ -17,6 +17,10 @@ TYPE
     ButtonAddGatedClock: TButton;
     ButtonAddConstantTrue: TButton;
     ButtonAddConstantFalse: TButton;
+    MenuItem2: TMenuItem;
+    miToggleAllowDiagonalWires: TMenuItem;
+    miToggleAllowShortcuts: TMenuItem;
+    miRewire: TMenuItem;
     miAddNewCategory: TMenuItem;
     miSetCategoryRoot: TMenuItem;
     miDrafts: TMenuItem;
@@ -24,7 +28,6 @@ TYPE
     miEditCopyOfPaletteEntry: TMenuItem;
     miUndo: TMenuItem;
     miRedo: TMenuItem;
-    miRewire: TMenuItem;
     miPaste: TMenuItem;
     miCopy: TMenuItem;
     miAnalyze: TMenuItem;
@@ -123,6 +126,8 @@ TYPE
     PROCEDURE miRewireClick(Sender: TObject);
     PROCEDURE miSaveClick(Sender: TObject);
     PROCEDURE miSelectAllClick(Sender: TObject);
+    PROCEDURE miToggleAllowDiagonalWiresClick(Sender: TObject);
+    PROCEDURE miToggleAllowShortcutsClick(Sender: TObject);
     PROCEDURE miUndoClick(Sender: TObject);
     PROCEDURE resetButtonClick(Sender: TObject);
     PROCEDURE SimTimerTimer(Sender: TObject);
@@ -142,6 +147,7 @@ VAR
   DigitaltrainerMainForm: TDigitaltrainerMainForm;
 
 IMPLEMENTATION
+USES wiringUtil;
 
 {$R *.lfm}
 FUNCTION workspaceFilename:string;
@@ -157,6 +163,9 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     ScrollBox1.color:=BackgroundColor;
     currentBoardIsDraft:=workspace.getCurrentBoard^.paletteIndex<0;
     updateSidebar;
+
+    miToggleAllowDiagonalWires.checked:=wiringUtil.allowDiagonals;
+    miToggleAllowShortcuts    .checked:=wiringUtil.enableShortcuts;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
@@ -252,9 +261,11 @@ PROCEDURE TDigitaltrainerMainForm.miDeletePaletteEntryClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miEditPaletteEntryClick(Sender: TObject);
   begin
+    BeginFormUpdate;
     workspace.editSelectedTreeItem(false);
     updateSidebar;
     restartTimerCallback;
+    EndFormUpdate;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAddToDraftsClick(Sender: TObject);
@@ -316,9 +327,11 @@ PROCEDURE TDigitaltrainerMainForm.miDraftsClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miEditCopyOfPaletteEntryClick(Sender: TObject);
   begin
+    BeginFormUpdate;
     workspace.editSelectedTreeItem(true);
     updateSidebar;
     restartTimerCallback;
+    EndFormUpdate;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miGatePropertiesClick(Sender: TObject);
@@ -356,7 +369,9 @@ PROCEDURE TDigitaltrainerMainForm.miNewClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miPasteClick(Sender: TObject);
   begin
+    BeginFormUpdate;
     workspace.getCurrentBoard^.pasteFromClipboard;
+    EndFormUpdate;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miQuitClick(Sender: TObject);
@@ -389,6 +404,22 @@ PROCEDURE TDigitaltrainerMainForm.miSaveClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miSelectAllClick(Sender: TObject);
   begin
     workspace.getCurrentBoard^.setSelectForAll(true);
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miToggleAllowDiagonalWiresClick(Sender: TObject);
+  begin
+    miToggleAllowDiagonalWires.checked:=not(miToggleAllowDiagonalWires.checked);
+    wiringUtil.allowDiagonals         :=    miToggleAllowDiagonalWires.checked;
+    workspace.getCurrentBoard^.rewire(true);
+    workspace.getCurrentBoard^.Repaint;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miToggleAllowShortcutsClick(Sender: TObject);
+  begin
+    miToggleAllowShortcuts.checked:=not(miToggleAllowShortcuts.checked);
+    wiringUtil.enableShortcuts    :=    miToggleAllowShortcuts.checked;
+    workspace.getCurrentBoard^.rewire(true);
+    workspace.getCurrentBoard^.Repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);

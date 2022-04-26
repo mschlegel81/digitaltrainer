@@ -19,7 +19,8 @@ T_customGate=object(T_abstractGate)
                       comesFrom:T_gateConnector;
                     end;
 
-  CONSTRUCTOR create(CONST origin:P_circuitBoard);
+  CONSTRUCTOR createFromBoard(CONST origin:P_circuitBoard);
+  CONSTRUCTOR createAsClone(CONST origin:P_customGate; CONST includeState:boolean);
   DESTRUCTOR destroy; virtual;
   PROCEDURE reset;                   virtual;
   FUNCTION  caption:string;          virtual;
@@ -32,13 +33,13 @@ T_customGate=object(T_abstractGate)
   FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
   FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
   FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
-  FUNCTION  clone:P_abstractGate; virtual;
+  FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual;
 
   PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
 end;
 {$endif}
 {$ifdef includeImplementation}
-CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
+CONSTRUCTOR T_customGate.createFromBoard(CONST origin: P_circuitBoard);
   TYPE T_annotatedConnection=record
          con:T_simpleConnection;
          srcIdx,tgtIdx:longint;
@@ -149,7 +150,7 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
     setLength(gateLevel,length(origin^.gates));
     for i:=0 to length(gateLevel)-1 do gateLevel[i]:=length(gateLevel);
     setLength(gates    ,length(origin^.gates));
-    for i:=0 to length(gates)-1 do gates[i]:=origin^.gates[i]^.behavior^.clone;
+    for i:=0 to length(gates)-1 do gates[i]:=origin^.gates[i]^.behavior^.clone(false);
     name:=origin^.name;
 
     for i:=0 to length(origin^.logicWires)-1 do begin
@@ -174,12 +175,62 @@ CONSTRUCTOR T_customGate.create(CONST origin: P_circuitBoard);
     setLength(gates,j);
   end;
 
+CONSTRUCTOR T_customGate.createAsClone(CONST origin:P_customGate; CONST includeState:boolean);
+  FUNCTION myConn(CONST originConnector:T_gateConnector):T_gateConnector;
+    VAR i:longint;
+    begin
+      for i:=0 to length(origin^.gates)-1 do if origin^.gates[i]=originConnector.gate then begin
+        result.gate:=gates[i];
+        result.index:=originConnector.index;
+        exit(result);
+      end;
+      raise Exception.create('Invalid state!');
+    end;
+
+  VAR i,j:longint;
+  begin
+    inherited create;
+    prototype:=origin^.prototype;
+    name:=origin^.name;
+
+    setLength(gates,length(origin^.gates));
+    for i:=0 to length(gates)-1 do gates[i]:=origin^.gates[i]^.clone(includeState);
+
+    setLength(connections,length(origin^.connections));
+    for i:=0 to length(connections)-1 do begin
+      connections[i].source:=myConn(origin^.connections[i].source);
+      connections[i].sink  :=myConn(origin^.connections[i].sink);
+    end;
+
+    setLength(inputConnections,length(origin^.inputConnections));
+    for i:=0 to length(inputConnections)-1 do with inputConnections[i] do begin
+      caption:=origin^.inputConnections[i].caption;
+      width  :=origin^.inputConnections[i].width;
+      value  :=origin^.inputConnections[i].value;
+
+      setLength(goesTo,length(origin^.inputConnections[i].goesTo));
+      for j:=0 to length(goesTo)-1 do goesTo[j]:=myConn(origin^.inputConnections[i].goesTo[j]);
+    end;
+
+    setLength(outputConnections,length(origin^.outputConnections));
+    for i:=0 to length(outputConnections)-1 do with outputConnections[i] do begin
+      caption  :=origin^.outputConnections[i].caption;
+      width    :=origin^.outputConnections[i].width;
+      comesFrom:=myConn(origin^.outputConnections[i].comesFrom);
+    end;
+
+    if not(includeState) then reset;
+  end;
+
 PROCEDURE T_customGate.reset;
   VAR gate:P_abstractGate;
-      i:longint;
+      i,j:longint;
   begin
     for gate in gates do gate^.reset;
-    for i:=0 to length(inputConnections)-1 do inputConnections[i].value:=tsv_true;
+    for i:=0 to length(inputConnections)-1 do begin
+      inputConnections[i].value.width:=inputConnections[i].width;
+      for j:=0 to WIRE_MAX_WIDTH-1 do inputConnections[i].value.bit[j]:=tsv_true;
+    end;
   end;
 
 DESTRUCTOR T_customGate.destroy;
@@ -258,9 +309,9 @@ FUNCTION T_customGate.getInput(CONST index: longint): T_wireValue;
     result:=inputConnections[index].value;
   end;
 
-FUNCTION T_customGate.clone: P_abstractGate;
+FUNCTION T_customGate.clone(CONST includeState:boolean): P_abstractGate;
   begin
-    new(P_customGate(result),create(prototype));
+    new(P_customGate(result),createAsClone(@self,includeState));
   end;
 
 PROCEDURE T_customGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);

@@ -35,7 +35,7 @@ TYPE
       CONSTRUCTOR create;
       DESTRUCTOR destroy; virtual;
       PROCEDURE reset;                   virtual; abstract;
-      FUNCTION  clone:P_abstractGate;    virtual; abstract;
+      FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual; abstract;
       FUNCTION  caption:string;          virtual; abstract;
       FUNCTION  getDescription:string;   virtual;
       FUNCTION  numberOfInputs :longint; virtual; abstract;
@@ -60,7 +60,7 @@ TYPE
     public
       CONSTRUCTOR create(CONST constantTrue:boolean);
       PROCEDURE reset;                   virtual;
-      FUNCTION  clone:P_abstractGate;    virtual;
+      FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual;
       FUNCTION  caption:string;          virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
@@ -85,7 +85,7 @@ TYPE
     public
       CONSTRUCTOR create;
       PROCEDURE reset;                   virtual;
-      FUNCTION  clone:P_abstractGate;    virtual;
+      FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
       FUNCTION  caption:string;          virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
@@ -106,7 +106,7 @@ TYPE
       width:byte;
       CONSTRUCTOR create;
       PROCEDURE reset;                   virtual;
-      FUNCTION  clone:P_abstractGate;    virtual;
+      FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
       FUNCTION  caption:string;          virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
@@ -126,7 +126,7 @@ TYPE
   T_outputGate=object(T_inputGate)
     public
       CONSTRUCTOR create;
-      FUNCTION  clone:P_abstractGate;    virtual;
+      FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
       FUNCTION  caption:string;          virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
@@ -141,7 +141,7 @@ TYPE
     public
       CONSTRUCTOR create(CONST inW,outW:byte);
       PROCEDURE reset;                   virtual;
-      FUNCTION  clone:P_abstractGate;    virtual;
+      FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
       FUNCTION  caption:string;          virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
@@ -169,6 +169,7 @@ TYPE
        PROCEDURE reset;                   virtual;
        FUNCTION  numberOfInputs :longint; virtual;
        FUNCTION  numberOfOutputs:longint; virtual;
+       FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
        FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
        FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
        FUNCTION  getInput(CONST index:longint):T_wireValue;              virtual;
@@ -180,7 +181,6 @@ TYPE
    P_andGate=^T_andGate;
    T_andGate=object(T_binaryBaseGate)
      CONSTRUCTOR create;
-     FUNCTION  clone:P_abstractGate;    virtual;
      FUNCTION  caption:string; virtual;
      FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
@@ -189,7 +189,6 @@ TYPE
    P_orGate=^T_orGate;
    T_orGate=object(T_binaryBaseGate)
      CONSTRUCTOR create;
-     FUNCTION  clone:P_abstractGate;    virtual;
      FUNCTION  caption:string; virtual;
      FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
@@ -198,7 +197,6 @@ TYPE
    P_xorGate=^T_xorGate;
    T_xorGate=object(T_binaryBaseGate)
      CONSTRUCTOR create;
-     FUNCTION  clone:P_abstractGate;    virtual;
      FUNCTION  caption:string; virtual;
      FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
@@ -207,7 +205,6 @@ TYPE
    P_nandGate=^T_nandGate;
    T_nandGate=object(T_binaryBaseGate)
      CONSTRUCTOR create;
-     FUNCTION  clone:P_abstractGate;    virtual;
      FUNCTION  caption:string; virtual;
      FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
@@ -216,7 +213,6 @@ TYPE
    P_norGate=^T_norGate;
    T_norGate=object(T_binaryBaseGate)
      CONSTRUCTOR create;
-     FUNCTION  clone:P_abstractGate;    virtual;
      FUNCTION  caption:string; virtual;
      FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
@@ -225,7 +221,6 @@ TYPE
    P_nxorGate=^T_nxorGate;
    T_nxorGate=object(T_binaryBaseGate)
      CONSTRUCTOR create;
-     FUNCTION  clone:P_abstractGate;    virtual;
      FUNCTION  caption:string; virtual;
      FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
@@ -238,7 +233,7 @@ TYPE
 
       CONSTRUCTOR create;
       PROCEDURE reset;                   virtual;
-      FUNCTION  clone:P_abstractGate;    virtual;
+      FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
       FUNCTION  caption:string;          virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
@@ -257,7 +252,7 @@ TYPE
       enable:T_triStateValue;
       CONSTRUCTOR create;
       PROCEDURE reset;                   virtual;
-      FUNCTION  clone:P_abstractGate;    virtual;
+      FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
       FUNCTION  caption:string;          virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
@@ -462,12 +457,6 @@ PROCEDURE T_gatedClock.reset;
     enable:=tsv_undetermined;
   end;
 
-FUNCTION T_gatedClock.clone: P_abstractGate;
-  begin
-    new(P_gatedClock(result),create);
-    P_gatedClock(result)^.interval:=interval;
-  end;
-
 FUNCTION T_gatedClock.caption: string;
   begin
     result:='G'+inherited;
@@ -513,11 +502,6 @@ CONSTRUCTOR T_constantGate.create(CONST constantTrue: boolean);
 
 PROCEDURE T_constantGate.reset;
   begin end;
-
-FUNCTION T_constantGate.clone: P_abstractGate;
-  begin
-    new(P_constantGate(result),create(c=tsv_true));
-  end;
 
 FUNCTION T_constantGate.caption: string;
   begin
@@ -567,9 +551,6 @@ PROCEDURE T_adapter.reset;
   begin
     for i:=0 to WIRE_MAX_WIDTH-1 do io.bit[i]:=tsv_undetermined;
   end;
-
-FUNCTION T_adapter.clone: P_abstractGate;
-  begin new(P_adapter(result),create(inWidth,outWidth)); end;
 
 FUNCTION T_adapter.caption: string;
   begin result:='Adapter'+LineEnding+intToStr(inWidth)+'bit -> '+intToStr(outWidth)+'bit'; end;
@@ -681,16 +662,9 @@ PROCEDURE T_clock.reset;
     counter:=0;
   end;
 
-FUNCTION T_clock.clone: P_abstractGate;
-  begin
-    new(P_clock(result),create);
-    P_clock(result)^.interval:=interval;
-  end;
-
 FUNCTION T_clock.caption: string;
   begin
     result:=#240#159#149#145;
-    //0xF0 0x9F 0x95 0x91;
   end;
 
 FUNCTION T_clock.numberOfInputs: longint;
@@ -1046,15 +1020,75 @@ FUNCTION T_nandGate.gateType: T_gateType; begin result:=gt_nandGate; end;
 FUNCTION T_xorGate .gateType: T_gateType; begin result:=gt_xorGate;  end;
 FUNCTION T_orGate  .gateType: T_gateType; begin result:=gt_orGate;   end;
 FUNCTION T_andGate .gateType: T_gateType; begin result:=gt_andGate;  end;
-FUNCTION T_notGate   .clone:P_abstractGate; begin new(P_notGate (result),create);  end;
-FUNCTION T_nxorGate  .clone:P_abstractGate; begin new(P_nxorGate(result),create); P_nxorGate(result)^.inputCount:=inputCount; end;
-FUNCTION T_norGate   .clone:P_abstractGate; begin new(P_norGate (result),create); P_norGate (result)^.inputCount:=inputCount; end;
-FUNCTION T_nandGate  .clone:P_abstractGate; begin new(P_nandGate(result),create); P_nandGate(result)^.inputCount:=inputCount; end;
-FUNCTION T_xorGate   .clone:P_abstractGate; begin new(P_xorGate (result),create); P_xorGate (result)^.inputCount:=inputCount; end;
-FUNCTION T_orGate    .clone:P_abstractGate; begin new(P_orGate  (result),create); P_orGate  (result)^.inputCount:=inputCount; end;
-FUNCTION T_andGate   .clone:P_abstractGate; begin new(P_andGate (result),create); P_andGate (result)^.inputCount:=inputCount; end;
-FUNCTION T_inputGate.clone: P_abstractGate; begin new(P_inputGate (result),create); P_inputGate (result)^.ioIndex:=ioIndex; P_inputGate (result)^.ioLabel:=ioLabel; P_inputGate (result)^.width:=width; result^.reset; end;
-FUNCTION T_outputGate.clone:P_abstractGate; begin new(P_outputGate(result),create); P_outputGate(result)^.ioIndex:=ioIndex; P_outputGate(result)^.ioLabel:=ioLabel; P_outputGate(result)^.width:=width; result^.reset; end;
+
+FUNCTION T_gatedClock.clone(CONST includeState:boolean): P_abstractGate;
+  begin
+    new(P_gatedClock(result),create);
+    P_gatedClock(result)^.interval:=interval;
+    if not includeState then exit(result);
+    P_gatedClock(result)^.tick    :=tick;
+    P_gatedClock(result)^.counter :=counter;
+    P_gatedClock(result)^.enable  :=enable;
+  end;
+
+FUNCTION T_constantGate.clone(CONST includeState:boolean): P_abstractGate;
+  begin
+    new(P_constantGate(result),create(c=tsv_true));
+  end;
+
+FUNCTION T_adapter.clone(CONST includeState:boolean): P_abstractGate;
+  begin
+    new(P_adapter(result),create(inWidth,outWidth));
+    if includeState then P_adapter(result)^.io:=io;
+  end;
+
+FUNCTION T_clock.clone(CONST includeState:boolean): P_abstractGate;
+  begin
+    new(P_clock(result),create);
+    P_clock(result)^.interval:=interval;
+    if not includeState then exit(result);
+    P_clock(result)^.tick    :=tick;
+    P_clock(result)^.counter :=counter;
+  end;
+
+FUNCTION T_notGate.clone(CONST includeState:boolean):P_abstractGate;
+  begin
+    new(P_notGate (result),create);
+    if includeState then begin
+      P_notGate (result)^.input :=input;
+      P_notGate (result)^.output:=output;
+    end;
+  end;
+
+FUNCTION T_inputGate.clone(CONST includeState:boolean): P_abstractGate;
+  begin
+    new(P_inputGate(result),create);
+    P_inputGate(result)^.ioIndex:=ioIndex;
+    P_inputGate(result)^.ioLabel:=ioLabel;
+    P_inputGate(result)^.width:=width;
+    result^.reset;
+    if includeState then P_inputGate(result)^.io:=io;
+  end;
+
+FUNCTION T_outputGate.clone(CONST includeState:boolean):P_abstractGate;
+  begin
+    new(P_outputGate(result),create);
+    P_outputGate(result)^.ioIndex:=ioIndex;
+    P_outputGate(result)^.ioLabel:=ioLabel;
+    P_outputGate(result)^.width:=width;
+    result^.reset;
+    if includeState then P_outputGate(result)^.io:=io;
+  end;
+
+FUNCTION T_binaryBaseGate.clone(CONST includeState:boolean):P_abstractGate;
+  begin
+    result:=newBaseGate(gateType);
+    P_binaryBaseGate(result)^.inputCount:=inputCount;
+    if includeState then begin
+      P_binaryBaseGate(result)^.input:=input;
+      P_binaryBaseGate(result)^.output:=output;
+    end;
+  end;
 
 end.
 

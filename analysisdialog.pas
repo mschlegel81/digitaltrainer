@@ -281,8 +281,7 @@ PROCEDURE T_graphMetaData.initialize(CONST gate: P_abstractGate);
 
 PROCEDURE T_graphMetaData.update(CONST scaleType: T_scaleType; CONST imageHeight: longint);
   PROCEDURE updateEntry(VAR entry:T_graphMetaDataEntry; CONST zoomFactor:double; VAR yTally:longint);
-    VAR weightPerRow:double;
-        yOffset:double=0;
+    VAR yOffset:double=0;
         dyFactor:double;
         dynamicRange:longint=1;
         k:longint;
@@ -747,7 +746,7 @@ PROCEDURE TanalysisForm.repaintGraph;
 
 PROCEDURE TanalysisForm.showForGate(CONST gate: P_abstractGate);
   begin
-    clonedGate:=gate^.clone;
+    clonedGate:=gate^.clone(false);
     setupTable;
     ShowModal;
     dispose(clonedGate,destroy);
@@ -755,7 +754,7 @@ PROCEDURE TanalysisForm.showForGate(CONST gate: P_abstractGate);
 
 PROCEDURE TanalysisForm.showForBoard(CONST board: P_circuitBoard);
   begin
-    new(P_customGate(clonedGate),create(board));
+    new(P_customGate(clonedGate),createFromBoard(board));
     setupTable;
     ShowModal;
     dispose(clonedGate,destroy);
