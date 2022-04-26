@@ -7,7 +7,7 @@ USES
   cthreads,
   {$endif}{$endif}
   Interfaces, // this includes the LCL widgetset
-  Forms, digitaltrainerMain, propertyDialog, analysisDialog, draftFormUnit
+  Forms, digitaltrainerMain, propertyDialog, analysisDialog, draftFormUnit;
   { you can add units after this };
 
 {$R *.res}

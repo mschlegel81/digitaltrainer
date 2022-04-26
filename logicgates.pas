@@ -21,6 +21,7 @@ TYPE
               gt_true,
               gt_false,
               gt_gatedClock);
+  T_gateTypeSet=array of T_gateType;
 TYPE
   T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
 
