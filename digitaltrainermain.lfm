@@ -11,6 +11,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   OnDestroy = FormDestroy
   OnResize = FormResize
   LCLVersion = '2.0.12.0'
+  WindowState = wsMaximized
   object ScrollBox1: TScrollBox
     Cursor = crCross
     Left = 175
