@@ -260,18 +260,22 @@ FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): b
 PROCEDURE T_workspace.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
   VAR i,j:longint;
       swapTmp:P_circuitBoard;
+      paletteEntryMoved:boolean=true;
   begin
     //Sorting helps preventing errors on restore.
     //The reason is that custom gates can only be constructed successfully when their prototype-board is already available.
-    for j:=1 to length(paletteEntries)-1 do begin
-      i:=j;
-      while (i>0) and not(paletteEntries[i]^.usesBoard(paletteEntries[i-1])) do begin
-        swapTmp            :=paletteEntries[i-1];
-        paletteEntries[i-1]:=paletteEntries[i];
-        paletteEntries[i  ]:=swapTmp;
-        paletteEntries[i-1]^.paletteIndex:=i-1;
-        paletteEntries[i  ]^.paletteIndex:=i;
-        dec(i);
+
+    while paletteEntryMoved do begin
+      paletteEntryMoved:=false;
+      for i:=0 to length(paletteEntries)-1 do
+      for j:=i+1 to length(paletteEntries)-1 do if paletteEntries[i]^.usesBoard(paletteEntries[j],true) then begin
+        swapTmp          :=paletteEntries[i];
+        paletteEntries[i]:=paletteEntries[j];
+        paletteEntries[j]:=swapTmp;
+
+        paletteEntries[i]^.paletteIndex:=i;
+        paletteEntries[j]^.paletteIndex:=j;
+        paletteEntryMoved:=true;
       end;
     end;
 
