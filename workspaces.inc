@@ -328,10 +328,7 @@ PROCEDURE T_workspace.addCurrentBoardToPalette;
     if doReplace=mrYes then begin
       i:=currentBoard^.paletteIndex;
       paletteEntries[i]^.clear;
-      paletteEntries[i]^.pasteFrom(currentBoard);
-      paletteEntries[i]^.paletteIndex:=i;
-      paletteEntries[i]^.name        :=currentBoard^.name;
-      paletteEntries[i]^.description :=currentBoard^.description;
+      paletteEntries[i]^.pasteFrom(currentBoard,true);
       currentBoard^.clear;
     end else begin
       newPaletteEntry:=currentBoard;
@@ -442,7 +439,10 @@ PROCEDURE T_workspace.editPaletteEntry(CONST index:longint; CONST resetPaletteIn
     if (index<0) or (index>length(paletteEntries)) then exit;
     previous:=currentBoard;
     currentBoard:=paletteEntries[index]^.clone(false);
-    if resetPaletteIndex then currentBoard^.paletteIndex:=-1;
+    if resetPaletteIndex then begin
+      currentBoard^.paletteIndex :=-1;
+      currentBoard^.categoryIndex:=-1;
+    end;
     currentBoard^.attachGUI(previous^.detachGUI);
     currentBoard^.rewire;
     dispose(previous,destroy);
