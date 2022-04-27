@@ -18,10 +18,12 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Height = 549
     Top = 0
     Width = 408
+    HorzScrollBar.Increment = 9
     HorzScrollBar.Page = 90
     HorzScrollBar.Smooth = True
     HorzScrollBar.Range = 900
     HorzScrollBar.Tracking = True
+    VertScrollBar.Increment = 9
     VertScrollBar.Page = 90
     VertScrollBar.Smooth = True
     VertScrollBar.Range = 900

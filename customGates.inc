@@ -36,6 +36,7 @@ T_customGate=object(T_abstractGate)
   FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual;
 
   PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+  PROCEDURE countGates(VAR gateCount:T_gateCount); virtual;
 end;
 {$endif}
 {$ifdef includeImplementation}
@@ -75,7 +76,7 @@ CONSTRUCTOR T_customGate.createFromBoard(CONST origin: P_circuitBoard);
           setLength(inputConnections,ioIdx+1);
           while k<length(inputConnections) do begin
             setLength(inputConnections[k].goesTo,0);
-            for i:=0 to WIRE_MAX_WIDTH-1 do inputConnections[k].value.bit[i]:=tsv_true;
+            for i:=0 to WIRE_MAX_WIDTH-1 do inputConnections[k].value.bit[i]:=tsv_undetermined;
             inc(k);
           end;
         end;
@@ -229,7 +230,7 @@ PROCEDURE T_customGate.reset;
     for gate in gates do gate^.reset;
     for i:=0 to length(inputConnections)-1 do begin
       inputConnections[i].value.width:=inputConnections[i].width;
-      for j:=0 to WIRE_MAX_WIDTH-1 do inputConnections[i].value.bit[j]:=tsv_true;
+      for j:=0 to WIRE_MAX_WIDTH-1 do inputConnections[i].value.bit[j]:=tsv_undetermined;
     end;
   end;
 
@@ -320,4 +321,9 @@ PROCEDURE T_customGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
     stream.writeNaturalNumber(prototype^.paletteIndex);
   end;
 
+PROCEDURE T_customGate.countGates(VAR gateCount:T_gateCount);
+  VAR gate:P_abstractGate;
+  begin
+    for gate in gates do gate^.countGates(gateCount);
+  end;
 {$endif}

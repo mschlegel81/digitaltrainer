@@ -22,6 +22,28 @@ TYPE
               gt_false,
               gt_gatedClock);
   T_gateTypeSet=array of T_gateType;
+  T_gateCount=array[T_gateType] of longint;
+
+CONST
+  C_gateTypeName:array[T_gateType] of string=
+    {gt_notGate}   ('not',
+    {gt_andGate}    'and',
+    {gt_orGate}     'or',
+    {gt_xorGate}    'xor',
+    {gt_nandGate}   'nand',
+    {gt_norGate}    'nor',
+    {gt_nxorGate}   'nxor',
+    {gt_input}      'input',
+    {gt_output}     'output',
+    {gt_compound}   '<compound>',
+    {gt_clock}      'clock',
+    {gt_adapter}    'adapter',
+    {gt_true}       'constant true',
+    {gt_false}      'constant false',
+    {gt_gatedClock} 'gated clock');
+
+
+
 TYPE
   T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
 
@@ -37,7 +59,7 @@ TYPE
       DESTRUCTOR destroy; virtual;
       PROCEDURE reset;                   virtual; abstract;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual; abstract;
-      FUNCTION  caption:string;          virtual; abstract;
+      FUNCTION  caption:string;          virtual;
       FUNCTION  getDescription:string;   virtual;
       FUNCTION  numberOfInputs :longint; virtual; abstract;
       FUNCTION  numberOfOutputs:longint; virtual; abstract;
@@ -51,6 +73,8 @@ TYPE
 
       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
+
+      PROCEDURE countGates(VAR gateCount:T_gateCount); virtual;
     end;
 
   { T_constantGate }
@@ -87,7 +111,6 @@ TYPE
       CONSTRUCTOR create;
       PROCEDURE reset;                   virtual;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
-      FUNCTION  caption:string;          virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
@@ -182,7 +205,6 @@ TYPE
    P_andGate=^T_andGate;
    T_andGate=object(T_binaryBaseGate)
      CONSTRUCTOR create;
-     FUNCTION  caption:string; virtual;
      FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
    end;
@@ -190,7 +212,6 @@ TYPE
    P_orGate=^T_orGate;
    T_orGate=object(T_binaryBaseGate)
      CONSTRUCTOR create;
-     FUNCTION  caption:string; virtual;
      FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
    end;
@@ -198,7 +219,6 @@ TYPE
    P_xorGate=^T_xorGate;
    T_xorGate=object(T_binaryBaseGate)
      CONSTRUCTOR create;
-     FUNCTION  caption:string; virtual;
      FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
    end;
@@ -206,7 +226,6 @@ TYPE
    P_nandGate=^T_nandGate;
    T_nandGate=object(T_binaryBaseGate)
      CONSTRUCTOR create;
-     FUNCTION  caption:string; virtual;
      FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
    end;
@@ -214,7 +233,6 @@ TYPE
    P_norGate=^T_norGate;
    T_norGate=object(T_binaryBaseGate)
      CONSTRUCTOR create;
-     FUNCTION  caption:string; virtual;
      FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
    end;
@@ -222,7 +240,6 @@ TYPE
    P_nxorGate=^T_nxorGate;
    T_nxorGate=object(T_binaryBaseGate)
      CONSTRUCTOR create;
-     FUNCTION  caption:string; virtual;
      FUNCTION  simulateStep:boolean; virtual;
      FUNCTION  gateType:T_gateType; virtual;
    end;
@@ -761,7 +778,7 @@ PROCEDURE T_inputGate.reset;
   VAR i:longint;
   begin
     io.width:=width;
-    for i:=0 to WIRE_MAX_WIDTH-1 do io.bit[i]:=tsv_true;
+    for i:=0 to WIRE_MAX_WIDTH-1 do io.bit[i]:=tsv_undetermined;
   end;
 
 FUNCTION T_inputGate.caption: string;
@@ -864,8 +881,8 @@ CONSTRUCTOR T_notGate.create;
 PROCEDURE T_notGate.reset;
   begin input:=tsv_undetermined; output:=tsv_undetermined; end;
 
-FUNCTION T_notGate.caption: string;
-  begin result:='NOT'; end;
+FUNCTION T_abstractGate.caption: string;
+  begin result:=C_gateTypeName[gateType]; end;
 
 FUNCTION T_notGate.numberOfInputs: longint;
   begin  result:=1; end;
@@ -953,13 +970,6 @@ CONSTRUCTOR T_nandGate.create; begin inherited; end;
 CONSTRUCTOR T_xorGate .create; begin inherited; end;
 CONSTRUCTOR T_orGate  .create; begin inherited; end;
 CONSTRUCTOR T_andGate .create; begin inherited; end;
-
-FUNCTION T_nxorGate.caption: string; begin result:='NXOR'; end;
-FUNCTION T_norGate .caption: string; begin result:='NOR';  end;
-FUNCTION T_nandGate.caption: string; begin result:='NAND'; end;
-FUNCTION T_xorGate .caption: string; begin result:='XOR';  end;
-FUNCTION T_orGate  .caption: string; begin result:='OR';   end;
-FUNCTION T_andGate .caption: string; begin result:='AND';  end;
 
 FUNCTION T_nxorGate.simulateStep:boolean;
   VAR previous:T_triStateValue;
@@ -1089,6 +1099,11 @@ FUNCTION T_binaryBaseGate.clone(CONST includeState:boolean):P_abstractGate;
       P_binaryBaseGate(result)^.input:=input;
       P_binaryBaseGate(result)^.output:=output;
     end;
+  end;
+
+PROCEDURE T_abstractGate.countGates(VAR gateCount:T_gateCount);
+  begin
+    inc(gateCount[gateType]);
   end;
 
 end.

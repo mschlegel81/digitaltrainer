@@ -84,6 +84,8 @@ TYPE
     rbBinary: TRadioButton;
     rbPositive: TRadioButton;
     rb2Complement: TRadioButton;
+    SizesStringGrid: TStringGrid;
+    TabSheet3: TTabSheet;
     TimeScrollBar: TScrollBar;
     TabSheet2: TTabSheet;
     zoomTrackBar: TTrackBar;
@@ -670,7 +672,11 @@ PROCEDURE TanalysisForm.TimeScrollBarChange(Sender: TObject);
 
 PROCEDURE TanalysisForm.setupTable;
   VAR colIndex:longint=0;
+      rowIndex:longint=1;
       i:longint;
+
+      gt:T_gateType;
+      gateCount:T_gateCount;
   begin
     for i:=0 to length(simulationOutputs)-1 do simulationOutputs[i].destroy;
     setLength(simulationOutputs,0);
@@ -692,6 +698,21 @@ PROCEDURE TanalysisForm.setupTable;
       StringGrid.Cells[colIndex,0]:=graphMetaData.output[i].caption;
       inc(colIndex);
     end;
+
+    for gt in T_gateType do gateCount[gt]:=0;
+    clonedGate^.countGates(gateCount);
+    i:=0;
+    for gt in T_gateType do if gateCount[gt]>0 then begin;
+      inc(i,gateCount[gt]);
+      if SizesStringGrid.RowCount<=rowIndex then SizesStringGrid.RowCount:=rowIndex+1;
+      SizesStringGrid.Cells[0,rowIndex]:=C_gateTypeName[gt];
+      SizesStringGrid.Cells[1,rowIndex]:=IntToStr(gateCount[gt]);
+      inc(rowIndex);
+    end;
+    SizesStringGrid.RowCount:=rowIndex+1;
+    SizesStringGrid.Cells[0,rowIndex]:='';
+    SizesStringGrid.Cells[1,rowIndex]:=IntToStr(i);
+    SizesStringGrid.AutoSizeColumns;
   end;
 
 PROCEDURE TanalysisForm.repaintTable;
@@ -745,19 +766,25 @@ PROCEDURE TanalysisForm.repaintGraph;
   end;
 
 PROCEDURE TanalysisForm.showForGate(CONST gate: P_abstractGate);
+  VAR i:longint;
   begin
     clonedGate:=gate^.clone(false);
     setupTable;
     ShowModal;
     dispose(clonedGate,destroy);
+    for i:=0 to length(simulationOutputs)-1 do simulationOutputs[i].destroy;
+    setLength(simulationOutputs,0);
   end;
 
 PROCEDURE TanalysisForm.showForBoard(CONST board: P_circuitBoard);
+  VAR i:longint;
   begin
     new(P_customGate(clonedGate),createFromBoard(board));
     setupTable;
     ShowModal;
     dispose(clonedGate,destroy);
+    for i:=0 to length(simulationOutputs)-1 do simulationOutputs[i].destroy;
+    setLength(simulationOutputs,0);
   end;
 
 end.

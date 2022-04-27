@@ -20,11 +20,35 @@ object analysisForm: TanalysisForm
     Height = 538
     Top = 81
     Width = 697
-    ActivePage = TabSheet1
+    ActivePage = TabSheet3
     Anchors = [akTop, akLeft, akRight, akBottom]
     ParentFont = False
     TabIndex = 0
     TabOrder = 0
+    object TabSheet3: TTabSheet
+      Caption = 'Umfang'
+      ClientHeight = 510
+      ClientWidth = 689
+      object SizesStringGrid: TStringGrid
+        Left = 0
+        Height = 510
+        Top = 0
+        Width = 689
+        Align = alClient
+        ColCount = 2
+        FixedCols = 0
+        TabOrder = 0
+        Cells = (
+          2
+          0
+          0
+          'Gattertyp'
+          1
+          0
+          'Anzahl'
+        )
+      end
+    end
     object TabSheet1: TTabSheet
       Caption = 'Tabelle'
       ClientHeight = 510
