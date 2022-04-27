@@ -337,13 +337,8 @@ PROCEDURE T_workspace.addCurrentBoardToPalette;
       newPaletteEntry:=currentBoard;
       currentBoard   :=nil;
       new(currentBoard,create);
-      currentBoard^.attachGUI(
-        newPaletteEntry^.GUI.zoom,
-        newPaletteEntry^.GUI.container,
-        newPaletteEntry^.GUI.wireImage,
-        newPaletteEntry^.GUI.gateContextMenu,
-        newPaletteEntry^.GUI.anyChangeCallback);
-      newPaletteEntry^.detachGUI;
+
+      currentBoard^.attachGUI(newPaletteEntry^.detachGUI);
 
       i:=length(paletteEntries);
       setLength(paletteEntries,i+1);
@@ -375,13 +370,7 @@ PROCEDURE T_workspace.addCurrentBoardToDrafts(CONST indexToOverwrite:longint=max
     newDraft:=currentBoard;
     currentBoard   :=nil;
     new(currentBoard,create);
-    currentBoard^.attachGUI(
-      newDraft^.GUI.zoom,
-      newDraft^.GUI.container,
-      newDraft^.GUI.wireImage,
-      newDraft^.GUI.gateContextMenu,
-      newDraft^.GUI.anyChangeCallback);
-    newDraft^.detachGUI;
+    currentBoard^.attachGUI(newDraft^.detachGUI);
     draftEntries[i]:=newDraft;
     rebuildTree;
   end;
@@ -454,16 +443,10 @@ PROCEDURE T_workspace.editPaletteEntry(CONST index:longint; CONST resetPaletteIn
     previous:=currentBoard;
     currentBoard:=paletteEntries[index]^.clone(false);
     if resetPaletteIndex then currentBoard^.paletteIndex:=-1;
-    currentBoard^.attachGUI(
-      previous^.GUI.zoom,
-      previous^.GUI.container,
-      previous^.GUI.wireImage,
-      previous^.GUI.gateContextMenu,
-      previous^.GUI.anyChangeCallback);
+    currentBoard^.attachGUI(previous^.detachGUI);
     currentBoard^.rewire;
     dispose(previous,destroy);
     currentBoard^.Repaint;
-
     rebuildTree;
   end;
 
@@ -474,18 +457,12 @@ PROCEDURE T_workspace.editDraftEntry  (CONST index:longint);
     if (index<0) or (index>length(draftEntries)) then exit;
     previous:=currentBoard;
     currentBoard:=draftEntries[index];
-    currentBoard^.attachGUI(
-      previous^.GUI.zoom,
-      previous^.GUI.container,
-      previous^.GUI.wireImage,
-      previous^.GUI.gateContextMenu,
-      previous^.GUI.anyChangeCallback);
+    currentBoard^.attachGUI(previous^.detachGUI);
     currentBoard^.rewire;
     dispose(previous,destroy);
     for j:=index to length(draftEntries)-2 do draftEntries[j]:=draftEntries[j+1];
     setLength(draftEntries,length(draftEntries)-1);
     currentBoard^.Repaint;
-
     rebuildTree;
   end;
 

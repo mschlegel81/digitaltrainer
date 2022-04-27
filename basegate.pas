@@ -40,6 +40,40 @@ TYPE
     wires:array of T_wireTrip;
   end;
 
+  P_uiAdapter=^T_uiAdapter;
+
+  { T_uiAdapter }
+
+  T_uiAdapter=object
+    private
+      zoom:longint;
+      container:TWinControl;
+      wireImage:TImage;
+      gateContextMenu:TPopupMenu;
+      anyChangeCallback:F_simpleCallback;
+      lastClickedGate:P_visualGate;
+      selectionFrame:TShape;
+      selectionStart:T_point;
+      Clipboard:P_circuitBoard;
+      undoList,redoList:array of P_circuitBoard;
+
+      incompleteWire:record
+        dragging:boolean;
+        width:byte;
+        source:T_visualGateConnector;
+        sourcePoint:T_point;
+      end;
+      wireGraph:T_wireGraph;
+
+      currentBoard:P_circuitBoard;
+    public
+      CONSTRUCTOR create(CONST zoom_:longint; CONST container_:TWinControl; CONST wireImage_:TImage; CONST gatePopup:TPopupMenu; CONST anyChangeCallback_:F_simpleCallback);
+      DESTRUCTOR destroy;
+      PROCEDURE clearUndoLists;
+      PROCEDURE newBoardAttached(CONST board:P_circuitBoard);
+      PROPERTY getLastClickedGate:P_visualGate read lastClickedGate;
+  end;
+
   T_repositionOutput=(ro_positionUnchanged,ro_positionFound,ro_noPositionFound);
   {$i customGates.inc}
   T_circuitBoard=object
@@ -51,27 +85,8 @@ TYPE
       gates      :array of P_visualGate;
       logicWires:array of T_logicWire;
 
-      GUI:record
-        //TODO: Refactor to dedicated GUI-Object
-        zoom:longint;
-        container:TWinControl;
-        wireImage:TImage;
-        gateContextMenu:TPopupMenu;
-        anyChangeCallback:F_simpleCallback;
-        lastClickedGate:P_visualGate;
-        selectionFrame:TShape;
-        selectionStart:T_point;
-        Clipboard:P_circuitBoard;
-        undoList,redoList:array of P_circuitBoard;
-      end;
+      GUI: P_uiAdapter;
 
-      incompleteWire:record
-        dragging:boolean;
-        width:byte;
-        source:T_visualGateConnector;
-        sourcePoint:T_point;
-      end;
-      wireGraph:P_wireGraph;
       FUNCTION repositionCustomRegion(VAR origin:T_point; CONST size:T_point; CONST considerWires:boolean):T_repositionOutput;
       FUNCTION canGateBeMovedBy(CONST gateToCheck:P_visualGate; CONST delta:T_point; CONST considerWires,considerMarkedGates:boolean):boolean;
       FUNCTION positionNewGate(CONST gateToAdd:P_visualGate):boolean;
@@ -92,8 +107,8 @@ TYPE
       DESTRUCTOR destroy;  virtual;
       PROCEDURE clear;
       PROCEDURE setSelectForAll(CONST doSelect:boolean);
-      PROCEDURE attachGUI(CONST zoom:longint; CONST container:TWinControl; CONST wireImage:TImage; CONST gatePopup:TPopupMenu; CONST anyChangeCallback:F_simpleCallback);
-      PROCEDURE detachGUI;
+      PROCEDURE attachGUI(CONST adapter:P_uiAdapter);
+      FUNCTION detachGUI:P_uiAdapter;
       PROCEDURE anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
       PROCEDURE fixWireImageSize;
       PROCEDURE setZoom(CONST zoom:longint);
@@ -109,7 +124,6 @@ TYPE
       PROCEDURE pasteFromClipboard;
       PROCEDURE pasteFrom(CONST board:P_circuitBoard; CONST fullCopy:boolean=false);
 
-      PROPERTY lastClickedGate:P_visualGate read GUI.lastClickedGate;
       PROCEDURE reset;
       PROCEDURE getBoardExtend(OUT origin,size:T_point);
       PROCEDURE rewire(CONST forced:boolean=false);
@@ -123,6 +137,53 @@ TYPE
 {$undef includeInterface}
 IMPLEMENTATION
 USES sysutils,math,myGenerics,Dialogs,DateUtils;
+
+{ T_uiAdapter }
+
+CONSTRUCTOR T_uiAdapter.create(CONST zoom_: longint; CONST container_: TWinControl; CONST wireImage_: TImage; CONST gatePopup: TPopupMenu; CONST anyChangeCallback_: F_simpleCallback);
+  begin
+    zoom:=zoom_;
+    container:=container_;
+    wireImage:=wireImage_;
+    gateContextMenu:=gatePopup;
+    anyChangeCallback:=anyChangeCallback_;
+    selectionFrame:=TShape.create(container);
+    selectionFrame.parent:=container;
+    selectionFrame.visible:=false;
+    selectionFrame.Brush.style:=bsClear;
+    selectionFrame.Pen.color:=clRed;
+    selectionFrame.Pen.style:=psDashDot;
+    currentBoard:=nil;
+    wireGraph.create;
+  end;
+
+DESTRUCTOR T_uiAdapter.destroy;
+  begin
+    clearUndoLists;
+    wireGraph.destroy;
+  end;
+
+PROCEDURE T_uiAdapter.clearUndoLists;
+  VAR i:longint;
+  begin
+    for i:=0 to length(undoList)-1 do dispose(undoList[i],destroy);
+    setLength(undoList,0);
+    for i:=0 to length(redoList)-1 do dispose(redoList[i],destroy);
+    setLength(redoList,0);
+  end;
+
+PROCEDURE T_uiAdapter.newBoardAttached(CONST board:P_circuitBoard);
+  begin
+    assert(currentBoard=nil);
+    currentBoard:=board;
+    clearUndoLists;
+
+    if (Clipboard<>nil) and (Clipboard^.usesBoard(board,true)) then begin
+      dispose(Clipboard,destroy);
+      Clipboard:=nil;
+    end;
+  end;
+
 {$define includeImplementation}
 {$i visualgates.inc}
 {$i customGates.inc}
@@ -160,22 +221,13 @@ PROCEDURE T_visualGateConnector.saveToStream(CONST board: P_circuitBoard; VAR st
 
 CONSTRUCTOR T_circuitBoard.create;
   begin
-    with GUI do begin
-      zoom:=1;
-      container:=nil;
-      wireImage:=nil;
-      Clipboard:=nil;
-      setLength(undoList,0);
-      setLength(redoList,0);
-    end;
+    GUI:=nil;
     paletteIndex:=-1;
     categoryIndex:=-1;
     name:=defaultBoardCaption;
     description:='';
     setLength(gates,0);
     setLength(logicWires,0);
-    wireGraph:=nil;
-    incompleteWire.dragging:=false;
   end;
 
 DESTRUCTOR T_circuitBoard.destroy;
@@ -184,48 +236,26 @@ DESTRUCTOR T_circuitBoard.destroy;
     clear;
   end;
 
-PROCEDURE T_circuitBoard.attachGUI(CONST zoom: longint;
-  CONST container: TWinControl; CONST wireImage: TImage;
-  CONST gatePopup: TPopupMenu; CONST anyChangeCallback: F_simpleCallback);
+PROCEDURE T_circuitBoard.attachGUI(CONST adapter:P_uiAdapter);
   VAR gate:P_visualGate;
   begin
-    GUI.zoom:=zoom;
-    GUI.container:=container;
-    GUI.wireImage:=wireImage;
-    GUI.gateContextMenu:=gatePopup;
-    GUI.anyChangeCallback:=anyChangeCallback;
-    GUI.selectionFrame:=TShape.create(container);
-    GUI.selectionFrame.parent:=container;
-    GUI.selectionFrame.visible:=false;
-    GUI.selectionFrame.Brush.style:=bsClear;
-    GUI.selectionFrame.Pen.color:=clRed;
-    GUI.selectionFrame.Pen.style:=psDashDot;
-    wireImage.OnMouseDown:=@WireImageMouseDown;
-    wireImage.OnMouseUp  :=@WireImageMouseUp;
-    wireImage.OnMouseMove:=@WireImageMouseMove;
+    GUI:=adapter;
+    GUI^.wireImage.OnMouseDown:=@WireImageMouseDown;
+    GUI^.wireImage.OnMouseUp  :=@WireImageMouseUp;
+    GUI^.wireImage.OnMouseMove:=@WireImageMouseMove;
+    GUI^.newBoardAttached(@self);
     for gate in gates do gate^.ensureGuiElements;
     rewire;
   end;
 
-PROCEDURE T_circuitBoard.detachGUI;
+FUNCTION T_circuitBoard.detachGUI:P_uiAdapter;
   VAR gate:P_visualGate;
-      i:longint;
   begin
+    if GUI=nil then exit(nil);
+    result:=GUI;
+    GUI^.currentBoard:=nil;
     for gate in gates do gate^.disposeGuiElements;
-    GUI.zoom:=1;
-    GUI.container:=nil;
-    GUI.wireImage:=nil;
-    GUI.gateContextMenu:=nil;
-    GUI.anyChangeCallback:=nil;
-    FreeAndNil(GUI.selectionFrame);
-    if GUI.Clipboard<>nil then begin
-      dispose(GUI.Clipboard,destroy);
-      GUI.Clipboard:=nil;
-    end;
-    for i:=0 to length(GUI.undoList)-1 do dispose(GUI.undoList[i],destroy);
-    setLength(GUI.undoList,0);
-    for i:=0 to length(GUI.redoList)-1 do dispose(GUI.redoList[i],destroy);
-    setLength(GUI.redoList,0);
+    GUI:=nil;
   end;
 
 PROCEDURE T_circuitBoard.clear;
@@ -239,8 +269,6 @@ PROCEDURE T_circuitBoard.clear;
       setLength(logicWires[i].wires,0);
     end;
     setLength(logicWires,0);
-    if wireGraph<>nil then dispose(wireGraph,destroy);
-    wireGraph:=nil;
     paletteIndex:=-1;
     categoryIndex:=-1;
     description:='';
@@ -423,7 +451,7 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
   begin
     saveStateToUndoList;
 
-    GUI.lastClickedGate:=nil;
+    GUI^.lastClickedGate:=nil;
     for i:=0 to length(gates)-1 do begin
       if gates[i]^.marked
       then begin
@@ -469,7 +497,7 @@ PROCEDURE T_circuitBoard.fixWireImageSize;
       p:T_point;
       i,j:longint;
   begin
-    if GUI.wireImage<>nil then begin
+    if GUI^.wireImage<>nil then begin
       for gate in gates do begin
         p:=gate^.origin+gate^.size;
         if p[0]>width  then width :=p[0];
@@ -481,18 +509,19 @@ PROCEDURE T_circuitBoard.fixWireImageSize;
         if p[0]>width  then width :=p[0];
         if p[1]>height then height:=p[1];
       end;
-      width +=1; width *=GUI.zoom; width +=max(1,round(GUI.zoom*0.15));
-      height+=1; height*=GUI.zoom; height+=max(1,round(GUI.zoom*0.15));
-      GUI.wireImage.SetBounds(0,0,width,height);
-      GUI.wireImage.picture.Bitmap.Canvas.Brush.color:=BackgroundColor;
-      GUI.wireImage.picture.Bitmap.setSize(width,height);
-      GUI.wireImage.picture.Bitmap.Canvas.clear;
+      width +=1; width *=GUI^.zoom; width +=max(1,round(GUI^.zoom*0.15));
+      height+=1; height*=GUI^.zoom; height+=max(1,round(GUI^.zoom*0.15));
+      GUI^.wireImage.SetBounds(0,0,width,height);
+      GUI^.wireImage.picture.Bitmap.Canvas.Brush.color:=BackgroundColor;
+      GUI^.wireImage.picture.Bitmap.setSize(width,height);
+      GUI^.wireImage.picture.Bitmap.Canvas.clear;
     end;
   end;
 
 PROCEDURE T_circuitBoard.setZoom(CONST zoom: longint);
   begin
-    GUI.zoom:=zoom;
+    //TODO: This belongs to T_uiAdapter!
+    GUI^.zoom:=zoom;
     Repaint;
   end;
 
@@ -623,14 +652,14 @@ PROCEDURE T_circuitBoard.copySelectionToClipboard;
       while (gateIndex<length(gateToCopy)) and (gateToCopy[gateIndex]<>connector.gate) do inc(gateIndex);
       if gateIndex>=length(gateToCopy) then exit(false);
 
-      converted.gate :=GUI.Clipboard^.gates[gateIndex];
+      converted.gate :=GUI^.Clipboard^.gates[gateIndex];
       converted.index:=connector.index;
       result:=true;
     end;
   VAR anyAdded:boolean;
   begin
-    if GUI.Clipboard<>nil then dispose(GUI.Clipboard,destroy);
-    new(GUI.Clipboard,create);
+    if GUI^.Clipboard<>nil then dispose(GUI^.Clipboard,destroy);
+    new(GUI^.Clipboard,create);
     offset:=pointOf(BOARD_MAX_SIZE_IN_GRID_ENTRIES,BOARD_MAX_SIZE_IN_GRID_ENTRIES);
     initialize(gateToCopy);
     setLength(gateToCopy,0);
@@ -643,8 +672,8 @@ PROCEDURE T_circuitBoard.copySelectionToClipboard;
     offset:=pointOf(5-offset[0],5-offset[1]);
 
     for gate in gateToCopy do
-      GUI.Clipboard^.addGateWithoutChecking(
-        GUI.Clipboard^.wrapGate(gate^.origin+offset,
+      GUI^.Clipboard^.addGateWithoutChecking(
+        GUI^.Clipboard^.wrapGate(gate^.origin+offset,
                                 gate^.behavior^.clone(true)));
 
     ic:=0;
@@ -652,23 +681,23 @@ PROCEDURE T_circuitBoard.copySelectionToClipboard;
       anyAdded:=false;
       for j:=0 to length(logicWires[i].wires)-1 do if (logicWires[i].wires[j].marked) and canConvertConnector(logicWires[i].wires[j].sink,clipboardSinkConnector) then begin
         if not(anyAdded) then begin
-          setLength(GUI.Clipboard^.logicWires,ic+1);
-          GUI.Clipboard^.logicWires[ic].source:=clipboardSourceConnector;
-          GUI.Clipboard^.logicWires[ic].width :=logicWires[i].width;
-          setLength(GUI.Clipboard^.logicWires[ic].wires,0);
+          setLength(GUI^.Clipboard^.logicWires,ic+1);
+          GUI^.Clipboard^.logicWires[ic].source:=clipboardSourceConnector;
+          GUI^.Clipboard^.logicWires[ic].width :=logicWires[i].width;
+          setLength(GUI^.Clipboard^.logicWires[ic].wires,0);
           anyAdded:=true;
         end;
-        jc:=length(GUI.Clipboard^.logicWires[ic].wires);
-        setLength(GUI.Clipboard^.logicWires[ic].wires,jc+1);
-        GUI.Clipboard^.logicWires[ic].wires[jc].marked:=false;
-        GUI.Clipboard^.logicWires[ic].wires[jc].sink:=clipboardSinkConnector;
-        setLength(GUI.Clipboard^.logicWires[ic].wires[jc].visual,0);
+        jc:=length(GUI^.Clipboard^.logicWires[ic].wires);
+        setLength(GUI^.Clipboard^.logicWires[ic].wires,jc+1);
+        GUI^.Clipboard^.logicWires[ic].wires[jc].marked:=false;
+        GUI^.Clipboard^.logicWires[ic].wires[jc].sink:=clipboardSinkConnector;
+        setLength(GUI^.Clipboard^.logicWires[ic].wires[jc].visual,0);
       end;
       if anyAdded then inc(ic);
     end;
-    if length(GUI.Clipboard^.gates)=0 then begin
-      dispose(GUI.Clipboard,destroy);
-      GUI.Clipboard:=nil;
+    if length(GUI^.Clipboard^.gates)=0 then begin
+      dispose(GUI^.Clipboard,destroy);
+      GUI^.Clipboard:=nil;
     end;
   end;
 
@@ -683,7 +712,7 @@ PROCEDURE T_circuitBoard.addGateWithoutChecking(CONST gateToAdd: P_visualGate);
 PROCEDURE T_circuitBoard.pasteFromClipboard;
   begin
     saveStateToUndoList;
-    pasteFrom(GUI.Clipboard);
+    pasteFrom(GUI^.Clipboard);
   end;
 
 PROCEDURE T_circuitBoard.pasteFrom(CONST board: P_circuitBoard; CONST fullCopy:boolean);
@@ -789,7 +818,7 @@ PROCEDURE T_circuitBoard.getBoardExtend(OUT origin, size: T_point);
 PROCEDURE T_circuitBoard.Repaint;
   VAR gate:P_visualGate;
   begin
-    if (GUI.container<>nil) then begin
+    if (GUI<>nil) then begin
       for gate in gates do gate^.Repaint;
       fixWireImageSize;
       drawAllWires;
@@ -810,8 +839,7 @@ FUNCTION T_circuitBoard.isInputConnected(CONST gate: P_visualGate; CONST inputIn
 
 PROCEDURE T_circuitBoard.anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
-    dispose(wireGraph,destroy);
-    incompleteWire.dragging:=false;
+    GUI^.incompleteWire.dragging:=false;
     drawAllWires;
   end;
 
@@ -821,38 +849,38 @@ PROCEDURE T_circuitBoard.drawAllWires;
     begin for j:=0 to length(logicWires[index].wires)-1 do with logicWires[index].wires[j] do if length(visual)>1 then begin
       if foreground then begin
         if logicWires[index].wires[j].marked
-        then GUI.wireImage.Canvas.Pen.color:=clYellow
-        else GUI.wireImage.Canvas.Pen.color:=clBlack;
+        then GUI^.wireImage.Canvas.Pen.color:=clYellow
+        else GUI^.wireImage.Canvas.Pen.color:=clBlack;
       end;
-      GUI.wireImage.Canvas.MoveTo(visual[0,0]*GUI.zoom,visual[0,1]*GUI.zoom);
+      GUI^.wireImage.Canvas.MoveTo(visual[0,0]*GUI^.zoom,visual[0,1]*GUI^.zoom);
       for k:=1 to length(visual)-1 do
-      GUI.wireImage.Canvas.LineTo(visual[k,0]*GUI.zoom,visual[k,1]*GUI.zoom);
+      GUI^.wireImage.Canvas.LineTo(visual[k,0]*GUI^.zoom,visual[k,1]*GUI^.zoom);
     end; end;
 
   VAR i:longint;
       wireWidth,gapWidth:longint;
   begin
-    if GUI.wireImage=nil then exit;
-    with GUI.wireImage.Canvas do begin
+    if GUI^.wireImage=nil then exit;
+    with GUI^.wireImage.Canvas do begin
       Brush.color:=BackgroundColor;
       clear;
       for i:=0 to length(logicWires)-1 do begin
         case logicWires[i].width of
           0..1: begin
-            wireWidth:=max(1,round(GUI.zoom*0.08));
-            gapWidth :=max(1,round(GUI.zoom*0.38));
+            wireWidth:=max(1,round(GUI^.zoom*0.08));
+            gapWidth :=max(1,round(GUI^.zoom*0.38));
           end;
           4..7: begin
-            wireWidth:=max(1,round(GUI.zoom*0.15));
-            gapWidth :=max(1,round(GUI.zoom*0.45));
+            wireWidth:=max(1,round(GUI^.zoom*0.15));
+            gapWidth :=max(1,round(GUI^.zoom*0.45));
           end;
           8..15: begin
-            wireWidth:=max(1,round(GUI.zoom*0.25));
-            gapWidth :=max(1,round(GUI.zoom*0.55));
+            wireWidth:=max(1,round(GUI^.zoom*0.25));
+            gapWidth :=max(1,round(GUI^.zoom*0.55));
           end;
           else begin
-            wireWidth:=max(1,round(GUI.zoom*0.35));
-            gapWidth :=max(1,round(GUI.zoom*0.65));
+            wireWidth:=max(1,round(GUI^.zoom*0.35));
+            gapWidth :=max(1,round(GUI^.zoom*0.65));
           end;
         end;
         Pen.color:=BackgroundColor; Pen.width:=gapWidth;
@@ -868,35 +896,35 @@ PROCEDURE T_circuitBoard.initWireGraph(CONST start: T_visualGateConnector; CONST
   VAR gate:P_visualGate;
       x,y,i,j:longint;
   begin
-    new(wireGraph,create);
+    GUI^.wireGraph.initDirections;
     for gate in gates do begin
       //Points within the gate cannot be reached
       for x:=gate^.origin[0] to gate^.origin[0]+gate^.size[0] do
       for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do
-      wireGraph^.dropNode(pointOf(x,y));
+      GUI^.wireGraph.dropNode(pointOf(x,y));
       //Input connections:
       for i:=0 to gate^.numberOfInputs-1
-      do wireGraph^.addUnidirectionalEdge(gate^.getInputPositionInGridSize(i)+wd_left,wd_right);
+      do GUI^.wireGraph.addUnidirectionalEdge(gate^.getInputPositionInGridSize(i)+wd_left,wd_right);
       //Output connections:
       for i:=0 to gate^.numberOfOutputs-1
-      do wireGraph^.addUnidirectionalEdge(gate^.getOutputPositionInGridSize(i),wd_right);
+      do GUI^.wireGraph.addUnidirectionalEdge(gate^.getOutputPositionInGridSize(i),wd_right);
       //No diagonals right left and right of the gate (to prevent blocking of I/O)
       x:=gate^.origin[0];
-      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do wireGraph^.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
+      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do GUI^.wireGraph.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
       x:=gate^.origin[1]+1;
-      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do wireGraph^.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
+      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do GUI^.wireGraph.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
     end;
     if includeWires then
     for i:=0 to length(logicWires)-1 do
     if (logicWires[i].source<>start) then with logicWires[i] do
-      for j:=0 to length(wires)-1 do wireGraph^.dropWire(wires[j].visual);
+      for j:=0 to length(wires)-1 do GUI^.wireGraph.dropWire(wires[j].visual);
   end;
 
 FUNCTION T_circuitBoard.findWirePath(CONST start: T_visualGateConnector; CONST endPoint: T_point): T_wirePath;
   begin
-    if wireGraph=nil then initWireGraph(start,true);
-    if wireGraph^.anyEdgeLeadsTo(endPoint)
-    then result:=wireGraph^.findPath(start.gate^.getOutputPositionInGridSize(start.index),endPoint)
+    initWireGraph(start,true);
+    if GUI^.wireGraph.anyEdgeLeadsTo(endPoint)
+    then result:=GUI^.wireGraph.findPath(start.gate^.getOutputPositionInGridSize(start.index),endPoint)
     else setLength(result,0);
   end;
 
@@ -906,18 +934,18 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previe
     VAR wire:T_wirePath;
         i:longint;
     begin
-      wire:=findWirePath(incompleteWire.source,targetPoint);
+      wire:=findWirePath(GUI^.incompleteWire.source,targetPoint);
       if length(wire)<=0 then begin
         setLength(wire,2);
-        wire[0]:=incompleteWire.sourcePoint;
+        wire[0]:=GUI^.incompleteWire.sourcePoint;
         wire[1]:=targetPoint;
       end;
       drawAllWires;
-      with GUI.wireImage.Canvas do begin
+      with GUI^.wireImage.Canvas do begin
         Pen.color:=clRed;
-        Pen.width:=max(1,round(GUI.zoom*0.15));
-        MoveTo(wire[0,0]*GUI.zoom,wire[0,1]*GUI.zoom);
-        for i:=1 to length(wire)-1 do LineTo(wire[i,0]*GUI.zoom,wire[i,1]*GUI.zoom);
+        Pen.width:=max(1,round(GUI^.zoom*0.15));
+        MoveTo(wire[0,0]*GUI^.zoom,wire[0,1]*GUI^.zoom);
+        for i:=1 to length(wire)-1 do LineTo(wire[i,0]*GUI^.zoom,wire[i,1]*GUI^.zoom);
       end;
     end;
 
@@ -925,9 +953,7 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previe
     begin
       fixWireImageSize;
       drawAllWires;
-      dispose(wireGraph,destroy);
-      wireGraph:=nil;
-      incompleteWire.dragging:=false;
+      GUI^.incompleteWire.dragging:=false;
     end;
 
   VAR i:longint=0;
@@ -938,13 +964,13 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previe
       distanceToConnector:longint=maxLongint;
       newDistance:longint;
   begin
-    if not(incompleteWire.dragging) then exit;
+    if not(GUI^.incompleteWire.dragging) then exit;
     connector.gate:=nil;
     for gate in gates do
     for j:=0 to gate^.numberOfInputs-1 do begin
-      newDistance:=maxNormDistance(gate^.getInputPositionInGridSize(j)*GUI.zoom,targetPoint);
+      newDistance:=maxNormDistance(gate^.getInputPositionInGridSize(j)*GUI^.zoom,targetPoint);
       if (newDistance<distanceToConnector) and
-         (gate^.behavior^.inputWidth(j)=incompleteWire.width) and
+         (gate^.behavior^.inputWidth(j)=GUI^.incompleteWire.width) and
          not(isInputConnected(gate,j)) then begin
         connector.gate:=gate;
         connector.index:=j;
@@ -964,18 +990,18 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previe
     saveStateToUndoList;
 
     i:=0;
-    while (i<length(logicWires)) and (logicWires[i].source<>incompleteWire.source) do inc(i);
+    while (i<length(logicWires)) and (logicWires[i].source<>GUI^.incompleteWire.source) do inc(i);
     if i>=length(logicWires) then setLength(logicWires,i+1);
     with logicWires[i] do begin
-      source:=incompleteWire.source;
-      width :=incompleteWire.width;
+      source:=GUI^.incompleteWire.source;
+      width :=GUI^.incompleteWire.width;
       j:=length(wires);
       setLength(wires,j+1);
       wires[j].sink:=connector;
     end;
 
     rewire;
-    if (GUI.anyChangeCallback<>nil) then GUI.anyChangeCallback();
+    if (GUI<>nil) then GUI^.anyChangeCallback();
     cleanup;
     Repaint;
   end;
@@ -1024,7 +1050,6 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
       end;
       paths:T_wirePathArray;
   begin
-    if wireGraph<>nil then dispose(wireGraph,destroy);
     if forced then ensureSorting;
 
     connector.gate:=nil;
@@ -1042,7 +1067,7 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
            (length(wires[j].visual)<=0) or //no wire there at all
            (wires[j].visual[0]<>preview[i].startPoint) or //start point off
            (wires[j].visual[length(wires[j].visual)-1]<>preview[i].targetPoints[j]) or
-           not(wireGraph^.isWireAllowed(wires[j].visual));
+           not(GUI^.wireGraph.isWireAllowed(wires[j].visual));
       end;
       needAnyRewire:=needAnyRewire or preview[i].needRewire;
     end;
@@ -1051,15 +1076,15 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
     for i:=0 to length(logicWires)-1 do
       with logicWires[i] do
       if not(preview[i].needRewire)
-      then for j:=0 to length(wires)-1 do wireGraph^.dropWire(wires[j].visual);
+      then for j:=0 to length(wires)-1 do GUI^.wireGraph.dropWire(wires[j].visual);
 
     for i:=0 to length(logicWires)-1 do
       with logicWires[i] do
       if preview[i].needRewire then begin
-        paths:=wireGraph^.findPaths(preview[i].startPoint,preview[i].targetPoints);
+        paths:=GUI^.wireGraph.findPaths(preview[i].startPoint,preview[i].targetPoints);
         for j:=0 to length(wires)-1 do begin
           wires[j].visual:=   paths[j];
-          wireGraph^.dropWire(paths[j]);
+          GUI^.wireGraph.dropWire(paths[j]);
         end;
         setLength(paths,0);
       end;
@@ -1069,51 +1094,51 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
 PROCEDURE T_circuitBoard.saveStateToUndoList;
   VAR k:longint;
   begin
-    k:=length(GUI.undoList);
-    setLength(GUI.undoList,k+1);
-    GUI.undoList[k]:=clone(true);
+    k:=length(GUI^.undoList);
+    setLength(GUI^.undoList,k+1);
+    GUI^.undoList[k]:=clone(true);
 
-    if length(GUI.undoList)+length(GUI.redoList)>MAX_UNDO then begin
-      dispose(GUI.undoList[0],destroy);
-      for k:=0 to length(GUI.undoList)-2 do GUI.undoList[k]:=GUI.undoList[k+1];
-      setLength(GUI.undoList,length(GUI.undoList)-1);
+    if length(GUI^.undoList)+length(GUI^.redoList)>MAX_UNDO then begin
+      dispose(GUI^.undoList[0],destroy);
+      for k:=0 to length(GUI^.undoList)-2 do GUI^.undoList[k]:=GUI^.undoList[k+1];
+      setLength(GUI^.undoList,length(GUI^.undoList)-1);
     end;
   end;
 
 PROCEDURE T_circuitBoard.performUndo;
   VAR k:longint;
   begin
-    if length(GUI.undoList)=0 then exit;
+    if length(GUI^.undoList)=0 then exit;
 
-    k:=length(GUI.redoList);
-    setLength(GUI.redoList,k+1);
-    GUI.redoList[k]:=clone(true);
+    k:=length(GUI^.redoList);
+    setLength(GUI^.redoList,k+1);
+    GUI^.redoList[k]:=clone(true);
 
-    k:=length(GUI.undoList)-1;
-    pasteFrom(GUI.undoList[k],true);
-    dispose(GUI.undoList[k],destroy);
-    setLength(GUI.undoList,k);
+    k:=length(GUI^.undoList)-1;
+    pasteFrom(GUI^.undoList[k],true);
+    dispose(GUI^.undoList[k],destroy);
+    setLength(GUI^.undoList,k);
 
     Repaint;
-    GUI.anyChangeCallback();
+    GUI^.anyChangeCallback();
   end;
 
 PROCEDURE T_circuitBoard.performRedo;
   VAR k:longint;
   begin
-    if length(GUI.redoList)=0 then exit;
+    if length(GUI^.redoList)=0 then exit;
 
-    k:=length(GUI.undoList);
-    setLength(GUI.undoList,k+1);
-    GUI.undoList[k]:=clone(true);
+    k:=length(GUI^.undoList);
+    setLength(GUI^.undoList,k+1);
+    GUI^.undoList[k]:=clone(true);
 
-    k:=length(GUI.redoList)-1;
-    pasteFrom(GUI.redoList[k],true);
-    dispose(GUI.redoList[k],destroy);
-    setLength(GUI.redoList,k);
+    k:=length(GUI^.redoList)-1;
+    pasteFrom(GUI^.redoList[k],true);
+    dispose(GUI^.redoList[k],destroy);
+    setLength(GUI^.redoList,k);
 
     Repaint;
-    GUI.anyChangeCallback();
+    GUI^.anyChangeCallback();
   end;
 
 PROCEDURE T_circuitBoard.WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -1148,7 +1173,7 @@ PROCEDURE T_circuitBoard.WireImageMouseDown(Sender: TObject; button: TMouseButto
       anyChange:boolean=false;
   begin
     if (button=mbLeft) and (ssCtrl in Shift) then begin
-      p:=pointOf(round(x / GUI.zoom),round(y / GUI.zoom));
+      p:=pointOf(round(x / GUI^.zoom),round(y / GUI^.zoom));
       for i:=0 to length(logicWires         )-1 do
       for j:=0 to length(logicWires[i].wires)-1 do
       with logicWires[i].wires[j] do
@@ -1159,26 +1184,26 @@ PROCEDURE T_circuitBoard.WireImageMouseDown(Sender: TObject; button: TMouseButto
       end;
       if anyChange then drawAllWires;
     end else if (button=mbLeft) then begin
-      GUI.selectionFrame.visible:=true;
-      GUI.selectionFrame.top :=y; GUI.selectionFrame.height:=1;
-      GUI.selectionFrame.Left:=X; GUI.selectionFrame.width :=1;
-      GUI.selectionStart:=pointOf(x,y);
+      GUI^.selectionFrame.visible:=true;
+      GUI^.selectionFrame.top :=y; GUI^.selectionFrame.height:=1;
+      GUI^.selectionFrame.Left:=X; GUI^.selectionFrame.width :=1;
+      GUI^.selectionStart:=pointOf(x,y);
     end;
   end;
 
 PROCEDURE T_circuitBoard.WireImageMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
   VAR low,size:T_point;
   begin
-    if GUI.selectionFrame.visible then with GUI do begin
+    if GUI^.selectionFrame.visible then with GUI^ do begin
       low :=pointOf(min(x,selectionStart[0]),
                     min(y,selectionStart[1]));
       size:=pointOf(max(x,selectionStart[0]),
                     max(y,selectionStart[1]))-low;
 
-      GUI.selectionFrame.Left  :=low[0];
-      GUI.selectionFrame.top   :=low[1];
-      GUI.selectionFrame.width :=size[0];
-      GUI.selectionFrame.height:=size[1];
+      GUI^.selectionFrame.Left  :=low[0];
+      GUI^.selectionFrame.top   :=low[1];
+      GUI^.selectionFrame.width :=size[0];
+      GUI^.selectionFrame.height:=size[1];
     end;
   end;
 
@@ -1190,13 +1215,13 @@ PROCEDURE T_circuitBoard.WireImageMouseUp(Sender: TObject;
       p:T_point;
       extendSelection:boolean;
   begin
-    if GUI.selectionFrame.visible then with GUI do begin
+    if GUI^.selectionFrame.visible then with GUI^ do begin
       extendSelection:=ssShift in Shift;
 
-      selStart:=pointOf(floor(min(x,GUI.selectionStart[0])/zoom),
-                        floor(min(y,GUI.selectionStart[1])/zoom));
-      selEnd  :=pointOf(ceil (max(x,GUI.selectionStart[0])/zoom),
-                        ceil (max(y,GUI.selectionStart[1])/zoom));
+      selStart:=pointOf(floor(min(x,GUI^.selectionStart[0])/zoom),
+                        floor(min(y,GUI^.selectionStart[1])/zoom));
+      selEnd  :=pointOf(ceil (max(x,GUI^.selectionStart[0])/zoom),
+                        ceil (max(y,GUI^.selectionStart[1])/zoom));
       selectionFrame.visible:=false;
 
       for gate in gates do gate^.setMarked((extendSelection and gate^.marked_) or
@@ -1266,8 +1291,9 @@ FUNCTION T_circuitBoard.usesBoard(CONST other:P_circuitBoard; CONST recurse:bool
     if (gate^.behavior^.gateType=gt_compound) and
        ((P_customGate(gate^.behavior)^.prototype=other) or
         (recurse and P_customGate(gate^.behavior)^.prototype^.usesBoard(other,recurse))) then exit(true);
-    for board in GUI.undoList do if board^.usesBoard(other) then exit(true);
-    for board in GUI.redoList do if board^.usesBoard(other) then exit(true);
+    if GUI=nil then exit;
+    for board in GUI^.undoList do if board^.usesBoard(other) then exit(true);
+    for board in GUI^.redoList do if board^.usesBoard(other) then exit(true);
   end;
 
 end.

@@ -138,6 +138,7 @@ TYPE
     workspace:T_workspace;
     visualGateForContextPopup:P_visualGate;
     stepsPerTimer:longint;
+    uiAdapter:T_uiAdapter;
     PROCEDURE updateSidebar;
     PROCEDURE restartTimerCallback;
   public
@@ -157,9 +158,11 @@ FUNCTION workspaceFilename:string;
 
 PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
   begin
+    uiAdapter.create(zoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
+
     workspace.create(miSetCategoryRoot,PaletteTreeView);
     workspace.loadFromFile(workspaceFilename);
-    workspace.getCurrentBoard^.attachGUI(zoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
+    workspace.getCurrentBoard^.attachGUI(@uiAdapter);
     ScrollBox1.color:=BackgroundColor;
     currentBoardIsDraft:=workspace.getCurrentBoard^.paletteIndex<0;
     updateSidebar;
@@ -172,6 +175,7 @@ PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
   begin
     workspace.saveToFile(workspaceFilename);
     workspace.destroy;
+    uiAdapter.destroy;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.DeleteButtonClick(Sender: TObject);
@@ -216,7 +220,7 @@ PROCEDURE TDigitaltrainerMainForm.ButtonAddCustomClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.AnyGatePopupMenuPopup(Sender: TObject);
   begin
-    visualGateForContextPopup:=workspace.getCurrentBoard^.lastClickedGate;
+    visualGateForContextPopup:=uiAdapter.getLastClickedGate;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddAdapterClick(Sender: TObject);
@@ -273,6 +277,7 @@ PROCEDURE TDigitaltrainerMainForm.miAddToDraftsClick(Sender: TObject);
     workspace.addCurrentBoardToDrafts();
     updateSidebar;
     workspace.getCurrentBoard^.Repaint;
+    workspace.saveToFile('backup_'+FormatDateTime('yyyymmdd_hhnnss',now)+'.workspace');
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
@@ -280,6 +285,7 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
     workspace.addCurrentBoardToPalette;
     updateSidebar;
     workspace.getCurrentBoard^.Repaint;
+    workspace.saveToFile('backup_'+FormatDateTime('yyyymmdd_hhnnss',now)+'.workspace');
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAnalyzeBoardClick(Sender: TObject);
@@ -352,7 +358,7 @@ PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
         workspace.destroy;
         workspace.create(miSetCategoryRoot,PaletteTreeView);
         workspace.loadFromFile(OpenDialog1.fileName);
-        workspace.getCurrentBoard^.attachGUI(zoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
+        workspace.getCurrentBoard^.attachGUI(@uiAdapter);
         workspace.getCurrentBoard^.Repaint;
         updateSidebar;
         restartTimerCallback;
@@ -530,22 +536,22 @@ PROCEDURE TDigitaltrainerMainForm.ZoomTrackBarChange(Sender: TObject);
   begin
     BeginFormUpdate;
     workspace.getCurrentBoard^.setZoom(zoomTrackBar.position);
-    r:=BOARD_MAX_SIZE_IN_GRID_ENTRIES*zoomTrackBar.Position;
-    if r<=scrollBox1.Height then begin
-      ScrollBox1.VertScrollBar.Visible:=false;
-      ScrollBox1.VertScrollBar.Position:=0;
+    r:=BOARD_MAX_SIZE_IN_GRID_ENTRIES*zoomTrackBar.position;
+    if r<=ScrollBox1.height then begin
+      ScrollBox1.VertScrollBar.visible:=false;
+      ScrollBox1.VertScrollBar.position:=0;
     end else begin
-      ScrollBox1.VertScrollBar.Visible:=true;
-      ScrollBox1.VertScrollBar.Range:=r;
+      ScrollBox1.VertScrollBar.visible:=true;
+      ScrollBox1.VertScrollBar.range:=r;
     end;
 
-    r:=BOARD_MAX_SIZE_IN_GRID_ENTRIES*zoomTrackBar.Position;
-    if r<=scrollBox1.Width then begin
-      ScrollBox1.HorzScrollBar.Visible:=false;
-      ScrollBox1.HorzScrollBar.Position:=0;
+    r:=BOARD_MAX_SIZE_IN_GRID_ENTRIES*zoomTrackBar.position;
+    if r<=ScrollBox1.width then begin
+      ScrollBox1.HorzScrollBar.visible:=false;
+      ScrollBox1.HorzScrollBar.position:=0;
     end else begin
-      ScrollBox1.HorzScrollBar.Visible:=true;
-      ScrollBox1.HorzScrollBar.Range:=r;
+      ScrollBox1.HorzScrollBar.visible:=true;
+      ScrollBox1.HorzScrollBar.range:=r;
     end;
 
     EndFormUpdate;

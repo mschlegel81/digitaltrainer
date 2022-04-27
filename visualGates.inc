@@ -187,44 +187,44 @@ PROCEDURE T_visualGate.ensureGuiElements;
   VAR shapeIndex:longint=1;
       k:longint;
   begin
-    if (length(shapes)=0) and (board<>nil) and (board^.GUI.container<>nil) then begin
+    if (length(shapes)=0) and (board<>nil) and (board^.GUI<>nil) then begin
       setLength(shapes,1+behavior^.numberOfInputs+behavior^.numberOfOutputs);
-      shapes[0]:=TShape.create(board^.GUI.container);
-      shapes[0].parent:=board^.GUI.container;
+      shapes[0]:=TShape.create(board^.GUI^.container);
+      shapes[0].parent:=board^.GUI^.container;
       shapes[0].Shape :=stRectangle;
       shapes[0].OnMouseDown:=@mainShapeMouseDown;
       shapes[0].OnMouseMove:=@mainShapeMouseMove;
       shapes[0].OnMouseUp  :=@mainShapeMouseUp;
-      shapes[0].PopupMenu  :=board^.GUI.gateContextMenu;
+      shapes[0].PopupMenu  :=board^.GUI^.gateContextMenu;
       setLength(labels,1);
 
-      labels[0]:=TLabel.create(board^.GUI.container);
+      labels[0]:=TLabel.create(board^.GUI^.container);
       labels[0].caption:=behavior^.caption;
       labels[0].AutoSize:=true;
       labels[0].Font.size:=6;
-      labels[0].parent:=board^.GUI.container;
+      labels[0].parent:=board^.GUI^.container;
       labels[0].OnMouseDown:=@mainShapeMouseDown;
       labels[0].OnMouseMove:=@mainShapeMouseMove;
       labels[0].OnMouseUp  :=@mainShapeMouseUp;
-      labels[0].PopupMenu  :=board^.GUI.gateContextMenu;
+      labels[0].PopupMenu  :=board^.GUI^.gateContextMenu;
 
       for k:=0 to behavior^.numberOfInputs-1 do begin
-        shapes[shapeIndex]:=TShape.create(board^.GUI.container);
+        shapes[shapeIndex]:=TShape.create(board^.GUI^.container);
         shapes[shapeIndex].Shape:=stCircle;
         shapes[shapeIndex].Tag:=k;
         shapes[shapeIndex].OnClick  :=@inputClick;
-        shapes[shapeIndex].parent:=board^.GUI.container;
+        shapes[shapeIndex].parent:=board^.GUI^.container;
         inc(shapeIndex);
       end;
 
       for k:=0 to behavior^.numberOfOutputs-1 do begin
-        shapes[shapeIndex]:=TShape.create(board^.GUI.container);
+        shapes[shapeIndex]:=TShape.create(board^.GUI^.container);
         shapes[shapeIndex].Shape:=stCircle;
         shapes[shapeIndex].Tag:=k;
         shapes[shapeIndex].OnMouseDown:=@outputMouseDown;
         shapes[shapeIndex].OnMouseMove:=@outputMouseMove;
         shapes[shapeIndex].OnMouseUp  :=@outputMouseUp;
-        shapes[shapeIndex].parent:=board^.GUI.container;
+        shapes[shapeIndex].parent:=board^.GUI^.container;
         inc(shapeIndex);
       end;
     end;
@@ -234,22 +234,22 @@ PROCEDURE T_visualGateForCustom.ensureGuiElements;
   VAR shapeIndex:longint=1;
       k:longint;
   begin
-    if (length(shapes)=0) and (board<>nil) and (board^.GUI.container<>nil) then begin
+    if (length(shapes)=0) and (board<>nil) and (board^.GUI<>nil) then begin
       inherited;
       setLength(labels,length(shapes));
       for k:=0 to behavior^.numberOfInputs-1 do begin
-        labels[shapeIndex]:=TLabel.create(board^.GUI.container);
+        labels[shapeIndex]:=TLabel.create(board^.GUI^.container);
         labels[shapeIndex].Tag:=k;
-        labels[shapeIndex].parent:=board^.GUI.container;
+        labels[shapeIndex].parent:=board^.GUI^.container;
         labels[shapeIndex].caption:=P_customGate(behavior)^.inputConnections[k].caption;
         labels[shapeIndex].OnClick:=@inputClick;
         labels[shapeIndex].Font.size:=10;
         inc(shapeIndex);
       end;
       for k:=0 to behavior^.numberOfOutputs-1 do begin
-        labels[shapeIndex]:=TLabel.create(board^.GUI.container);
+        labels[shapeIndex]:=TLabel.create(board^.GUI^.container);
         labels[shapeIndex].Tag:=k;
-        labels[shapeIndex].parent:=board^.GUI.container;
+        labels[shapeIndex].parent:=board^.GUI^.container;
         labels[shapeIndex].caption:=P_customGate(behavior)^.outputConnections[k].caption;
         labels[shapeIndex].OnMouseDown:=@outputMouseDown;
         labels[shapeIndex].OnMouseMove:=@outputMouseMove;
@@ -262,11 +262,11 @@ PROCEDURE T_visualGateForCustom.ensureGuiElements;
 
 PROCEDURE T_visualGateForOutput.ensureGuiElements;
   begin
-    if (length(shapes)=0) and (board<>nil) and (board^.GUI.container<>nil) then begin
+    if (length(shapes)=0) and (board<>nil) and (board^.GUI^.container<>nil) then begin
       inherited;
       setLength(labels,2);
-      labels[1]:=TLabel.create(board^.GUI.container);
-      labels[1].parent:=board^.GUI.container;
+      labels[1]:=TLabel.create(board^.GUI^.container);
+      labels[1].parent:=board^.GUI^.container;
       labels[1].caption:='bin: ?'+LineEnding+
                          'dec: ?'+LineEnding+
                          'neg: ?';
@@ -278,27 +278,27 @@ PROCEDURE T_visualGateForOutput.ensureGuiElements;
 
 PROCEDURE T_visualGateForInput.ensureGuiElements;
   begin
-    if (length(shapes)=0) and (board<>nil) and (board^.GUI.container<>nil) then begin
+    if (length(shapes)=0) and (board<>nil) and (board^.GUI<>nil) then begin
       inherited;
-      button:=TButton.create(board^.GUI.container);
-      button.parent:=        board^.GUI.container;
+      button:=TButton.create(board^.GUI^.container);
+      button.parent:=        board^.GUI^.container;
       button.caption:=behavior^.caption;
-      button.Font.size:=board^.GUI.zoom;
+      button.Font.size:=board^.GUI^.zoom;
       button.OnMouseDown:=@mainShapeMouseDown;
       button.OnMouseMove:=@mainShapeMouseMove;
       button.OnMouseUp  :=@mainShapeMouseUp;
       button.Font.name :=labels[0].Font.name;
       button.OnClick:=@ButtonClick;
 
-      edit:=TEdit.create(board^.GUI.container);
-      edit.parent:=      board^.GUI.container;
+      edit:=TEdit.create(board^.GUI^.container);
+      edit.parent:=      board^.GUI^.container;
       edit.OnEditingDone:=@inputEditEditingDone;
       edit.OnKeyPress   :=@inputEditKeyEvent;
       edit.AutoSize     :=false;
 
       setLength(labels,2);
-      labels[1]:=TLabel.create(board^.GUI.container);
-      labels[1].parent:=board^.GUI.container;
+      labels[1]:=TLabel.create(board^.GUI^.container);
+      labels[1].parent:=board^.GUI^.container;
       labels[1].caption:='bin:';
       labels[1].OnClick:=@inputModeClick;
       labels[1].Font.size:=10;
@@ -323,7 +323,7 @@ PROCEDURE T_visualGate.inputClick(Sender: TObject);
     k:=TControl(Sender).Tag;
     if behavior^.inputWidth(k)=1 then behavior^.setInput(k,TRI_STATE_NOT[behavior^.getInput(k).bit[0]]);
     updateIoVisuals;
-    if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
+    if (board<>nil) and (board^.GUI<>nil) then board^.GUI^.anyChangeCallback();
   end;
 
 PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -339,7 +339,7 @@ PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton;
       dragX:=x;
       dragY:=y;
     end else if (button=mbRight) then begin
-      board^.GUI.lastClickedGate:=@self;
+      board^.GUI^.lastClickedGate:=@self;
     end;
   end;
 
@@ -351,7 +351,7 @@ PROCEDURE T_visualGate.mainShapeMouseMove(Sender: TObject; Shift: TShiftState; X
   begin
     dx:=x-dragX;
     dy:=y-dragY;
-    dragDelta:=pointOf(round(dx/board^.GUI.zoom),round(dy/board^.GUI.zoom));
+    dragDelta:=pointOf(round(dx/board^.GUI^.zoom),round(dy/board^.GUI^.zoom));
     if dragDelta=ZERO_POINT then exit;
     if dragging=drag_self then begin
       if board^.canGateBeMovedBy(@self,dragDelta,false,false)
@@ -380,7 +380,7 @@ PROCEDURE T_visualGate.mainShapeMouseMove(Sender: TObject; Shift: TShiftState; X
 PROCEDURE T_visualGate.mainShapeMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     if (button=mbLeft) then begin
-      board^.incompleteWire.dragging:=false;
+      board^.GUI^.incompleteWire.dragging:=false;
       shapes[0].Pen.style:=psSolid;
       if movedDuringDrag then board^.rewire();
       dragging:=not_dragging;
@@ -395,7 +395,7 @@ PROCEDURE T_visualGate.outputMouseDown(Sender: TObject; button: TMouseButton; Sh
     if (button=mbLeft) then begin
       wireDragOutputIndex:=TControl(Sender).Tag;
       p:=getOutputPositionInGridSize(wireDragOutputIndex);
-      with board^.incompleteWire do begin
+      with board^.GUI^.incompleteWire do begin
         dragging:=true;
         source.gate:=@self;
         source.index:=wireDragOutputIndex;
@@ -410,7 +410,7 @@ PROCEDURE T_visualGate.outputMouseDown(Sender: TObject; button: TMouseButton; Sh
 PROCEDURE T_visualGate.outputMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
   begin
     if board=nil then exit;
-    if board^.incompleteWire.dragging
+    if board^.GUI^.incompleteWire.dragging
     then board^.finishWireDrag(pointOf(dragX+x,dragY+y),true);
   end;
 
@@ -438,10 +438,10 @@ PROCEDURE T_visualGate.Repaint;
       p:T_point;
   begin
     if length(shapes)=0 then exit;
-    shapes[0].Left  :=origin[0]*board^.GUI.zoom;
-    shapes[0].top   :=origin[1]*board^.GUI.zoom;
-    shapes[0].width :=size  [0]*board^.GUI.zoom;
-    shapes[0].height:=size  [1]*board^.GUI.zoom;
+    shapes[0].Left  :=origin[0]*board^.GUI^.zoom;
+    shapes[0].top   :=origin[1]*board^.GUI^.zoom;
+    shapes[0].width :=size  [0]*board^.GUI^.zoom;
+    shapes[0].height:=size  [1]*board^.GUI^.zoom;
 
     newFontSize:=min(round(labels[0].Font.size*shapes[0].width  *0.75/labels[0].width),
                      round(labels[0].Font.size*shapes[0].height *0.5 /labels[0].height));
@@ -451,19 +451,19 @@ PROCEDURE T_visualGate.Repaint;
 
     for k:=0 to numberOfInputs-1 do begin
       p:=getInputPositionInGridSize(k);
-      shapes[shapeIndex].Left  :=round((p[0]-0.5)*board^.GUI.zoom);
-      shapes[shapeIndex].top   :=round((p[1]-0.5)*board^.GUI.zoom);
-      shapes[shapeIndex].width :=board^.GUI.zoom;
-      shapes[shapeIndex].height:=board^.GUI.zoom;
+      shapes[shapeIndex].Left  :=round((p[0]-0.5)*board^.GUI^.zoom);
+      shapes[shapeIndex].top   :=round((p[1]-0.5)*board^.GUI^.zoom);
+      shapes[shapeIndex].width :=                 board^.GUI^.zoom;
+      shapes[shapeIndex].height:=                 board^.GUI^.zoom;
       inc(shapeIndex);
     end;
 
     for k:=0 to numberOfOutputs-1 do begin
       p:=getOutputPositionInGridSize(k);
-      shapes[shapeIndex].Left  :=round((p[0]-0.5)*board^.GUI.zoom);
-      shapes[shapeIndex].top   :=round((p[1]-0.5)*board^.GUI.zoom);
-      shapes[shapeIndex].width :=board^.GUI.zoom;
-      shapes[shapeIndex].height:=board^.GUI.zoom;
+      shapes[shapeIndex].Left  :=round((p[0]-0.5)*board^.GUI^.zoom);
+      shapes[shapeIndex].top   :=round((p[1]-0.5)*board^.GUI^.zoom);
+      shapes[shapeIndex].width :=                 board^.GUI^.zoom;
+      shapes[shapeIndex].height:=                 board^.GUI^.zoom;
       inc(shapeIndex);
     end;
   end;
@@ -475,7 +475,7 @@ PROCEDURE T_visualGateForCustom.Repaint;
   begin
     if length(shapes)=0 then exit;
     inherited;
-    ioLabelFontSize:=round(board^.GUI.zoom*0.2);
+    ioLabelFontSize:=round(board^.GUI^.zoom*0.2);
     if ioLabelFontSize<3 then begin
       for k:=1 to length(labels)-1 do labels[k].visible:=false;
       exit;
@@ -548,7 +548,7 @@ PROCEDURE T_visualGateForInput.ButtonClick(Sender: TObject);
     for i:=0 to WIRE_MAX_WIDTH-1 do w.bit[i]:=TRI_STATE_NOT[w.bit[i]];
     behavior^.setInput(0,w);
     updateIoVisuals;
-    if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
+    if (board<>nil) and (board^.GUI<>nil) then board^.GUI^.anyChangeCallback();
   end;
 
 PROCEDURE T_visualGateForInput.inputModeClick(Sender: TObject);
@@ -572,7 +572,7 @@ PROCEDURE T_visualGateForInput.inputEditEditingDone(Sender: TObject);
     behavior^.setInput(0,w);
     updateText;
     updateIoVisuals;
-    if (board<>nil) and (board^.GUI.anyChangeCallback<>nil) then board^.GUI.anyChangeCallback();
+    if (board<>nil) and (board^.GUI<>nil) then board^.GUI^.anyChangeCallback();
   end;
 
 PROCEDURE T_visualGateForInput.inputEditKeyEvent(Sender: TObject; VAR key: char);
@@ -595,26 +595,26 @@ PROCEDURE T_visualGateForOutput.Repaint;
       p:T_point;
   begin
     if length(shapes)=0 then exit;
-    shapes[0].Left  :=origin[0]*board^.GUI.zoom;
-    shapes[0].top   :=origin[1]*board^.GUI.zoom;
-    shapes[0].width :=size  [0]*board^.GUI.zoom;
-    shapes[0].height:=size  [1]*board^.GUI.zoom;
+    shapes[0].Left  :=origin[0]*board^.GUI^.zoom;
+    shapes[0].top   :=origin[1]*board^.GUI^.zoom;
+    shapes[0].width :=size  [0]*board^.GUI^.zoom;
+    shapes[0].height:=size  [1]*board^.GUI^.zoom;
 
     for k:=0 to numberOfInputs-1 do begin
       p:=getInputPositionInGridSize(k);
-      shapes[shapeIndex].Left  :=round((p[0]-0.5)*board^.GUI.zoom);
-      shapes[shapeIndex].top   :=round((p[1]-0.5)*board^.GUI.zoom);
-      shapes[shapeIndex].width :=board^.GUI.zoom;
-      shapes[shapeIndex].height:=board^.GUI.zoom;
+      shapes[shapeIndex].Left  :=round((p[0]-0.5)*board^.GUI^.zoom);
+      shapes[shapeIndex].top   :=round((p[1]-0.5)*board^.GUI^.zoom);
+      shapes[shapeIndex].width :=                 board^.GUI^.zoom;
+      shapes[shapeIndex].height:=                 board^.GUI^.zoom;
       inc(shapeIndex);
     end;
 
     for k:=0 to numberOfOutputs-1 do begin
       p:=getOutputPositionInGridSize(k);
-      shapes[shapeIndex].Left  :=round((p[0]-0.5)*board^.GUI.zoom);
-      shapes[shapeIndex].top   :=round((p[1]-0.5)*board^.GUI.zoom);
-      shapes[shapeIndex].width :=board^.GUI.zoom;
-      shapes[shapeIndex].height:=board^.GUI.zoom;
+      shapes[shapeIndex].Left  :=round((p[0]-0.5)*board^.GUI^.zoom);
+      shapes[shapeIndex].top   :=round((p[1]-0.5)*board^.GUI^.zoom);
+      shapes[shapeIndex].width :=                 board^.GUI^.zoom;
+      shapes[shapeIndex].height:=                 board^.GUI^.zoom;
       inc(shapeIndex);
     end;
 
@@ -631,7 +631,7 @@ PROCEDURE T_visualGateForOutput.Repaint;
     labels[1].top:=labels[0].top+labels[0].height;
 
     labels[0].Left:=shapes[0].Left+(shapes[0].width -labels[0].width) div 2 ;
-    labels[1].Left:=shapes[0].Left+round(board^.GUI.zoom*0.7);
+    labels[1].Left:=shapes[0].Left+round(board^.GUI^.zoom*0.7);
   end;
 
 FUNCTION T_visualGate.numberOfInputs: longint;
