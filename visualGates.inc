@@ -38,10 +38,11 @@ T_visualGate=object
     FUNCTION numberOfOutputs:longint;
     FUNCTION isCompletelyInsideRect(CONST low,high:T_point):boolean;
   public
-    PROCEDURE Repaint; virtual;
+    PROCEDURE repaint; virtual;
     PROPERTY getBehavior:P_abstractGate read behavior;
     FUNCTION nextGateAfter:T_point;
     PROCEDURE forcedFullRepaint; virtual;
+    FUNCTION getOuputDescription(CONST index:longint):string; virtual;
 end;
 
 P_visualGateForCustom=^T_visualGateForCustom;
@@ -50,7 +51,8 @@ protected
   PROCEDURE ensureGuiElements; virtual;
   CONSTRUCTOR create(CONST origin_:T_point; CONST gateToWrap:P_abstractGate; CONST board_:P_circuitBoard);
 public
-  PROCEDURE Repaint; virtual;
+  PROCEDURE repaint; virtual;
+  FUNCTION getOuputDescription(CONST index:longint):string; virtual;
 end;
 
 P_visualGateForOutput=^T_visualGateForOutput;
@@ -60,7 +62,7 @@ protected
   PROCEDURE updateIoVisuals; virtual;
   CONSTRUCTOR create(CONST origin_:T_point; CONST gateToWrap:P_abstractGate; CONST board_:P_circuitBoard);
 public
-  PROCEDURE Repaint; virtual;
+  PROCEDURE repaint; virtual;
   PROCEDURE forcedFullRepaint; virtual;
 end;
 
@@ -77,7 +79,7 @@ protected
   PROCEDURE updateIoVisuals; virtual;
   CONSTRUCTOR create(CONST origin_:T_point; CONST gateToWrap:P_abstractGate; CONST board_:P_circuitBoard);
 public
-  PROCEDURE Repaint; virtual;
+  PROCEDURE repaint; virtual;
   PROCEDURE forcedFullRepaint; virtual;
 private
   //Events...
@@ -157,7 +159,7 @@ PROCEDURE T_visualGate.updateIoVisuals;
   begin
     if (length(shapes)=0) then begin
       ensureGuiElements;
-      Repaint;
+      repaint;
     end;
     for i:=0 to numberOfInputs-1 do begin
       shapes[shapeIndex].Brush.color:=colorOf(behavior^.getInput(i));
@@ -180,7 +182,7 @@ PROCEDURE T_visualGateForOutput.updateIoVisuals;
     inherited;
     labels[1].caption:='bin: '+getBinaryString(behavior^.getInput(0))+LineEnding+
                        'dec: '+getDecimalString(behavior^.getInput(0))+LineEnding+
-                       'neg: '+get2ComplementString(behavior^.getInput(0));
+                       'sig: '+get2ComplementString(behavior^.getInput(0));
   end;
 
 PROCEDURE T_visualGate.ensureGuiElements;
@@ -358,7 +360,7 @@ PROCEDURE T_visualGate.mainShapeMouseMove(Sender: TObject; Shift: TShiftState; X
       then begin
         if not(movedDuringDrag) then board^.saveStateToUndoList;
         origin+=dragDelta;
-        Repaint;
+        repaint;
         movedDuringDrag:=true;
       end;
     end else if dragging=drag_selection then begin
@@ -370,7 +372,7 @@ PROCEDURE T_visualGate.mainShapeMouseMove(Sender: TObject; Shift: TShiftState; X
         if not(movedDuringDrag) then board^.saveStateToUndoList;
         for gate in board^.gates do if gate^.marked then begin
           gate^.origin+=dragDelta;
-          gate^.Repaint;
+          gate^.repaint;
         end;
         movedDuringDrag:=true;
       end;
@@ -385,12 +387,13 @@ PROCEDURE T_visualGate.mainShapeMouseUp(Sender: TObject; button: TMouseButton; S
       if movedDuringDrag then board^.rewire();
       dragging:=not_dragging;
       movedDuringDrag:=false;
-      board^.Repaint;
+      board^.repaint;
     end;
   end;
 
 PROCEDURE T_visualGate.outputMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR p:T_point;
+      connect:T_visualGateConnector;
   begin
     if (button=mbLeft) then begin
       wireDragOutputIndex:=TControl(Sender).Tag;
@@ -404,6 +407,11 @@ PROCEDURE T_visualGate.outputMouseDown(Sender: TObject; button: TMouseButton; Sh
       end;
       dragX:=x+TControl(Sender).Left;
       dragY:=y+TControl(Sender).top;
+    end;
+    if (button=mbRight) and (board^.GUI<>nil) then begin
+      connect.gate:=@self;
+      connect.index:=TControl(Sender).Tag;
+      board^.GUI^.startPeeking(connect);
     end;
   end;
 
@@ -432,7 +440,7 @@ FUNCTION T_visualGate.getOutputPositionInGridSize(CONST index: longint): T_point
     result[1]:=origin[1]+(index*2-(numberOfOutputs-1))+size[1] div 2;
   end;
 
-PROCEDURE T_visualGate.Repaint;
+PROCEDURE T_visualGate.repaint;
   VAR k,newFontSize:longint;
       shapeIndex :longint=1;
       p:T_point;
@@ -468,7 +476,7 @@ PROCEDURE T_visualGate.Repaint;
     end;
   end;
 
-PROCEDURE T_visualGateForCustom.Repaint;
+PROCEDURE T_visualGateForCustom.repaint;
   VAR shapeIndex:longint=1;
       k:longint;
       ioLabelFontSize:longint;
@@ -498,7 +506,15 @@ PROCEDURE T_visualGateForCustom.Repaint;
     end;
   end;
 
-PROCEDURE T_visualGateForInput.Repaint;
+FUNCTION T_visualGateForCustom.getOuputDescription(CONST index: longint): string;
+  begin
+    result:=P_customGate(behavior)^.outputConnections[index].caption+' ['+intToStr(behavior^.outputWidth(index))+'bit]'+LineEnding+
+            'bin: '+getBinaryString(behavior^.getOutput(index))+LineEnding+
+            'dec: '+getDecimalString(behavior^.getOutput(index))+LineEnding+
+            'sig: '+get2ComplementString(behavior^.getOutput(index));
+  end;
+
+PROCEDURE T_visualGateForInput.repaint;
   VAR caption:shortstring;
       newFontSize:longint;
   begin
@@ -589,7 +605,7 @@ PROCEDURE T_visualGateForInput.inputEditKeyEvent(Sender: TObject; VAR key: char)
     if not(key in AllowedKeys[inputMode]) then key:=#0;
   end;
 
-PROCEDURE T_visualGateForOutput.Repaint;
+PROCEDURE T_visualGateForOutput.repaint;
   VAR k,newFontSize:longint;
       shapeIndex :longint=1;
       p:T_point;
@@ -652,7 +668,7 @@ FUNCTION T_visualGate.isCompletelyInsideRect(CONST low, high: T_point): boolean;
           and (origin[1]+size[1]<=high[1]);
     end;
 
-FUNCTION T_visualGate.nextGateAfter:T_point;
+FUNCTION T_visualGate.nextGateAfter: T_point;
   begin
     if origin[0]+size[0]+2<origin[1]+size[1]
     then begin
@@ -669,7 +685,15 @@ PROCEDURE T_visualGate.forcedFullRepaint;
     disposeGuiElements;
     size:=pointOf(4,max(2,2*max(numberOfInputs,numberOfOutputs)));
     ensureGuiElements;
-    Repaint;
+    repaint;
+  end;
+
+FUNCTION T_visualGate.getOuputDescription(CONST index: longint): string;
+  begin
+    result:='out'+intToStr(index)+' ['+intToStr(behavior^.outputWidth(index))+'bit]'+LineEnding+
+            'bin: '+getBinaryString(behavior^.getOutput(index))+LineEnding+
+            'dec: '+getDecimalString(behavior^.getOutput(index))+LineEnding+
+            'sig: '+get2ComplementString(behavior^.getOutput(index));
   end;
 
 PROCEDURE T_visualGateForOutput.forcedFullRepaint;
@@ -677,7 +701,7 @@ PROCEDURE T_visualGateForOutput.forcedFullRepaint;
     disposeGuiElements;
     size:=pointOf(6,3);
     ensureGuiElements;
-    Repaint;
+    repaint;
   end;
 
 PROCEDURE T_visualGateForInput.forcedFullRepaint;
@@ -685,7 +709,7 @@ PROCEDURE T_visualGateForInput.forcedFullRepaint;
     disposeGuiElements;
     size:=pointOf(6,3);
     ensureGuiElements;
-    Repaint;
+    repaint;
   end;
 
 {$endif}

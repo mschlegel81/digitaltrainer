@@ -120,6 +120,7 @@
         <Filename Value="draftformunit.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="draftsForm"/>
+        <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="draftFormUnit"/>
       </Unit8>

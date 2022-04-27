@@ -66,12 +66,29 @@ TYPE
       wireGraph:T_wireGraph;
 
       currentBoard:P_circuitBoard;
+
+      peekPanels:array of record
+        panel:TPanel;
+        peekLabel:TLabel;
+
+        connector:T_visualGateConnector;
+      end;
+      PROCEDURE peekLabelClick(Sender: TObject);
+
     public
       CONSTRUCTOR create(CONST zoom_:longint; CONST container_:TWinControl; CONST wireImage_:TImage; CONST gatePopup:TPopupMenu; CONST anyChangeCallback_:F_simpleCallback);
       DESTRUCTOR destroy;
       PROCEDURE clearUndoLists;
       PROCEDURE newBoardAttached(CONST board:P_circuitBoard);
       PROPERTY getLastClickedGate:P_visualGate read lastClickedGate;
+
+      PROCEDURE addPeekPanel(CONST panel:TPanel; CONST label_:TLabel);
+      PROCEDURE gateDeleted(CONST gate:P_visualGate);
+      PROCEDURE simStepDone;
+      PROCEDURE startPeeking(CONST connector:T_visualGateConnector);
+      PROCEDURE hideAllPeekPanels;
+      PROCEDURE repaint;
+      PROCEDURE setZoom(CONST newZoom:longint);
   end;
 
   T_repositionOutput=(ro_positionUnchanged,ro_positionFound,ro_noPositionFound);
@@ -102,6 +119,7 @@ TYPE
       FUNCTION wrapGate(CONST origin:T_point;CONST g:P_abstractGate; CONST template:P_visualGate=nil):P_visualGate;
       FUNCTION clone(CONST includeWirePaths:boolean):P_circuitBoard;
       PROCEDURE enumerateIo;
+      PROCEDURE repaint;
     public
       CONSTRUCTOR create;
       DESTRUCTOR destroy;  virtual;
@@ -111,10 +129,8 @@ TYPE
       FUNCTION detachGUI:P_uiAdapter;
       PROCEDURE anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
       PROCEDURE fixWireImageSize;
-      PROCEDURE setZoom(CONST zoom:longint);
       PROCEDURE deleteInvalidWires;
       PROCEDURE deleteMarkedElements;
-      PROCEDURE Repaint;
       FUNCTION simulateSteps(CONST count:longint):boolean;
 
       FUNCTION loadFromStream(CONST workspace:P_workspace; VAR stream:T_bufferedInputStreamWrapper):boolean;
@@ -140,7 +156,16 @@ USES sysutils,math,myGenerics,Dialogs,DateUtils;
 
 { T_uiAdapter }
 
-CONSTRUCTOR T_uiAdapter.create(CONST zoom_: longint; CONST container_: TWinControl; CONST wireImage_: TImage; CONST gatePopup: TPopupMenu; CONST anyChangeCallback_: F_simpleCallback);
+PROCEDURE T_uiAdapter.peekLabelClick(Sender: TObject);
+  VAR k:longint;
+  begin
+    k:=TLabel(Sender).Tag;
+    peekPanels[k].panel.visible:=false;
+  end;
+
+CONSTRUCTOR T_uiAdapter.create(CONST zoom_: longint;
+  CONST container_: TWinControl; CONST wireImage_: TImage;
+  CONST gatePopup: TPopupMenu; CONST anyChangeCallback_: F_simpleCallback);
   begin
     zoom:=zoom_;
     container:=container_;
@@ -155,6 +180,7 @@ CONSTRUCTOR T_uiAdapter.create(CONST zoom_: longint; CONST container_: TWinContr
     selectionFrame.Pen.style:=psDashDot;
     currentBoard:=nil;
     wireGraph.create;
+    setLength(peekPanels,0);
   end;
 
 DESTRUCTOR T_uiAdapter.destroy;
@@ -172,8 +198,9 @@ PROCEDURE T_uiAdapter.clearUndoLists;
     setLength(redoList,0);
   end;
 
-PROCEDURE T_uiAdapter.newBoardAttached(CONST board:P_circuitBoard);
+PROCEDURE T_uiAdapter.newBoardAttached(CONST board: P_circuitBoard);
   begin
+    hideAllPeekPanels;
     assert(currentBoard=nil);
     currentBoard:=board;
     clearUndoLists;
@@ -182,6 +209,72 @@ PROCEDURE T_uiAdapter.newBoardAttached(CONST board:P_circuitBoard);
       dispose(Clipboard,destroy);
       Clipboard:=nil;
     end;
+  end;
+
+PROCEDURE T_uiAdapter.addPeekPanel(CONST panel: TPanel; CONST label_: TLabel);
+  VAR k:longint;
+  begin
+    k:=length(peekPanels);
+    setLength(peekPanels,k+1);
+    peekPanels[k].panel:=panel;
+    peekPanels[k].peekLabel:=label_;
+    label_.OnClick:=@peekLabelClick;
+    label_.Tag:=k;
+    panel.visible:=false;
+  end;
+
+PROCEDURE T_uiAdapter.gateDeleted(CONST gate: P_visualGate);
+  VAR k:longint;
+  begin
+    for k:=0 to length(peekPanels)-1 do if peekPanels[k].panel.visible and (peekPanels[k].connector.gate=gate) then peekPanels[k].panel.visible:=false;
+  end;
+
+PROCEDURE T_uiAdapter.simStepDone;
+  VAR k:longint;
+      upperleftCorner:T_point;
+  begin
+    for k:=0 to length(peekPanels)-1 do with peekPanels[k] do if panel.visible then begin
+      upperleftCorner:=connector.gate^.getOutputPositionInGridSize(connector.index)*zoom;
+      panel.Left:=upperleftCorner[0];
+      panel.top :=upperleftCorner[1];
+      peekLabel.caption:=connector.gate^.getOuputDescription(connector.index);
+    end;
+  end;
+
+PROCEDURE T_uiAdapter.startPeeking(CONST connector: T_visualGateConnector);
+  VAR k: integer;
+  begin
+    for k:=0 to length(peekPanels)-1 do
+    if (peekPanels[k].connector.gate=connector.gate) and
+       (peekPanels[k].connector.index=connector.index) and
+       (peekPanels[k].panel.visible) then exit;
+    k:=0;
+    while (k<length(peekPanels)) and (peekPanels[k].panel.visible) do inc(k);
+    if k>=length(peekPanels) then exit;
+    peekPanels[k].panel.visible:=true;
+    peekPanels[k].connector:=connector;
+    simStepDone;
+  end;
+
+PROCEDURE T_uiAdapter.hideAllPeekPanels;
+  VAR i:longint;
+  begin
+    for i:=0 to length(peekPanels)-1 do peekPanels[i].panel.visible:=false;
+  end;
+
+PROCEDURE T_uiAdapter.repaint;
+  begin
+    if currentBoard<>nil then begin
+      currentBoard^.repaint;
+      simStepDone;
+    end;
+  end;
+
+PROCEDURE T_uiAdapter.setZoom(CONST newZoom: longint);
+  begin
+    if zoom=newZoom then exit;
+    zoom:=newZoom;
+    repaint;
   end;
 
 {$define includeImplementation}
@@ -251,10 +344,10 @@ PROCEDURE T_circuitBoard.attachGUI(CONST adapter:P_uiAdapter);
 FUNCTION T_circuitBoard.detachGUI:P_uiAdapter;
   VAR gate:P_visualGate;
   begin
+    for gate in gates do gate^.disposeGuiElements;
     if GUI=nil then exit(nil);
     result:=GUI;
     GUI^.currentBoard:=nil;
-    for gate in gates do gate^.disposeGuiElements;
     GUI:=nil;
   end;
 
@@ -273,7 +366,7 @@ PROCEDURE T_circuitBoard.clear;
     categoryIndex:=-1;
     description:='';
     name:=defaultBoardCaption;
-    Repaint;
+    repaint;
   end;
 
 PROCEDURE T_circuitBoard.setSelectForAll(CONST doSelect: boolean);
@@ -372,7 +465,7 @@ FUNCTION T_circuitBoard.positionNewGate(CONST gateToAdd: P_visualGate): boolean;
       gateToAdd^.origin:=gateOrigin;
       result:=true;
       gateToAdd^.ensureGuiElements;
-      gateToAdd^.Repaint;
+      gateToAdd^.repaint;
     end else result:=false;
   end;
 
@@ -399,7 +492,7 @@ PROCEDURE T_circuitBoard.deleteInvalidWires;
       inc(j);
     end;
     if anyDeleted then rewire(true);
-    Repaint;
+    repaint;
   end;
 
 PROCEDURE T_circuitBoard.enumerateIo;
@@ -487,7 +580,7 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
     end;
 
     rewire;
-    Repaint;
+    repaint;
   end;
 
 PROCEDURE T_circuitBoard.fixWireImageSize;
@@ -516,13 +609,6 @@ PROCEDURE T_circuitBoard.fixWireImageSize;
       GUI^.wireImage.picture.Bitmap.setSize(width,height);
       GUI^.wireImage.picture.Bitmap.Canvas.clear;
     end;
-  end;
-
-PROCEDURE T_circuitBoard.setZoom(CONST zoom: longint);
-  begin
-    //TODO: This belongs to T_uiAdapter!
-    GUI^.zoom:=zoom;
-    Repaint;
   end;
 
 FUNCTION T_circuitBoard.simulateSteps(CONST count: longint): boolean;
@@ -765,6 +851,7 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board: P_circuitBoard; CONST fullCopy:b
     end else begin
       board^.getBoardExtend(clipOrigin,clipSize);
       clipNewOrigin:=clipOrigin;
+      if length(gates)>0 then clipNewOrigin+=gates[length(gates)-1]^.nextGateAfter;
       if repositionCustomRegion(clipNewOrigin,clipSize,true)=ro_noPositionFound then exit;
       clipOffset:=clipNewOrigin-clipOrigin;
     end;
@@ -781,7 +868,7 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board: P_circuitBoard; CONST fullCopy:b
     end;
 
     if anyWireAdded and not(fullCopy) then rewire;
-    Repaint;
+    repaint;
   end;
 
 PROCEDURE T_circuitBoard.reset;
@@ -815,11 +902,11 @@ PROCEDURE T_circuitBoard.getBoardExtend(OUT origin, size: T_point);
     size:=maximum-origin;
   end;
 
-PROCEDURE T_circuitBoard.Repaint;
+PROCEDURE T_circuitBoard.repaint;
   VAR gate:P_visualGate;
   begin
     if (GUI<>nil) then begin
-      for gate in gates do gate^.Repaint;
+      for gate in gates do gate^.repaint;
       fixWireImageSize;
       drawAllWires;
     end;
@@ -896,6 +983,7 @@ PROCEDURE T_circuitBoard.initWireGraph(CONST start: T_visualGateConnector; CONST
   VAR gate:P_visualGate;
       x,y,i,j:longint;
   begin
+    if GUI=nil then exit;
     GUI^.wireGraph.initDirections;
     for gate in gates do begin
       //Points within the gate cannot be reached
@@ -1003,7 +1091,7 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previe
     rewire;
     if (GUI<>nil) then GUI^.anyChangeCallback();
     cleanup;
-    Repaint;
+    repaint;
   end;
 
 PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
@@ -1071,7 +1159,7 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
       end;
       needAnyRewire:=needAnyRewire or preview[i].needRewire;
     end;
-    if not(needAnyRewire) then exit;
+    if not(needAnyRewire) or (GUI=nil) then exit;
 
     for i:=0 to length(logicWires)-1 do
       with logicWires[i] do
@@ -1119,7 +1207,7 @@ PROCEDURE T_circuitBoard.performUndo;
     dispose(GUI^.undoList[k],destroy);
     setLength(GUI^.undoList,k);
 
-    Repaint;
+    repaint;
     GUI^.anyChangeCallback();
   end;
 
@@ -1137,7 +1225,7 @@ PROCEDURE T_circuitBoard.performRedo;
     dispose(GUI^.redoList[k],destroy);
     setLength(GUI^.redoList,k);
 
-    Repaint;
+    repaint;
     GUI^.anyChangeCallback();
   end;
 
@@ -1232,7 +1320,7 @@ PROCEDURE T_circuitBoard.WireImageMouseUp(Sender: TObject;
         marked:=length(visual)>0;
         for p in visual do marked:=marked and (p[0]>=selStart[0]) and (p[0]<=selEnd[0]) and (p[1]>=selStart[1]) and (p[1]<=selEnd[1]);
       end;
-      Repaint;
+      repaint;
     end;
   end;
 

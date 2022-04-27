@@ -17,6 +17,7 @@ TYPE
     ButtonAddGatedClock: TButton;
     ButtonAddConstantTrue: TButton;
     ButtonAddConstantFalse: TButton;
+    peekLabel0: TLabel;
     MenuItem2: TMenuItem;
     miToggleAllowDiagonalWires: TMenuItem;
     miToggleAllowShortcuts: TMenuItem;
@@ -32,6 +33,25 @@ TYPE
     miCopy: TMenuItem;
     miAnalyze: TMenuItem;
     miAnalyzeGate: TMenuItem;
+    peekLabel1: TLabel;
+    peekLabel2: TLabel;
+    peekLabel3: TLabel;
+    peekLabel4: TLabel;
+    peekLabel5: TLabel;
+    peekLabel6: TLabel;
+    peekLabel7: TLabel;
+    peekLabel8: TLabel;
+    peekLabel9: TLabel;
+    peekPanel0: TPanel;
+    peekPanel1: TPanel;
+    peekPanel2: TPanel;
+    peekPanel3: TPanel;
+    peekPanel4: TPanel;
+    peekPanel5: TPanel;
+    peekPanel6: TPanel;
+    peekPanel7: TPanel;
+    peekPanel8: TPanel;
+    peekPanel9: TPanel;
     speedLabel: TLabel;
     MenuItem4: TMenuItem;
     miAddToPalette: TMenuItem;
@@ -159,6 +179,16 @@ FUNCTION workspaceFilename:string;
 PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
   begin
     uiAdapter.create(zoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
+    uiAdapter.addPeekPanel(peekPanel0,peekLabel0);
+    uiAdapter.addPeekPanel(peekPanel1,peekLabel1);
+    uiAdapter.addPeekPanel(peekPanel2,peekLabel2);
+    uiAdapter.addPeekPanel(peekPanel3,peekLabel3);
+    uiAdapter.addPeekPanel(peekPanel4,peekLabel4);
+    uiAdapter.addPeekPanel(peekPanel5,peekLabel5);
+    uiAdapter.addPeekPanel(peekPanel6,peekLabel6);
+    uiAdapter.addPeekPanel(peekPanel7,peekLabel7);
+    uiAdapter.addPeekPanel(peekPanel8,peekLabel8);
+    uiAdapter.addPeekPanel(peekPanel9,peekLabel9);
 
     workspace.create(miSetCategoryRoot,PaletteTreeView);
     workspace.loadFromFile(workspaceFilename);
@@ -250,7 +280,7 @@ PROCEDURE TDigitaltrainerMainForm.captionEditEditingDone(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
   begin
-    workspace.getCurrentBoard^.Repaint;
+    uiAdapter.repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAddNewCategoryClick(Sender: TObject);
@@ -277,7 +307,7 @@ PROCEDURE TDigitaltrainerMainForm.miAddToDraftsClick(Sender: TObject);
   begin
     workspace.addCurrentBoardToDrafts();
     updateSidebar;
-    workspace.getCurrentBoard^.Repaint;
+    uiAdapter.repaint;
     workspace.saveToFile('backup_'+FormatDateTime('yyyymmdd_hhnnss',now)+'.workspace');
   end;
 
@@ -285,7 +315,7 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
   begin
     workspace.addCurrentBoardToPalette;
     updateSidebar;
-    workspace.getCurrentBoard^.Repaint;
+    uiAdapter.repaint;
     workspace.saveToFile('backup_'+FormatDateTime('yyyymmdd_hhnnss',now)+'.workspace');
   end;
 
@@ -346,6 +376,7 @@ PROCEDURE TDigitaltrainerMainForm.miGatePropertiesClick(Sender: TObject);
     if visualGateForContextPopup=nil then exit;
     if gatePropertyDialog.showForGate(visualGateForContextPopup^.getBehavior,workspace.getCurrentBoard) then begin
       visualGateForContextPopup^.forcedFullRepaint;
+      uiAdapter.gateDeleted(visualGateForContextPopup);
       workspace.getCurrentBoard^.deleteInvalidWires;
     end;
   end;
@@ -359,8 +390,9 @@ PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
         workspace.destroy;
         workspace.create(miSetCategoryRoot,PaletteTreeView);
         workspace.loadFromFile(OpenDialog1.fileName);
+        //TODO: Detach first?
         workspace.getCurrentBoard^.attachGUI(@uiAdapter);
-        workspace.getCurrentBoard^.Repaint;
+        uiAdapter.repaint;
         updateSidebar;
         restartTimerCallback;
       end;
@@ -392,14 +424,16 @@ PROCEDURE TDigitaltrainerMainForm.miRedoClick(Sender: TObject);
     workspace.getCurrentBoard^.performRedo;
     updateSidebar;
     EndFormUpdate;
-    workspace.getCurrentBoard^.Repaint;
+    uiAdapter.hideAllPeekPanels;
+    uiAdapter.repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miRewireClick(Sender: TObject);
   begin
     workspace.getCurrentBoard^.rewire(true);
     BeginFormUpdate;
-    workspace.getCurrentBoard^.Repaint;
+    uiAdapter.hideAllPeekPanels;
+    uiAdapter.repaint;
     EndFormUpdate;
   end;
 
@@ -418,7 +452,7 @@ PROCEDURE TDigitaltrainerMainForm.miToggleAllowDiagonalWiresClick(Sender: TObjec
     miToggleAllowDiagonalWires.checked:=not(miToggleAllowDiagonalWires.checked);
     wiringUtil.allowDiagonals         :=    miToggleAllowDiagonalWires.checked;
     workspace.getCurrentBoard^.rewire(true);
-    workspace.getCurrentBoard^.Repaint;
+    uiAdapter.repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miToggleAllowShortcutsClick(Sender: TObject);
@@ -426,7 +460,7 @@ PROCEDURE TDigitaltrainerMainForm.miToggleAllowShortcutsClick(Sender: TObject);
     miToggleAllowShortcuts.checked:=not(miToggleAllowShortcuts.checked);
     wiringUtil.enableShortcuts    :=    miToggleAllowShortcuts.checked;
     workspace.getCurrentBoard^.rewire(true);
-    workspace.getCurrentBoard^.Repaint;
+    uiAdapter.repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
@@ -435,7 +469,7 @@ PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
     workspace.getCurrentBoard^.performUndo;
     updateSidebar;
     EndFormUpdate;
-    workspace.getCurrentBoard^.Repaint;
+    uiAdapter.repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.resetButtonClick(Sender: TObject);
@@ -501,11 +535,11 @@ PROCEDURE TDigitaltrainerMainForm.SimTimerTimer(Sender: TObject);
           speedLabel.caption:=labelCaption;
         end;
       end;
-
     end else begin
       SimTimer.enabled:=false;
       speedLabel.caption:=SPEED_SETTING[speedTrackBar.position].labelCaption+' (pausiert)';
-    end
+    end;
+    uiAdapter.simStepDone;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.restartTimerCallback;
@@ -536,7 +570,7 @@ PROCEDURE TDigitaltrainerMainForm.ZoomTrackBarChange(Sender: TObject);
   VAR r:longint;
   begin
     BeginFormUpdate;
-    workspace.getCurrentBoard^.setZoom(zoomTrackBar.position);
+    uiAdapter.setZoom(zoomTrackBar.position);
     r:=BOARD_MAX_SIZE_IN_GRID_ENTRIES*zoomTrackBar.position;
     if r<=ScrollBox1.height then begin
       ScrollBox1.VertScrollBar.visible:=false;

@@ -446,7 +446,7 @@ PROCEDURE T_workspace.editPaletteEntry(CONST index:longint; CONST resetPaletteIn
     currentBoard^.attachGUI(previous^.detachGUI);
     currentBoard^.rewire;
     dispose(previous,destroy);
-    currentBoard^.Repaint;
+    currentBoard^.repaint;
     rebuildTree;
   end;
 
@@ -462,7 +462,7 @@ PROCEDURE T_workspace.editDraftEntry  (CONST index:longint);
     dispose(previous,destroy);
     for j:=index to length(draftEntries)-2 do draftEntries[j]:=draftEntries[j+1];
     setLength(draftEntries,length(draftEntries)-1);
-    currentBoard^.Repaint;
+    currentBoard^.repaint;
     rebuildTree;
   end;
 

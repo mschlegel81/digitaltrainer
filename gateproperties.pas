@@ -130,12 +130,18 @@ PROCEDURE T_gatePropertyValues.applyValue(CONST prop: T_gatePropertyEnum; CONST 
 
       gpe_inputWidth:
         case gate^.gateType of
-          gt_output: P_outputGate(gate)^.width:=value.n;
+          gt_output: begin
+            P_outputGate(gate)^.width:=value.n;
+            P_outputGate(gate)^.reset;
+          end;
           gt_adapter: P_adapter(gate)^.setIoWidth(value.n,gate^.outputWidth(0));
         end;
       gpe_outputWidth:
         case gate^.gateType of
-          gt_input: P_inputGate(gate)^.width:=value.n;
+          gt_input: begin
+            P_inputGate(gate)^.width:=value.n;
+            P_inputGate(gate)^.reset;
+          end;
           gt_adapter: P_adapter(gate)^.setIoWidth(gate^.inputWidth(0),value.n);
         end;
       gpe_inputCount :
