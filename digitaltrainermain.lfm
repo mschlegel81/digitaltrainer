@@ -438,7 +438,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         Frequency = 2
         Max = 35
         OnChange = SpeedTrackBarChange
-        Position = 0
+        Position = 1
         Align = alClient
         ParentFont = False
         TabOrder = 0

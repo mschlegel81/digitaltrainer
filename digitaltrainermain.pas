@@ -169,6 +169,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
 
     miToggleAllowDiagonalWires.checked:=wiringUtil.allowDiagonals;
     miToggleAllowShortcuts    .checked:=wiringUtil.enableShortcuts;
+    speedTrackBarChange(Sender);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);

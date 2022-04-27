@@ -258,8 +258,11 @@ CONSTRUCTOR T_priorityQueue.create;
   end;
 
 DESTRUCTOR T_priorityQueue.destroy;
+  VAR i:longint;
   begin
+    for i:=0 to length(sortedEntries)-1 do setLength(sortedEntries[i].path,0);
     setLength(sortedEntries,0);
+    for i:=0 to length(unsortedEntries)-1 do setLength(unsortedEntries[i].path,0);
     setLength(unsortedEntries,0);
   end;
 

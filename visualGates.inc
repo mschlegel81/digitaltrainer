@@ -262,7 +262,7 @@ PROCEDURE T_visualGateForCustom.ensureGuiElements;
 
 PROCEDURE T_visualGateForOutput.ensureGuiElements;
   begin
-    if (length(shapes)=0) and (board<>nil) and (board^.GUI^.container<>nil) then begin
+    if (length(shapes)=0) and (board<>nil) and (board^.GUI<>nil) then begin
       inherited;
       setLength(labels,2);
       labels[1]:=TLabel.create(board^.GUI^.container);
