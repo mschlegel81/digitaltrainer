@@ -18,6 +18,7 @@ T_customGate=object(T_abstractGate)
                       width:byte;
                       comesFrom:T_gateConnector;
                     end;
+  lastSimulationStepWasActive:boolean;
 
   CONSTRUCTOR createFromBoard(CONST origin:P_circuitBoard);
   CONSTRUCTOR createAsClone(CONST origin:P_customGate; CONST includeState:boolean);
@@ -174,6 +175,7 @@ CONSTRUCTOR T_customGate.createFromBoard(CONST origin: P_circuitBoard);
       inc(j);
     end;
     setLength(gates,j);
+    lastSimulationStepWasActive:=true;
   end;
 
 CONSTRUCTOR T_customGate.createAsClone(CONST origin:P_customGate; CONST includeState:boolean);
@@ -219,7 +221,7 @@ CONSTRUCTOR T_customGate.createAsClone(CONST origin:P_customGate; CONST includeS
       width    :=origin^.outputConnections[i].width;
       comesFrom:=myConn(origin^.outputConnections[i].comesFrom);
     end;
-
+    lastSimulationStepWasActive:=true;
     if not(includeState) then reset;
   end;
 
@@ -232,6 +234,7 @@ PROCEDURE T_customGate.reset;
       inputConnections[i].value.width:=inputConnections[i].width;
       for j:=0 to WIRE_MAX_WIDTH-1 do inputConnections[i].value.bit[j]:=tsv_undetermined;
     end;
+    lastSimulationStepWasActive:=true;
   end;
 
 DESTRUCTOR T_customGate.destroy;
@@ -286,12 +289,15 @@ FUNCTION T_customGate.simulateStep:boolean;
       if isFullyDefined(v)
       then for tgt in inputConnections[i].goesTo do result:=tgt.setInputValue(v) or result;
     end;
-    for gate in gates do result:=gate^.simulateStep or result;
-    for i:=0 to length(connections)-1 do with connections[i] do begin
-      v:=source.getOutputValue;
-      if isFullyDefined(v)
-      then result:=sink.setInputValue(v) or result;
+    if result or lastSimulationStepWasActive then begin
+      for gate in gates do result:=gate^.simulateStep or result;
+      for i:=0 to length(connections)-1 do with connections[i] do begin
+        v:=source.getOutputValue;
+        if isFullyDefined(v)
+        then result:=sink.setInputValue(v) or result;
+      end;
     end;
+    lastSimulationStepWasActive:=result;
   end;
 
 FUNCTION T_customGate.getOutput(CONST index: longint): T_wireValue;
