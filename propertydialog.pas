@@ -43,7 +43,14 @@ PROCEDURE TgatePropertyDialog.ValueListEditorValidateEntry(Sender: TObject; aCol
 
 FUNCTION TgatePropertyDialog.showForGate(CONST gate: P_abstractGate; CONST inBoard:P_circuitBoard):boolean;
   VAR i:longint;
+    cp: TPoint;
   begin
+    cp:=mouse.CursorPos;
+    cp.x-=width  shr 1; if cp.x<0 then cp.x:=0;
+    cp.y-=height shr 1; if cp.y<0 then cp.y:=0;
+    Left:=cp.X;
+    top :=cp.y;
+
     propertyValues.create(gate);
     ValueListEditor.clear;
     ValueListEditor.rowCount:=propertyValues.count;
@@ -51,6 +58,7 @@ FUNCTION TgatePropertyDialog.showForGate(CONST gate: P_abstractGate; CONST inBoa
       ValueListEditor.Cells[0,i+1]:=propertyValues.key(i);
       ValueListEditor.Cells[1,i+1]:=propertyValues.value(i);
     end;
+    ValueListEditor.AutoSizeColumn(0);
     if ShowModal=mrOk then begin
       inBoard^.saveStateToUndoList;
       propertyValues.applyValues;

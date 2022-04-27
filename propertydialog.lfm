@@ -1,14 +1,12 @@
 object gatePropertyDialog: TgatePropertyDialog
   Left = 435
-  Height = 300
+  Height = 240
   Top = 171
-  Width = 400
+  Width = 320
   BorderStyle = bsDialog
   Caption = 'Eigenschaften'
-  ClientHeight = 300
-  ClientWidth = 400
-  DesignTimePPI = 120
-  Position = poOwnerFormCenter
+  ClientHeight = 240
+  ClientWidth = 320
   LCLVersion = '2.0.12.0'
   object ValueListEditor: TValueListEditor
     AnchorSideLeft.Control = Owner
@@ -17,11 +15,12 @@ object gatePropertyDialog: TgatePropertyDialog
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = okButton
     Left = 0
-    Height = 269
+    Height = 209
     Top = 0
-    Width = 400
+    Width = 320
     Anchors = [akTop, akLeft, akRight, akBottom]
     FixedCols = 0
+    ParentFont = False
     RowCount = 2
     TabOrder = 0
     OnValidateEntry = ValueListEditorValidateEntry
@@ -30,8 +29,8 @@ object gatePropertyDialog: TgatePropertyDialog
       'Wert'
     )
     ColWidths = (
-      80
-      316
+      64
+      252
     )
   end
   object okButton: TButton
@@ -39,14 +38,15 @@ object gatePropertyDialog: TgatePropertyDialog
     AnchorSideRight.Control = cancelButton
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 212
+    Left = 151
     Height = 31
-    Top = 269
+    Top = 209
     Width = 94
     Align = alCustom
     Anchors = [akRight, akBottom]
     Caption = 'OK'
     ModalResult = 1
+    ParentFont = False
     TabOrder = 1
   end
   object cancelButton: TButton
@@ -54,14 +54,15 @@ object gatePropertyDialog: TgatePropertyDialog
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 306
-    Height = 31
-    Top = 269
-    Width = 94
+    Left = 245
+    Height = 25
+    Top = 215
+    Width = 75
     Anchors = [akRight, akBottom]
     Cancel = True
     Caption = 'Abbruch'
     ModalResult = 2
+    ParentFont = False
     TabOrder = 2
   end
 end

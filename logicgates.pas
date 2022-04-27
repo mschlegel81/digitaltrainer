@@ -42,8 +42,6 @@ CONST
     {gt_false}      'constant false',
     {gt_gatedClock} 'gated clock');
 
-
-
 TYPE
   T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
 

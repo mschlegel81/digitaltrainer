@@ -704,14 +704,14 @@ PROCEDURE TanalysisForm.setupTable;
     i:=0;
     for gt in T_gateType do if gateCount[gt]>0 then begin;
       inc(i,gateCount[gt]);
-      if SizesStringGrid.RowCount<=rowIndex then SizesStringGrid.RowCount:=rowIndex+1;
+      if SizesStringGrid.rowCount<=rowIndex then SizesStringGrid.rowCount:=rowIndex+1;
       SizesStringGrid.Cells[0,rowIndex]:=C_gateTypeName[gt];
-      SizesStringGrid.Cells[1,rowIndex]:=IntToStr(gateCount[gt]);
+      SizesStringGrid.Cells[1,rowIndex]:=intToStr(gateCount[gt]);
       inc(rowIndex);
     end;
-    SizesStringGrid.RowCount:=rowIndex+1;
+    SizesStringGrid.rowCount:=rowIndex+1;
     SizesStringGrid.Cells[0,rowIndex]:='';
-    SizesStringGrid.Cells[1,rowIndex]:=IntToStr(i);
+    SizesStringGrid.Cells[1,rowIndex]:=intToStr(i);
     SizesStringGrid.AutoSizeColumns;
   end;
 
