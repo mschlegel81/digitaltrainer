@@ -387,10 +387,10 @@ PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
     if OpenDialog1.execute then begin
       temp.create(miSetCategoryRoot,PaletteTreeView);
       if temp.loadFromFile(OpenDialog1.fileName) then begin
+        workspace.getCurrentBoard^.detachGUI;
         workspace.destroy;
         workspace.create(miSetCategoryRoot,PaletteTreeView);
         workspace.loadFromFile(OpenDialog1.fileName);
-        //TODO: Detach first?
         workspace.getCurrentBoard^.attachGUI(@uiAdapter);
         uiAdapter.repaint;
         updateSidebar;
