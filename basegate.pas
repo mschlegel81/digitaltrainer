@@ -846,9 +846,13 @@ PROCEDURE T_circuitBoard.drawAllWires;
             wireWidth:=max(1,round(GUI.zoom*0.15));
             gapWidth :=max(1,round(GUI.zoom*0.45));
           end;
-          else begin
+          8..15: begin
             wireWidth:=max(1,round(GUI.zoom*0.25));
             gapWidth :=max(1,round(GUI.zoom*0.55));
+          end;
+          else begin
+            wireWidth:=max(1,round(GUI.zoom*0.35));
+            gapWidth :=max(1,round(GUI.zoom*0.65));
           end;
         end;
         Pen.color:=BackgroundColor; Pen.width:=gapWidth;
