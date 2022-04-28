@@ -199,6 +199,7 @@ PROCEDURE T_workspace.addSelectedCustomGate;
 
 PROCEDURE T_workspace.clearCurrentBoard;
   begin
+    if currentBoard^.GUI<>nil then currentBoard^.GUI^.hideAllPeekPanels;
     currentBoard^.clear;
     rebuildTree;
   end;
@@ -329,7 +330,7 @@ PROCEDURE T_workspace.addCurrentBoardToPalette;
       i:=currentBoard^.paletteIndex;
       paletteEntries[i]^.clear;
       paletteEntries[i]^.pasteFrom(currentBoard,true);
-      currentBoard^.clear;
+      clearCurrentBoard;
     end else begin
       newPaletteEntry:=currentBoard;
       currentBoard   :=nil;
@@ -343,8 +344,8 @@ PROCEDURE T_workspace.addCurrentBoardToPalette;
       newPaletteEntry^.paletteIndex:=i;
 
       addBoardToTree(newPaletteEntry);
+      rebuildTree;
     end;
-    rebuildTree;
   end;
 
 PROCEDURE T_workspace.addCurrentBoardToDrafts(CONST indexToOverwrite:longint=maxLongint);
