@@ -268,6 +268,7 @@ PROCEDURE T_visualGateForOutput.ensureGuiElements;
       inherited;
       setLength(labels,2);
       labels[1]:=TLabel.create(board^.GUI^.container);
+      labels[1].Font.size:=10;
       labels[1].parent:=board^.GUI^.container;
       labels[1].caption:='bin: ?'+LineEnding+
                          'dec: ?'+LineEnding+

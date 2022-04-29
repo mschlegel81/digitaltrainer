@@ -548,7 +548,7 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
     for i:=0 to length(gates)-1 do begin
       if gates[i]^.marked
       then begin
-        gui^.gateDeleted(gates[i]);
+        GUI^.gateDeleted(gates[i]);
         ioDeleted:=ioDeleted or (gates[i]^.behavior^.gateType in [gt_input,gt_output]);
         removeAssociatedWires(gates[i]);
         dispose(gates[i],destroy)

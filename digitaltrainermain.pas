@@ -200,6 +200,9 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     miToggleAllowDiagonalWires.checked:=wiringUtil.allowDiagonals;
     miToggleAllowShortcuts    .checked:=wiringUtil.enableShortcuts;
     speedTrackBarChange(Sender);
+
+    DoAllAutoSize;
+    uiAdapter.repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
@@ -301,6 +304,8 @@ PROCEDURE TDigitaltrainerMainForm.miEditPaletteEntryClick(Sender: TObject);
     updateSidebar;
     restartTimerCallback;
     EndFormUpdate;
+    DoAllAutoSize;
+    uiAdapter.repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAddToDraftsClick(Sender: TObject);
@@ -369,6 +374,8 @@ PROCEDURE TDigitaltrainerMainForm.miEditCopyOfPaletteEntryClick(Sender: TObject)
     updateSidebar;
     restartTimerCallback;
     EndFormUpdate;
+    DoAllAutoSize;
+    uiAdapter.repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miGatePropertiesClick(Sender: TObject);
@@ -411,6 +418,8 @@ PROCEDURE TDigitaltrainerMainForm.miPasteClick(Sender: TObject);
     BeginFormUpdate;
     workspace.getCurrentBoard^.pasteFromClipboard;
     EndFormUpdate;
+    DoAllAutoSize;
+    uiAdapter.repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miQuitClick(Sender: TObject);
@@ -435,6 +444,8 @@ PROCEDURE TDigitaltrainerMainForm.miRewireClick(Sender: TObject);
     uiAdapter.hideAllPeekPanels;
     uiAdapter.repaint;
     EndFormUpdate;
+    DoAllAutoSize;
+    uiAdapter.repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miSaveClick(Sender: TObject);
@@ -469,6 +480,7 @@ PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
     workspace.getCurrentBoard^.performUndo;
     updateSidebar;
     EndFormUpdate;
+    DoAllAutoSize;
     uiAdapter.repaint;
   end;
 
@@ -588,8 +600,9 @@ PROCEDURE TDigitaltrainerMainForm.ZoomTrackBarChange(Sender: TObject);
       ScrollBox1.HorzScrollBar.visible:=true;
       ScrollBox1.HorzScrollBar.range:=r;
     end;
-
     EndFormUpdate;
+    DoAllAutoSize;
+    uiAdapter.repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.updateSidebar;
