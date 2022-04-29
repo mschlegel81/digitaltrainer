@@ -349,4 +349,21 @@ object analysisForm: TanalysisForm
     ParentFont = False
     TabOrder = 5
   end
+  object cancelSimButton: TButton
+    AnchorSideLeft.Control = ProgressBar1
+    AnchorSideTop.Control = ProgressBar1
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = ProgressBar1
+    AnchorSideRight.Side = asrBottom
+    Left = 525
+    Height = 25
+    Top = 45
+    Width = 172
+    Align = alCustom
+    Anchors = [akTop, akLeft, akRight]
+    Caption = 'Abbruch'
+    Enabled = False
+    OnClick = cancelSimButtonClick
+    TabOrder = 6
+  end
 end

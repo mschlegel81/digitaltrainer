@@ -67,6 +67,7 @@ TYPE
   { TanalysisForm }
 
   TanalysisForm = class(TForm)
+    cancelSimButton: TButton;
     GroupBox3: TGroupBox;
     GroupBox4: TGroupBox;
     Image1: TImage;
@@ -93,6 +94,7 @@ TYPE
     PageControl1: TPageControl;
     StringGrid: TStringGrid;
     TabSheet1: TTabSheet;
+    procedure cancelSimButtonClick(Sender: TObject);
     PROCEDURE FormResize(Sender: TObject);
     PROCEDURE rbBinaryChange(Sender: TObject);
     PROCEDURE TimeScrollBarChange(Sender: TObject);
@@ -102,6 +104,7 @@ TYPE
     clonedGate:P_abstractGate;
     graphMetaData:T_graphMetaData;
     simulationOutputs:array of T_simulationOutput;
+    cancelled:boolean;
     PROCEDURE setupTable;
     PROCEDURE repaintTable;
     PROCEDURE repaintGraph;
@@ -112,6 +115,7 @@ TYPE
 
 VAR
   analysisForm: TanalysisForm;
+CONST MAX_TOTAL_SIM_STEPS=1000000;
 
 IMPLEMENTATION
 FUNCTION screenXToTimestep(CONST zoom,timestepOffset,x:longint):longint;
@@ -456,9 +460,9 @@ PROCEDURE T_simulationOutput.updateTable(CONST scaleType: T_scaleType; CONST row
       inc(col);
     end;
 
-    if stepsTotal<=1000
+    if stepsTotal<=MAX_TOTAL_SIM_STEPS
     then table.Cells[col,rowIndex]:=intToStr(stepsTotal)
-    else table.Cells[col,rowIndex]:='>1000';
+    else table.Cells[col,rowIndex]:='>'+IntToStr(MAX_TOTAL_SIM_STEPS);
 
     inc(col);
     for i:=0 to length(outputHistory)-1 do begin
@@ -500,21 +504,13 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       inputsGenerated:longint=0;
       expectedTotalInputs:longint=0;
       generationDeadline:double;
+      simulationStartStep:longint=0;
   FUNCTION nextInput:boolean;
     VAR k:longint=0;
         progress:longint=0;
     begin
-      //progress by time:
-      // 100*(now-start)/(generationDeadline-start) ; start=generationDeadline-ONE_MINUTE;
-      //=100*(now-generationDeadline+ONE_MINUTE)/ONE_MINUTE;
-      progress:=round(ProgressBar1.max*(now-generationDeadline+ONE_MINUTE)/ONE_MINUTE);
-      k:=round(inputsGenerated/expectedTotalInputs*ProgressBar1.max);
-      if k>progress then progress:=k;
-      if progress<0 then progress:=0 else if progress>ProgressBar1.max then progress:=ProgressBar1.max;
-      ProgressBar1.position:=progress;
-
       inc(inputsGenerated);
-      if (inputsGenerated>1000) or (length(input)=0) or (now>generationDeadline) then exit(false);
+      if (inputsGenerated>expectedTotalInputs) or (simulationStartStep>MAX_TOTAL_SIM_STEPS) or (length(input)=0) or (now>generationDeadline) then exit(false);
 
       k:=0;
       if rbSimOrdered.checked then begin
@@ -535,8 +531,29 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       end;
     end;
 
+  VAR startTicks: qword;
+  PROCEDURE updateProgress;
+    VAR progress, tmpProgress: Int64;
+    begin
+
+      StringGrid.EndUpdate();
+      //progress by time:
+      // 100*(now-start)/(generationDeadline-start) ; start=generationDeadline-ONE_MINUTE;
+      //=100*(now-generationDeadline+ONE_MINUTE)/ONE_MINUTE;
+      progress:=round(ProgressBar1.max*(now-generationDeadline+ONE_MINUTE)/ONE_MINUTE);
+      tmpProgress:=round(inputsGenerated/expectedTotalInputs*ProgressBar1.max);
+      if tmpProgress>progress then progress:=tmpProgress;
+      tmpProgress:=round(simulationStartStep/MAX_TOTAL_SIM_STEPS*ProgressBar1.max);
+      if tmpProgress>progress then progress:=tmpProgress;
+      if progress<0 then progress:=0 else if progress>ProgressBar1.max then progress:=ProgressBar1.max;
+      ProgressBar1.position:=progress;
+
+      Application.ProcessMessages;
+      StringGrid.BeginUpdate;
+      startTicks:=GetTickCount64;
+    end;
+
   VAR i,stepCount:longint;
-      simulationStartStep:longint=0;
       simIndex:longint=0;
       minResponseTime:longint=maxLongint;
       maxResponseTime:longint=0;
@@ -545,9 +562,11 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
         v:T_wireValue;
         firstIndex:longint;
       end;
-      startTicks: qword;
       scaleType:T_scaleType;
   begin
+    cancelled:=false;
+    cancelSimButton.Enabled:=true;
+
     if rbBinary.checked then scaleType:=st_binary
     else if rbPositive.checked then scaleType:=st_unsigned
     else scaleType:=st_signed;
@@ -566,8 +585,9 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       c+=clonedGate^.inputWidth(i);
     end;
     setLength(input,c);
-    if c<10 then expectedTotalInputs:=1 shl c
-            else expectedTotalInputs:=1000;
+    if (c<10) and (rbSimOrdered.checked)
+    then expectedTotalInputs:=1 shl c
+    else expectedTotalInputs:=1000;
 
     for i:=0 to length(input)-1 do input[i]:=false;
     clonedGate^.reset;
@@ -586,10 +606,12 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
         simulationOutputs[simIndex].addInput(wIn[c].v);
       end;
       stepCount:=0;
-      while (stepCount<=1000) and clonedGate^.simulateStep do begin
+      while (stepCount+simulationStartStep<=MAX_TOTAL_SIM_STEPS) and clonedGate^.simulateStep do begin
         inc(stepCount);
         for i:=0 to clonedGate^.numberOfOutputs-1 do
         simulationOutputs[simIndex].addOutput(stepCount+simulationStartStep,i,clonedGate^.getOutput(i));
+
+        if GetTickCount64>startTicks+200 then updateProgress;
       end;
       inc(stepCount);
       for i:=0 to clonedGate^.numberOfOutputs-1 do
@@ -608,15 +630,10 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       simulationStartStep:=simulationOutputs[simIndex].endAtStep+1;
       simulationOutputs[simIndex].updateTable(scaleType,simIndex+1,StringGrid);
 
-      if GetTickCount64>startTicks+200 then begin
-        StringGrid.EndUpdate();
-        Application.ProcessMessages;
-        StringGrid.BeginUpdate;
-        startTicks:=GetTickCount64;
-      end;
 
       inc(simIndex);
-    until not(nextInput);
+    until not(nextInput) or cancelled;
+    cancelSimButton.Enabled:=false;
     StringGrid.EndUpdate();
     ProgressBar1.position:=0;
 
@@ -633,6 +650,7 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       TimeScrollBar.enabled:=true;
     end;
     repaintGraph;
+    repaintTable;
   end;
 
 PROCEDURE TanalysisForm.ZoomTrackBarChange(Sender: TObject);
@@ -663,6 +681,11 @@ PROCEDURE TanalysisForm.rbBinaryChange(Sender: TObject);
 PROCEDURE TanalysisForm.FormResize(Sender: TObject);
   begin
     repaintGraph;
+  end;
+
+procedure TanalysisForm.cancelSimButtonClick(Sender: TObject);
+  begin
+    cancelled:=true;
   end;
 
 PROCEDURE TanalysisForm.TimeScrollBarChange(Sender: TObject);
@@ -723,6 +746,7 @@ PROCEDURE TanalysisForm.repaintTable;
     else if rbPositive.checked then scaleType:=st_unsigned
     else scaleType:=st_signed;
     for simIndex:=0 to length(simulationOutputs)-1 do simulationOutputs[simIndex].updateTable(scaleType,simIndex+1,StringGrid);
+    StringGrid.AutoSizeColumns;
   end;
 
 PROCEDURE TanalysisForm.repaintGraph;

@@ -1,7 +1,7 @@
 UNIT gateProperties;
 {$mode objfpc}{$H+}
 INTERFACE
-USES serializationUtil,logicGates;
+USES logicGates;
 TYPE
   T_gatePropertyType=(pt_number,pt_string,pt_wireWidth,pt_connectionCount);
   T_gatePropertyEnum=(gpe_caption,
