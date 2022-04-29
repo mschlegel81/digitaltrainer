@@ -490,7 +490,7 @@ FUNCTION T_gatedClock.gateType: T_gateType;
 
 FUNCTION T_gatedClock.simulateStep: boolean;
   begin
-    if enable=tsv_true
+    if enable<>tsv_false
     then result:=inherited
     else result:=false;
   end;
@@ -674,7 +674,7 @@ CONSTRUCTOR T_clock.create;
 
 PROCEDURE T_clock.reset;
   begin
-    tick:=true;
+    tick:=false;
     counter:=0;
   end;
 
