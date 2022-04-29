@@ -317,8 +317,31 @@ FUNCTION T_customGate.getInput(CONST index: longint): T_wireValue;
   end;
 
 FUNCTION T_customGate.clone(CONST includeState:boolean): P_abstractGate;
+  VAR gate:P_visualGate;
+      rebuildFromBoard:boolean;
+      countedInputs:longint=0;
+      countedOutputs:longint=0;
   begin
-    new(P_customGate(result),createAsClone(@self,includeState));
+    //rebuild on name change
+    rebuildFromBoard:=caption<>prototype^.name;
+    //rebuild if any connection was removed or its witdh changed
+    if not(rebuildFromBoard) then for gate in prototype^.gates do case gate^.behavior^.gateType of
+      gt_input : begin
+        rebuildFromBoard:=rebuildFromBoard or (countedInputs>=numberOfInputs) or
+        (inputConnections[countedInputs].width<>gate^.behavior^.outputWidth(0));
+        inc(countedInputs);
+      end;
+      gt_output: begin
+        rebuildFromBoard:=rebuildFromBoard or (countedOutputs>=numberOfOutputs) or
+        (outputConnections[countedOutputs].width<>gate^.behavior^.inputWidth(0));
+        inc(countedOutputs);
+      end;
+    end;
+    //rebuild if any connection was added
+    rebuildFromBoard:=rebuildFromBoard or (countedOutputs<>numberOfOutputs) or (countedInputs<>numberOfInputs);
+    if rebuildFromBoard
+    then new(P_customGate(result),createFromBoard(prototype))
+    else new(P_customGate(result),createAsClone(@self,includeState));
   end;
 
 PROCEDURE T_customGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
