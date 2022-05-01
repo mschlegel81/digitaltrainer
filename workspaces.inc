@@ -335,6 +335,8 @@ PROCEDURE T_workspace.addCurrentBoardToPalette;
       addBoardToTree(newPaletteEntry);
       rebuildTree;
     end;
+    for i:=0 to length(paletteEntries)-1 do paletteEntries[i]^.deleteInvalidWires;
+    for i:=0 to length(draftEntries  )-1 do draftEntries  [i]^.deleteInvalidWires;
   end;
 
 PROCEDURE T_workspace.addCurrentBoardToDrafts(CONST indexToOverwrite:longint=maxLongint);
@@ -429,6 +431,7 @@ PROCEDURE T_workspace.editPaletteEntry(CONST index:longint; CONST resetPaletteIn
     if (index<0) or (index>length(paletteEntries)) then exit;
     previous:=currentBoard;
     currentBoard:=paletteEntries[index]^.clone(false);
+    currentBoard^.deleteInvalidWires;
     if resetPaletteIndex then begin
       currentBoard^.paletteIndex :=-1;
       currentBoard^.categoryIndex:=-1;
@@ -446,12 +449,11 @@ PROCEDURE T_workspace.editDraftEntry  (CONST index:longint);
   begin
     if (index<0) or (index>length(draftEntries)) then exit;
     previous:=currentBoard;
-    currentBoard:=draftEntries[index];
+    currentBoard:=draftEntries[index]^.clone(false);
+    currentBoard^.deleteInvalidWires;
     currentBoard^.attachGUI(previous^.detachGUI);
     currentBoard^.rewire;
     dispose(previous,destroy);
-    for j:=index to length(draftEntries)-2 do draftEntries[j]:=draftEntries[j+1];
-    setLength(draftEntries,length(draftEntries)-1);
     currentBoard^.repaint;
     rebuildTree;
   end;

@@ -264,12 +264,16 @@ FUNCTION T_customGate.numberOfOutputs: longint;
 
 FUNCTION T_customGate.inputWidth (CONST index:longint):byte;
   begin
-    result:=inputConnections[index].width;
+    if (index<0) or (index>=length(inputConnections))
+    then result:=0
+    else result:=inputConnections[index].width;
   end;
 
 FUNCTION T_customGate.outputWidth(CONST index:longint):byte;
   begin
-    result:=outputConnections[index].width;
+    if (index<0) or (index>=length(outputConnections))
+    then result:=0
+    else result:=outputConnections[index].width;
   end;
 
 FUNCTION T_customGate.gateType: T_gateType;
