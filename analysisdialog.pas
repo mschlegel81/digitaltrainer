@@ -94,7 +94,7 @@ TYPE
     PageControl1: TPageControl;
     StringGrid: TStringGrid;
     TabSheet1: TTabSheet;
-    procedure cancelSimButtonClick(Sender: TObject);
+    PROCEDURE cancelSimButtonClick(Sender: TObject);
     PROCEDURE FormResize(Sender: TObject);
     PROCEDURE rbBinaryChange(Sender: TObject);
     PROCEDURE TimeScrollBarChange(Sender: TObject);
@@ -462,7 +462,7 @@ PROCEDURE T_simulationOutput.updateTable(CONST scaleType: T_scaleType; CONST row
 
     if stepsTotal<=MAX_TOTAL_SIM_STEPS
     then table.Cells[col,rowIndex]:=intToStr(stepsTotal)
-    else table.Cells[col,rowIndex]:='>'+IntToStr(MAX_TOTAL_SIM_STEPS);
+    else table.Cells[col,rowIndex]:='>'+intToStr(MAX_TOTAL_SIM_STEPS);
 
     inc(col);
     for i:=0 to length(outputHistory)-1 do begin
@@ -533,7 +533,7 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
 
   VAR startTicks: qword;
   PROCEDURE updateProgress;
-    VAR progress, tmpProgress: Int64;
+    VAR progress, tmpProgress: int64;
     begin
 
       StringGrid.EndUpdate();
@@ -565,7 +565,7 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       scaleType:T_scaleType;
   begin
     cancelled:=false;
-    cancelSimButton.Enabled:=true;
+    cancelSimButton.enabled:=true;
 
     if rbBinary.checked then scaleType:=st_binary
     else if rbPositive.checked then scaleType:=st_unsigned
@@ -630,10 +630,9 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       simulationStartStep:=simulationOutputs[simIndex].endAtStep+1;
       simulationOutputs[simIndex].updateTable(scaleType,simIndex+1,StringGrid);
 
-
       inc(simIndex);
     until not(nextInput) or cancelled;
-    cancelSimButton.Enabled:=false;
+    cancelSimButton.enabled:=false;
     StringGrid.EndUpdate();
     ProgressBar1.position:=0;
 
@@ -683,7 +682,7 @@ PROCEDURE TanalysisForm.FormResize(Sender: TObject);
     repaintGraph;
   end;
 
-procedure TanalysisForm.cancelSimButtonClick(Sender: TObject);
+PROCEDURE TanalysisForm.cancelSimButtonClick(Sender: TObject);
   begin
     cancelled:=true;
   end;

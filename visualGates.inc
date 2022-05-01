@@ -40,7 +40,6 @@ T_visualGate=object
   public
     PROCEDURE repaint; virtual;
     PROPERTY getBehavior:P_abstractGate read behavior;
-    FUNCTION nextGateAfter:T_point;
     PROCEDURE forcedFullRepaint; virtual;
     FUNCTION getOuputDescription(CONST index:longint):string; virtual;
 end;
@@ -668,18 +667,6 @@ FUNCTION T_visualGate.isCompletelyInsideRect(CONST low, high: T_point): boolean;
           and (origin[0]+size[0]<=high[0])
           and (origin[1]+size[1]<=high[1]);
     end;
-
-FUNCTION T_visualGate.nextGateAfter: T_point;
-  begin
-    if origin[0]+size[0]+2<origin[1]+size[1]
-    then begin
-      result[0]:=origin[0]+size[0]+2;
-      result[1]:=origin[1];
-    end else begin
-      result[0]:=origin[0];
-      result[1]:=origin[1]+size[1];
-    end;
-  end;
 
 PROCEDURE T_visualGate.forcedFullRepaint;
   begin

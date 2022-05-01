@@ -152,8 +152,6 @@ PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType);
 
   VAR gateToAdd:P_abstractGate=nil;
       visual:P_visualGate;
-
-      p:T_point;
   begin
     gateToAdd:=newBaseGate(gateType);
     if gateToAdd<>nil then begin
@@ -162,12 +160,8 @@ PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType);
         gt_input:  P_inputGate (gateToAdd)^.ioIndex:=numberOf(gt_input);
         gt_output: P_outputGate(gateToAdd)^.ioIndex:=numberOf(gt_output);
       end;
-
-      if length(currentBoard^.gates)=0
-      then p:=pointOf(5,5)
-      else p:=currentBoard^.gates[length(currentBoard^.gates)-1]^.nextGateAfter;
-
-      visual:=currentBoard^.wrapGate(p,gateToAdd);
+      visual:=currentBoard^.wrapGate(ZERO_POINT,gateToAdd);
+      visual^.origin:=currentBoard^.GUI^.positionForNextGate(visual^.size);
       if not currentBoard^.positionNewGate(visual)
       then dispose(visual,destroy);
     end;
@@ -176,23 +170,18 @@ PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType);
 PROCEDURE T_workspace.addSelectedCustomGate;
   VAR node:TTreeNode;
       data:P_paletteTreeData;
-  VAR visual:P_visualGate;
+      visual:P_visualGate;
       gateToAdd:P_customGate;
-      p: T_point;
   begin
     node:=paletteView.Selected;
     if node=nil then exit;
     data:=P_paletteTreeData(node.data);
     if data^.board=nil then exit;
-
-    new(gateToAdd,createFromBoard(data^.board));
     currentBoard^.saveStateToUndoList;
 
-    if length(currentBoard^.gates)=0
-    then p:=pointOf(5,5)
-    else p:=currentBoard^.gates[length(currentBoard^.gates)-1]^.nextGateAfter;
-
-    visual:=currentBoard^.wrapGate(p,gateToAdd);
+    new(gateToAdd,createFromBoard(data^.board));
+    visual:=currentBoard^.wrapGate(ZERO_POINT,gateToAdd);
+    visual^.origin:=currentBoard^.GUI^.positionForNextGate(visual^.size);
     if not currentBoard^.positionNewGate(visual)
     then dispose(visual,destroy);
   end;

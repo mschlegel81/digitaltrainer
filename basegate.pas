@@ -2,7 +2,7 @@ UNIT baseGate;
 {$mode objfpc}
 INTERFACE
 USES ExtCtrls, Classes, Controls, StdCtrls, UITypes, wiringUtil,
-     serializationUtil, logicGates,Graphics,Menus,ComCtrls;
+     serializationUtil, logicGates,Graphics,Menus,ComCtrls,Forms;
 
 CONST defaultBoardCaption='unbenannt';
       TRI_STATE_NOT:array[T_triStateValue] of T_triStateValue=(tsv_true,tsv_false,tsv_false);
@@ -47,7 +47,7 @@ TYPE
   T_uiAdapter=object
     private
       zoom:longint;
-      container:TWinControl;
+      container:TScrollBox;
       wireImage:TImage;
       gateContextMenu:TPopupMenu;
       anyChangeCallback:F_simpleCallback;
@@ -76,7 +76,7 @@ TYPE
       PROCEDURE peekLabelClick(Sender: TObject);
 
     public
-      CONSTRUCTOR create(CONST zoom_:longint; CONST container_:TWinControl; CONST wireImage_:TImage; CONST gatePopup:TPopupMenu; CONST anyChangeCallback_:F_simpleCallback);
+      CONSTRUCTOR create(CONST zoom_:longint; CONST container_:TScrollBox; CONST wireImage_:TImage; CONST gatePopup:TPopupMenu; CONST anyChangeCallback_:F_simpleCallback);
       DESTRUCTOR destroy;
       PROCEDURE clearUndoLists;
       PROCEDURE newBoardAttached(CONST board:P_circuitBoard);
@@ -89,6 +89,7 @@ TYPE
       PROCEDURE hideAllPeekPanels;
       PROCEDURE repaint;
       PROCEDURE setZoom(CONST newZoom:longint);
+      FUNCTION positionForNextGate(CONST gateExtend:T_point):T_point;
   end;
 
   T_repositionOutput=(ro_positionUnchanged,ro_positionFound,ro_noPositionFound);
@@ -163,9 +164,7 @@ PROCEDURE T_uiAdapter.peekLabelClick(Sender: TObject);
     peekPanels[k].panel.visible:=false;
   end;
 
-CONSTRUCTOR T_uiAdapter.create(CONST zoom_: longint;
-  CONST container_: TWinControl; CONST wireImage_: TImage;
-  CONST gatePopup: TPopupMenu; CONST anyChangeCallback_: F_simpleCallback);
+CONSTRUCTOR T_uiAdapter.create(CONST zoom_: longint; CONST container_: TScrollBox; CONST wireImage_: TImage; CONST gatePopup: TPopupMenu; CONST anyChangeCallback_: F_simpleCallback);
   begin
     zoom:=zoom_;
     container:=container_;
@@ -277,6 +276,34 @@ PROCEDURE T_uiAdapter.setZoom(CONST newZoom: longint);
     repaint;
   end;
 
+FUNCTION T_uiAdapter.positionForNextGate(CONST gateExtend:T_point):T_point;
+  VAR srMin,
+      srMax:T_point;
+  begin
+    srMin:=pointOf(container.HorzScrollBar.position,
+                   container.VertScrollBar.position);
+    srMax:=pointOf((srMin[0]+container.width ) div zoom,
+                   (srMin[1]+container.height) div zoom);
+    srMin:=pointOf(srMin[0] div zoom,srMin[1] div zoom);
+    if length(currentBoard^.gates)=0
+    then result:=pointOf((srMin[0]+srMax[0]-gateExtend[0]) shr 1,
+                         (srMin[1]+srMax[1]-gateExtend[1]) shr 1)
+    else begin
+      if length(currentBoard^.gates)=1
+      then begin
+        result:=currentBoard^.gates[length(currentBoard^.gates)-1]^.origin;
+        result[1]+=currentBoard^.gates[length(currentBoard^.gates)-1]^.size[1];
+      end else
+        result:=currentBoard^.gates[length(currentBoard^.gates)-1]^.origin*2-
+                currentBoard^.gates[length(currentBoard^.gates)-2]^.origin;
+      if (result[0]<srMin[0]) or (result[0]+gateExtend[0]>srMax[0]) or
+         (result[1]<srMin[1]) or (result[1]+gateExtend[1]>srMax[1])
+      then result:=pointOf((srMin[0]+srMax[0]-gateExtend[0]) shr 1,
+                           (srMin[1]+srMax[1]-gateExtend[1]) shr 1);
+
+    end;
+  end;
+
 {$define includeImplementation}
 {$i visualgates.inc}
 {$i customGates.inc}
@@ -336,9 +363,13 @@ PROCEDURE T_circuitBoard.attachGUI(CONST adapter:P_uiAdapter);
     GUI^.wireImage.OnMouseDown:=@WireImageMouseDown;
     GUI^.wireImage.OnMouseUp  :=@WireImageMouseUp;
     GUI^.wireImage.OnMouseMove:=@WireImageMouseMove;
+    GUI^.container.OnMouseDown:=@WireImageMouseDown;
+    GUI^.container.OnMouseUp  :=@WireImageMouseUp;
+    GUI^.container.OnMouseMove:=@WireImageMouseMove;
     GUI^.newBoardAttached(@self);
     for gate in gates do gate^.ensureGuiElements;
     rewire;
+    fixWireImageSize;
   end;
 
 FUNCTION T_circuitBoard.detachGUI:P_uiAdapter;
@@ -851,7 +882,7 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board: P_circuitBoard; CONST fullCopy:b
     end else begin
       board^.getBoardExtend(clipOrigin,clipSize);
       clipNewOrigin:=clipOrigin;
-      if length(gates)>0 then clipNewOrigin+=gates[length(gates)-1]^.nextGateAfter;
+      if GUI<>nil then clipNewOrigin+=GUI^.positionForNextGate(clipSize);
       if repositionCustomRegion(clipNewOrigin,clipSize,true)=ro_noPositionFound then exit;
       clipOffset:=clipNewOrigin-clipOrigin;
     end;
