@@ -486,7 +486,8 @@ PROCEDURE T_simulationOutput.collectPaintable(CONST startIndex,endIndex,simIndex
     end;
     for i:=0 to length(outputHistory)-1 do begin
       for k:=0 to length(outputHistory[i])-1 do
-        paintable.addValue(r,outputHistory[i,k].stepIndex,outputHistory[i,k].value);
+      if (outputHistory[i,k].stepIndex>=startIndex) and
+         (outputHistory[i,k].stepIndex<=endIndex  ) then paintable.addValue(r,outputHistory[i,k].stepIndex,outputHistory[i,k].value);
       inc(r);
     end;
   end;
@@ -507,7 +508,6 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
       simulationStartStep:longint=0;
   FUNCTION nextInput:boolean;
     VAR k:longint=0;
-        progress:longint=0;
     begin
       inc(inputsGenerated);
       if (inputsGenerated>expectedTotalInputs) or (simulationStartStep>MAX_TOTAL_SIM_STEPS) or (length(input)=0) or (now>generationDeadline) then exit(false);
@@ -606,7 +606,7 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
         simulationOutputs[simIndex].addInput(wIn[c].v);
       end;
       stepCount:=0;
-      while (stepCount+simulationStartStep<=MAX_TOTAL_SIM_STEPS) and clonedGate^.simulateStep do begin
+      while (stepCount+simulationStartStep<=MAX_TOTAL_SIM_STEPS) and not(cancelled) and clonedGate^.simulateStep do begin
         inc(stepCount);
         for i:=0 to clonedGate^.numberOfOutputs-1 do
         simulationOutputs[simIndex].addOutput(stepCount+simulationStartStep,i,clonedGate^.getOutput(i));

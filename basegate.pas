@@ -90,6 +90,7 @@ TYPE
       PROCEDURE repaint;
       PROCEDURE setZoom(CONST newZoom:longint);
       FUNCTION positionForNextGate(CONST gateExtend:T_point):T_point;
+      PROCEDURE recenter;
   end;
 
   T_repositionOutput=(ro_positionUnchanged,ro_positionFound,ro_noPositionFound);
@@ -184,6 +185,7 @@ CONSTRUCTOR T_uiAdapter.create(CONST zoom_: longint; CONST container_: TScrollBo
 
 DESTRUCTOR T_uiAdapter.destroy;
   begin
+    if Clipboard<>nil then dispose(Clipboard,destroy);
     clearUndoLists;
     wireGraph.destroy;
   end;
@@ -208,6 +210,8 @@ PROCEDURE T_uiAdapter.newBoardAttached(CONST board: P_circuitBoard);
       dispose(Clipboard,destroy);
       Clipboard:=nil;
     end;
+    recenter;
+    currentBoard^.fixWireImageSize;
   end;
 
 PROCEDURE T_uiAdapter.addPeekPanel(CONST panel: TPanel; CONST label_: TLabel);
@@ -302,6 +306,25 @@ FUNCTION T_uiAdapter.positionForNextGate(CONST gateExtend:T_point):T_point;
                            (srMin[1]+srMax[1]-gateExtend[1]) shr 1);
 
     end;
+  end;
+
+PROCEDURE T_uiAdapter.recenter;
+  VAR size, origin,center: T_point;
+  begin
+    if not(container.HandleAllocated) then exit;
+    if (currentBoard=nil) or (length(currentBoard^.gates)=0) then begin
+      size:=ZERO_POINT;
+      origin:=pointOf(5,5);
+    end else currentBoard^.getBoardExtend(origin,size);
+
+    center:=pointOf(origin[0]+size[0] shr 1,
+                    origin[1]+size[1] shr 1)*zoom;
+    origin:=center-pointOf(container.width shr 1,container.height shr 1);
+    if origin[0]<0 then origin[0]:=0; if origin[0]>=container.HorzScrollBar.range then origin[0]:=container.HorzScrollBar.range-1;
+    if origin[1]<0 then origin[1]:=0; if origin[1]>=container.VertScrollBar.range then origin[1]:=container.VertScrollBar.range-1;
+
+    container.HorzScrollBar.position:=origin[0];
+    container.VertScrollBar.position:=origin[1];
   end;
 
 {$define includeImplementation}

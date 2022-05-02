@@ -445,7 +445,6 @@ PROCEDURE T_workspace.editPaletteEntry(CONST index:longint; CONST resetPaletteIn
 
 PROCEDURE T_workspace.editDraftEntry  (CONST index:longint);
   VAR previous:P_circuitBoard;
-      j:longint;
   begin
     if (index<0) or (index>length(draftEntries)) then exit;
     previous:=currentBoard;
