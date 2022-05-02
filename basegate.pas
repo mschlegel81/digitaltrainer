@@ -74,7 +74,7 @@ TYPE
         connector:T_visualGateConnector;
       end;
       PROCEDURE peekLabelClick(Sender: TObject);
-
+      PROCEDURE fixWireImageSize;
     public
       CONSTRUCTOR create(CONST zoom_:longint; CONST container_:TScrollBox; CONST wireImage_:TImage; CONST gatePopup:TPopupMenu; CONST anyChangeCallback_:F_simpleCallback);
       DESTRUCTOR destroy;
@@ -130,7 +130,6 @@ TYPE
       PROCEDURE attachGUI(CONST adapter:P_uiAdapter);
       FUNCTION detachGUI:P_uiAdapter;
       PROCEDURE anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
-      PROCEDURE fixWireImageSize;
       PROCEDURE deleteInvalidWires;
       PROCEDURE deleteMarkedElements;
       FUNCTION simulateSteps(CONST count:longint):boolean;
@@ -150,6 +149,8 @@ TYPE
       PROCEDURE performUndo;
       PROCEDURE performRedo;
       FUNCTION usesBoard(CONST other:P_circuitBoard; CONST recurse:boolean=false):boolean;
+
+      FUNCTION equals(CONST other:P_circuitBoard):boolean;
   end;
 
 {$undef includeInterface}
@@ -211,7 +212,6 @@ PROCEDURE T_uiAdapter.newBoardAttached(CONST board: P_circuitBoard);
       Clipboard:=nil;
     end;
     recenter;
-    currentBoard^.fixWireImageSize;
   end;
 
 PROCEDURE T_uiAdapter.addPeekPanel(CONST panel: TPanel; CONST label_: TLabel);
@@ -268,6 +268,7 @@ PROCEDURE T_uiAdapter.hideAllPeekPanels;
 PROCEDURE T_uiAdapter.repaint;
   begin
     if currentBoard<>nil then begin
+      fixWireImageSize;
       currentBoard^.repaint;
       simStepDone;
     end;
@@ -325,6 +326,34 @@ PROCEDURE T_uiAdapter.recenter;
 
     container.HorzScrollBar.position:=origin[0];
     container.VertScrollBar.position:=origin[1];
+  end;
+
+PROCEDURE T_uiAdapter.fixWireImageSize;
+  VAR width :longint=0;
+      height:longint=0;
+      gate:P_visualGate;
+      p:T_point;
+      i,j:longint;
+  begin
+    for gate in currentBoard^.gates do begin
+      p:=gate^.origin+gate^.size;
+      if p[0]>width  then width :=p[0];
+      if p[1]>height then height:=p[1];
+    end;
+    for i:=0 to length(currentBoard^.logicWires)-1 do
+    for j:=0 to length(currentBoard^.logicWires[i].wires)-1 do
+    for p in currentBoard^.logicWires[i].wires[j].visual do begin
+      if p[0]>width  then width :=p[0];
+      if p[1]>height then height:=p[1];
+    end;
+    width +=1; width *=zoom; width +=max(1,round(zoom*0.15));
+    height+=1; height*=zoom; height+=max(1,round(zoom*0.15));
+    if (width<>wireImage.Width) or (height<>wireImage.Height) then begin
+      wireImage.SetBounds(0,0,width,height);
+      wireImage.picture.Bitmap.Canvas.Brush.color:=BackgroundColor;
+      wireImage.picture.Bitmap.setSize(width,height);
+      wireImage.picture.Bitmap.Canvas.clear;
+    end;
   end;
 
 {$define includeImplementation}
@@ -392,7 +421,6 @@ PROCEDURE T_circuitBoard.attachGUI(CONST adapter:P_uiAdapter);
     GUI^.newBoardAttached(@self);
     for gate in gates do gate^.ensureGuiElements;
     rewire;
-    fixWireImageSize;
   end;
 
 FUNCTION T_circuitBoard.detachGUI:P_uiAdapter;
@@ -420,7 +448,7 @@ PROCEDURE T_circuitBoard.clear;
     categoryIndex:=-1;
     description:='';
     name:=defaultBoardCaption;
-    repaint;
+    if GUI<>nil then GUI^.repaint;
   end;
 
 PROCEDURE T_circuitBoard.setSelectForAll(CONST doSelect: boolean);
@@ -546,7 +574,7 @@ PROCEDURE T_circuitBoard.deleteInvalidWires;
       inc(j);
     end;
     if anyDeleted then rewire(true);
-    repaint;
+    if GUI<>nil then GUI^.repaint;
   end;
 
 PROCEDURE T_circuitBoard.enumerateIo;
@@ -635,35 +663,7 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
     end;
 
     rewire;
-    repaint;
-  end;
-
-PROCEDURE T_circuitBoard.fixWireImageSize;
-  VAR width :longint=0;
-      height:longint=0;
-      gate:P_visualGate;
-      p:T_point;
-      i,j:longint;
-  begin
-    if GUI^.wireImage<>nil then begin
-      for gate in gates do begin
-        p:=gate^.origin+gate^.size;
-        if p[0]>width  then width :=p[0];
-        if p[1]>height then height:=p[1];
-      end;
-      for i:=0 to length(logicWires)-1 do
-      for j:=0 to length(logicWires[i].wires)-1 do
-      for p in logicWires[i].wires[j].visual do begin
-        if p[0]>width  then width :=p[0];
-        if p[1]>height then height:=p[1];
-      end;
-      width +=1; width *=GUI^.zoom; width +=max(1,round(GUI^.zoom*0.15));
-      height+=1; height*=GUI^.zoom; height+=max(1,round(GUI^.zoom*0.15));
-      GUI^.wireImage.SetBounds(0,0,width,height);
-      GUI^.wireImage.picture.Bitmap.Canvas.Brush.color:=BackgroundColor;
-      GUI^.wireImage.picture.Bitmap.setSize(width,height);
-      GUI^.wireImage.picture.Bitmap.Canvas.clear;
-    end;
+    if GUI<>nil then GUI^.repaint;
   end;
 
 FUNCTION T_circuitBoard.simulateSteps(CONST count: longint): boolean;
@@ -922,7 +922,7 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board: P_circuitBoard; CONST fullCopy:b
     end;
 
     if anyWireAdded and not(fullCopy) then rewire;
-    repaint;
+    if GUI<>nil then GUI^.repaint;
   end;
 
 PROCEDURE T_circuitBoard.reset;
@@ -961,7 +961,6 @@ PROCEDURE T_circuitBoard.repaint;
   begin
     if (GUI<>nil) then begin
       for gate in gates do gate^.repaint;
-      fixWireImageSize;
       drawAllWires;
     end;
   end;
@@ -1093,7 +1092,6 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previe
 
   PROCEDURE cleanup;
     begin
-      fixWireImageSize;
       drawAllWires;
       GUI^.incompleteWire.dragging:=false;
     end;
@@ -1145,7 +1143,7 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previe
     rewire;
     if (GUI<>nil) then GUI^.anyChangeCallback();
     cleanup;
-    repaint;
+    if (GUI<>nil) then GUI^.repaint;
   end;
 
 PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
@@ -1230,7 +1228,6 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
         end;
         setLength(paths,0);
       end;
-    fixWireImageSize;
   end;
 
 PROCEDURE T_circuitBoard.saveStateToUndoList;
@@ -1261,7 +1258,7 @@ PROCEDURE T_circuitBoard.performUndo;
     dispose(GUI^.undoList[k],destroy);
     setLength(GUI^.undoList,k);
 
-    repaint;
+    GUI^.repaint;
     GUI^.anyChangeCallback();
   end;
 
@@ -1279,7 +1276,7 @@ PROCEDURE T_circuitBoard.performRedo;
     dispose(GUI^.redoList[k],destroy);
     setLength(GUI^.redoList,k);
 
-    repaint;
+    GUI^.repaint;
     GUI^.anyChangeCallback();
   end;
 
@@ -1436,6 +1433,12 @@ FUNCTION T_circuitBoard.usesBoard(CONST other:P_circuitBoard; CONST recurse:bool
     if GUI=nil then exit;
     for board in GUI^.undoList do if board^.usesBoard(other) then exit(true);
     for board in GUI^.redoList do if board^.usesBoard(other) then exit(true);
+  end;
+
+FUNCTION T_circuitBoard.equals(CONST other:P_circuitBoard):boolean;
+  begin
+    //TODO: Stub!
+    //When this is implemented, importing selected boards from one workspace into another becomes feasible.
   end;
 
 end.
