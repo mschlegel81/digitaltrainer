@@ -38,6 +38,7 @@ PROCEDURE TdraftsForm.DeleteButtonClick(Sender: TObject);
     if (ListBox1.ItemIndex<0) or (ListBox1.ItemIndex>=workspace^.numberOfDraftEntries) then exit;
     if QuestionDlg('Löschen?','Soll der Eintrag wirklich endgültig gelöscht werden?',TMsgDlgType.mtConfirmation,[mrYes, 'Ja', mrNo, 'Nein', 'IsDefault'],'')=mrNo then exit;
     workspace^.removeDraftEntry(ListBox1.ItemIndex);
+    updateListing;
   end;
 
 PROCEDURE TdraftsForm.EditButtonClick(Sender: TObject);

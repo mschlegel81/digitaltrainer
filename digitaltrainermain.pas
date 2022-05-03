@@ -96,6 +96,7 @@ TYPE
     SimTimer: TTimer;
     Splitter2: TSplitter;
     PaletteTreeView: TTreeView;
+    StatusBar1: TStatusBar;
     wireImage: TImage;
     Panel1: TPanel;
     ScrollBox1: TScrollBox;
@@ -159,6 +160,7 @@ TYPE
     visualGateForContextPopup:P_visualGate;
     stepsPerTimer:longint;
     uiAdapter:T_uiAdapter;
+    totalStepsSimulated:longint;
     PROCEDURE updateSidebar;
     PROCEDURE restartTimerCallback;
   public
@@ -178,6 +180,7 @@ FUNCTION workspaceFilename:string;
 
 PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
   begin
+    totalStepsSimulated:=0;
     uiAdapter.create(zoomTrackBar.position,ScrollBox1,wireImage,AnyGatePopupMenu,@restartTimerCallback);
     uiAdapter.addPeekPanel(peekPanel0,peekLabel0);
     uiAdapter.addPeekPanel(peekPanel1,peekLabel1);
@@ -533,10 +536,13 @@ CONST SPEED_SETTING:array[0..35] of record
            (timerInterval:  40; simSteps:5243; labelCaption:'131.1kHz'));
 
 PROCEDURE TDigitaltrainerMainForm.SimTimerTimer(Sender: TObject);
-  VAR  startTicks: qword;
+  VAR startTicks: qword;
+      stepsSimulated: longint;
   begin
     startTicks:=GetTickCount64;
-    if workspace.getCurrentBoard^.simulateSteps(stepsPerTimer)
+    stepsSimulated:=workspace.getCurrentBoard^.simulateSteps(stepsPerTimer);
+    totalStepsSimulated+=stepsSimulated;
+    if stepsSimulated>=stepsPerTimer
     then begin
       if GetTickCount64-startTicks>SPEED_SETTING[speedTrackBar.position].timerInterval
       then begin
@@ -552,6 +558,7 @@ PROCEDURE TDigitaltrainerMainForm.SimTimerTimer(Sender: TObject);
       speedLabel.caption:=SPEED_SETTING[speedTrackBar.position].labelCaption+' (pausiert)';
     end;
     uiAdapter.simStepDone;
+    StatusBar1.Panels[0].text:='Schritte simuliert: '+intToStr(totalStepsSimulated);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.restartTimerCallback;
@@ -559,6 +566,7 @@ PROCEDURE TDigitaltrainerMainForm.restartTimerCallback;
     if SimTimer.enabled or (speedTrackBar.position=0) then exit;
     SimTimer.enabled:=true;
     speedLabel.caption:=SPEED_SETTING[speedTrackBar.position].labelCaption;
+    totalStepsSimulated:=0;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);
@@ -567,8 +575,7 @@ PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);
     then begin
       SimTimer.enabled:=false;
       speedLabel.caption:='gestoppt';
-    end
-    else begin
+    end else begin
       SimTimer.enabled:=true;
       with SPEED_SETTING[speedTrackBar.position] do begin
         SimTimer.interval :=timerInterval;

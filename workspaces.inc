@@ -287,6 +287,7 @@ PROCEDURE T_workspace.addCurrentBoardToPalette;
       anyOut:boolean=false;
       newPaletteEntry:P_circuitBoard;
       doReplace: TModalResult;
+      //usedBy:string='';
   begin
     if currentBoard^.name=defaultBoardCaption then begin
       ShowMessage('Die aktuelle Schaltung muss erst noch benannt werden.');
@@ -310,11 +311,22 @@ PROCEDURE T_workspace.addCurrentBoardToPalette;
       doReplace:=QuestionDlg('Ersetzen?','Soll die Schaltung in der Palette aktualisiert werden?',TMsgDlgType.mtConfirmation,[mrYes, 'Ja', mrNo, 'Nein', 'IsDefault'],'');
     end else doReplace:=mrNo;
 
-    if (doReplace=mrNo) then
-    for i:=0 to length(paletteEntries)-1 do if paletteEntries[i]^.name=currentBoard^.name
-    then begin
-      ShowMessage('Es gibt schon eine Schaltung mit diesem Namen in der Palette.');
-      exit;
+    if (doReplace=mrNo) then begin
+      for i:=0 to length(paletteEntries)-1 do if paletteEntries[i]^.name=currentBoard^.name
+      then begin
+        ShowMessage('Es gibt schon eine Schaltung mit diesem Namen in der Palette.');
+        exit;
+      end;
+    end else begin
+      //for i:=0 to length(paletteEntries)-1 do
+      //if (i<>currentBoard^.paletteIndex) and paletteEntries[i]^.usesBoard(paletteEntries[currentBoard^.paletteIndex]) then begin
+      //  if usedBy='' then usedBy:=     paletteEntries[i]^.name
+      //               else usedBy+=', '+paletteEntries[i]^.name;
+      //end;
+      //if usedBy<>'' then begin
+      //  ShowMessage('Der Eintrag kann nicht ersetzt werden weil er verwendet wird von: '+usedBy);
+      //  exit;
+      //end;
     end;
 
     if doReplace=mrYes then begin
@@ -373,8 +385,8 @@ PROCEDURE T_workspace.removePaletteEntry(CONST index:longint);
     if (index<0) or (index>length(paletteEntries)) then exit;
     if currentBoard^.usesBoard(paletteEntries[index]) then usedBy:='Aktuelle Schaltung';
 
-    for j:=index+1 to length(paletteEntries)-1 do
-    if paletteEntries[j]^.usesBoard(paletteEntries[index]) then begin
+    for j:=0 to length(paletteEntries)-1 do
+    if (j<>index) and paletteEntries[j]^.usesBoard(paletteEntries[index]) then begin
       if usedBy='' then usedBy:=     paletteEntries[j]^.name
                    else usedBy+=', '+paletteEntries[j]^.name;
     end;

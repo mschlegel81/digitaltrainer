@@ -15,7 +15,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   object ScrollBox1: TScrollBox
     Cursor = crCross
     Left = 175
-    Height = 667
+    Height = 644
     Top = 0
     Width = 829
     HorzScrollBar.Increment = 9
@@ -30,7 +30,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     VertScrollBar.Tracking = True
     Align = alClient
     AutoScroll = False
-    ClientHeight = 646
+    ClientHeight = 623
     ClientWidth = 808
     ParentFont = False
     TabOrder = 0
@@ -264,12 +264,12 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   end
   object Panel1: TPanel
     Left = 0
-    Height = 667
+    Height = 644
     Top = 0
     Width = 170
     Align = alLeft
     BevelOuter = bvNone
-    ClientHeight = 667
+    ClientHeight = 644
     ClientWidth = 170
     ParentFont = False
     TabOrder = 1
@@ -360,12 +360,12 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     end
     object GroupBox5: TGroupBox
       Left = 0
-      Height = 427
+      Height = 404
       Top = 240
       Width = 170
       Align = alClient
       Caption = 'Gatter hinzufügen...'
-      ClientHeight = 407
+      ClientHeight = 384
       ClientWidth = 166
       ParentFont = False
       TabOrder = 4
@@ -626,7 +626,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
       object PaletteTreeView: TTreeView
         Left = 0
-        Height = 257
+        Height = 234
         Top = 150
         Width = 166
         Align = alClient
@@ -689,9 +689,21 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   end
   object Splitter1: TSplitter
     Left = 170
-    Height = 667
+    Height = 644
     Top = 0
     Width = 5
+  end
+  object StatusBar1: TStatusBar
+    Left = 0
+    Height = 23
+    Top = 644
+    Width = 1004
+    Panels = <    
+      item
+        Text = 'Schritte simuliert:'
+        Width = 50
+      end>
+    SimplePanel = False
   end
   object SimTimer: TTimer
     Enabled = False

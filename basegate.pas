@@ -133,7 +133,7 @@ TYPE
       PROCEDURE anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
       PROCEDURE deleteInvalidWires;
       PROCEDURE deleteMarkedElements;
-      FUNCTION simulateSteps(CONST count:longint):boolean;
+      FUNCTION simulateSteps(CONST count:longint):longint;
 
       FUNCTION loadFromStream(CONST workspace:P_workspace; VAR stream:T_bufferedInputStreamWrapper):boolean;
       PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper);
@@ -334,7 +334,13 @@ PROCEDURE T_uiAdapter.fixWireImageSize;
       height:longint=0;
       p:T_point;
       i,j:longint;
+      gate:P_visualGate;
   begin
+    for gate in currentBoard^.gates do begin
+      p:=gate^.origin+gate^.size;
+      if p[0]>width  then width:=p[0];
+      if p[1]>height then height:=p[1];
+    end;
     for i:=0 to length(currentBoard^.logicWires)-1 do
     for j:=0 to length(currentBoard^.logicWires[i].wires)-1 do
     for p in currentBoard^.logicWires[i].wires[j].visual do begin
@@ -673,14 +679,14 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
     if GUI<>nil then GUI^.repaint;
   end;
 
-FUNCTION T_circuitBoard.simulateSteps(CONST count: longint): boolean;
+FUNCTION T_circuitBoard.simulateSteps(CONST count: longint): longint;
   VAR gate:P_visualGate;
       i,j,wireLoopCounter,step:longint;
       output:T_wireValue;
       anythingHappenedInThisStep:boolean=true;
       adapterValueChanged:boolean;
   begin
-    result:=false;
+    result:=0;
     for step:=1 to count do if anythingHappenedInThisStep then begin
       anythingHappenedInThisStep:=false;
       for gate in gates do anythingHappenedInThisStep:=gate^.behavior^.simulateStep or anythingHappenedInThisStep;
@@ -697,9 +703,9 @@ FUNCTION T_circuitBoard.simulateSteps(CONST count: longint): boolean;
           end;
         end;
       end;
-      result:=result or anythingHappenedInThisStep;
+      if anythingHappenedInThisStep then inc(result);
     end;
-    for gate in gates do gate^.updateIoVisuals;
+    if result>0 then for gate in gates do gate^.updateIoVisuals;
   end;
 
 FUNCTION T_circuitBoard.wrapGate(CONST origin: T_point; CONST g: P_abstractGate; CONST template:P_visualGate=nil): P_visualGate;
