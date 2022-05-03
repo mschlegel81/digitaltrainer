@@ -97,6 +97,7 @@ TYPE
   {$i customGates.inc}
   T_circuitBoard=object
     public
+      version    :longint;
       name       :string;
       description:string;
       paletteIndex,categoryIndex:longint;
@@ -331,15 +332,9 @@ PROCEDURE T_uiAdapter.recenter;
 PROCEDURE T_uiAdapter.fixWireImageSize;
   VAR width :longint=0;
       height:longint=0;
-      gate:P_visualGate;
       p:T_point;
       i,j:longint;
   begin
-    for gate in currentBoard^.gates do begin
-      p:=gate^.origin+gate^.size;
-      if p[0]>width  then width :=p[0];
-      if p[1]>height then height:=p[1];
-    end;
     for i:=0 to length(currentBoard^.logicWires)-1 do
     for j:=0 to length(currentBoard^.logicWires[i].wires)-1 do
     for p in currentBoard^.logicWires[i].wires[j].visual do begin
@@ -348,7 +343,8 @@ PROCEDURE T_uiAdapter.fixWireImageSize;
     end;
     width +=1; width *=zoom; width +=max(1,round(zoom*0.15));
     height+=1; height*=zoom; height+=max(1,round(zoom*0.15));
-    if (width<>wireImage.Width) or (height<>wireImage.Height) then begin
+    if (width<>wireImage.width) or (height<>wireImage.height) then begin
+      wireImage.SetInitialBounds(0,0,width,height);
       wireImage.SetBounds(0,0,width,height);
       wireImage.picture.Bitmap.Canvas.Brush.color:=BackgroundColor;
       wireImage.picture.Bitmap.setSize(width,height);
@@ -393,6 +389,7 @@ PROCEDURE T_visualGateConnector.saveToStream(CONST board: P_circuitBoard; VAR st
 
 CONSTRUCTOR T_circuitBoard.create;
   begin
+    version:=random(maxLongint);
     GUI:=nil;
     paletteIndex:=-1;
     categoryIndex:=-1;
@@ -447,6 +444,7 @@ PROCEDURE T_circuitBoard.clear;
     paletteIndex:=-1;
     categoryIndex:=-1;
     description:='';
+    version:=random(maxLongint);
     name:=defaultBoardCaption;
     if GUI<>nil then GUI^.repaint;
   end;
@@ -573,7 +571,10 @@ PROCEDURE T_circuitBoard.deleteInvalidWires;
       logicWires[j]:=logicWires[i];
       inc(j);
     end;
-    if anyDeleted then rewire(true);
+    if anyDeleted then begin
+      rewire(true);
+      version:=random(maxLongint);
+    end;
     if GUI<>nil then GUI^.repaint;
   end;
 
@@ -623,6 +624,7 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
   VAR k,i:longint;
       j:longint=0;
       ioDeleted:boolean=false;
+      anyDeleted:boolean=false;
   begin
     saveStateToUndoList;
 
@@ -630,6 +632,7 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
     for i:=0 to length(gates)-1 do begin
       if gates[i]^.marked
       then begin
+        anyDeleted:=true;
         GUI^.gateDeleted(gates[i]);
         ioDeleted:=ioDeleted or (gates[i]^.behavior^.gateType in [gt_input,gt_output]);
         removeAssociatedWires(gates[i]);
@@ -651,7 +654,7 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
       then begin
         wires[j]:=wires[i];
         inc(j);
-      end;
+      end else anyDeleted:=true;
       setLength(wires,j);
     end;
 
@@ -661,6 +664,8 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
       logicWires[j]:=logicWires[i];
       inc(j);
     end;
+
+    if anyDeleted then version:=random(maxLongint);
 
     rewire;
     if GUI<>nil then GUI^.repaint;
@@ -901,6 +906,7 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board: P_circuitBoard; CONST fullCopy:b
       description  :=board^.description;
       paletteIndex :=board^.paletteIndex;
       categoryIndex:=board^.categoryIndex;
+      version      :=board^.version;
       clipOffset   :=ZERO_POINT;
     end else begin
       board^.getBoardExtend(clipOrigin,clipSize);
@@ -1128,6 +1134,7 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previe
       exit;
     end;
     saveStateToUndoList;
+    version:=random(maxLongint);
 
     i:=0;
     while (i<length(logicWires)) and (logicWires[i].source<>GUI^.incompleteWire.source) do inc(i);

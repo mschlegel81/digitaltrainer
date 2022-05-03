@@ -190,7 +190,7 @@ PROCEDURE T_visualGate.ensureGuiElements;
   begin
     if (length(shapes)=0) and (board<>nil) and (board^.GUI<>nil) then begin
       setLength(shapes,1+behavior^.numberOfInputs+behavior^.numberOfOutputs);
-      shapes[0]:=TShape.create(board^.GUI^.container);
+      shapes[0]:=TShape.create(nil);
       shapes[0].parent:=board^.GUI^.container;
       shapes[0].Shape :=stRectangle;
       shapes[0].OnMouseDown:=@mainShapeMouseDown;
@@ -199,7 +199,7 @@ PROCEDURE T_visualGate.ensureGuiElements;
       shapes[0].PopupMenu  :=board^.GUI^.gateContextMenu;
       setLength(labels,1);
 
-      labels[0]:=TLabel.create(board^.GUI^.container);
+      labels[0]:=TLabel.create(nil);
       labels[0].caption:=behavior^.caption;
       labels[0].AutoSize:=true;
       labels[0].Font.size:=6;
@@ -210,7 +210,7 @@ PROCEDURE T_visualGate.ensureGuiElements;
       labels[0].PopupMenu  :=board^.GUI^.gateContextMenu;
 
       for k:=0 to behavior^.numberOfInputs-1 do begin
-        shapes[shapeIndex]:=TShape.create(board^.GUI^.container);
+        shapes[shapeIndex]:=TShape.create(nil);
         shapes[shapeIndex].Shape:=stCircle;
         shapes[shapeIndex].Tag:=k;
         shapes[shapeIndex].OnClick  :=@inputClick;
@@ -219,7 +219,7 @@ PROCEDURE T_visualGate.ensureGuiElements;
       end;
 
       for k:=0 to behavior^.numberOfOutputs-1 do begin
-        shapes[shapeIndex]:=TShape.create(board^.GUI^.container);
+        shapes[shapeIndex]:=TShape.create(nil);
         shapes[shapeIndex].Shape:=stCircle;
         shapes[shapeIndex].Tag:=k;
         shapes[shapeIndex].OnMouseDown:=@outputMouseDown;
@@ -239,7 +239,7 @@ PROCEDURE T_visualGateForCustom.ensureGuiElements;
       inherited;
       setLength(labels,length(shapes));
       for k:=0 to behavior^.numberOfInputs-1 do begin
-        labels[shapeIndex]:=TLabel.create(board^.GUI^.container);
+        labels[shapeIndex]:=TLabel.create(nil);
         labels[shapeIndex].Tag:=k;
         labels[shapeIndex].parent:=board^.GUI^.container;
         labels[shapeIndex].caption:=P_customGate(behavior)^.inputConnections[k].caption;
@@ -248,7 +248,7 @@ PROCEDURE T_visualGateForCustom.ensureGuiElements;
         inc(shapeIndex);
       end;
       for k:=0 to behavior^.numberOfOutputs-1 do begin
-        labels[shapeIndex]:=TLabel.create(board^.GUI^.container);
+        labels[shapeIndex]:=TLabel.create(nil);
         labels[shapeIndex].Tag:=k;
         labels[shapeIndex].parent:=board^.GUI^.container;
         labels[shapeIndex].caption:=P_customGate(behavior)^.outputConnections[k].caption;
@@ -266,7 +266,7 @@ PROCEDURE T_visualGateForOutput.ensureGuiElements;
     if (length(shapes)=0) and (board<>nil) and (board^.GUI<>nil) then begin
       inherited;
       setLength(labels,2);
-      labels[1]:=TLabel.create(board^.GUI^.container);
+      labels[1]:=TLabel.create(nil);
       labels[1].Font.size:=10;
       labels[1].parent:=board^.GUI^.container;
       labels[1].caption:='bin: ?'+LineEnding+
@@ -282,7 +282,7 @@ PROCEDURE T_visualGateForInput.ensureGuiElements;
   begin
     if (length(shapes)=0) and (board<>nil) and (board^.GUI<>nil) then begin
       inherited;
-      button:=TButton.create(board^.GUI^.container);
+      button:=TButton.create(nil);
       button.parent:=        board^.GUI^.container;
       button.caption:=behavior^.caption;
       button.Font.size:=board^.GUI^.zoom;
@@ -292,14 +292,14 @@ PROCEDURE T_visualGateForInput.ensureGuiElements;
       button.Font.name :=labels[0].Font.name;
       button.OnClick:=@ButtonClick;
 
-      edit:=TEdit.create(board^.GUI^.container);
+      edit:=TEdit.create(nil);
       edit.parent:=      board^.GUI^.container;
       edit.OnEditingDone:=@inputEditEditingDone;
       edit.OnKeyPress   :=@inputEditKeyEvent;
       edit.AutoSize     :=false;
 
       setLength(labels,2);
-      labels[1]:=TLabel.create(board^.GUI^.container);
+      labels[1]:=TLabel.create(nil);
       labels[1].parent:=board^.GUI^.container;
       labels[1].caption:='bin:';
       labels[1].OnClick:=@inputModeClick;

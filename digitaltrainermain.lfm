@@ -40,7 +40,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       Height = 900
       Top = 0
       Width = 900
-      Align = alClient
     end
     object peekPanel0: TPanel
       Left = 134

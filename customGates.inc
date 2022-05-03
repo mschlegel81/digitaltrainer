@@ -4,6 +4,7 @@ T_simpleConnection=record source,sink:T_gateConnector end;
 P_customGate=^T_customGate;
 T_customGate=object(T_abstractGate)
   prototype  :P_circuitBoard;
+  prototypeVersion:longint;
   gates      :array of P_abstractGate;
   name       :string;
   connections:array of T_simpleConnection;
@@ -144,6 +145,7 @@ CONSTRUCTOR T_customGate.createFromBoard(CONST origin: P_circuitBoard);
   begin
     inherited create;
     prototype:=origin;
+    prototypeVersion:=origin^.version;
 
     setLength(connections      ,0);
     setLength(inputConnections ,0);
@@ -327,7 +329,7 @@ FUNCTION T_customGate.clone(CONST includeState:boolean): P_abstractGate;
       countedOutputs:longint=0;
   begin
     //rebuild on name change
-    rebuildFromBoard:=caption<>prototype^.name;
+    rebuildFromBoard:=(caption<>prototype^.name) or (prototype^.version<>prototypeVersion);
     //rebuild if any connection was removed or its witdh changed
     if not(rebuildFromBoard) then for gate in prototype^.gates do case gate^.behavior^.gateType of
       gt_input : begin

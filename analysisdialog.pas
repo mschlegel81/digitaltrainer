@@ -95,6 +95,7 @@ TYPE
     StringGrid: TStringGrid;
     TabSheet1: TTabSheet;
     PROCEDURE cancelSimButtonClick(Sender: TObject);
+    PROCEDURE FormCloseQuery(Sender: TObject; VAR CanClose: boolean);
     PROCEDURE FormResize(Sender: TObject);
     PROCEDURE rbBinaryChange(Sender: TObject);
     PROCEDURE TimeScrollBarChange(Sender: TObject);
@@ -343,6 +344,8 @@ PROCEDURE T_graphMetaData.update(CONST scaleType: T_scaleType; CONST imageHeight
       verticalZoom:longint;
       i:longint;
   begin
+    if (length(input)=0) and (length(output)=0) then exit;
+
     //20 pixels space at the top, distribute the rest evenly, negate y-axis ("high" values are represented as "low" pixel coordinates)
 
     //1. increase zoom until representation is too high
@@ -685,6 +688,14 @@ PROCEDURE TanalysisForm.FormResize(Sender: TObject);
 PROCEDURE TanalysisForm.cancelSimButtonClick(Sender: TObject);
   begin
     cancelled:=true;
+  end;
+
+PROCEDURE TanalysisForm.FormCloseQuery(Sender: TObject; VAR CanClose: boolean);
+  begin
+    if cancelSimButton.enabled then begin
+      cancelled:=true;
+      CanClose:=false;
+    end else CanClose:=true;
   end;
 
 PROCEDURE TanalysisForm.TimeScrollBarChange(Sender: TObject);
