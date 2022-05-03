@@ -650,11 +650,12 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
     for k:=0 to length(logicWires)-1 do with logicWires[k] do begin
       j:=0;
       for i:=0 to length(wires)-1 do
-      if not(wires[i]).marked
-      then begin
+      if wires[i].marked
+      then anyDeleted:=true
+      else begin
         wires[j]:=wires[i];
         inc(j);
-      end else anyDeleted:=true;
+      end;
       setLength(wires,j);
     end;
 
@@ -664,6 +665,7 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
       logicWires[j]:=logicWires[i];
       inc(j);
     end;
+    setLength(logicWires,j);
 
     if anyDeleted then version:=random(maxLongint);
 
@@ -1107,14 +1109,14 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previe
       gate:P_visualGate;
       connector:T_visualGateConnector;
 
-      distanceToConnector:longint=maxLongint;
-      newDistance:longint;
+      distanceToConnector:double=infinity;
+      newDistance:double;
   begin
     if not(GUI^.incompleteWire.dragging) then exit;
     connector.gate:=nil;
     for gate in gates do
     for j:=0 to gate^.numberOfInputs-1 do begin
-      newDistance:=maxNormDistance(gate^.getInputPositionInGridSize(j)*GUI^.zoom,targetPoint);
+      newDistance:=euklideanDistance(gate^.getInputPositionInGridSize(j)*GUI^.zoom,targetPoint);
       if (newDistance<distanceToConnector) and
          (gate^.behavior^.inputWidth(j)=GUI^.incompleteWire.width) and
          not(isInputConnected(gate,j)) then begin

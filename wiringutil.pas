@@ -71,6 +71,7 @@ FUNCTION allPointsBetween(CONST startP,endP:T_point; OUT dir:T_wireDirection):T_
 PROCEDURE writePointToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST p:T_point);
 FUNCTION readPoint(VAR stream: T_bufferedInputStreamWrapper):T_point;
 FUNCTION maxNormDistance(CONST x,y:T_point):longint;
+FUNCTION euklideanDistance(CONST x, y: T_point): double;
 FUNCTION pathScore(CONST path:T_wirePath):double;
 
 FUNCTION linesIntersect(CONST a0,a1,b0,b1:T_point):boolean;

@@ -650,6 +650,7 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
     end else begin
       TimeScrollBar.max:=i;
       TimeScrollBar.enabled:=true;
+      TimeScrollBar.PageSize:=TimeScrollBar.width;
     end;
     repaintGraph;
     repaintTable;
@@ -670,6 +671,7 @@ PROCEDURE TanalysisForm.ZoomTrackBarChange(Sender: TObject);
       TimeScrollBar.max:=newMax;
       TimeScrollBar.enabled:=true;
     end;
+    TimeScrollBar.PageSize:=TimeScrollBar.width;
 
     repaintGraph;
   end;
