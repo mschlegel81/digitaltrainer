@@ -45,7 +45,9 @@ CONST
   {gt_adapter}  [gpe_caption,gpe_inputWidth,gpe_outputWidth],
                 [gpe_caption],
                 [gpe_caption],
-  {gt_gatedCl..}[gpe_caption,gpe_intervalGreaterZero]);
+  {gt_gatedCl..}[gpe_caption,gpe_intervalGreaterZero],
+  {1/2->1}      [gpe_caption,gpe_inputWidth],
+  {1/2->0}      [gpe_caption,gpe_inputWidth]);
 
 TYPE
   T_gatePropertyValue=record
@@ -106,6 +108,8 @@ FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum): T_gate
         case gate^.gateType of
           gt_output: result.n:=P_outputGate(gate)^.width;
           gt_adapter: result.n:=P_adapter(gate)^.inputWidth(0);
+          gt_undeterminedToFalse: result.n:=P_tendToFalse(gate)^.input.width;
+          gt_undeterminedToTrue : result.n:=P_tendToTrue (gate)^.input.width;
         end;
       gpe_outputWidth:
         case gate^.gateType of
@@ -135,6 +139,8 @@ PROCEDURE T_gatePropertyValues.applyValue(CONST prop: T_gatePropertyEnum; CONST 
             P_outputGate(gate)^.reset;
           end;
           gt_adapter: P_adapter(gate)^.setIoWidth(value.n,gate^.outputWidth(0));
+          gt_undeterminedToFalse: begin P_tendToFalse(gate)^.input.width:=value.n; P_tendToFalse(gate)^.output.width:=value.n; gate^.reset; end;
+          gt_undeterminedToTrue : begin P_tendToTrue (gate)^.input.width:=value.n; P_tendToTrue (gate)^.output.width:=value.n; gate^.reset; end;
         end;
       gpe_outputWidth:
         case gate^.gateType of

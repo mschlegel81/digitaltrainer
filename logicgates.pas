@@ -20,7 +20,9 @@ TYPE
               gt_adapter,
               gt_true,
               gt_false,
-              gt_gatedClock);
+              gt_gatedClock,
+              gt_undeterminedToTrue,
+              gt_undeterminedToFalse);
   T_gateTypeSet=array of T_gateType;
   T_gateCount=array[T_gateType] of longint;
 
@@ -40,7 +42,9 @@ CONST
     {gt_adapter}    'adapter',
     {gt_true}       'constant true',
     {gt_false}      'constant false',
-    {gt_gatedClock} 'gated clock');
+    {gt_gatedClock} 'gated clock',
+    {gt_un....true} 'tend to true',
+    {gt_un...false} 'tend to false');
 
 TYPE
   T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
@@ -277,6 +281,50 @@ TYPE
       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
    end;
 
+   P_tendToTrue=^T_tendToTrue;
+
+   { T_tendToTrue }
+
+   T_tendToTrue=object(T_abstractGate)
+     public
+       input,output:T_wireValue;
+       CONSTRUCTOR create;
+       PROCEDURE reset;                   virtual;
+       FUNCTION  caption:string;          virtual;
+       FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
+       FUNCTION  numberOfInputs :longint; virtual;
+       FUNCTION  numberOfOutputs:longint; virtual;
+       FUNCTION  gateType:T_gateType;     virtual;
+       FUNCTION  simulateStep:boolean;    virtual;
+       FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
+       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
+       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
+       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
+   end;
+
+   P_tendToFalse=^T_tendToFalse;
+
+   { T_tendToFalse }
+
+   T_tendToFalse=object(T_abstractGate)
+     public
+       input,output:T_wireValue;
+       CONSTRUCTOR create;
+       PROCEDURE reset;                   virtual;
+       FUNCTION  caption:string;          virtual;
+       FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
+       FUNCTION  numberOfInputs :longint; virtual;
+       FUNCTION  numberOfOutputs:longint; virtual;
+       FUNCTION  gateType:T_gateType;     virtual;
+       FUNCTION  simulateStep:boolean;    virtual;
+       FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
+       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
+       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
+       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
+   end;
+
 FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
 OPERATOR =(CONST x,y:T_gateConnector):boolean;
 OPERATOR :=(CONST x:T_triStateValue):T_wireValue;
@@ -456,8 +504,164 @@ FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
       gt_true :new(P_constantGate(result),create(true ));
       gt_false:new(P_constantGate(result),create(false));
       gt_gatedClock: new(P_gatedClock(result),create);
+      gt_undeterminedToFalse: new(P_tendToFalse(result),create);
+      gt_undeterminedToTrue : new(P_tendToTrue (result),create);
       else result:=nil;
     end;
+  end;
+
+CONSTRUCTOR T_tendToFalse.create;
+  begin inherited; input.width:=1; output.width:=1; reset; end;
+
+PROCEDURE T_tendToFalse.reset;
+  VAR i:longint;
+  begin
+    for i:=0 to input.width-1 do input.bit[i]:=tsv_undetermined;
+    for i:=0 to input.width-1 do output.bit[i]:=tsv_false;
+  end;
+
+FUNCTION T_tendToFalse.caption: string;
+  begin
+    result:='½→0';
+  end;
+
+FUNCTION T_tendToFalse.clone(CONST includeState: boolean): P_abstractGate;
+  begin
+    new(P_tendToFalse(result),create);
+    P_tendToFalse(result)^.input:=input;
+    P_tendToFalse(result)^.output:=output;
+    if not includeState then result^.reset;
+  end;
+
+FUNCTION T_tendToFalse.numberOfInputs: longint;
+  begin result:=1; end;
+
+FUNCTION T_tendToFalse.numberOfOutputs: longint;
+  begin result:=1; end;
+
+FUNCTION T_tendToFalse.gateType: T_gateType;
+  begin
+    result:=gt_undeterminedToFalse;
+  end;
+
+FUNCTION T_tendToFalse.simulateStep: boolean;
+  VAR i:longint;
+      newOut:T_wireValue;
+  begin
+    newOut:=output;
+    for i:=0 to input.width-1 do
+    if input.bit[i]=tsv_true then newOut.bit[i]:=tsv_true
+                             else newOut.bit[i]:=tsv_false;
+    result:=output<>newOut;
+    output:=newOut;
+  end;
+
+FUNCTION T_tendToFalse.getOutput(CONST index: longint): T_wireValue;
+  begin
+    result:=output;
+  end;
+
+FUNCTION T_tendToFalse.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
+  begin
+    result:=value<>input;
+    input:=value;
+  end;
+
+FUNCTION T_tendToFalse.getInput(CONST index: longint): T_wireValue;
+  begin
+    result:=input;
+  end;
+
+PROCEDURE T_tendToFalse.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+  begin
+    inherited;
+    stream.writeByte(input.width);
+  end;
+
+PROCEDURE T_tendToFalse.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
+  begin
+    input.width:=stream.readByte;
+    output.width:=input.width;
+  end;
+
+{ T_tendToTrue }
+
+CONSTRUCTOR T_tendToTrue.create;
+  begin inherited; reset; input.width:=1; output.width:=1; end;
+
+PROCEDURE T_tendToTrue.reset;
+  VAR i:longint;
+  begin
+    for i:=0 to input.width-1 do input.bit[i]:=tsv_undetermined;
+    for i:=0 to input.width-1 do output.bit[i]:=tsv_true;
+  end;
+
+FUNCTION T_tendToTrue.caption: string;
+  begin
+    result:='½→1';
+  end;
+
+FUNCTION T_tendToTrue.clone(CONST includeState: boolean): P_abstractGate;
+  begin
+    new(P_tendToTrue(result),create);
+    P_tendToTrue(result)^.input:=input;
+    P_tendToTrue(result)^.output:=output;
+    if not includeState then result^.reset;
+  end;
+
+FUNCTION T_tendToTrue.numberOfInputs: longint;
+  begin
+    result:=1;
+  end;
+
+FUNCTION T_tendToTrue.numberOfOutputs: longint;
+  begin
+    result:=1;
+  end;
+
+FUNCTION T_tendToTrue.gateType: T_gateType;
+  begin
+    result:=gt_undeterminedToTrue;
+  end;
+
+FUNCTION T_tendToTrue.simulateStep: boolean;
+  VAR i:longint;
+      newOut:T_wireValue;
+  begin
+    newOut:=output;
+    for i:=0 to input.width-1 do
+    if input.bit[i]=tsv_false then newOut.bit[i]:=tsv_false
+                              else newOut.bit[i]:=tsv_true;
+    result:=output<>newOut;
+    output:=newOut;
+  end;
+
+FUNCTION T_tendToTrue.getOutput(CONST index: longint): T_wireValue;
+  begin
+    result:=output;
+  end;
+
+FUNCTION T_tendToTrue.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
+  begin
+    result:=value<>input;
+    input:=value;
+  end;
+
+FUNCTION T_tendToTrue.getInput(CONST index: longint): T_wireValue;
+  begin
+    result:=input;
+  end;
+
+PROCEDURE T_tendToTrue.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+  begin
+    inherited;
+    stream.writeByte(input.width);
+  end;
+
+PROCEDURE T_tendToTrue.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
+  begin
+    input.width:=stream.readByte;
+    output.width:=input.width;
   end;
 
 { T_gatedClock }

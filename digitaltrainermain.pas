@@ -17,6 +17,11 @@ TYPE
     ButtonAddGatedClock: TButton;
     ButtonAddConstantTrue: TButton;
     ButtonAddConstantFalse: TButton;
+    ButtonAddTendToTrue: TButton;
+    ButtonAddTendToFalse: TButton;
+    GroupBox1: TGroupBox;
+    GroupBox6: TGroupBox;
+    GroupBox7: TGroupBox;
     peekLabel0: TLabel;
     MenuItem2: TMenuItem;
     miToggleAllowDiagonalWires: TMenuItem;
@@ -70,7 +75,6 @@ TYPE
     ButtonAddInput: TButton;
     DeleteButton: TButton;
     captionEdit: TEdit;
-    FlowPanel1: TFlowPanel;
     GroupBox2: TGroupBox;
     GroupBox3: TGroupBox;
     GroupBox4: TGroupBox;
@@ -118,6 +122,8 @@ TYPE
     PROCEDURE ButtonAddNxorClick(Sender: TObject);
     PROCEDURE ButtonAddOrClick(Sender: TObject);
     PROCEDURE ButtonAddOutputClick(Sender: TObject);
+    PROCEDURE ButtonAddTendToFalseClick(Sender: TObject);
+    PROCEDURE ButtonAddTendToTrueClick(Sender: TObject);
     PROCEDURE ButtonAddXorClick(Sender: TObject);
     PROCEDURE captionEditEditingDone(Sender: TObject);
     PROCEDURE DeleteButtonClick(Sender: TObject);
@@ -274,6 +280,12 @@ PROCEDURE TDigitaltrainerMainForm.ButtonAddConstantTrueClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddOutputClick(Sender: TObject);
   begin workspace.addBaseGate(gt_output);end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddTendToFalseClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_undeterminedToFalse); end;
+
+PROCEDURE TDigitaltrainerMainForm.ButtonAddTendToTrueClick(Sender: TObject);
+  begin workspace.addBaseGate(gt_undeterminedToTrue); end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddXorClick(Sender: TObject);
   begin workspace.addBaseGate(gt_xorGate);end;
