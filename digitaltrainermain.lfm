@@ -1,7 +1,7 @@
 object DigitaltrainerMainForm: TDigitaltrainerMainForm
-  Left = 666
+  Left = 181
   Height = 687
-  Top = 180
+  Top = 216
   Width = 1004
   Caption = 'Digitaltrainer'
   ClientHeight = 662
@@ -399,31 +399,33 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         Top = 0
         Width = 208
         Align = alTop
+        BevelOuter = bvNone
         ClientHeight = 240
         ClientWidth = 208
+        ParentFont = False
         TabOrder = 2
         object Label1: TLabel
           AnchorSideLeft.Control = Panel2
           AnchorSideTop.Control = Panel2
-          Left = 7
+          Left = 6
           Height = 20
-          Top = 1
+          Top = 0
           Width = 73
           Align = alCustom
           BorderSpacing.Left = 6
           Caption = 'Basisgatter'
           ParentColor = False
+          ParentFont = False
         end
         object ButtonAddAnd: TButton
-          AnchorSideLeft.Control = Panel2
+          AnchorSideLeft.Control = ButtonAddConstantTrue
           AnchorSideTop.Control = ButtonAddConstantTrue
           AnchorSideTop.Side = asrBottom
-          AnchorSideRight.Control = ButtonAddConstantTrue
-          AnchorSideRight.Side = asrBottom
-          Left = 1
+          Left = 0
           Height = 31
-          Top = 52
+          Top = 51
           Width = 60
+          Align = alCustom
           Caption = 'and'
           OnClick = ButtonAddAndClick
           ParentFont = False
@@ -434,10 +436,11 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Side = asrBottom
           AnchorSideTop.Control = ButtonAddConstantFalse
           AnchorSideTop.Side = asrBottom
-          Left = 61
+          Left = 60
           Height = 31
-          Top = 52
+          Top = 51
           Width = 60
+          Align = alCustom
           Caption = 'or'
           OnClick = ButtonAddOrClick
           ParentFont = False
@@ -449,7 +452,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideTop.Control = ButtonAddConstantTrue
           Left = 120
           Height = 31
-          Top = 21
+          Top = 20
           Width = 60
           Align = alCustom
           Caption = 'not'
@@ -461,10 +464,11 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = ButtonAddOr
           AnchorSideLeft.Side = asrBottom
           AnchorSideTop.Control = ButtonAddOr
-          Left = 121
+          Left = 120
           Height = 31
-          Top = 52
+          Top = 51
           Width = 60
+          Align = alCustom
           Caption = 'xor'
           OnClick = ButtonAddXorClick
           ParentFont = False
@@ -473,11 +477,13 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         object ButtonAddNor: TButton
           AnchorSideLeft.Control = ButtonAddNand
           AnchorSideLeft.Side = asrBottom
+          AnchorSideTop.Control = ButtonAddOr
           AnchorSideTop.Side = asrBottom
-          Left = 61
+          Left = 60
           Height = 31
-          Top = 83
+          Top = 82
           Width = 60
+          Align = alCustom
           Caption = 'nor'
           OnClick = ButtonAddNorClick
           ParentFont = False
@@ -486,12 +492,13 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         object ButtonAddNxor: TButton
           AnchorSideLeft.Control = ButtonAddNor
           AnchorSideLeft.Side = asrBottom
-          AnchorSideTop.Control = ButtonAddOr
+          AnchorSideTop.Control = ButtonAddXor
           AnchorSideTop.Side = asrBottom
-          Left = 121
+          Left = 120
           Height = 31
-          Top = 83
+          Top = 82
           Width = 60
+          Align = alCustom
           Caption = 'nxor'
           OnClick = ButtonAddNxorClick
           ParentFont = False
@@ -501,21 +508,23 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = Panel2
           AnchorSideTop.Control = ButtonAddAnd
           AnchorSideTop.Side = asrBottom
-          Left = 1
+          Left = 0
           Height = 31
-          Top = 83
+          Top = 82
           Width = 60
+          Align = alCustom
           Caption = 'nand'
           OnClick = ButtonAddNandClick
           ParentFont = False
           TabOrder = 6
         end
         object ButtonAddConstantTrue: TButton
+          AnchorSideLeft.Control = Panel2
           AnchorSideTop.Control = Label1
           AnchorSideTop.Side = asrBottom
           Left = 0
           Height = 31
-          Top = 21
+          Top = 20
           Width = 60
           Align = alCustom
           Caption = '1'
@@ -524,11 +533,12 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           TabOrder = 0
         end
         object ButtonAddConstantFalse: TButton
+          AnchorSideLeft.Control = ButtonAddConstantTrue
           AnchorSideLeft.Side = asrBottom
           AnchorSideTop.Control = ButtonAddConstantTrue
           Left = 60
           Height = 31
-          Top = 21
+          Top = 20
           Width = 60
           Align = alCustom
           Caption = '0'
@@ -540,20 +550,21 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = Label1
           AnchorSideTop.Control = ButtonAddNand
           AnchorSideTop.Side = asrBottom
-          Left = 7
+          Left = 6
           Height = 20
-          Top = 114
+          Top = 113
           Width = 21
           Caption = 'I/O'
           ParentColor = False
+          ParentFont = False
         end
         object ButtonAddInput: TButton
           AnchorSideLeft.Control = Panel2
           AnchorSideTop.Control = Label2
           AnchorSideTop.Side = asrBottom
-          Left = 1
+          Left = 0
           Height = 31
-          Top = 134
+          Top = 133
           Width = 60
           Caption = 'input'
           OnClick = ButtonAddInputClick
@@ -564,9 +575,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = ButtonAddInput
           AnchorSideLeft.Side = asrBottom
           AnchorSideTop.Control = ButtonAddInput
-          Left = 61
+          Left = 60
           Height = 31
-          Top = 134
+          Top = 133
           Width = 60
           Caption = 'output'
           OnClick = ButtonAddOutputClick
@@ -577,9 +588,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = ButtonAddOutput
           AnchorSideLeft.Side = asrBottom
           AnchorSideTop.Control = ButtonAddOutput
-          Left = 121
+          Left = 120
           Height = 31
-          Top = 134
+          Top = 133
           Width = 60
           Caption = 'adapter'
           OnClick = ButtonAddAdapterClick
@@ -590,10 +601,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = Panel2
           AnchorSideTop.Control = Label3
           AnchorSideTop.Side = asrBottom
-          Left = 1
+          Left = 0
           Height = 31
           Hint = 'Clock'
-          Top = 185
+          Top = 184
           Width = 60
           Caption = '🕑'
           OnClick = ButtonAddClockClick
@@ -606,9 +617,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = ButtonAddClock
           AnchorSideLeft.Side = asrBottom
           AnchorSideTop.Control = ButtonAddClock
-          Left = 61
+          Left = 60
           Height = 31
-          Top = 185
+          Top = 184
           Width = 60
           Caption = 'G🕑'
           OnClick = ButtonAddGatedClockClick
@@ -621,9 +632,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = Panel2
           AnchorSideTop.Control = ButtonAddGatedClock
           AnchorSideTop.Side = asrBottom
-          Left = 1
+          Left = 0
           Height = 31
-          Top = 216
+          Top = 215
           Width = 60
           Caption = '½→1'
           OnClick = ButtonAddTendToTrueClick
@@ -636,9 +647,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = ButtonAddTendToTrue
           AnchorSideLeft.Side = asrBottom
           AnchorSideTop.Control = ButtonAddTendToTrue
-          Left = 61
+          Left = 60
           Height = 31
-          Top = 216
+          Top = 215
           Width = 60
           Caption = '½→0'
           OnClick = ButtonAddTendToFalseClick
@@ -651,12 +662,13 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = Label1
           AnchorSideTop.Control = ButtonAddInput
           AnchorSideTop.Side = asrBottom
-          Left = 7
+          Left = 6
           Height = 20
-          Top = 165
+          Top = 164
           Width = 48
           Caption = 'Spezial'
           ParentColor = False
+          ParentFont = False
         end
       end
       object Splitter1: TSplitter
