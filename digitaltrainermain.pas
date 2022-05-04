@@ -19,9 +19,10 @@ TYPE
     ButtonAddConstantFalse: TButton;
     ButtonAddTendToTrue: TButton;
     ButtonAddTendToFalse: TButton;
-    GroupBox1: TGroupBox;
-    GroupBox6: TGroupBox;
-    GroupBox7: TGroupBox;
+    Label1: TLabel;
+    Label2: TLabel;
+    Label3: TLabel;
+    Panel2: TPanel;
     peekLabel0: TLabel;
     MenuItem2: TMenuItem;
     miToggleAllowDiagonalWires: TMenuItem;
@@ -100,6 +101,7 @@ TYPE
     SimTimer: TTimer;
     Splitter2: TSplitter;
     PaletteTreeView: TTreeView;
+    Splitter3: TSplitter;
     StatusBar1: TStatusBar;
     wireImage: TImage;
     Panel1: TPanel;
@@ -168,7 +170,7 @@ TYPE
     uiAdapter:T_uiAdapter;
     totalStepsSimulated:longint;
     PROCEDURE updateSidebar;
-    PROCEDURE restartTimerCallback;
+    PROCEDURE restartTimerCallback(CONST inputModified:boolean);
   public
   end;
 
@@ -317,7 +319,7 @@ PROCEDURE TDigitaltrainerMainForm.miEditPaletteEntryClick(Sender: TObject);
     BeginFormUpdate;
     workspace.editSelectedTreeItem(false);
     updateSidebar;
-    restartTimerCallback;
+    restartTimerCallback(true);
     EndFormUpdate;
     DoAllAutoSize;
     uiAdapter.repaint;
@@ -387,7 +389,7 @@ PROCEDURE TDigitaltrainerMainForm.miEditCopyOfPaletteEntryClick(Sender: TObject)
     BeginFormUpdate;
     workspace.editSelectedTreeItem(true);
     updateSidebar;
-    restartTimerCallback;
+    restartTimerCallback(true);
     EndFormUpdate;
     DoAllAutoSize;
     uiAdapter.repaint;
@@ -416,7 +418,7 @@ PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
         workspace.getCurrentBoard^.attachGUI(@uiAdapter);
         uiAdapter.repaint;
         updateSidebar;
-        restartTimerCallback;
+        restartTimerCallback(true);
       end;
       temp.destroy;
     end;
@@ -501,9 +503,8 @@ PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.resetButtonClick(Sender: TObject);
   begin
-    workspace.getCurrentBoard^.saveStateToUndoList;
     workspace.getCurrentBoard^.reset;
-    restartTimerCallback;
+    restartTimerCallback(true);
   end;
 
 CONST SPEED_SETTING:array[0..35] of record
@@ -573,12 +574,12 @@ PROCEDURE TDigitaltrainerMainForm.SimTimerTimer(Sender: TObject);
     StatusBar1.Panels[0].text:='Schritte simuliert: '+intToStr(totalStepsSimulated);
   end;
 
-PROCEDURE TDigitaltrainerMainForm.restartTimerCallback;
+PROCEDURE TDigitaltrainerMainForm.restartTimerCallback(CONST inputModified:boolean);
   begin
+    if inputModified then totalStepsSimulated:=0;
     if SimTimer.enabled or (speedTrackBar.position=0) then exit;
     SimTimer.enabled:=true;
     speedLabel.caption:=SPEED_SETTING[speedTrackBar.position].labelCaption;
-    totalStepsSimulated:=0;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);

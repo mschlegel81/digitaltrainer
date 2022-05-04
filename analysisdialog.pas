@@ -36,13 +36,14 @@ TYPE
   end;
 
   T_paintable=object
-    rows:array of array of record x:longint; v:T_wireValue; end;
+    startIndex,endIndex:longint;
+    rows:array of record hasSampleAfter:boolean; fill:longint; dat:array of record x:longint; v:T_wireValue; end; end;
     simSplits:array of record x,simIndex:longint; end;
-    CONSTRUCTOR create;
+    CONSTRUCTOR create(CONST startIndex_,endIndex_:longint);
     DESTRUCTOR destroy;
     PROCEDURE addSimStart(CONST stepIndex,simIndex:longint);
     PROCEDURE addValue(CONST rowIndex,stepIndex:longint; CONST value:T_wireValue);
-    PROCEDURE paint(CONST startIndex,zoom:longint; CONST scaleType:T_scaleType; CONST meta:T_graphMetaData; CONST Canvas:TCanvas);
+    PROCEDURE paint(CONST zoom:longint; CONST scaleType:T_scaleType; CONST meta:T_graphMetaData; CONST Canvas:TCanvas);
   end;
 
   T_simulationOutput=object
@@ -60,7 +61,7 @@ TYPE
     PROCEDURE finishRun;
 
     PROCEDURE updateTable(CONST scaleType:T_scaleType; CONST rowIndex:longint; CONST table:TStringGrid);
-    PROCEDURE collectPaintable(CONST startIndex,endIndex,simIndex:longint; VAR paintable:T_paintable);
+    PROCEDURE collectPaintable(CONST simIndex:longint; VAR paintable:T_paintable);
     FUNCTION stepsTotal:longint;
   end;
 
@@ -150,8 +151,10 @@ FUNCTION T_graphMetaDataEntry.transformY(CONST v: T_wireValue; CONST scaleType: 
 
 { T_paintable }
 
-CONSTRUCTOR T_paintable.create;
+CONSTRUCTOR T_paintable.create(CONST startIndex_,endIndex_:longint);
   begin
+    startIndex:=startIndex_;
+    endIndex  :=endIndex_;
     setLength(rows,0);
     setLength(simSplits,0);
   end;
@@ -159,7 +162,7 @@ CONSTRUCTOR T_paintable.create;
 DESTRUCTOR T_paintable.destroy;
   VAR i:longint;
   begin
-    for i:=0 to length(rows)-1 do setLength(rows[i],0);
+    for i:=0 to length(rows)-1 do setLength(rows[i].dat,0);
     setLength(rows,0);
     setLength(simSplits,0);
   end;
@@ -167,6 +170,7 @@ DESTRUCTOR T_paintable.destroy;
 PROCEDURE T_paintable.addSimStart(CONST stepIndex, simIndex: longint);
   VAR k:longint;
   begin
+    if (stepIndex<startIndex) or (stepIndex>endIndex) then exit;
     k:=length(simSplits);
     setLength(simSplits,k+1);
     simSplits[k].x       :=stepIndex;
@@ -174,16 +178,39 @@ PROCEDURE T_paintable.addSimStart(CONST stepIndex, simIndex: longint);
   end;
 
 PROCEDURE T_paintable.addValue(CONST rowIndex, stepIndex: longint; CONST value: T_wireValue);
-  VAR k:longint;
   begin
-    if rowIndex>=length(rows) then setLength(rows,rowIndex+1);
-    k:=length(rows[rowIndex]);
-    setLength(rows[rowIndex],k+1);
-    rows[rowIndex,k].x:=stepIndex;
-    rows[rowIndex,k].v:=value;
+    if rowIndex>=length(rows) then begin
+      setLength(rows,rowIndex+1);
+      with rows[rowIndex] do begin
+        setLength(dat,16);
+        fill:=0;
+        hasSampleAfter:=false;
+      end;
+    end;
+    with rows[rowIndex] do begin
+      if stepIndex<startIndex then begin
+        dat[0].v:=value;
+        dat[0].x:=startIndex-1;
+        fill:=1;
+      end else if stepIndex>endIndex then begin
+        if not(hasSampleAfter) then begin
+          if fill>=length(dat) then setLength(dat,fill+1);
+          dat[fill].v:=value;
+          dat[fill].x:=endIndex+1;
+          inc(fill);
+          hasSampleAfter:=true;
+          setLength(dat,fill);
+        end;
+      end else begin
+        if fill>=length(dat) then setLength(dat,fill+fill shr 2);
+        dat[fill].v:=value;
+        dat[fill].x:=stepIndex;
+        inc(fill);
+      end;
+    end;
   end;
 
-PROCEDURE T_paintable.paint(CONST startIndex, zoom: longint; CONST scaleType:T_scaleType; CONST meta: T_graphMetaData; CONST Canvas: TCanvas);
+PROCEDURE T_paintable.paint(CONST zoom: longint; CONST scaleType:T_scaleType; CONST meta: T_graphMetaData; CONST Canvas: TCanvas);
   FUNCTION attenuatedColor(CONST foreground:longint):TColor;
     begin
       result:=ColorToRGB(clBtnFace);
@@ -226,27 +253,27 @@ PROCEDURE T_paintable.paint(CONST startIndex, zoom: longint; CONST scaleType:T_s
       rowMeta:=meta.ioMeta(i);
       if scaleType=st_binary then begin
         for bitIdx:=0 to rowMeta.bitWidth-1 do begin
-          x:=timestepToScreenX(zoom,startIndex,rows[i,0].x);
-          y:=rowMeta.transformY(rows[i,0].v,scaleType,determinedValue,bitIdx);
+          x:=timestepToScreenX(zoom,startIndex,rows[i].dat[0].x);
+          y:=rowMeta.transformY(rows[i].dat[0].v,scaleType,determinedValue,bitIdx);
           Canvas.MoveTo(x,y);
           Canvas.Pen.color:=colorTab[red,determinedValue];
-          for k:=1 to length(rows[i])-1 do begin
-            x:=timestepToScreenX(zoom,startIndex,rows[i,k].x);
+          for k:=1 to rows[i].fill-1 do begin
+            x:=timestepToScreenX(zoom,startIndex,rows[i].dat[k].x);
             Canvas.LineTo(x,y);
-            y:=rowMeta.transformY(rows[i,k].v,scaleType,determinedValue,bitIdx);
+            y:=rowMeta.transformY(rows[i].dat[k].v,scaleType,determinedValue,bitIdx);
             Canvas.Pen.color:=colorTab[red,determinedValue];
             Canvas.LineTo(x,y);
           end;
         end;
       end else begin
-        x:=timestepToScreenX(zoom,startIndex,rows[i,0].x);
-        y:=rowMeta.transformY(rows[i,0].v,scaleType,determinedValue);
+        x:=timestepToScreenX(zoom,startIndex,rows[i].dat[0].x);
+        y:=rowMeta.transformY(rows[i].dat[0].v,scaleType,determinedValue);
         Canvas.MoveTo(x,y);
         Canvas.Pen.color:=colorTab[red,determinedValue];
-        for k:=1 to length(rows[i])-1 do begin
-          x:=timestepToScreenX(zoom,startIndex,rows[i,k].x);
+        for k:=1 to rows[i].fill-1 do begin
+          x:=timestepToScreenX(zoom,startIndex,rows[i].dat[k].x);
           Canvas.LineTo(x,y);
-          y:=rowMeta.transformY(rows[i,k].v,scaleType,determinedValue);
+          y:=rowMeta.transformY(rows[i].dat[k].v,scaleType,determinedValue);
           Canvas.Pen.color:=colorTab[red,determinedValue];
           Canvas.LineTo(x,y);
         end;
@@ -475,12 +502,10 @@ PROCEDURE T_simulationOutput.updateTable(CONST scaleType: T_scaleType; CONST row
     end;
   end;
 
-PROCEDURE T_simulationOutput.collectPaintable(CONST startIndex,endIndex,simIndex:longint; VAR paintable:T_paintable);
+PROCEDURE T_simulationOutput.collectPaintable(CONST simIndex:longint; VAR paintable:T_paintable);
   VAR r:longint=0;
       i,k:longint;
   begin
-    if startIndex>endAtStep   then exit;
-    if endIndex  <startAtStep then exit;
     paintable.addSimStart(startAtStep,simIndex);
     for i:=0 to length(inputs)-1 do begin
       paintable.addValue(r,startAtStep,inputs[i]);
@@ -488,9 +513,7 @@ PROCEDURE T_simulationOutput.collectPaintable(CONST startIndex,endIndex,simIndex
       inc(r);
     end;
     for i:=0 to length(outputHistory)-1 do begin
-      for k:=0 to length(outputHistory[i])-1 do
-      if (outputHistory[i,k].stepIndex>=startIndex) and
-         (outputHistory[i,k].stepIndex<=endIndex  ) then paintable.addValue(r,outputHistory[i,k].stepIndex,outputHistory[i,k].value);
+      for k:=0 to length(outputHistory[i])-1 do paintable.addValue(r,outputHistory[i,k].stepIndex,outputHistory[i,k].value);
       inc(r);
     end;
   end;
@@ -650,7 +673,8 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
     end else begin
       TimeScrollBar.max:=i;
       TimeScrollBar.enabled:=true;
-      TimeScrollBar.PageSize:=TimeScrollBar.width;
+      TimeScrollBar.PageSize   :=trunc(     Image1.width/zoomTrackBar.position);
+      TimeScrollBar.LargeChange:=trunc(0.75*Image1.width/zoomTrackBar.position);
     end;
     repaintGraph;
     repaintTable;
@@ -671,7 +695,8 @@ PROCEDURE TanalysisForm.ZoomTrackBarChange(Sender: TObject);
       TimeScrollBar.max:=newMax;
       TimeScrollBar.enabled:=true;
     end;
-    TimeScrollBar.PageSize:=TimeScrollBar.width;
+    TimeScrollBar.PageSize   :=trunc(     Image1.width/zoomTrackBar.position);
+    TimeScrollBar.LargeChange:=trunc(0.75*Image1.width/zoomTrackBar.position);
 
     repaintGraph;
   end;
@@ -793,10 +818,10 @@ PROCEDURE TanalysisForm.repaintGraph;
       Image1.picture.Bitmap.Canvas.textOut(0,graphMetaData.output[i].plotY0,graphMetaData.output[i].caption);
     end;
 
-    paintable.create;
     i:=screenXToTimestep(zoomTrackBar.position,TimeScrollBar.position,Image1.width)+1;
-    for simIndex:=0 to length(simulationOutputs)-1 do simulationOutputs[simIndex].collectPaintable(TimeScrollBar.position,i,simIndex,paintable);
-    paintable.paint(TimeScrollBar.position,zoomTrackBar.position,scaleType,graphMetaData,Image1.picture.Bitmap.Canvas);
+    paintable.create(TimeScrollBar.position,i);
+    for simIndex:=0 to length(simulationOutputs)-1 do simulationOutputs[simIndex].collectPaintable(simIndex,paintable);
+    paintable.paint(zoomTrackBar.position,scaleType,graphMetaData,Image1.picture.Bitmap.Canvas);
     paintable.destroy;
 
   end;

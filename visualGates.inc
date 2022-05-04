@@ -325,7 +325,7 @@ PROCEDURE T_visualGate.inputClick(Sender: TObject);
     k:=TControl(Sender).Tag;
     if behavior^.inputWidth(k)=1 then behavior^.setInput(k,TRI_STATE_NOT[behavior^.getInput(k).bit[0]]);
     updateIoVisuals;
-    if (board<>nil) and (board^.GUI<>nil) then board^.GUI^.anyChangeCallback();
+    if (board<>nil) and (board^.GUI<>nil) then board^.GUI^.anyChangeCallback(true);
   end;
 
 PROCEDURE T_visualGate.mainShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -564,7 +564,7 @@ PROCEDURE T_visualGateForInput.ButtonClick(Sender: TObject);
     for i:=0 to WIRE_MAX_WIDTH-1 do w.bit[i]:=TRI_STATE_NOT[w.bit[i]];
     behavior^.setInput(0,w);
     updateIoVisuals;
-    if (board<>nil) and (board^.GUI<>nil) then board^.GUI^.anyChangeCallback();
+    if (board<>nil) and (board^.GUI<>nil) then board^.GUI^.anyChangeCallback(true);
   end;
 
 PROCEDURE T_visualGateForInput.inputModeClick(Sender: TObject);
@@ -588,7 +588,7 @@ PROCEDURE T_visualGateForInput.inputEditEditingDone(Sender: TObject);
     behavior^.setInput(0,w);
     updateText;
     updateIoVisuals;
-    if (board<>nil) and (board^.GUI<>nil) then board^.GUI^.anyChangeCallback();
+    if (board<>nil) and (board^.GUI<>nil) then board^.GUI^.anyChangeCallback(true);
   end;
 
 PROCEDURE T_visualGateForInput.inputEditKeyEvent(Sender: TObject; VAR key: char);

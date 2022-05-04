@@ -13,7 +13,7 @@ CONST defaultBoardCaption='unbenannt';
       BackgroundColor:TColor=$DDDDDD;
 TYPE
 {$define includeInterface}
-  F_simpleCallback=PROCEDURE of object;
+  F_changeCallback=PROCEDURE(CONST inputModified:boolean) of object;
 
   P_circuitBoard=^T_circuitBoard;
   P_workspace=^T_workspace;
@@ -50,7 +50,7 @@ TYPE
       container:TScrollBox;
       wireImage:TImage;
       gateContextMenu:TPopupMenu;
-      anyChangeCallback:F_simpleCallback;
+      anyChangeCallback:F_changeCallback;
       lastClickedGate:P_visualGate;
       selectionFrame:TShape;
       selectionStart:T_point;
@@ -76,7 +76,7 @@ TYPE
       PROCEDURE peekLabelClick(Sender: TObject);
       PROCEDURE fixWireImageSize;
     public
-      CONSTRUCTOR create(CONST zoom_:longint; CONST container_:TScrollBox; CONST wireImage_:TImage; CONST gatePopup:TPopupMenu; CONST anyChangeCallback_:F_simpleCallback);
+      CONSTRUCTOR create(CONST zoom_:longint; CONST container_:TScrollBox; CONST wireImage_:TImage; CONST gatePopup:TPopupMenu; CONST anyChangeCallback_:F_changeCallback);
       DESTRUCTOR destroy;
       PROCEDURE clearUndoLists;
       PROCEDURE newBoardAttached(CONST board:P_circuitBoard);
@@ -167,7 +167,7 @@ PROCEDURE T_uiAdapter.peekLabelClick(Sender: TObject);
     peekPanels[k].panel.visible:=false;
   end;
 
-CONSTRUCTOR T_uiAdapter.create(CONST zoom_: longint; CONST container_: TScrollBox; CONST wireImage_: TImage; CONST gatePopup: TPopupMenu; CONST anyChangeCallback_: F_simpleCallback);
+CONSTRUCTOR T_uiAdapter.create(CONST zoom_: longint; CONST container_: TScrollBox; CONST wireImage_: TImage; CONST gatePopup: TPopupMenu; CONST anyChangeCallback_: F_changeCallback);
   begin
     zoom:=zoom_;
     container:=container_;
@@ -1156,7 +1156,7 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previe
     end;
 
     rewire;
-    if (GUI<>nil) then GUI^.anyChangeCallback();
+    if (GUI<>nil) then GUI^.anyChangeCallback(false);
     cleanup;
     if (GUI<>nil) then GUI^.repaint;
   end;
@@ -1274,7 +1274,7 @@ PROCEDURE T_circuitBoard.performUndo;
     setLength(GUI^.undoList,k);
 
     GUI^.repaint;
-    GUI^.anyChangeCallback();
+    GUI^.anyChangeCallback(false);
   end;
 
 PROCEDURE T_circuitBoard.performRedo;
@@ -1292,7 +1292,7 @@ PROCEDURE T_circuitBoard.performRedo;
     setLength(GUI^.redoList,k);
 
     GUI^.repaint;
-    GUI^.anyChangeCallback();
+    GUI^.anyChangeCallback(false);
   end;
 
 PROCEDURE T_circuitBoard.WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
