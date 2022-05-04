@@ -155,7 +155,7 @@ PROCEDURE T_workspace.addBaseGate(CONST gateType:T_gateType);
   begin
     gateToAdd:=newBaseGate(gateType);
     if gateToAdd<>nil then begin
-      currentBoard^.saveStateToUndoList;
+      currentBoard^.GUI^.saveStateToUndoList;
       currentBoard^.version:=random(maxLongint);
       case gateToAdd^.gateType of
         gt_input:  P_inputGate (gateToAdd)^.ioIndex:=numberOf(gt_input);
@@ -178,7 +178,7 @@ PROCEDURE T_workspace.addSelectedCustomGate;
     if node=nil then exit;
     data:=P_paletteTreeData(node.data);
     if data^.board=nil then exit;
-    currentBoard^.saveStateToUndoList;
+    currentBoard^.GUI^.saveStateToUndoList;
     currentBoard^.version:=random(maxLongint);
 
     new(gateToAdd,createFromBoard(data^.board));

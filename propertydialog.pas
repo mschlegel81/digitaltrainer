@@ -20,7 +20,7 @@ TYPE
   private
     propertyValues:T_gatePropertyValues;
   public
-    FUNCTION showForGate(CONST gate:P_abstractGate; CONST inBoard:P_circuitBoard):boolean;
+    FUNCTION showForGate(CONST gate:P_abstractGate; CONST adapter:P_uiAdapter):boolean;
   end;
 
 VAR
@@ -41,7 +41,7 @@ PROCEDURE TgatePropertyDialog.ValueListEditorValidateEntry(Sender: TObject; aCol
     end;
   end;
 
-FUNCTION TgatePropertyDialog.showForGate(CONST gate: P_abstractGate; CONST inBoard:P_circuitBoard):boolean;
+FUNCTION TgatePropertyDialog.showForGate(CONST gate: P_abstractGate; CONST adapter:P_uiAdapter):boolean;
   VAR i:longint;
     cp: TPoint;
   begin
@@ -60,7 +60,7 @@ FUNCTION TgatePropertyDialog.showForGate(CONST gate: P_abstractGate; CONST inBoa
     end;
     ValueListEditor.AutoSizeColumn(0);
     if ShowModal=mrOk then begin
-      inBoard^.saveStateToUndoList;
+      adapter^.saveStateToUndoList;
       propertyValues.applyValues;
       result:=true;
     end else result:=false;

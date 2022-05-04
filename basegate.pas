@@ -91,6 +91,9 @@ TYPE
       PROCEDURE setZoom(CONST newZoom:longint);
       FUNCTION positionForNextGate(CONST gateExtend:T_point):T_point;
       PROCEDURE recenter;
+      PROCEDURE saveStateToUndoList;
+      PROCEDURE performUndo;
+      PROCEDURE performRedo;
   end;
 
   T_repositionOutput=(ro_positionUnchanged,ro_positionFound,ro_noPositionFound);
@@ -146,9 +149,6 @@ TYPE
       PROCEDURE getBoardExtend(OUT origin,size:T_point);
       PROCEDURE rewire(CONST forced:boolean=false);
 
-      PROCEDURE saveStateToUndoList;
-      PROCEDURE performUndo;
-      PROCEDURE performRedo;
       FUNCTION usesBoard(CONST other:P_circuitBoard; CONST recurse:boolean=false):boolean;
 
       FUNCTION equals(CONST other:P_circuitBoard):boolean;
@@ -632,7 +632,7 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
       ioDeleted:boolean=false;
       anyDeleted:boolean=false;
   begin
-    saveStateToUndoList;
+    GUI^.saveStateToUndoList;
 
     GUI^.lastClickedGate:=nil;
     for i:=0 to length(gates)-1 do begin
@@ -864,7 +864,8 @@ PROCEDURE T_circuitBoard.addGateWithoutChecking(CONST gateToAdd: P_visualGate);
 
 PROCEDURE T_circuitBoard.pasteFromClipboard;
   begin
-    saveStateToUndoList;
+    //TODO: Move to T_uiAdapter
+    GUI^.saveStateToUndoList;
     pasteFrom(GUI^.Clipboard);
   end;
 
@@ -1141,7 +1142,7 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previe
       drawTempWire(connector.gate^.getInputPositionInGridSize(connector.index));
       exit;
     end;
-    saveStateToUndoList;
+    GUI^.saveStateToUndoList;
     version:=random(maxLongint);
 
     i:=0;
@@ -1245,54 +1246,64 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
       end;
   end;
 
-PROCEDURE T_circuitBoard.saveStateToUndoList;
+PROCEDURE T_uiAdapter.saveStateToUndoList;
   VAR k:longint;
   begin
-    k:=length(GUI^.undoList);
-    setLength(GUI^.undoList,k+1);
-    GUI^.undoList[k]:=clone(true);
+    if currentBoard=nil then exit;
+    k:=length(undoList);
+    setLength(undoList,k+1);
+    undoList[k]:=currentBoard^.clone(true);
 
-    if length(GUI^.undoList)+length(GUI^.redoList)>MAX_UNDO then begin
-      dispose(GUI^.undoList[0],destroy);
-      for k:=0 to length(GUI^.undoList)-2 do GUI^.undoList[k]:=GUI^.undoList[k+1];
-      setLength(GUI^.undoList,length(GUI^.undoList)-1);
+    for k:=0 to length(redoList)-1 do dispose(redoList[k],destroy);
+    setLength(redoList,0);
+
+    if length(undoList)>MAX_UNDO then begin
+      dispose(undoList[0],destroy);
+      for k:=0 to length(undoList)-2 do undoList[k]:=undoList[k+1];
+      setLength(undoList,length(undoList)-1);
     end;
   end;
 
-PROCEDURE T_circuitBoard.performUndo;
+PROCEDURE T_uiAdapter.performUndo;
   VAR k:longint;
   begin
-    if length(GUI^.undoList)=0 then exit;
+    if currentBoard=nil then exit;
+    //TODO: Reassign peek panels?
+    hideAllPeekPanels;
+    if length(undoList)=0 then exit;
 
-    k:=length(GUI^.redoList);
-    setLength(GUI^.redoList,k+1);
-    GUI^.redoList[k]:=clone(true);
+    k:=length(redoList);
+    setLength(redoList,k+1);
+    redoList[k]:=currentBoard^.clone(true);
 
-    k:=length(GUI^.undoList)-1;
-    pasteFrom(GUI^.undoList[k],true);
-    dispose(GUI^.undoList[k],destroy);
-    setLength(GUI^.undoList,k);
+    k:=length(undoList)-1;
+    currentBoard^.pasteFrom(undoList[k],true);
+    dispose(undoList[k],destroy);
+    setLength(undoList,k);
 
-    GUI^.repaint;
-    GUI^.anyChangeCallback(false);
+    repaint;
+    anyChangeCallback(false);
   end;
 
-PROCEDURE T_circuitBoard.performRedo;
+PROCEDURE T_uiAdapter.performRedo;
   VAR k:longint;
   begin
-    if length(GUI^.redoList)=0 then exit;
+    if currentBoard=nil then exit;
+    //TODO: Reassign peek panels?
+    hideAllPeekPanels;
+    if length(redoList)=0 then exit;
 
-    k:=length(GUI^.undoList);
-    setLength(GUI^.undoList,k+1);
-    GUI^.undoList[k]:=clone(true);
+    k:=length(undoList);
+    setLength(undoList,k+1);
+    undoList[k]:=currentBoard^.clone(true);
 
-    k:=length(GUI^.redoList)-1;
-    pasteFrom(GUI^.redoList[k],true);
-    dispose(GUI^.redoList[k],destroy);
-    setLength(GUI^.redoList,k);
+    k:=length(redoList)-1;
+    currentBoard^.pasteFrom(redoList[k],true);
+    dispose(redoList[k],destroy);
+    setLength(redoList,k);
 
-    GUI^.repaint;
-    GUI^.anyChangeCallback(false);
+    repaint;
+    anyChangeCallback(false);
   end;
 
 PROCEDURE T_circuitBoard.WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);

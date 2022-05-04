@@ -230,7 +230,7 @@ PROCEDURE TDigitaltrainerMainForm.DeleteButtonClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.descriptionMemoEditingDone(Sender: TObject);
   begin
-    workspace.getCurrentBoard^.saveStateToUndoList;
+    uiAdapter.saveStateToUndoList;
     workspace.getCurrentBoard^.description:=descriptionMemo.text;
   end;
 
@@ -259,14 +259,10 @@ PROCEDURE TDigitaltrainerMainForm.ButtonAddGatedClockClick(Sender: TObject);
   begin workspace.addBaseGate(gt_gatedClock); end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddCustomClick(Sender: TObject);
-  begin
-    workspace.addSelectedCustomGate;
-  end;
+  begin workspace.addSelectedCustomGate; end;
 
 PROCEDURE TDigitaltrainerMainForm.AnyGatePopupMenuPopup(Sender: TObject);
-  begin
-    visualGateForContextPopup:=uiAdapter.getLastClickedGate;
-  end;
+  begin visualGateForContextPopup:=uiAdapter.getLastClickedGate; end;
 
 PROCEDURE TDigitaltrainerMainForm.ButtonAddAdapterClick(Sender: TObject);
   begin workspace.addBaseGate(gt_adapter); end;
@@ -293,20 +289,13 @@ PROCEDURE TDigitaltrainerMainForm.ButtonAddXorClick(Sender: TObject);
   begin workspace.addBaseGate(gt_xorGate);end;
 
 PROCEDURE TDigitaltrainerMainForm.captionEditEditingDone(Sender: TObject);
-  begin
-    workspace.getCurrentBoard^.saveStateToUndoList;
-    workspace.getCurrentBoard^.name:=captionEdit.text;
-  end;
+  begin workspace.getCurrentBoard^.name:=captionEdit.text; end;
 
 PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
-  begin
-    uiAdapter.repaint;
-  end;
+  begin uiAdapter.repaint; end;
 
 PROCEDURE TDigitaltrainerMainForm.miAddNewCategoryClick(Sender: TObject);
-  begin
-    workspace.addCategory;
-  end;
+  begin workspace.addCategory; end;
 
 PROCEDURE TDigitaltrainerMainForm.miDeletePaletteEntryClick(Sender: TObject);
   begin
@@ -327,6 +316,7 @@ PROCEDURE TDigitaltrainerMainForm.miEditPaletteEntryClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miAddToDraftsClick(Sender: TObject);
   begin
+    workspace.getCurrentBoard^.name:=captionEdit.text;
     workspace.addCurrentBoardToDrafts();
     updateSidebar;
     uiAdapter.repaint;
@@ -335,6 +325,7 @@ PROCEDURE TDigitaltrainerMainForm.miAddToDraftsClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
   begin
+    workspace.getCurrentBoard^.name:=captionEdit.text;
     workspace.addCurrentBoardToPalette;
     updateSidebar;
     uiAdapter.repaint;
@@ -398,7 +389,7 @@ PROCEDURE TDigitaltrainerMainForm.miEditCopyOfPaletteEntryClick(Sender: TObject)
 PROCEDURE TDigitaltrainerMainForm.miGatePropertiesClick(Sender: TObject);
   begin
     if visualGateForContextPopup=nil then exit;
-    if gatePropertyDialog.showForGate(visualGateForContextPopup^.getBehavior,workspace.getCurrentBoard) then begin
+    if gatePropertyDialog.showForGate(visualGateForContextPopup^.getBehavior,@uiAdapter) then begin
       visualGateForContextPopup^.forcedFullRepaint;
       uiAdapter.gateDeleted(visualGateForContextPopup);
       workspace.getCurrentBoard^.deleteInvalidWires;
@@ -447,7 +438,7 @@ PROCEDURE TDigitaltrainerMainForm.miQuitClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miRedoClick(Sender: TObject);
   begin
     BeginFormUpdate;
-    workspace.getCurrentBoard^.performRedo;
+    uiAdapter.performRedo;
     updateSidebar;
     EndFormUpdate;
     uiAdapter.hideAllPeekPanels;
@@ -494,7 +485,7 @@ PROCEDURE TDigitaltrainerMainForm.miToggleAllowShortcutsClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
   begin
     BeginFormUpdate;
-    workspace.getCurrentBoard^.performUndo;
+    uiAdapter.performUndo;
     updateSidebar;
     EndFormUpdate;
     DoAllAutoSize;
