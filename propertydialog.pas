@@ -62,6 +62,7 @@ FUNCTION TgatePropertyDialog.showForGate(CONST gate: P_abstractGate; CONST adapt
     if ShowModal=mrOk then begin
       adapter^.saveStateToUndoList;
       propertyValues.applyValues;
+      adapter^.fixAfterGatePropertiesEdited(gate);
       result:=true;
     end else result:=false;
     propertyValues.destroy;

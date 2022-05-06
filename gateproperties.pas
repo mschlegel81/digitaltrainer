@@ -22,10 +22,10 @@ TYPE
 
 CONST
   C_gateProperty:array[T_gatePropertyEnum] of T_gateProperty=
-  ((name:'Name'        ;            typ:pt_string; minValue:0; maxValue:   0; readonly:true),
-   (name:'Beschreibung';            typ:pt_string; minValue:0; maxValue:   0; readonly:true),
-   (name:'Label';                   typ:pt_string; minValue:0; maxValue:   0; readonly:false),
-   (name:'Nummer';                  typ:pt_number; minValue:0; maxValue:   0; readonly:true),
+  ((name:'Name'        ;            typ:pt_string; minValue:0; maxValue:         0; readonly:true),
+   (name:'Beschreibung';            typ:pt_string; minValue:0; maxValue:         0; readonly:true),
+   (name:'Label';                   typ:pt_string; minValue:0; maxValue:         0; readonly:false),
+   (name:'Nummer';                  typ:pt_number; minValue:0; maxValue:maxLongint; readonly:false),
    (name:'Intervall';               typ:pt_number; minValue:1; maxValue:1024; readonly:false),
    (name:'Breite Eingang (bits)';   typ:pt_wireWidth; minValue:1; maxValue:WIRE_MAX_WIDTH; readonly:false),
    (name:'Breite Ausgang (bits)';   typ:pt_wireWidth; minValue:1; maxValue:WIRE_MAX_WIDTH; readonly:false),
@@ -128,10 +128,12 @@ PROCEDURE T_gatePropertyValues.applyValue(CONST prop: T_gatePropertyEnum; CONST 
       gpe_editableLabel: if gate^.gateType in [gt_input,gt_output] then begin
         P_inputGate(gate)^.ioLabel:=value.s;
       end;
+      gpe_ioIndex:
+        if gate^.gateType in [gt_input,gt_output]
+        then P_inputGate(gate)^.ioIndex:=value.n;
       gpe_intervalGreaterZero: if gate^.gateType in [gt_clock,gt_gatedClock] then begin
         P_clock(gate)^.interval:=value.n;
       end;
-
       gpe_inputWidth:
         case gate^.gateType of
           gt_output: begin
