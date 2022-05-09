@@ -103,6 +103,8 @@ TYPE
     index:longint;
     FUNCTION getOutputValue:T_wireValue;
     FUNCTION setInputValue(CONST v:T_wireValue):boolean;
+    FUNCTION inputWidth:byte;
+    FUNCTION outputWidth:byte;
   end;
 
   P_notGate=^T_notGate;
@@ -1075,6 +1077,16 @@ FUNCTION T_gateConnector.getOutputValue: T_wireValue;
 FUNCTION T_gateConnector.setInputValue(CONST v: T_wireValue):boolean;
   begin
     result:=gate^.setInput(index,v);
+  end;
+
+FUNCTION T_gateConnector.inputWidth:byte;
+  begin
+    result:=gate^.inputWidth(index);
+  end;
+
+FUNCTION T_gateConnector.outputWidth:byte;
+  begin
+    result:=gate^.outputWidth(index);
   end;
 
 CONSTRUCTOR T_notGate.create;

@@ -68,8 +68,21 @@ CONSTRUCTOR T_customGate.createFromBoard(CONST origin: P_circuitBoard);
       aConnections:array of T_annotatedConnection;
   PROCEDURE addConnection(CONST src,tgt:T_gateConnector; CONST srcIdx,tgtIdx:longint);
     VAR k,ioIdx,i:longint;
+        adapterConn:T_gateConnector;
     begin
-      if src.gate^.gateType=gt_input then begin
+      if (src.gate^.gateType=gt_input) and (tgt.gate^.gateType=gt_output) then begin
+        i:=length(gates);
+        setLength(gates   ,i+1);
+        new(P_adapter(gates[i]),create(src.outputWidth,tgt.inputWidth));
+        setLength(gateLevel,i+1);
+        gateLevel[i]:=i+1;
+
+        adapterConn.gate  :=gates[i];
+        adapterConn.index :=0;
+
+        addConnection(src,adapterConn,srcIdx,i);
+        addConnection(adapterConn,tgt,i,tgtIdx);
+      end else if src.gate^.gateType=gt_input then begin
         gateLevel[srcIdx]:=-1;
         gateLevel[tgtIdx]:=0;
         ioIdx:=P_inputGate(src.gate)^.ioIndex;
