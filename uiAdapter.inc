@@ -350,10 +350,13 @@ PROCEDURE T_uiAdapter.fixAfterGatePropertiesEdited(CONST gate:P_abstractGate);
       end;
 
       if (iSwitch<>iUpd) then begin
+        assert(currentBoard^.gates[iSwitch]^.behavior^.gateType=gate^.gateType);
+        assert(currentBoard^.gates[iUpd]^.behavior^.gateType=gate^.gateType);
         tmp                         :=currentBoard^.gates[iSwitch];
-        currentBoard^.gates[iSwitch]:=currentBoard^.gates[iUpd];    P_inputGate(currentBoard^.gates[iSwitch])^.ioIndex:=kUpd;
-        currentBoard^.gates[iUpd   ]:=tmp;                          P_inputGate(currentBoard^.gates[iSwitch])^.ioIndex:=kSwitch;
+        currentBoard^.gates[iSwitch]:=currentBoard^.gates[iUpd];
+        currentBoard^.gates[iUpd   ]:=tmp;
       end;
+      currentBoard^.enumerateIo;
     end;
 
   begin
@@ -362,10 +365,13 @@ PROCEDURE T_uiAdapter.fixAfterGatePropertiesEdited(CONST gate:P_abstractGate);
     if relatedVisual=nil then exit;
 
     case gate^.gateType of
-      gt_input,gt_output: fixIoOrder;
+      gt_input,gt_output: begin
+        fixIoOrder;
+        for vGate in currentBoard^.gates do if vGate^.behavior^.gateType=gate^.gateType then vGate^.forcedFullRepaint;
+      end
+      else relatedVisual^.forcedFullRepaint;
     end;
 
-    relatedVisual^.forcedFullRepaint;
     for i:=0 to length(peekPanels)-1 do
     if  peekPanels[i].panel.visible and
        (peekPanels[i].connector.gate=relatedVisual) and
