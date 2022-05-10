@@ -518,23 +518,26 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
         dir:T_wireDirection;
         pathUpToHere:T_wirePath;
         pointsBetween:T_wirePath;
-
+        cumulatedCost:double;
     begin
       initialize(pathUpToHere);
       for i:=0 to length(pathsToPrimeWith)-1 do if length(pathsToPrimeWith[i])>0 then begin
         setLength(pathUpToHere,1);
         pathUpToHere[0]:=pathsToPrimeWith[i,0];
+        cumulatedCost:=0;
         openSet.add(pathUpToHere,distance(pathUpToHere[0]));
         for j:=0 to length(pathsToPrimeWith[i])-2 do begin
+          if j>0 then cumulatedCost+=0.5*ChangeDirectionPenalty;
           pointsBetween :=allPointsBetween(pathsToPrimeWith[i,j],pathsToPrimeWith[i,j+1],dir);
           for k:=1 to length(pointsBetween)-1 do begin
+            cumulatedCost+=0.5*DirectionCost[dir];
             try
               pathUpToHere:=continuePath(pathUpToHere,pointsBetween[k],k<=1);
               if not(nodeMap.containsKey(pointsBetween[k],entry)) then begin
                 entry.p:=pointsBetween[k];
                 entry.cameFrom:=dir;
-                entry.costToGetThere:=0;
-                entry.estimatedCostToGoal:=distance(pointsBetween[k]);
+                entry.costToGetThere:=cumulatedCost;
+                entry.estimatedCostToGoal:=cumulatedCost+distance(pointsBetween[k]);
                 nodeMap.put(entry);
                 openSet.add(pathUpToHere,entry.estimatedCostToGoal);
               end;
