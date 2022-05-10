@@ -667,7 +667,7 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wireP
     for i:=0 to length(endPoints)-1 do begin
       initialRun[i].idx:=i;
       initialRun[i].dist:=sqr(startPoint[0]-endPoints[i,0])+sqr(startPoint[1]-endPoints[i,1]);
-      for j:=0 to i-1 do if initialRun[i].dist<initialRun[j].dist then begin
+      for j:=0 to i-1 do if initialRun[i].dist>initialRun[j].dist then begin
         swapTemp     :=initialRun[i];
         initialRun[i]:=initialRun[j];
         initialRun[j]:=swapTemp;
@@ -681,24 +681,25 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wireP
     setLength(result,length(endPoints));
     for swapTemp in initialRun do with swapTemp do
       result[idx]:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),mask);
-    setLength(initialRun,0);
 
     if length(endPoints)<4 then mask:=AllDirections;
 
     if length(endPoints)>1 then repeat
+
       anyImproved:=false;
-      for i:=0 to length(endPoints)-1 do begin
-        if length(result[i])>0 then begin
-          nextPath:=findPath(startPoint,endPoints[i],listExceptEntry(result,i),mask);
-          if pathScore(nextPath)<pathScore(result[i])
+      for swapTemp in initialRun do with swapTemp do begin
+        if length(result[idx])>0 then begin
+          nextPath:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),mask);
+          if pathScore(nextPath)<pathScore(result[idx])
           then begin
-            result[i]:=nextPath;
+            setLength(result[idx],0);
+            result[idx]:=nextPath;
             anyImproved:=true;
           end;
         end;
       end;
     until not(anyImproved);
-
+    setLength(initialRun,0);
   end;
 
 FUNCTION T_wireGraph.anyEdgeLeadsTo(CONST endPoint:T_point):boolean;
