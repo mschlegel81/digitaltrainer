@@ -47,7 +47,7 @@ TYPE
   end;
 
   T_simulationOutput=object
-    startAtStep,endAtStep:longint;
+    startAtStep,endAtStep,lastOutputChangeStep:longint;
     inputs:array of T_wireValue;
     outputHistory:array of array of record
       stepIndex:longint;
@@ -58,11 +58,12 @@ TYPE
     DESTRUCTOR destroy;
     PROCEDURE addInput (CONST v:T_wireValue);
     PROCEDURE addOutput(CONST stepIndex,outputIndex:longint; CONST v:T_wireValue);
-    PROCEDURE finishRun;
+    PROCEDURE finishRun(CONST stepIndex:longint);
 
     PROCEDURE updateTable(CONST scaleType:T_scaleType; CONST rowIndex:longint; CONST table:TStringGrid);
     PROCEDURE collectPaintable(CONST simIndex:longint; VAR paintable:T_paintable);
     FUNCTION stepsTotal:longint;
+    FUNCTION outputStableAfter:longint;
   end;
 
   { TanalysisForm }
@@ -418,6 +419,7 @@ CONSTRUCTOR T_simulationOutput.create(CONST firstStepIndex: longint);
     setLength(outputHistory,0);
     startAtStep:=firstStepIndex;
     endAtStep:=firstStepIndex;
+    lastOutputChangeStep:=firstStepIndex;
   end;
 
 DESTRUCTOR T_simulationOutput.destroy;
@@ -447,30 +449,23 @@ PROCEDURE T_simulationOutput.addOutput(CONST stepIndex, outputIndex: longint; CO
       setLength(outputHistory[outputIndex],k+1);
       outputHistory[outputIndex,k].value    :=v;
       outputHistory[outputIndex,k].stepIndex:=stepIndex;
+      lastOutputChangeStep:=stepIndex;
     end;
   end;
 
-PROCEDURE T_simulationOutput.finishRun;
+PROCEDURE T_simulationOutput.finishRun(CONST stepIndex:longint);
   VAR outputIndex:longint;
       k:longint;
-      maxSteps:longint=0;
   begin
     for outputIndex:=0 to length(outputHistory)-1 do begin
-      k:=length(outputHistory[outputIndex])-1;
-      if   maxSteps< outputHistory[outputIndex,k].stepIndex
-      then maxSteps:=outputHistory[outputIndex,k].stepIndex;
-    end;
-
-    for outputIndex:=0 to length(outputHistory)-1 do begin
       k:=length(outputHistory[outputIndex]);
-      if outputHistory[outputIndex,k-1].stepIndex<maxSteps then begin
+      if outputHistory[outputIndex,k-1].stepIndex<stepIndex then begin
         setLength(outputHistory[outputIndex],k+1);
         outputHistory[outputIndex,k].value:=outputHistory[outputIndex,k-1].value;
-        outputHistory[outputIndex,k].stepIndex:=maxSteps;
+        outputHistory[outputIndex,k].stepIndex:=stepIndex;
       end;
     end;
-
-    endAtStep:=maxSteps;
+    endAtStep:=stepIndex;
   end;
 
 PROCEDURE T_simulationOutput.updateTable(CONST scaleType: T_scaleType; CONST rowIndex: longint; CONST table: TStringGrid);
@@ -497,11 +492,16 @@ PROCEDURE T_simulationOutput.updateTable(CONST scaleType: T_scaleType; CONST row
       inc(col);
     end;
 
+    if outputStableAfter<=MAX_TOTAL_SIM_STEPS
+    then table.Cells[col,rowIndex]:=intToStr(outputStableAfter)
+    else table.Cells[col,rowIndex]:='>'+intToStr(MAX_TOTAL_SIM_STEPS);
+    inc(col);
+
     if stepsTotal<=MAX_TOTAL_SIM_STEPS
     then table.Cells[col,rowIndex]:=intToStr(stepsTotal)
     else table.Cells[col,rowIndex]:='>'+intToStr(MAX_TOTAL_SIM_STEPS);
-
     inc(col);
+
     for i:=0 to length(outputHistory)-1 do begin
       k:=length(outputHistory[i])-1;
       table.Cells[col,rowIndex]:=getIoString(outputHistory[i,k].value);
@@ -528,6 +528,11 @@ PROCEDURE T_simulationOutput.collectPaintable(CONST simIndex:longint; VAR painta
 FUNCTION T_simulationOutput.stepsTotal: longint;
   begin
     result:=endAtStep-startAtStep;
+  end;
+
+FUNCTION T_simulationOutput.outputStableAfter:longint;
+  begin
+    result:=lastOutputChangeStep-startAtStep;
   end;
 
 { TanalysisForm }
@@ -646,11 +651,7 @@ PROCEDURE TanalysisForm.UpdateTableButtonClick(Sender: TObject);
 
         if GetTickCount64>startTicks+200 then updateProgress;
       end;
-      inc(stepCount);
-      for i:=0 to clonedGate^.numberOfOutputs-1 do
-      simulationOutputs[simIndex].addOutput(stepCount+simulationStartStep,i,clonedGate^.getOutput(i));
-
-      simulationOutputs[simIndex].finishRun;
+      simulationOutputs[simIndex].finishRun(stepCount+simulationStartStep);
 
       if simulationOutputs[simIndex].stepsTotal<minResponseTime then begin
         minResponseTime:=simulationOutputs[simIndex].stepsTotal;
@@ -781,7 +782,7 @@ PROCEDURE TanalysisForm.setupTable;
 
     graphMetaData.initialize(clonedGate);
 
-    StringGrid.colCount:=1+clonedGate^.numberOfInputs+clonedGate^.numberOfOutputs+1;
+    StringGrid.colCount:=3+clonedGate^.numberOfInputs+clonedGate^.numberOfOutputs;
     StringGrid.rowCount:=1;
     minResponseTimeLabel.caption:='?';
     maxResponseTimeLabel.caption:='?';
@@ -790,7 +791,9 @@ PROCEDURE TanalysisForm.setupTable;
       StringGrid.Cells[colIndex,0]:=graphMetaData.input[i].caption;
       inc(colIndex);
     end;
-    StringGrid.Cells[colIndex,0]:='Schritte bis stabil';
+    StringGrid.Cells[colIndex,0]:='Schritte bis Output stabil';
+    inc(colIndex);
+    StringGrid.Cells[colIndex,0]:='Schritte gesamt';
     inc(colIndex);
     for i:=0 to length(graphMetaData.output)-1 do begin
       StringGrid.Cells[colIndex,0]:=graphMetaData.output[i].caption;
