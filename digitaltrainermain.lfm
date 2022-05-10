@@ -268,7 +268,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Top = 0
     Width = 155
     Align = alLeft
-    AutoSize = True
     BevelOuter = bvNone
     ClientHeight = 644
     ClientWidth = 155
@@ -752,6 +751,12 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end>
     ParentFont = False
     SimplePanel = False
+  end
+  object Splitter4: TSplitter
+    Left = 192
+    Height = 633
+    Top = 0
+    Width = 6
   end
   object SimTimer: TTimer
     Enabled = False

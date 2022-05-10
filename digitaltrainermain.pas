@@ -102,6 +102,7 @@ TYPE
     Splitter2: TSplitter;
     PaletteTreeView: TTreeView;
     Splitter3: TSplitter;
+    Splitter4: TSplitter;
     StatusBar1: TStatusBar;
     wireImage: TImage;
     Panel1: TPanel;
