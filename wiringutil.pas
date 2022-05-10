@@ -120,23 +120,18 @@ TYPE
   end;
 
 FUNCTION linesIntersect(CONST a0,a1,b0,b1:T_point):boolean;
-  VAR Q,P,R:T_point;
+  FUNCTION inUnitRange(CONST x:double):boolean; inline;
+    begin result:=(x>=0) and (x<=1); end;
+  VAR u,v,w:T_point;
+      f:double;
   begin
-    Q:=a1-a0; Q:=pointOf(-Q[1],Q[0]);
-    P:=b0-a0;
-    R:=b1-a0;
-    if Q*P+Q*R<0 then begin
-      Q:=b1-b0; Q:=pointOf(-Q[1],Q[0]);
-      P:=a0-b0;
-      R:=a1-b0;
-      result:=Q*P+Q*R<0;
-    end else result:=false;
-
-//    writeln('[',a0[0],',',a0[1],'],',
-//            '[',a1[0],',',a1[1],'],',
-//            '[',b0[0],',',b0[1],'],',
-//            '[',b1[0],',',b1[1],'],',result);
-
+    u:=a1-a0;
+    v:=b0-b1;
+    w:=b1-a0;
+    f:= -u[0]*v[1]+u[1]*v[0];
+    result:=(abs(f)>1E-3) and
+            inUnitRange((-w[0]*v[1]+w[1]*v[0])/f) and
+            inUnitRange(( u[0]*w[1]-u[1]*w[0])/f);
   end;
 
 FUNCTION lineCrossesRectangle(CONST a0,a1,rectangleOrigin,rectangleExtend:T_point):boolean;
