@@ -1,12 +1,11 @@
 object analysisForm: TanalysisForm
   Left = 734
-  Height = 774
+  Height = 619
   Top = 122
-  Width = 871
+  Width = 697
   Caption = 'Analyse'
-  ClientHeight = 774
-  ClientWidth = 871
-  DesignTimePPI = 120
+  ClientHeight = 619
+  ClientWidth = 697
   OnCloseQuery = FormCloseQuery
   OnResize = FormResize
   LCLVersion = '2.0.12.0'
@@ -19,9 +18,9 @@ object analysisForm: TanalysisForm
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
     Left = 0
-    Height = 672
-    Top = 102
-    Width = 871
+    Height = 538
+    Top = 81
+    Width = 697
     ActivePage = TabSheet3
     Anchors = [akTop, akLeft, akRight, akBottom]
     ParentFont = False
@@ -29,19 +28,31 @@ object analysisForm: TanalysisForm
     TabOrder = 0
     object TabSheet3: TTabSheet
       Caption = 'Umfang'
-      ClientHeight = 639
-      ClientWidth = 863
+      ClientHeight = 510
+      ClientWidth = 689
       ParentFont = False
       object SizesStringGrid: TStringGrid
         Left = 0
-        Height = 639
+        Height = 510
         Top = 0
-        Width = 863
+        Width = 689
         Align = alClient
         ColCount = 2
+        ColumnClickSorts = True
+        Columns = <        
+          item
+            Title.Caption = 'Gattertyp'
+            Width = 64
+          end        
+          item
+            Alignment = taRightJustify
+            Title.Caption = 'Anzahl'
+            Width = 64
+          end>
         FixedCols = 0
         ParentFont = False
         TabOrder = 0
+        OnCompareCells = SizesStringGridCompareCells
         Cells = (
           2
           0
@@ -64,10 +75,17 @@ object analysisForm: TanalysisForm
         Top = 0
         Width = 689
         Align = alClient
-        FixedCols = 0
+        ColumnClickSorts = True
         Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing, goDblClickAutoSize, goSmoothScroll]
         ParentFont = False
         TabOrder = 0
+        OnCompareCells = StringGridCompareCells
+        Cells = (
+          1
+          0
+          0
+          '#'
+        )
       end
     end
     object TabSheet2: TTabSheet
@@ -84,8 +102,8 @@ object analysisForm: TanalysisForm
       end
       object TimeScrollBar: TScrollBar
         Left = 0
-        Height = 26
-        Top = 613
+        Height = 21
+        Top = 618
         Width = 863
         Align = alBottom
         PageSize = 0
@@ -100,13 +118,13 @@ object analysisForm: TanalysisForm
         Align = alTop
         AutoSize = True
         Caption = 'Zoom'
-        ClientHeight = 31
+        ClientHeight = 36
         ClientWidth = 859
         ParentFont = False
         TabOrder = 1
         object zoomTrackBar: TTrackBar
           Left = 0
-          Height = 31
+          Height = 25
           Top = 0
           Width = 859
           Max = 50
@@ -124,26 +142,26 @@ object analysisForm: TanalysisForm
     AnchorSideLeft.Control = Owner
     AnchorSideTop.Control = Owner
     Left = 0
-    Height = 102
+    Height = 81
     Top = 0
-    Width = 222
+    Width = 175
     Align = alCustom
     AutoSize = True
     Caption = 'Darstellung'
-    ClientHeight = 77
-    ClientWidth = 218
+    ClientHeight = 61
+    ClientWidth = 171
     ParentFont = False
     TabOrder = 1
     object rbBinary: TRadioButton
       AnchorSideLeft.Control = GroupBox1
       AnchorSideTop.Control = GroupBox1
-      Left = 5
-      Height = 24
-      Top = 5
-      Width = 58
+      Left = 4
+      Height = 19
+      Top = 4
+      Width = 47
       Align = alCustom
-      BorderSpacing.Left = 5
-      BorderSpacing.Top = 5
+      BorderSpacing.Left = 4
+      BorderSpacing.Top = 4
       Caption = 'Binär'
       Checked = True
       OnChange = rbBinaryChange
@@ -155,10 +173,10 @@ object analysisForm: TanalysisForm
       AnchorSideLeft.Control = rbBinary
       AnchorSideTop.Control = rbBinary
       AnchorSideTop.Side = asrBottom
-      Left = 5
-      Height = 24
-      Top = 29
-      Width = 213
+      Left = 4
+      Height = 19
+      Top = 23
+      Width = 167
       Align = alCustom
       Caption = 'Dezimal (positiv ganzzahlig)'
       OnChange = rbBinaryChange
@@ -169,10 +187,10 @@ object analysisForm: TanalysisForm
       AnchorSideLeft.Control = rbPositive
       AnchorSideTop.Control = rbPositive
       AnchorSideTop.Side = asrBottom
-      Left = 5
-      Height = 24
-      Top = 53
-      Width = 206
+      Left = 4
+      Height = 19
+      Top = 42
+      Width = 163
       Align = alCustom
       Caption = 'Dezimal (2er-Komplement)'
       OnChange = rbBinaryChange
@@ -186,27 +204,27 @@ object analysisForm: TanalysisForm
     AnchorSideTop.Control = Owner
     AnchorSideBottom.Control = GroupBox1
     AnchorSideBottom.Side = asrBottom
-    Left = 222
-    Height = 102
+    Left = 175
+    Height = 81
     Top = 0
     Width = 257
     Align = alCustom
     Anchors = [akTop, akLeft, akBottom]
     Caption = 'Simulation'
-    ClientHeight = 77
+    ClientHeight = 61
     ClientWidth = 253
     ParentFont = False
     TabOrder = 2
     object rbSimOrdered: TRadioButton
       AnchorSideLeft.Control = GroupBox2
       AnchorSideTop.Control = GroupBox2
-      Left = 5
-      Height = 24
-      Top = 5
-      Width = 122
+      Left = 4
+      Height = 19
+      Top = 4
+      Width = 98
       Align = alCustom
-      BorderSpacing.Left = 5
-      BorderSpacing.Top = 5
+      BorderSpacing.Left = 4
+      BorderSpacing.Top = 4
       Caption = 'der Reihe nach'
       Checked = True
       ParentFont = False
@@ -217,10 +235,10 @@ object analysisForm: TanalysisForm
       AnchorSideLeft.Control = rbSimOrdered
       AnchorSideTop.Control = rbSimOrdered
       AnchorSideTop.Side = asrBottom
-      Left = 5
-      Height = 24
-      Top = 29
-      Width = 138
+      Left = 4
+      Height = 19
+      Top = 23
+      Width = 109
       Caption = 'zufälliger Bit-Flip'
       ParentFont = False
       TabOrder = 0
@@ -229,10 +247,10 @@ object analysisForm: TanalysisForm
       AnchorSideLeft.Control = rbBitFlip
       AnchorSideTop.Control = rbBitFlip
       AnchorSideTop.Side = asrBottom
-      Left = 5
-      Height = 24
-      Top = 53
-      Width = 73
+      Left = 4
+      Height = 19
+      Top = 42
+      Width = 58
       Caption = 'zufällig'
       ParentFont = False
       TabOrder = 1
@@ -241,11 +259,11 @@ object analysisForm: TanalysisForm
       AnchorSideLeft.Control = rbSimOrdered
       AnchorSideLeft.Side = asrBottom
       AnchorSideTop.Control = GroupBox2
-      Left = 127
-      Height = 24
-      Top = 4
-      Width = 177
-      BorderSpacing.Top = 4
+      Left = 102
+      Height = 19
+      Top = 3
+      Width = 141
+      BorderSpacing.Top = 3
       Caption = 'Reset vor jedem Schritt'
       ParentFont = False
       TabOrder = 2
@@ -259,10 +277,10 @@ object analysisForm: TanalysisForm
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = GroupBox3
     AnchorSideBottom.Side = asrBottom
-    Left = 591
-    Height = 30
+    Left = 525
+    Height = 25
     Top = 0
-    Width = 280
+    Width = 172
     Align = alCustom
     Anchors = [akTop, akLeft, akRight]
     AutoSize = True
@@ -277,27 +295,27 @@ object analysisForm: TanalysisForm
     AnchorSideTop.Control = Owner
     AnchorSideBottom.Control = GroupBox2
     AnchorSideBottom.Side = asrBottom
-    Left = 479
-    Height = 102
+    Left = 432
+    Height = 81
     Top = 0
-    Width = 112
+    Width = 93
     Anchors = [akTop, akLeft, akBottom]
     AutoSize = True
     Caption = 'Antwortzeiten'
-    ClientHeight = 77
-    ClientWidth = 108
+    ClientHeight = 61
+    ClientWidth = 89
     ParentFont = False
     TabOrder = 4
     object Minimum: TLabel
       AnchorSideLeft.Control = GroupBox3
       AnchorSideTop.Control = GroupBox3
-      Left = 4
-      Height = 20
-      Top = 4
-      Width = 63
+      Left = 3
+      Height = 15
+      Top = 3
+      Width = 53
       Align = alCustom
-      BorderSpacing.Left = 4
-      BorderSpacing.Top = 4
+      BorderSpacing.Left = 3
+      BorderSpacing.Top = 3
       Caption = 'Minimum'
       ParentColor = False
       ParentFont = False
@@ -306,10 +324,10 @@ object analysisForm: TanalysisForm
       AnchorSideLeft.Control = Minimum
       AnchorSideTop.Control = Minimum
       AnchorSideTop.Side = asrBottom
-      Left = 4
-      Height = 20
-      Top = 24
-      Width = 66
+      Left = 3
+      Height = 15
+      Top = 18
+      Width = 55
       Caption = 'Maximum'
       ParentColor = False
       ParentFont = False
@@ -317,10 +335,10 @@ object analysisForm: TanalysisForm
     object minResponseTimeLabel: TLabel
       AnchorSideLeft.Control = maxResponseTimeLabel
       AnchorSideTop.Control = Minimum
-      Left = 78
-      Height = 20
-      Top = 4
-      Width = 7
+      Left = 64
+      Height = 15
+      Top = 3
+      Width = 5
       Caption = '?'
       ParentColor = False
       ParentFont = False
@@ -329,11 +347,11 @@ object analysisForm: TanalysisForm
       AnchorSideLeft.Control = Maximum
       AnchorSideLeft.Side = asrBottom
       AnchorSideTop.Control = Maximum
-      Left = 78
-      Height = 20
-      Top = 24
-      Width = 7
-      BorderSpacing.Left = 8
+      Left = 64
+      Height = 15
+      Top = 18
+      Width = 5
+      BorderSpacing.Left = 6
       Caption = '?'
       ParentColor = False
       ParentFont = False
@@ -345,10 +363,10 @@ object analysisForm: TanalysisForm
     AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = UpdateTableButton
     AnchorSideRight.Side = asrBottom
-    Left = 591
-    Height = 25
-    Top = 30
-    Width = 280
+    Left = 525
+    Height = 20
+    Top = 25
+    Width = 172
     Anchors = [akTop, akLeft, akRight]
     ParentFont = False
     TabOrder = 5
@@ -359,10 +377,10 @@ object analysisForm: TanalysisForm
     AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = ProgressBar1
     AnchorSideRight.Side = asrBottom
-    Left = 591
+    Left = 525
     Height = 25
-    Top = 55
-    Width = 280
+    Top = 45
+    Width = 172
     Align = alCustom
     Anchors = [akTop, akLeft, akRight]
     Caption = 'Abbruch'

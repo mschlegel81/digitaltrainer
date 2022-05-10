@@ -99,6 +99,10 @@ TYPE
     PROCEDURE FormCloseQuery(Sender: TObject; VAR CanClose: boolean);
     PROCEDURE FormResize(Sender: TObject);
     PROCEDURE rbBinaryChange(Sender: TObject);
+    PROCEDURE SizesStringGridCompareCells(Sender: TObject; aCol, aRow, BCol,
+      BRow: integer; VAR result: integer);
+    PROCEDURE StringGridCompareCells(Sender: TObject; aCol, aRow, BCol,
+      BRow: integer; VAR result: integer);
     PROCEDURE TimeScrollBarChange(Sender: TObject);
     PROCEDURE UpdateTableButtonClick(Sender: TObject);
     PROCEDURE ZoomTrackBarChange(Sender: TObject);
@@ -485,6 +489,9 @@ PROCEDURE T_simulationOutput.updateTable(CONST scaleType: T_scaleType; CONST row
     if table.rowCount<=rowIndex then table.rowCount:=rowIndex+1;
 
     col:=0;
+    table.Cells[col,rowIndex]:=intToStr(rowIndex);
+    inc(col);
+
     for i:=0 to length(inputs)-1 do begin
       table.Cells[col,rowIndex]:=getIoString(inputs[i]);
       inc(col);
@@ -707,6 +714,32 @@ PROCEDURE TanalysisForm.rbBinaryChange(Sender: TObject);
     repaintGraph;
   end;
 
+PROCEDURE TanalysisForm.SizesStringGridCompareCells(Sender: TObject; aCol, aRow, BCol, BRow: integer; VAR result: integer);
+  VAR a,b:int64;
+  begin
+    if (aCol=1) and (bCol=1) then begin
+      a:=StrToInt64Def(SizesStringGrid.Cells[aCol,aRow],-1);
+      b:=StrToInt64Def(SizesStringGrid.Cells[BCol,BRow],-1);
+      if a=b then result:=0 else if a>b then result:=1 else result:=-1;
+    end else begin
+      if SizesStringGrid.Cells[aCol,aRow]=SizesStringGrid.Cells[BCol,BRow]
+      then result:=0
+      else if SizesStringGrid.Cells[aCol,aRow]>SizesStringGrid.Cells[BCol,BRow]
+      then result:=1
+      else result:=-1;
+    end;
+    if SizesStringGrid.SortOrder=soDescending then result:=-result;
+  end;
+
+PROCEDURE TanalysisForm.StringGridCompareCells(Sender: TObject; aCol, aRow, BCol, BRow: integer; VAR result: integer);
+  VAR a,b:int64;
+  begin
+    a:=StrToInt64Def(StringGrid.Cells[aCol,aRow],-1);
+    b:=StrToInt64Def(StringGrid.Cells[BCol,BRow],-1);
+    if a=b then result:=0 else if a>b then result:=1 else result:=-1;
+    if StringGrid.SortOrder=soDescending then result:=-result;
+  end;
+
 PROCEDURE TanalysisForm.FormResize(Sender: TObject);
   begin
     repaintGraph;
@@ -731,19 +764,24 @@ PROCEDURE TanalysisForm.TimeScrollBarChange(Sender: TObject);
   end;
 
 PROCEDURE TanalysisForm.setupTable;
-  VAR colIndex:longint=0;
+  VAR colIndex:longint=1;
       rowIndex:longint=1;
       i:longint;
 
       gt:T_gateType;
       gateCount:T_gateCount;
+      TextStyle: TTextStyle;
   begin
+    TextStyle:=StringGrid.DefaultTextStyle;
+    TextStyle.Alignment:=taRightJustify;
+    StringGrid.DefaultTextStyle:=TextStyle;
+
     for i:=0 to length(simulationOutputs)-1 do simulationOutputs[i].destroy;
     setLength(simulationOutputs,0);
 
     graphMetaData.initialize(clonedGate);
 
-    StringGrid.colCount:=clonedGate^.numberOfInputs+clonedGate^.numberOfOutputs+1;
+    StringGrid.colCount:=1+clonedGate^.numberOfInputs+clonedGate^.numberOfOutputs+1;
     StringGrid.rowCount:=1;
     minResponseTimeLabel.caption:='?';
     maxResponseTimeLabel.caption:='?';
