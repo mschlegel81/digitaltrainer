@@ -940,6 +940,21 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
       end;
     end;
 
+  FUNCTION wireCrossesGate(CONST path:T_wirePath):boolean;
+    VAR gate:P_visualGate;
+        gateOrigin,gateSize:T_point;
+        k:longint;
+    begin
+      result:=false;
+      for gate in gates do begin
+        gateOrigin:=gate^.origin;
+        gateSize  :=gate^.size;
+        for k:=0 to length(path)-2 do
+        if lineCrossesRectangle(path[k],path[k+1],gateOrigin,gateSize)
+        then exit(true);
+      end;
+    end;
+
   VAR connector:T_visualGateConnector;
       i,j:longint;
 
@@ -950,6 +965,7 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
         needRewire:boolean;
       end;
       paths:T_wirePathArray;
+
   begin
     if forced then ensureSorting;
 
@@ -968,6 +984,7 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
            (length(wires[j].visual)<=0) or //no wire there at all
            (wires[j].visual[0]<>preview[i].startPoint) or //start point off
            (wires[j].visual[length(wires[j].visual)-1]<>preview[i].targetPoints[j]) or
+           wireCrossesGate(wires[j].visual) or
            not(GUI^.wireGraph.isWireAllowed(wires[j].visual));
       end;
       needAnyRewire:=needAnyRewire or preview[i].needRewire;
