@@ -71,6 +71,7 @@ TYPE
       FUNCTION clone(CONST includeWirePaths:boolean):P_circuitBoard;
       PROCEDURE enumerateIo;
       PROCEDURE repaint;
+      PROCEDURE sortGates;
     public
       CONSTRUCTOR create;
       DESTRUCTOR destroy;  virtual;
@@ -725,6 +726,74 @@ PROCEDURE T_circuitBoard.repaint;
     end;
   end;
 
+PROCEDURE T_circuitBoard.sortGates;
+  TYPE T_annotatedGate=record gate:P_visualGate; distanceFromInput,inputIndex,fromIndex:longint; end;
+
+  FUNCTION lesserThan(CONST x,y:T_annotatedGate):boolean;
+    begin
+      result:=(x.distanceFromInput<y.distanceFromInput) or
+              (x.distanceFromInput=y.distanceFromInput) and
+                 ((x.inputIndex<y.inputIndex) or
+                  (x.inputIndex=y.inputIndex) and
+                    (x.fromIndex<y.fromIndex));
+    end;
+
+  PROCEDURE copyAnnotations(CONST src:T_annotatedGate; VAR dest:T_annotatedGate);
+    begin
+      dest.distanceFromInput:=src.distanceFromInput;
+      dest.inputIndex       :=src.inputIndex;
+      dest.fromIndex        :=src.fromIndex;
+    end;
+
+  VAR tmp:T_annotatedGate;
+      annotatedGates:array of T_annotatedGate;
+      i,j:longint;
+      logicWire : T_logicWire;
+      wireTrip  : T_wireTrip;
+      sourceGate: T_annotatedGate;
+      updated: Boolean;
+  begin
+    setLength(annotatedGates,length(gates));
+    for i:=0 to length(gates)-1 do begin
+      annotatedGates[i].distanceFromInput:=IfThen(gates[i]^.behavior^.gateType=gt_input,0,MaxLongint);
+      annotatedGates[i].inputIndex:=0;
+      annotatedGates[i].fromIndex :=0;
+      annotatedGates[i].gate:=gates[i];
+    end;
+
+    repeat
+      updated:=false;
+      for logicWire in logicWires do with logicWire do begin
+        sourceGate:=annotatedGates[source.gateIndex(@self)];
+        tmp.distanceFromInput:=sourceGate.distanceFromInput+1;
+        tmp.fromIndex        :=source.index;
+        if sourceGate.distanceFromInput<MaxLongint then for wireTrip in wires do begin
+          i:=wireTrip.sink.gateIndex(@self);
+          tmp.inputIndex:=wireTrip.sink.index;
+          if lesserThan(tmp,annotatedGates[i])
+          then begin
+            copyAnnotations(tmp,annotatedGates[i]);
+            updated:=true;
+          end;
+        end;
+      end;
+    until not updated;
+    //When sorting we must ensure that the order of I/O gates remains unchanged!
+
+    for j:=1 to length(annotatedGates)-1 do
+    for i:=0 to j-1 do
+    if lesserThan(annotatedGates[j],annotatedGates[i]) and
+       not((annotatedGates[j].gate^.getBehavior^.gateType in [gt_input,gt_output]) and
+           (annotatedGates[j].gate^.getBehavior^.gateType=annotatedGates[i].gate^.getBehavior^.gateType)) then begin
+      tmp              :=annotatedGates[i];
+      annotatedGates[i]:=annotatedGates[j];
+      annotatedGates[j]:=tmp;
+    end;
+
+    for i:=0 to length(gates)-1 do gates[i]:=annotatedGates[i].gate;
+    setLength(annotatedGates,0);
+  end;
+
 FUNCTION T_circuitBoard.isInputConnected(CONST gate: P_visualGate; CONST inputIndex: longint): boolean;
   VAR i,j:longint;
   begin
@@ -742,6 +811,7 @@ PROCEDURE T_circuitBoard.anyMouseUp(Sender: TObject; button: TMouseButton; Shift
     GUI^.incompleteWire.dragging:=false;
     drawAllWires;
   end;
+
 
 PROCEDURE T_circuitBoard.drawAllWires;
   PROCEDURE drawWires(CONST index:longint; CONST foreground:boolean);

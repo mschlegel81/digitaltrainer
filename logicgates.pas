@@ -77,6 +77,7 @@ TYPE
       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
 
       PROCEDURE countGates(VAR gateCount:T_gateCount); virtual;
+      FUNCTION equals(CONST other:P_abstractGate):boolean; virtual;
     end;
 
   { T_constantGate }
@@ -148,6 +149,7 @@ TYPE
 
       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
+      FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
   end;
 
   P_outputGate=^T_outputGate;
@@ -184,6 +186,7 @@ TYPE
 
       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
+      FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
   end;
 
   P_binaryBaseGate=^T_binaryBaseGate;
@@ -204,6 +207,7 @@ TYPE
 
        PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
        PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
+       FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
    end;
 
    P_andGate=^T_andGate;
@@ -267,6 +271,7 @@ TYPE
 
       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
+      FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
     end;
 
    P_gatedClock=^T_gatedClock;
@@ -284,9 +289,6 @@ TYPE
    end;
 
    P_tendToTrue=^T_tendToTrue;
-
-   { T_tendToTrue }
-
    T_tendToTrue=object(T_abstractGate)
      public
        input,output:T_wireValue;
@@ -303,15 +305,12 @@ TYPE
        FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
        PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
        PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
+       FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
    end;
 
    P_tendToFalse=^T_tendToFalse;
-
-   { T_tendToFalse }
-
-   T_tendToFalse=object(T_abstractGate)
+   T_tendToFalse=object(T_tendToTrue)
      public
-       input,output:T_wireValue;
        CONSTRUCTOR create;
        PROCEDURE reset;                   virtual;
        FUNCTION  caption:string;          virtual;
@@ -320,11 +319,6 @@ TYPE
        FUNCTION  numberOfOutputs:longint; virtual;
        FUNCTION  gateType:T_gateType;     virtual;
        FUNCTION  simulateStep:boolean;    virtual;
-       FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
-       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
-       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
-       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
-       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
    end;
 
 FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
@@ -513,7 +507,7 @@ FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
   end;
 
 CONSTRUCTOR T_tendToFalse.create;
-  begin inherited; input.width:=1; output.width:=1; reset; end;
+  begin inherited; end;
 
 PROCEDURE T_tendToFalse.reset;
   VAR i:longint;
@@ -556,34 +550,6 @@ FUNCTION T_tendToFalse.simulateStep: boolean;
                              else newOut.bit[i]:=tsv_false;
     result:=output<>newOut;
     output:=newOut;
-  end;
-
-FUNCTION T_tendToFalse.getOutput(CONST index: longint): T_wireValue;
-  begin
-    result:=output;
-  end;
-
-FUNCTION T_tendToFalse.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
-  begin
-    result:=value<>input;
-    input:=value;
-  end;
-
-FUNCTION T_tendToFalse.getInput(CONST index: longint): T_wireValue;
-  begin
-    result:=input;
-  end;
-
-PROCEDURE T_tendToFalse.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
-  begin
-    inherited;
-    stream.writeByte(input.width);
-  end;
-
-PROCEDURE T_tendToFalse.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
-  begin
-    input.width:=stream.readByte;
-    output.width:=input.width;
   end;
 
 { T_tendToTrue }
@@ -1318,6 +1284,40 @@ FUNCTION T_binaryBaseGate.clone(CONST includeState:boolean):P_abstractGate;
 PROCEDURE T_abstractGate.countGates(VAR gateCount:T_gateCount);
   begin
     inc(gateCount[gateType]);
+  end;
+
+FUNCTION T_abstractGate.equals(CONST other:P_abstractGate):boolean;
+  begin
+    result:=other^.gateType=gateType;
+  end;
+
+FUNCTION T_inputGate.equals(CONST other:P_abstractGate):boolean;
+  begin
+    result:=(other^.gateType=gateType) and
+      ((P_inputGate(other)^.ioIndex=ioIndex) and
+       (P_inputGate(other)^.width  =width  ));
+  end;
+
+FUNCTION T_adapter.equals(CONST other:P_abstractGate):boolean;
+  begin
+    result:=(other^.gateType=gateType) and
+      (P_adapter(other)^.inWidth=inWidth) and
+      (P_adapter(other)^.outWidth=outWidth);
+  end;
+
+FUNCTION T_binaryBaseGate.equals(CONST other:P_abstractGate):boolean;
+  begin
+    result:=(other^.gateType=gateType) and (P_binaryBaseGate(other)^.inputCount=inputCount);
+  end;
+
+FUNCTION T_clock.equals(CONST other:P_abstractGate):boolean;
+  begin
+    result:=(other^.gateType=gateType) and (P_clock(other)^.interval=interval);
+  end;
+
+FUNCTION T_tendToTrue.equals(CONST other:P_abstractGate):boolean;
+  begin
+    result:=(other^.gateType=gateType) and (P_tendToTrue(other)^.input.width=input.width);
   end;
 
 end.
