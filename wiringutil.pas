@@ -78,7 +78,7 @@ FUNCTION linesIntersect(CONST a0,a1,b0,b1:T_point):boolean;
 FUNCTION lineCrossesRectangle(CONST a0,a1,rectangleOrigin,rectangleExtend:T_point):boolean;
 
 VAR enableShortcuts:boolean=true;
-    allowDiagonals :boolean=true;
+    allowDiagonals :boolean=false;
 IMPLEMENTATION
 USES math,sysutils;
 TYPE
