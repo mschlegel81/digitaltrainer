@@ -78,6 +78,7 @@ TYPE
 
       PROCEDURE countGates(VAR gateCount:T_gateCount); virtual;
       FUNCTION equals(CONST other:P_abstractGate):boolean; virtual;
+      FUNCTION behaviorEquals(CONST other:P_abstractGate):boolean; virtual;
     end;
 
   { T_constantGate }
@@ -1318,6 +1319,91 @@ FUNCTION T_clock.equals(CONST other:P_abstractGate):boolean;
 FUNCTION T_tendToTrue.equals(CONST other:P_abstractGate):boolean;
   begin
     result:=(other^.gateType=gateType) and (P_tendToTrue(other)^.input.width=input.width);
+  end;
+
+FUNCTION T_abstractGate.behaviorEquals(CONST other:P_abstractGate):boolean;
+  VAR stepsUntilConfidence:longint=256;
+      stillSimulating:boolean;
+      remainingSteps:longint;
+
+  FUNCTION outputsDiffer:boolean;
+    VAR s1,s2:boolean;
+        i:longint;
+    begin
+      result:=false;
+      dec(remainingSteps);
+      dec(stepsUntilConfidence);
+      s1:=       simulateStep;
+      s2:=other^.simulateStep;
+      stillSimulating:=s1 and s2 and (remainingSteps>0);
+      if (s1<>s2) then exit(true);
+      for i:=0 to numberOfOutputs-1 do if getOutput(i)<>other^.getOutput(i) then exit(true);
+    end;
+  VAR totalInputWidth:longint=0;
+      bitToFlip:longint=-1;
+
+  PROCEDURE setRandomInput;
+    VAR i,j:longint;
+        w:T_wireValue;
+    begin
+      stillSimulating:=true;
+      if (bitToFlip<totalInputWidth) then remainingSteps:=256 else remainingSteps:=MaxLongint;
+      if (bitToFlip>=0) and (bitToFlip<totalInputWidth) then begin
+        j:=bitToFlip;
+        i:=0;
+        while j>=inputWidth(i) do begin
+          j-=inputWidth(i);
+          inc(i);
+        end;
+        w:=getInput(i);
+        w.bit[j]:=NOT_TABLE[w.bit[j]];
+        setInput       (i,w);
+        other^.setInput(i,w);
+      end else begin
+        for i:=0 to numberOfInputs-1 do begin
+          w.width:=inputWidth(i);
+          for j:=0 to w.width-1 do
+            if random<0.5
+            then w.bit[j]:=tsv_true
+            else w.bit[j]:=tsv_false;
+          setInput       (i,w);
+          other^.setInput(i,w);
+        end;
+      end;
+      inc(bitToFlip);
+    end;
+
+  VAR k:longint;
+  begin
+    if (other=@self) then exit(true);
+    //Check interfaces
+    if (numberOfInputs <>other^.numberOfInputs ) or
+       (numberOfOutputs<>other^.numberOfOutputs)
+    then exit(false);
+    for k:=0 to numberOfInputs-1 do begin
+      if inputWidth (k)<>other^.inputWidth (k) then exit(false);
+      totalInputWidth+=inputWidth(k);
+    end;
+    for k:=0 to numberOfOutputs-1 do if outputWidth(k)<>other^.outputWidth(k) then exit(false);
+
+    //Simulate...
+    //The wider the input, the more steps should be invested until gates are considered to behave equally.
+    stepsUntilConfidence:=Trunc(sqr(1+totalInputWidth)*100000);
+    reset;
+    other^.reset; stillSimulating:=true;
+    repeat
+      if outputsDiffer
+      then exit(false);
+    until not(stillSimulating);
+
+    while stepsUntilConfidence>0 do begin
+      setRandomInput;
+      repeat
+        if outputsDiffer
+        then exit(false);
+      until not(stillSimulating) or (stepsUntilConfidence<=0);
+    end;
+    result:=true;
   end;
 
 end.
