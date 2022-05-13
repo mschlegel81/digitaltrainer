@@ -390,6 +390,12 @@ PROCEDURE T_workspace.removePaletteEntry(CONST index:longint);
       if usedBy='' then usedBy:=     paletteEntries[j]^.name
                    else usedBy+=', '+paletteEntries[j]^.name;
     end;
+    for j:=0 to length(draftEntries)-1 do
+    if draftEntries[j]^.usesBoard(paletteEntries[index]) then begin
+      if usedBy='' then usedBy:=     draftEntries[j]^.name+'(Entwurf)'
+                   else usedBy+=', '+draftEntries[j]^.name+'(Entwurf)';
+    end;
+
     if usedBy<>'' then begin
       ShowMessage('Der Eintrag kann nicht gelöscht werden weil er verwendet wird von: '+usedBy);
       exit;

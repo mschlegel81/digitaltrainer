@@ -490,7 +490,11 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream:
       if not(stream.allOkay) then exit(false);
 
       if gateType=gt_compound then begin
-        k:=stream.readNaturalNumber;
+        try
+          k:=stream.readNaturalNumber;
+        except
+          k:=maxlongint;
+        end;
         if k>=length(workspace^.paletteEntries) then exit(false);
         new(P_customGate(behavior),createFromBoard(workspace^.paletteEntries[k]));
       end else begin
