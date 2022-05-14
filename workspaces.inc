@@ -16,6 +16,38 @@ T_paletteTreeData=object
     PROPERTY getBoard:P_circuitBoard read board;
 end;
 
+P_importItem=^T_importItem;
+T_importItem=object
+  private
+    board:P_circuitBoard;
+    categoryName:string;
+    draft:boolean;
+    equivalentBoard:P_circuitBoard;
+    dependsOn:array of P_importItem;
+    isUsedBy:array of P_importItem;
+    Selected:boolean;
+    PROCEDURE setSelected(CONST value:boolean);
+  public
+    CONSTRUCTOR create(CONST board_:P_circuitBoard; CONST categoryName_:string; CONST draft_:boolean=false);
+    DESTRUCTOR destroy;
+    PROPERTY getBoard:P_circuitBoard read board;
+    PROCEDURE addDependency(CONST d:P_importItem);
+    PROPERTY selectedForImport:boolean read Selected write setSelected;
+    FUNCTION alreadyExists:boolean;
+    FUNCTION itemCaption:string;
+end;
+
+T_importItems=object
+  private
+    workspace,importInto:P_workspace;
+  public
+    items:array of P_importItem;
+    CONSTRUCTOR create(CONST workspace_,importInto_:P_workspace);
+    DESTRUCTOR destroy;
+    PROPERTY getWorkspace:P_workspace read workspace;
+    PROCEDURE executeImport;
+end;
+
 T_workspace=object(T_serializable)
   private
     paletteEntries:array of P_circuitBoard;
@@ -36,6 +68,8 @@ T_workspace=object(T_serializable)
     PROCEDURE removePaletteEntry(CONST index:longint);
     PROCEDURE setBoardCategory(CONST paletteIndex,categoryIndex:longint);
     PROCEDURE deleteCategory(CONST categoryIndex:longint);
+    PROCEDURE addDraft       (CONST board:P_circuitBoard);
+    FUNCTION addPaletteEntry(CONST board:P_circuitBoard):P_circuitBoard;
   public
     CONSTRUCTOR create(CONST categoryRootItem_:TMenuItem; CONST paletteView_:TTreeView);
     DESTRUCTOR destroy;
@@ -317,16 +351,6 @@ PROCEDURE T_workspace.addCurrentBoardToPalette;
         ShowMessage('Es gibt schon eine Schaltung mit diesem Namen in der Palette.');
         exit;
       end;
-    end else begin
-      //for i:=0 to length(paletteEntries)-1 do
-      //if (i<>currentBoard^.paletteIndex) and paletteEntries[i]^.usesBoard(paletteEntries[currentBoard^.paletteIndex]) then begin
-      //  if usedBy='' then usedBy:=     paletteEntries[i]^.name
-      //               else usedBy+=', '+paletteEntries[i]^.name;
-      //end;
-      //if usedBy<>'' then begin
-      //  ShowMessage('Der Eintrag kann nicht ersetzt werden weil er verwendet wird von: '+usedBy);
-      //  exit;
-      //end;
     end;
 
     if doReplace=mrYes then begin
@@ -531,6 +555,7 @@ PROCEDURE T_workspace.rebuildTree;
       nodeData:P_paletteTreeData;
       node: TTreeNode;
   begin
+    if paletteView=nil then exit;
     for i:=0 to length(currentPalette)-1 do dispose(currentPalette[i],destroy);
     setLength(currentPalette,0);
 
@@ -568,6 +593,7 @@ PROCEDURE T_workspace.rebuildMenu;
   VAR i:longint;
       item:TMenuItem;
   begin
+    if categoryRootItem=nil then exit;
     categoryRootItem.clear;
     item:=TMenuItem.create(categoryRootItem);
     item.caption:='<keine>';
@@ -631,4 +657,156 @@ PROCEDURE T_workspace.addCategory;
     node:=paletteView.items.add(nil,nodeData^.getName);
     node.data:=nodeData;
   end;
+
+CONSTRUCTOR T_importItems.create(CONST workspace_,importInto_:P_workspace);
+  VAR i:longint;
+      k:longint=0;
+      board:P_circuitBoard;
+      cat:string;
+  begin
+    workspace :=workspace_;
+    importInto:=importInto_;
+    setLength(items,length(workspace^.paletteEntries)+length(workspace^.draftEntries));
+    for i:=0 to length(workspace^.paletteEntries)-1 do begin
+      board:=workspace^.paletteEntries[i];
+      if board^.categoryIndex<0
+      then cat:=''
+      else cat:=workspace^.paletteCategories[board^.categoryIndex];
+      new(items[k],create(board,cat,false));
+      inc(k);
+    end;
+    for i:=0 to length(workspace^.draftEntries)-1 do begin
+      board:=workspace^.draftEntries[i];
+      if board^.categoryIndex<0
+      then cat:=''
+      else cat:=workspace^.paletteCategories[board^.categoryIndex];
+      new(items[k],create(board,cat,true));
+      inc(k);
+    end;
+
+    for k:=0 to length(items)-1 do begin
+      for i:=0 to length(workspace^.paletteEntries)-1 do
+      if (i<>k) and items[k]^.board^.usesBoard(workspace^.paletteEntries[i])
+      then items[k]^.addDependency(items[i]);
+
+      for board in importInto^.paletteEntries do
+      if (items[k]^.equivalentBoard=nil) and (items[k]^.board^.behaviorEquals(board))
+      then items[k]^.equivalentBoard:=board;
+
+      if items[k]^.draft then
+      for board in importInto^.draftEntries do
+      if (items[k]^.equivalentBoard=nil) and (items[k]^.board^.behaviorEquals(board))
+      then items[k]^.equivalentBoard:=board;
+
+      items[k]^.Selected:=items[k]^.equivalentBoard<>nil;
+    end;
+  end;
+
+DESTRUCTOR T_importItems.destroy;
+  VAR i:longint;
+  begin
+    for i:=0 to length(items)-1 do dispose(items[i],destroy);
+    setLength(items,0);
+  end;
+
+PROCEDURE T_importItems.executeImport;
+  FUNCTION remapCategory(CONST oldIndex:longint):longint;
+    VAR oldName:string;
+        i:longint;
+    begin
+      if oldIndex<0 then exit(-1);
+      oldName:=uppercase(workspace^.paletteCategories[oldIndex]);
+      for i:=0 to length(importInto^.paletteCategories)-1 do if uppercase(importInto^.paletteCategories[i])=oldName then exit(i);
+      result:=-1;
+    end;
+
+  VAR k,c:longint;
+      anyImported:boolean=false;
+      importedBoard: P_circuitBoard;
+  begin
+    for k:=0 to length(items)-1 do with items[k]^  do begin
+      board^.categoryIndex:=remapCategory(board^.categoryIndex);
+      board^.name:=board^.name+LineEnding+'(importiert)';
+      for c:=0 to length(items)-1 do if (items[c]^.equivalentBoard<>nil) then
+        board^.replaceCustomGates(items[c]^.board,items[c]^.equivalentBoard);
+      if Selected and not(alreadyExists) then begin
+        if draft
+        then importInto^.addDraft(board)
+        else begin
+          importedBoard:=importInto^.addPaletteEntry(board);
+          for c:=0 to length(items)-1 do if c<>k then items[c]^.board^.replaceCustomGates(board,importedBoard);
+        end;
+      end;
+      anyImported:=true;
+    end;
+    if anyImported then begin
+      importInto^.rebuildMenu;
+      importInto^.rebuildTree;
+    end;
+  end;
+
+CONSTRUCTOR T_importItem.create(CONST board_:P_circuitBoard; CONST categoryName_:string; CONST draft_:boolean=false);
+  begin
+    board:=board_;
+    categoryName:=categoryName_;
+    draft:=draft_;
+    equivalentBoard:=nil;
+    setLength(dependsOn,0);
+    setLength(isUsedBy,0);
+    Selected:=false;
+  end;
+
+DESTRUCTOR T_importItem.destroy;
+  begin
+    setLength(dependsOn,0);
+    setLength(isUsedBy,0);
+  end;
+
+PROCEDURE T_importItem.addDependency(CONST d:P_importItem);
+  begin
+    setLength(dependsOn,length(dependsOn)+1);
+    dependsOn[length(dependsOn)-1]:=d;
+
+    setLength(d^.isUsedBy,length(d^.isUsedBy)+1);
+    d^.isUsedBy[length(d^.isUsedBy)-1]:=@self;
+  end;
+
+PROCEDURE T_importItem.setSelected(CONST value:boolean);
+  VAR i:P_importItem;
+  begin
+    if (equivalentBoard=nil) and (value<>Selected) then begin
+      Selected:=value;
+      if value
+      then for i in dependsOn do i^.setSelected(true)
+      else for i in isUsedBy  do i^.setSelected(false);
+    end;
+  end;
+
+FUNCTION T_importItem.alreadyExists:boolean;
+  begin result:=equivalentBoard<>nil; end;
+
+FUNCTION T_importItem.itemCaption:string;
+  begin
+    if categoryName<>''
+    then result:=categoryName+' - '+board^.name
+    else result:=                   board^.name;
+    if draft then result+=' (Entwurf)';
+  end;
+
+PROCEDURE T_workspace.addDraft       (CONST board:P_circuitBoard);
+  begin
+    setLength(draftEntries,length(draftEntries)+1);
+    draftEntries[length(draftEntries)-1]:=board^.clone(false);
+  end;
+
+FUNCTION T_workspace.addPaletteEntry(CONST board:P_circuitBoard):P_circuitBoard;
+  VAR i:longint;
+  begin
+    i:=length(paletteEntries);
+    setLength(paletteEntries,i+1);
+    paletteEntries[i]:=board^.clone(false);
+    paletteEntries[i]^.paletteIndex:=i;
+    result:=paletteEntries[i];
+  end;
+
 {$endif}

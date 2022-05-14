@@ -97,7 +97,8 @@ TYPE
 
       FUNCTION usesBoard(CONST other:P_circuitBoard; CONST recurse:boolean=false):boolean;
 
-      FUNCTION equals(CONST other:P_circuitBoard):boolean;
+      FUNCTION behaviorEquals(CONST other:P_circuitBoard):boolean;
+      PROCEDURE replaceCustomGates(CONST oldPrototype,newPrototype:P_circuitBoard);
   end;
 
 {$undef includeInterface}
@@ -493,7 +494,7 @@ FUNCTION T_circuitBoard.loadFromStream(CONST workspace: P_workspace; VAR stream:
         try
           k:=stream.readNaturalNumber;
         except
-          k:=maxlongint;
+          k:=maxLongint;
         end;
         if k>=length(workspace^.paletteEntries) then exit(false);
         new(P_customGate(behavior),createFromBoard(workspace^.paletteEntries[k]));
@@ -755,11 +756,11 @@ PROCEDURE T_circuitBoard.sortGates;
       logicWire : T_logicWire;
       wireTrip  : T_wireTrip;
       sourceGate: T_annotatedGate;
-      updated: Boolean;
+      updated: boolean;
   begin
     setLength(annotatedGates,length(gates));
     for i:=0 to length(gates)-1 do begin
-      annotatedGates[i].distanceFromInput:=IfThen(gates[i]^.behavior^.gateType=gt_input,0,MaxLongint);
+      annotatedGates[i].distanceFromInput:=IfThen(gates[i]^.behavior^.gateType=gt_input,0,maxLongint);
       annotatedGates[i].inputIndex:=0;
       annotatedGates[i].fromIndex :=0;
       annotatedGates[i].gate:=gates[i];
@@ -771,7 +772,7 @@ PROCEDURE T_circuitBoard.sortGates;
         sourceGate:=annotatedGates[source.gateIndex(@self)];
         tmp.distanceFromInput:=sourceGate.distanceFromInput+1;
         tmp.fromIndex        :=source.index;
-        if sourceGate.distanceFromInput<MaxLongint then for wireTrip in wires do begin
+        if sourceGate.distanceFromInput<maxLongint then for wireTrip in wires do begin
           i:=wireTrip.sink.gateIndex(@self);
           tmp.inputIndex:=wireTrip.sink.index;
           if lesserThan(tmp,annotatedGates[i])
@@ -815,7 +816,6 @@ PROCEDURE T_circuitBoard.anyMouseUp(Sender: TObject; button: TMouseButton; Shift
     GUI^.incompleteWire.dragging:=false;
     drawAllWires;
   end;
-
 
 PROCEDURE T_circuitBoard.drawAllWires;
   PROCEDURE drawWires(CONST index:longint; CONST foreground:boolean);
@@ -1237,10 +1237,23 @@ FUNCTION T_circuitBoard.usesBoard(CONST other:P_circuitBoard; CONST recurse:bool
     for board in GUI^.redoList do if board^.usesBoard(other) then exit(true);
   end;
 
-FUNCTION T_circuitBoard.equals(CONST other:P_circuitBoard):boolean;
+FUNCTION T_circuitBoard.behaviorEquals(CONST other:P_circuitBoard):boolean;
+  VAR g1,g2:P_customGate;
   begin
-    //TODO: Stub!
-    //When this is implemented, importing selected boards from one workspace into another becomes feasible.
+    new(g1,createFromBoard(@self));
+    new(g2,createFromBoard(other));
+    result:=g1^.behaviorEquals(g2);
+    dispose(g1,destroy);
+    dispose(g2,destroy);
+  end;
+
+PROCEDURE T_circuitBoard.replaceCustomGates(CONST oldPrototype,newPrototype:P_circuitBoard);
+  VAR gate:P_visualGate;
+  begin
+    for gate in gates do
+    if (gate^.behavior^.gateType=gt_compound) and
+        (P_customGate(gate^.behavior)^.prototype =oldPrototype)
+    then P_customGate(gate^.behavior)^.prototype:=newPrototype;
   end;
 
 end.

@@ -7,7 +7,7 @@ USES
   cthreads,
   {$endif}{$endif}
   Interfaces, // this includes the LCL widgetset
-  Forms, digitaltrainerMain, propertyDialog, analysisDialog, draftFormUnit;
+  Forms, digitaltrainerMain, propertyDialog, analysisDialog, draftFormUnit,importUnit;
 
 {$R *.res}
 
@@ -20,6 +20,7 @@ begin
   Application.CreateForm(TgatePropertyDialog, gatePropertyDialog);
   Application.CreateForm(TanalysisForm, analysisForm);
   Application.CreateForm(TdraftsForm, draftsForm);
+  Application.CreateForm(TImportForm, ImportForm);
   Application.run;
 end.
 

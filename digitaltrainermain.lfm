@@ -4,8 +4,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   Top = 164
   Width = 1004
   Caption = 'Digitaltrainer'
-  ClientHeight = 667
+  ClientHeight = 662
   ClientWidth = 1004
+  DesignTimePPI = 120
   Menu = MainMenu
   OnCreate = FormCreate
   OnDestroy = FormDestroy
@@ -14,10 +15,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   WindowState = wsMaximized
   object ScrollBox1: TScrollBox
     Cursor = crCross
-    Left = 155
-    Height = 644
+    Left = 202
+    Height = 633
     Top = 0
-    Width = 849
+    Width = 802
     HorzScrollBar.Increment = 9
     HorzScrollBar.Page = 90
     HorzScrollBar.Smooth = True
@@ -30,33 +31,33 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     VertScrollBar.Tracking = True
     Align = alClient
     AutoScroll = False
-    ClientHeight = 623
-    ClientWidth = 828
+    ClientHeight = 608
+    ClientWidth = 777
     ParentFont = False
     TabOrder = 0
     object WireImage: TImage
       Cursor = crCross
       Left = 0
-      Height = 900
+      Height = 1125
       Top = 0
-      Width = 900
+      Width = 1125
     end
     object peekPanel0: TPanel
-      Left = 134
-      Height = 70
-      Top = 224
-      Width = 168
+      Left = 168
+      Height = 90
+      Top = 280
+      Width = 215
       AutoSize = True
       BevelWidth = 5
-      ClientHeight = 70
-      ClientWidth = 168
+      ClientHeight = 90
+      ClientWidth = 215
       ParentFont = False
       TabOrder = 0
       object peekLabel0: TLabel
         Left = 5
-        Height = 60
+        Height = 80
         Top = 5
-        Width = 158
+        Width = 205
         Align = alClient
         Caption = 'out 0 [16 bits]'#13#10'Wert (bin):  0000000000000000'#13#10'Wert (dec): 0'#13#10'Wert (sig): 0'
         ParentColor = False
@@ -64,21 +65,21 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
     end
     object peekPanel1: TPanel
-      Left = 134
-      Height = 70
-      Top = 224
-      Width = 168
+      Left = 168
+      Height = 90
+      Top = 280
+      Width = 215
       AutoSize = True
       BevelWidth = 5
-      ClientHeight = 70
-      ClientWidth = 168
+      ClientHeight = 90
+      ClientWidth = 215
       ParentFont = False
       TabOrder = 1
       object peekLabel1: TLabel
         Left = 5
-        Height = 60
+        Height = 80
         Top = 5
-        Width = 158
+        Width = 205
         Align = alClient
         Caption = 'out 0 [16 bits]'#13#10'Wert (bin):  0000000000000000'#13#10'Wert (dec): 0'#13#10'Wert (sig): 0'
         ParentColor = False
@@ -86,21 +87,21 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
     end
     object peekPanel2: TPanel
-      Left = 134
-      Height = 70
-      Top = 224
-      Width = 168
+      Left = 168
+      Height = 90
+      Top = 280
+      Width = 215
       AutoSize = True
       BevelWidth = 5
-      ClientHeight = 70
-      ClientWidth = 168
+      ClientHeight = 90
+      ClientWidth = 215
       ParentFont = False
       TabOrder = 2
       object peekLabel2: TLabel
         Left = 5
-        Height = 60
+        Height = 80
         Top = 5
-        Width = 158
+        Width = 205
         Align = alClient
         Caption = 'out 0 [16 bits]'#13#10'Wert (bin):  0000000000000000'#13#10'Wert (dec): 0'#13#10'Wert (sig): 0'
         ParentColor = False
@@ -108,21 +109,21 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
     end
     object peekPanel3: TPanel
-      Left = 134
-      Height = 70
-      Top = 224
-      Width = 168
+      Left = 168
+      Height = 90
+      Top = 280
+      Width = 215
       AutoSize = True
       BevelWidth = 5
-      ClientHeight = 70
-      ClientWidth = 168
+      ClientHeight = 90
+      ClientWidth = 215
       ParentFont = False
       TabOrder = 3
       object peekLabel3: TLabel
         Left = 5
-        Height = 60
+        Height = 80
         Top = 5
-        Width = 158
+        Width = 205
         Align = alClient
         Caption = 'out 0 [16 bits]'#13#10'Wert (bin):  0000000000000000'#13#10'Wert (dec): 0'#13#10'Wert (sig): 0'
         ParentColor = False
@@ -130,21 +131,21 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
     end
     object peekPanel4: TPanel
-      Left = 134
-      Height = 70
-      Top = 224
-      Width = 168
+      Left = 168
+      Height = 90
+      Top = 280
+      Width = 215
       AutoSize = True
       BevelWidth = 5
-      ClientHeight = 70
-      ClientWidth = 168
+      ClientHeight = 90
+      ClientWidth = 215
       ParentFont = False
       TabOrder = 4
       object peekLabel4: TLabel
         Left = 5
-        Height = 60
+        Height = 80
         Top = 5
-        Width = 158
+        Width = 205
         Align = alClient
         Caption = 'out 0 [16 bits]'#13#10'Wert (bin):  0000000000000000'#13#10'Wert (dec): 0'#13#10'Wert (sig): 0'
         ParentColor = False
@@ -152,21 +153,21 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
     end
     object peekPanel5: TPanel
-      Left = 134
-      Height = 70
-      Top = 224
-      Width = 168
+      Left = 168
+      Height = 90
+      Top = 280
+      Width = 215
       AutoSize = True
       BevelWidth = 5
-      ClientHeight = 70
-      ClientWidth = 168
+      ClientHeight = 90
+      ClientWidth = 215
       ParentFont = False
       TabOrder = 5
       object peekLabel5: TLabel
         Left = 5
-        Height = 60
+        Height = 80
         Top = 5
-        Width = 158
+        Width = 205
         Align = alClient
         Caption = 'out 0 [16 bits]'#13#10'Wert (bin):  0000000000000000'#13#10'Wert (dec): 0'#13#10'Wert (sig): 0'
         ParentColor = False
@@ -174,21 +175,21 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
     end
     object peekPanel6: TPanel
-      Left = 134
-      Height = 70
-      Top = 224
-      Width = 168
+      Left = 168
+      Height = 90
+      Top = 280
+      Width = 215
       AutoSize = True
       BevelWidth = 5
-      ClientHeight = 70
-      ClientWidth = 168
+      ClientHeight = 90
+      ClientWidth = 215
       ParentFont = False
       TabOrder = 6
       object peekLabel6: TLabel
         Left = 5
-        Height = 60
+        Height = 80
         Top = 5
-        Width = 158
+        Width = 205
         Align = alClient
         Caption = 'out 0 [16 bits]'#13#10'Wert (bin):  0000000000000000'#13#10'Wert (dec): 0'#13#10'Wert (sig): 0'
         ParentColor = False
@@ -196,21 +197,21 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
     end
     object peekPanel7: TPanel
-      Left = 134
-      Height = 70
-      Top = 224
-      Width = 168
+      Left = 168
+      Height = 90
+      Top = 280
+      Width = 215
       AutoSize = True
       BevelWidth = 5
-      ClientHeight = 70
-      ClientWidth = 168
+      ClientHeight = 90
+      ClientWidth = 215
       ParentFont = False
       TabOrder = 7
       object peekLabel7: TLabel
         Left = 5
-        Height = 60
+        Height = 80
         Top = 5
-        Width = 158
+        Width = 205
         Align = alClient
         Caption = 'out 0 [16 bits]'#13#10'Wert (bin):  0000000000000000'#13#10'Wert (dec): 0'#13#10'Wert (sig): 0'
         ParentColor = False
@@ -218,21 +219,21 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
     end
     object peekPanel8: TPanel
-      Left = 134
-      Height = 70
-      Top = 224
-      Width = 168
+      Left = 168
+      Height = 90
+      Top = 280
+      Width = 215
       AutoSize = True
       BevelWidth = 5
-      ClientHeight = 70
-      ClientWidth = 168
+      ClientHeight = 90
+      ClientWidth = 215
       ParentFont = False
       TabOrder = 8
       object peekLabel8: TLabel
         Left = 5
-        Height = 60
+        Height = 80
         Top = 5
-        Width = 158
+        Width = 205
         Align = alClient
         Caption = 'out 0 [16 bits]'#13#10'Wert (bin):  0000000000000000'#13#10'Wert (dec): 0'#13#10'Wert (sig): 0'
         ParentColor = False
@@ -240,21 +241,21 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
     end
     object peekPanel9: TPanel
-      Left = 134
-      Height = 70
-      Top = 224
-      Width = 168
+      Left = 168
+      Height = 90
+      Top = 280
+      Width = 215
       AutoSize = True
       BevelWidth = 5
-      ClientHeight = 70
-      ClientWidth = 168
+      ClientHeight = 90
+      ClientWidth = 215
       ParentFont = False
       TabOrder = 9
       object peekLabel9: TLabel
         Left = 5
-        Height = 60
+        Height = 80
         Top = 5
-        Width = 158
+        Width = 205
         Align = alClient
         Caption = 'out 0 [16 bits]'#13#10'Wert (bin):  0000000000000000'#13#10'Wert (dec): 0'#13#10'Wert (sig): 0'
         ParentColor = False
@@ -264,32 +265,32 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   end
   object Panel1: TPanel
     Left = 0
-    Height = 644
+    Height = 633
     Top = 0
-    Width = 155
+    Width = 194
     Align = alLeft
     BevelOuter = bvNone
-    ClientHeight = 644
-    ClientWidth = 155
+    ClientHeight = 633
+    ClientWidth = 194
     ParentFont = False
     TabOrder = 1
     object GroupBox2: TGroupBox
       Left = 0
-      Height = 45
-      Top = 195
-      Width = 155
+      Height = 56
+      Top = 244
+      Width = 194
       Align = alTop
       AutoSize = True
       Caption = 'Zoom'
-      ClientHeight = 25
-      ClientWidth = 151
+      ClientHeight = 31
+      ClientWidth = 190
       ParentFont = False
       TabOrder = 1
       object ZoomTrackBar: TTrackBar
         Left = 0
-        Height = 25
+        Height = 31
         Top = 0
-        Width = 151
+        Width = 190
         Max = 80
         Min = 1
         OnChange = ZoomTrackBarChange
@@ -301,14 +302,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     end
     object DeleteButton: TButton
       Left = 0
-      Height = 25
-      Top = 170
-      Width = 155
+      Height = 31
+      Top = 213
+      Width = 194
       Align = alTop
       Caption = '🗑'
       Font.CharSet = ANSI_CHARSET
       Font.Color = clBlack
-      Font.Height = -22
+      Font.Height = -28
       Font.Name = 'Segoe UI'
       Font.Pitch = fpVariable
       Font.Quality = fqDraft
@@ -318,20 +319,20 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     end
     object GroupBox4: TGroupBox
       Left = 0
-      Height = 105
+      Height = 131
       Top = 0
-      Width = 155
+      Width = 194
       Align = alTop
       Caption = 'Name und Beschreibung'
-      ClientHeight = 85
-      ClientWidth = 151
+      ClientHeight = 106
+      ClientWidth = 190
       ParentFont = False
       TabOrder = 0
       object captionEdit: TEdit
         Left = 0
-        Height = 23
+        Height = 28
         Top = 0
-        Width = 151
+        Width = 190
         Align = alTop
         OnEditingDone = captionEditEditingDone
         ParentFont = False
@@ -340,9 +341,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
       object descriptionMemo: TMemo
         Left = 0
-        Height = 62
-        Top = 23
-        Width = 151
+        Height = 78
+        Top = 28
+        Width = 190
         Align = alClient
         OnEditingDone = descriptionMemoEditingDone
         ParentFont = False
@@ -352,28 +353,28 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     object Splitter2: TSplitter
       Cursor = crVSplit
       Left = 0
-      Height = 5
-      Top = 105
-      Width = 155
+      Height = 6
+      Top = 131
+      Width = 194
       Align = alTop
       ResizeAnchor = akTop
     end
     object GroupBox5: TGroupBox
       Left = 0
-      Height = 399
-      Top = 245
-      Width = 155
+      Height = 327
+      Top = 306
+      Width = 194
       Align = alClient
       Caption = 'Gatter hinzufügen...'
-      ClientHeight = 379
-      ClientWidth = 151
+      ClientHeight = 302
+      ClientWidth = 190
       ParentFont = False
       TabOrder = 4
       object ButtonAddCustom: TButton
         Left = 0
-        Height = 25
-        Top = 197
-        Width = 151
+        Height = 31
+        Top = 246
+        Width = 190
         Align = alTop
         Caption = 'benutzerdefiniert'
         OnClick = ButtonAddCustomClick
@@ -382,9 +383,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
       object PaletteTreeView: TTreeView
         Left = 0
-        Height = 157
-        Top = 222
-        Width = 151
+        Height = 25
+        Top = 277
+        Width = 190
         Align = alClient
         HideSelection = False
         ParentFont = False
@@ -394,24 +395,24 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
       object Panel2: TPanel
         Left = 0
-        Height = 192
+        Height = 240
         Top = 0
-        Width = 151
+        Width = 190
         Align = alTop
         BevelOuter = bvNone
-        ClientHeight = 192
-        ClientWidth = 151
+        ClientHeight = 240
+        ClientWidth = 190
         ParentFont = False
         TabOrder = 2
         object Label1: TLabel
           AnchorSideLeft.Control = Panel2
           AnchorSideTop.Control = Panel2
-          Left = 5
-          Height = 15
+          Left = 6
+          Height = 20
           Top = 0
-          Width = 57
+          Width = 73
           Align = alCustom
-          BorderSpacing.Left = 5
+          BorderSpacing.Left = 6
           Caption = 'Basisgatter'
           ParentColor = False
           ParentFont = False
@@ -422,7 +423,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideTop.Side = asrBottom
           Left = 0
           Height = 25
-          Top = 40
+          Top = 45
           Width = 48
           Align = alCustom
           Caption = 'and'
@@ -437,7 +438,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideTop.Side = asrBottom
           Left = 48
           Height = 25
-          Top = 40
+          Top = 45
           Width = 48
           Align = alCustom
           Caption = 'or'
@@ -451,7 +452,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideTop.Control = ButtonAddConstantTrue
           Left = 96
           Height = 25
-          Top = 15
+          Top = 20
           Width = 48
           Align = alCustom
           Caption = 'not'
@@ -465,7 +466,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideTop.Control = ButtonAddOr
           Left = 96
           Height = 25
-          Top = 40
+          Top = 45
           Width = 48
           Align = alCustom
           Caption = 'xor'
@@ -480,7 +481,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideTop.Side = asrBottom
           Left = 48
           Height = 25
-          Top = 65
+          Top = 70
           Width = 48
           Align = alCustom
           Caption = 'nor'
@@ -495,7 +496,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideTop.Side = asrBottom
           Left = 96
           Height = 25
-          Top = 65
+          Top = 70
           Width = 48
           Align = alCustom
           Caption = 'nxor'
@@ -509,7 +510,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideTop.Side = asrBottom
           Left = 0
           Height = 25
-          Top = 65
+          Top = 70
           Width = 48
           Align = alCustom
           Caption = 'nand'
@@ -523,7 +524,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideTop.Side = asrBottom
           Left = 0
           Height = 25
-          Top = 15
+          Top = 20
           Width = 48
           Align = alCustom
           Caption = '1'
@@ -537,7 +538,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideTop.Control = ButtonAddConstantTrue
           Left = 48
           Height = 25
-          Top = 15
+          Top = 20
           Width = 48
           Align = alCustom
           Caption = '0'
@@ -549,10 +550,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = Label1
           AnchorSideTop.Control = ButtonAddNand
           AnchorSideTop.Side = asrBottom
-          Left = 5
-          Height = 15
-          Top = 90
-          Width = 17
+          Left = 6
+          Height = 20
+          Top = 95
+          Width = 21
           Caption = 'I/O'
           ParentColor = False
           ParentFont = False
@@ -562,9 +563,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideTop.Control = Label2
           AnchorSideTop.Side = asrBottom
           Left = 0
-          Height = 25
-          Top = 105
-          Width = 48
+          Height = 31
+          Top = 115
+          Width = 60
           Caption = 'input'
           OnClick = ButtonAddInputClick
           ParentFont = False
@@ -574,10 +575,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = ButtonAddInput
           AnchorSideLeft.Side = asrBottom
           AnchorSideTop.Control = ButtonAddInput
-          Left = 48
-          Height = 25
-          Top = 105
-          Width = 48
+          Left = 60
+          Height = 31
+          Top = 115
+          Width = 60
           Caption = 'output'
           OnClick = ButtonAddOutputClick
           ParentFont = False
@@ -587,10 +588,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = ButtonAddOutput
           AnchorSideLeft.Side = asrBottom
           AnchorSideTop.Control = ButtonAddOutput
-          Left = 96
-          Height = 25
-          Top = 105
-          Width = 48
+          Left = 120
+          Height = 31
+          Top = 115
+          Width = 60
           Caption = 'adapter'
           OnClick = ButtonAddAdapterClick
           ParentFont = False
@@ -601,10 +602,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideTop.Control = Label3
           AnchorSideTop.Side = asrBottom
           Left = 0
-          Height = 25
+          Height = 31
           Hint = 'Clock'
-          Top = 145
-          Width = 48
+          Top = 166
+          Width = 60
           Caption = '🕑'
           OnClick = ButtonAddClockClick
           ParentFont = False
@@ -616,10 +617,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = ButtonAddClock
           AnchorSideLeft.Side = asrBottom
           AnchorSideTop.Control = ButtonAddClock
-          Left = 48
-          Height = 25
-          Top = 145
-          Width = 48
+          Left = 60
+          Height = 31
+          Top = 166
+          Width = 60
           Caption = 'G🕑'
           OnClick = ButtonAddGatedClockClick
           ParentFont = False
@@ -632,9 +633,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideTop.Control = ButtonAddGatedClock
           AnchorSideTop.Side = asrBottom
           Left = 0
-          Height = 25
-          Top = 170
-          Width = 48
+          Height = 31
+          Top = 197
+          Width = 60
           Caption = '½→1'
           OnClick = ButtonAddTendToTrueClick
           ParentFont = False
@@ -646,10 +647,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = ButtonAddTendToTrue
           AnchorSideLeft.Side = asrBottom
           AnchorSideTop.Control = ButtonAddTendToTrue
-          Left = 48
-          Height = 25
-          Top = 170
-          Width = 48
+          Left = 60
+          Height = 31
+          Top = 197
+          Width = 60
           Caption = '½→0'
           OnClick = ButtonAddTendToFalseClick
           ParentFont = False
@@ -661,10 +662,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           AnchorSideLeft.Control = Label1
           AnchorSideTop.Control = ButtonAddInput
           AnchorSideTop.Side = asrBottom
-          Left = 5
-          Height = 15
-          Top = 130
-          Width = 36
+          Left = 6
+          Height = 20
+          Top = 146
+          Width = 48
           Caption = 'Spezial'
           ParentColor = False
           ParentFont = False
@@ -673,30 +674,30 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       object Splitter1: TSplitter
         Cursor = crVSplit
         Left = 0
-        Height = 5
-        Top = 192
-        Width = 151
+        Height = 6
+        Top = 240
+        Width = 190
         Align = alTop
         ResizeAnchor = akTop
       end
     end
     object GroupBox3: TGroupBox
       Left = 0
-      Height = 60
-      Top = 110
-      Width = 155
+      Height = 76
+      Top = 137
+      Width = 194
       Align = alTop
       AutoSize = True
       Caption = 'Geschwindigkeit'
-      ClientHeight = 40
-      ClientWidth = 151
+      ClientHeight = 51
+      ClientWidth = 190
       ParentFont = False
       TabOrder = 2
       object SpeedTrackBar: TTrackBar
         Left = 0
-        Height = 25
+        Height = 31
         Top = 0
-        Width = 100
+        Width = 132
         Frequency = 2
         Max = 35
         OnChange = SpeedTrackBarChange
@@ -706,10 +707,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         TabOrder = 0
       end
       object resetButton: TButton
-        Left = 100
-        Height = 25
+        Left = 132
+        Height = 31
         Top = 0
-        Width = 51
+        Width = 58
         Align = alRight
         AutoSize = True
         Caption = 'reset'
@@ -719,9 +720,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
       object speedLabel: TLabel
         Left = 0
-        Height = 15
-        Top = 25
-        Width = 151
+        Height = 20
+        Top = 31
+        Width = 190
         Align = alBottom
         Alignment = taCenter
         Caption = 'gestoppt'
@@ -732,52 +733,52 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     object Splitter3: TSplitter
       Cursor = crVSplit
       Left = 0
-      Height = 5
-      Top = 240
-      Width = 155
+      Height = 6
+      Top = 300
+      Width = 194
       Align = alTop
       ResizeAnchor = akTop
     end
   end
   object StatusBar1: TStatusBar
     Left = 0
-    Height = 23
-    Top = 644
+    Height = 29
+    Top = 633
     Width = 1004
     Panels = <    
       item
         Text = 'Schritte simuliert:'
-        Width = 50
+        Width = 62
       end>
     ParentFont = False
     SimplePanel = False
   end
   object Splitter4: TSplitter
-    Left = 192
+    Left = 194
     Height = 633
     Top = 0
-    Width = 6
+    Width = 8
   end
   object SimTimer: TTimer
     Enabled = False
     Interval = 100
     OnTimer = SimTimerTimer
-    Left = 392
-    Top = 24
+    Left = 490
+    Top = 30
   end
   object SaveDialog1: TSaveDialog
     Filter = 'Workspaces|*.workspace'
-    Left = 336
-    Top = 80
+    Left = 420
+    Top = 100
   end
   object OpenDialog1: TOpenDialog
     Filter = 'Workspaces|*.workspace'
-    Left = 336
-    Top = 24
+    Left = 420
+    Top = 30
   end
   object GateListBoxPopupMenu: TPopupMenu
-    Left = 264
-    Top = 80
+    Left = 330
+    Top = 100
     object miDeletePaletteEntry: TMenuItem
       Caption = 'Eintrag löschen'
       OnClick = miDeletePaletteEntryClick
@@ -803,8 +804,8 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     end
   end
   object MainMenu: TMainMenu
-    Left = 264
-    Top = 24
+    Left = 330
+    Top = 30
     object MenuItem1: TMenuItem
       Caption = '&Datei'
       object miNew: TMenuItem
@@ -821,6 +822,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         Caption = '&Speichern'
         ShortCut = 16467
         OnClick = miSaveClick
+      end
+      object miImport: TMenuItem
+        Caption = '&Importieren...'
+        OnClick = miImportClick
       end
       object miQuit: TMenuItem
         Caption = '&Beenden'
@@ -903,8 +908,8 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   end
   object AnyGatePopupMenu: TPopupMenu
     OnPopup = AnyGatePopupMenuPopup
-    Left = 264
-    Top = 152
+    Left = 330
+    Top = 190
     object miGateProperties: TMenuItem
       Caption = 'Eigenschaften...'
       OnClick = miGatePropertiesClick

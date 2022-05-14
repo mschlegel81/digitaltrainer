@@ -212,7 +212,7 @@ PROCEDURE T_visualGate.ensureGuiElements;
       for k:=0 to behavior^.numberOfInputs-1 do begin
         shapes[shapeIndex]:=TShape.create(nil);
         shapes[shapeIndex].Shape:=stCircle;
-        shapes[shapeIndex].Brush.Color:=BackgroundColor;
+        shapes[shapeIndex].Brush.color:=BackgroundColor;
         shapes[shapeIndex].Tag:=k;
         shapes[shapeIndex].OnClick  :=@inputClick;
         shapes[shapeIndex].parent:=board^.GUI^.container;
@@ -223,7 +223,7 @@ PROCEDURE T_visualGate.ensureGuiElements;
         shapes[shapeIndex]:=TShape.create(nil);
         shapes[shapeIndex].Shape:=stCircle;
         shapes[shapeIndex].Tag:=k;
-        shapes[shapeIndex].Brush.Color:=BackgroundColor;
+        shapes[shapeIndex].Brush.color:=BackgroundColor;
         shapes[shapeIndex].OnMouseDown:=@outputMouseDown;
         shapes[shapeIndex].OnMouseMove:=@outputMouseMove;
         shapes[shapeIndex].OnMouseUp  :=@outputMouseUp;

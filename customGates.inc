@@ -39,7 +39,6 @@ T_customGate=object(T_abstractGate)
 
   PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
   PROCEDURE countGates(VAR gateCount:T_gateCount); virtual;
-  FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
 end;
 {$endif}
 {$ifdef includeImplementation}
@@ -374,11 +373,6 @@ PROCEDURE T_customGate.countGates(VAR gateCount:T_gateCount);
   VAR gate:P_abstractGate;
   begin
     for gate in gates do gate^.countGates(gateCount);
-  end;
-
-FUNCTION T_customGate.equals(CONST other:P_abstractGate):boolean;
-  begin
-    result:=(other^.gateType=gateType) and (P_customGate(other)^.prototype^.equals(prototype));
   end;
 
 {$endif}

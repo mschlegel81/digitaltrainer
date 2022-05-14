@@ -1347,7 +1347,7 @@ FUNCTION T_abstractGate.behaviorEquals(CONST other:P_abstractGate):boolean;
         w:T_wireValue;
     begin
       stillSimulating:=true;
-      if (bitToFlip<totalInputWidth) then remainingSteps:=256 else remainingSteps:=MaxLongint;
+      if (bitToFlip<totalInputWidth) then remainingSteps:=256 else remainingSteps:=maxLongint;
       if (bitToFlip>=0) and (bitToFlip<totalInputWidth) then begin
         j:=bitToFlip;
         i:=0;
@@ -1388,7 +1388,7 @@ FUNCTION T_abstractGate.behaviorEquals(CONST other:P_abstractGate):boolean;
 
     //Simulate...
     //The wider the input, the more steps should be invested until gates are considered to behave equally.
-    stepsUntilConfidence:=Trunc(sqr(1+totalInputWidth)*100000);
+    stepsUntilConfidence:=trunc(sqr(1+totalInputWidth)*4096);
     reset;
     other^.reset; stillSimulating:=true;
     repeat
@@ -1396,7 +1396,7 @@ FUNCTION T_abstractGate.behaviorEquals(CONST other:P_abstractGate):boolean;
       then exit(false);
     until not(stillSimulating);
 
-    while stepsUntilConfidence>0 do begin
+    while (stepsUntilConfidence>0) and (bitToFlip<totalInputWidth shl 4) do begin
       setRandomInput;
       repeat
         if outputsDiffer

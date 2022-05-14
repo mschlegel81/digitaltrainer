@@ -67,7 +67,7 @@
         <PackageName Value="LCL"/>
       </Item1>
     </RequiredPackages>
-    <Units Count="11">
+    <Units Count="12">
       <Unit0>
         <Filename Value="digitaltrainer.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -132,6 +132,14 @@
         <Filename Value="workspaces.inc"/>
         <IsPartOfProject Value="True"/>
       </Unit10>
+      <Unit11>
+        <Filename Value="importunit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="ImportForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="importUnit"/>
+      </Unit11>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

@@ -22,6 +22,7 @@ TYPE
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
+    miImport: TMenuItem;
     Panel2: TPanel;
     peekLabel0: TLabel;
     MenuItem2: TMenuItem;
@@ -148,6 +149,7 @@ TYPE
     PROCEDURE miDraftsClick(Sender: TObject);
     PROCEDURE miEditCopyOfPaletteEntryClick(Sender: TObject);
     PROCEDURE miGatePropertiesClick(Sender: TObject);
+    PROCEDURE miImportClick(Sender: TObject);
     PROCEDURE miLoadClick(Sender: TObject);
     PROCEDURE miNewClick(Sender: TObject);
     PROCEDURE miPasteClick(Sender: TObject);
@@ -179,7 +181,7 @@ VAR
   DigitaltrainerMainForm: TDigitaltrainerMainForm;
 
 IMPLEMENTATION
-USES wiringUtil;
+USES wiringUtil,importUnit;
 
 {$R *.lfm}
 FUNCTION workspaceFilename:string;
@@ -395,6 +397,12 @@ PROCEDURE TDigitaltrainerMainForm.miGatePropertiesClick(Sender: TObject);
       uiAdapter.gateDeleted(visualGateForContextPopup);
       workspace.getCurrentBoard^.deleteInvalidWires;
     end;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miImportClick(Sender: TObject);
+  begin
+    if OpenDialog1.execute then
+    ImportForm.executeForFile(@workspace,OpenDialog1.fileName);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miLoadClick(Sender: TObject);
