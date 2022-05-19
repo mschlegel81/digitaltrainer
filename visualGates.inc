@@ -581,16 +581,17 @@ PROCEDURE T_visualGateForInput.inputModeClick(Sender: TObject);
 
 PROCEDURE T_visualGateForInput.inputEditEditingDone(Sender: TObject);
   VAR w:T_wireValue;
+      modified:boolean;
   begin
     case inputMode of
       im_bin:         w:=parseWireBin        (edit.text,behavior^.inputWidth(0));
       im_dec:         w:=parseWireDecimal    (edit.text,behavior^.inputWidth(0));
       im_2complement: w:=parseWire2Complement(edit.text,behavior^.inputWidth(0));
     end;
-    behavior^.setInput(0,w);
+    modified:=behavior^.setInput(0,w);
     updateText;
     updateIoVisuals;
-    if (board<>nil) and (board^.GUI<>nil) then board^.GUI^.anyChangeCallback(true);
+    if (board<>nil) and (board^.GUI<>nil) then board^.GUI^.anyChangeCallback(modified);
   end;
 
 PROCEDURE T_visualGateForInput.inputEditKeyEvent(Sender: TObject; VAR key: char);
