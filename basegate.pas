@@ -1239,12 +1239,43 @@ FUNCTION T_circuitBoard.usesBoard(CONST other:P_circuitBoard; CONST recurse:bool
 
 FUNCTION T_circuitBoard.behaviorEquals(CONST other:P_circuitBoard):boolean;
   VAR g1,g2:P_customGate;
+      i:longint=0;
+      j:longint=0;
+
+      inputWidths,outputWidths:array of longint;
+      gate:P_visualGate;
   begin
+    for gate in gates do case gate^.getBehavior^.gateType of
+      gt_input: begin
+        setLength(inputWidths,i+1);
+        inputWidths[i]:=gate^.getBehavior^.outputWidth(0);
+        inc(i);
+      end;
+      gt_output: begin
+        setLength(outputWidths,j+1);
+        outputWidths[j]:=gate^.getBehavior^.inputWidth(0);
+        inc(j);
+      end;
+    end;
+    i:=0;
+    j:=0;
+    for gate in other^.gates do case gate^.getBehavior^.gateType of
+      gt_input: begin
+        if (i>=length(inputWidths)) or (inputWidths[i]<>gate^.getBehavior^.outputWidth(0)) then exit(false);
+        inc(i);
+      end;
+      gt_output: begin
+        if (j>=length(outputWidths)) or (outputWidths[j]<>gate^.getBehavior^.inputWidth(0)) then exit(false);
+        inc(j);
+      end;
+    end;
+    if (i<>length(inputWidths)) or (j<>length(outputWidths)) then exit(false);
     new(g1,createFromBoard(@self));
     new(g2,createFromBoard(other));
     result:=g1^.behaviorEquals(g2);
     dispose(g1,destroy);
     dispose(g2,destroy);
+
   end;
 
 PROCEDURE T_circuitBoard.replaceCustomGates(CONST oldPrototype,newPrototype:P_circuitBoard);

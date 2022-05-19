@@ -186,8 +186,8 @@ FUNCTION T_uiAdapter.positionForNextGate(CONST gateExtend:T_point):T_point;
                    (srMin[1]+container.height) div zoom);
     srMin:=pointOf(srMin[0] div zoom,srMin[1] div zoom);
     if length(currentBoard^.gates)=0
-    then result:=pointOf((srMin[0]+srMax[0]-gateExtend[0]) shr 1,
-                         (srMin[1]+srMax[1]-gateExtend[1]) shr 1)
+    then result:=pointOf((srMin[0]+srMax[0]-gateExtend[0]) div 2,
+                         (srMin[1]+srMax[1]-gateExtend[1]) div 2)
     else begin
       if length(currentBoard^.gates)=1
       then begin
@@ -198,8 +198,8 @@ FUNCTION T_uiAdapter.positionForNextGate(CONST gateExtend:T_point):T_point;
                 currentBoard^.gates[length(currentBoard^.gates)-2]^.origin;
       if (result[0]<srMin[0]) or (result[0]+gateExtend[0]>srMax[0]) or
          (result[1]<srMin[1]) or (result[1]+gateExtend[1]>srMax[1])
-      then result:=pointOf((srMin[0]+srMax[0]-gateExtend[0]) shr 1,
-                           (srMin[1]+srMax[1]-gateExtend[1]) shr 1);
+      then result:=pointOf((srMin[0]+srMax[0]-gateExtend[0]) div 2,
+                           (srMin[1]+srMax[1]-gateExtend[1]) div 2);
 
     end;
   end;
@@ -319,7 +319,6 @@ PROCEDURE T_uiAdapter.fixAfterGatePropertiesEdited(CONST gate:P_abstractGate);
   PROCEDURE fixIoOrder;
     VAR idx:array of longint;
         iUpd   :longint=-1;
-        kUpd   :longint=-1;
         iSwitch:longint=-1;
         kSwitch:longint=-1;
         tmp:P_visualGate;
@@ -339,7 +338,6 @@ PROCEDURE T_uiAdapter.fixAfterGatePropertiesEdited(CONST gate:P_abstractGate);
         idx[length(idx)-1]:=i;
         if currentBoard^.gates[i]=relatedVisual then begin
           iUpd:=i;
-          kUpd:=length(idx)-1;
         end;
         if length(idx)-1=kSwitch then iSwitch:=i;
       end;

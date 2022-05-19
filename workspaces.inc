@@ -92,7 +92,7 @@ T_workspace=object(T_serializable)
     FUNCTION  numberOfDraftEntries:longint;
     FUNCTION  draftEntryName(CONST index:longint):string;
 
-    PROCEDURE addCategory;
+    FUNCTION addCategory(CONST caption:string=''):longint;
 
     PROPERTY getCurrentBoard:P_circuitBoard read currentBoard;
 end;
@@ -560,10 +560,6 @@ PROCEDURE T_workspace.rebuildTree;
     setLength(currentPalette,0);
 
     paletteView.items.clear;
-    for i:=0 to length(paletteEntries)-1 do
-    if (paletteEntries[i]^.categoryIndex<0) and
-       not(paletteEntries[i]^.usesBoard(currentBoard,true))
-    then addBoardToTree(paletteEntries[i]);
 
     for i:=0 to length(paletteCategories)-1 do begin
       new(nodeData,create(paletteCategories[i],i));
@@ -578,9 +574,14 @@ PROCEDURE T_workspace.rebuildTree;
        not(paletteEntries[i]^.usesBoard(currentBoard,true))
     then addBoardToTree(paletteEntries[i]);
 
+    paletteView.AlphaSort;
     for node in paletteView.items do if node.HasChildren then node.AlphaSort;
 
-    paletteView.FullExpand;
+    for i:=0 to length(paletteEntries)-1 do
+    if (paletteEntries[i]^.categoryIndex<0) and
+       not(paletteEntries[i]^.usesBoard(currentBoard,true))
+    then addBoardToTree(paletteEntries[i]);
+
     paletteView.OnEdited:=@paletteViewEdited;
   end;
 
@@ -590,8 +591,11 @@ PROCEDURE T_workspace.paletteViewEdited(Sender: TObject; node: TTreeNode; VAR S:
   end;
 
 PROCEDURE T_workspace.rebuildMenu;
-  VAR i:longint;
+  TYPE T_sortableCat=record caption:string; index:longint; end;
+  VAR i,j:longint;
       item:TMenuItem;
+      sortable:array of T_sortableCat;
+      tmp:T_sortableCat;
   begin
     if categoryRootItem=nil then exit;
     categoryRootItem.clear;
@@ -601,13 +605,32 @@ PROCEDURE T_workspace.rebuildMenu;
     item.OnClick:=@setBoardCategoryEvent;
     categoryRootItem.add(item);
 
+    setLength(sortable,length(paletteCategories));
     for i:=0 to length(paletteCategories)-1 do begin
+      sortable[i].index  :=i;
+      sortable[i].caption:=paletteCategories[i];
+      for j:=0 to i-1 do if sortable[j].caption>sortable[i].caption then begin
+        tmp        :=sortable[i];
+        sortable[i]:=sortable[j];
+        sortable[j]:=tmp;
+      end;
+    end;
+
+    for tmp in sortable do with tmp do begin
       item:=TMenuItem.create(categoryRootItem);
-      item.caption:=paletteCategories[i];
-      item.Tag:=i;
+      item.caption:=caption;
+      item.Tag:=index;
       categoryRootItem.add(item);
       item.OnClick:=@setBoardCategoryEvent;
     end;
+
+    //for i:=0 to length(paletteCategories)-1 do begin
+    //  item:=TMenuItem.create(categoryRootItem);
+    //  item.caption:=paletteCategories[i];
+    //  item.Tag:=i;
+    //  categoryRootItem.add(item);
+    //  item.OnClick:=@setBoardCategoryEvent;
+    //end;
   end;
 
 PROCEDURE T_workspace.setBoardCategory(CONST paletteIndex,categoryIndex:longint);
@@ -637,14 +660,17 @@ PROCEDURE T_workspace.deleteCategory(CONST categoryIndex:longint);
     rebuildMenu;
   end;
 
-PROCEDURE T_workspace.addCategory;
+FUNCTION T_workspace.addCategory(CONST caption:string=''):longint;
   VAR k:longint;
       nodeData:P_paletteTreeData;
       node: TTreeNode;
   begin
     k:=length(paletteCategories);
     setLength(paletteCategories,k+1);
-    paletteCategories[k]:='<Unbenannte Kategorie '+intToStr(k+1)+'>';
+    if caption=''
+    then paletteCategories[k]:='<Unbenannte Kategorie '+intToStr(k+1)+'>'
+    else paletteCategories[k]:=caption;
+    result:=k;
 
     rebuildMenu;
 
@@ -710,26 +736,42 @@ DESTRUCTOR T_importItems.destroy;
   end;
 
 PROCEDURE T_importItems.executeImport;
+  VAR newCategories:array of longint;
+
   FUNCTION remapCategory(CONST oldIndex:longint):longint;
     VAR oldName:string;
         i:longint;
     begin
       if oldIndex<0 then exit(-1);
+
+      result:=newCategories[oldIndex];
+      if result>=0 then exit(result);
+
       oldName:=uppercase(workspace^.paletteCategories[oldIndex]);
-      for i:=0 to length(importInto^.paletteCategories)-1 do if uppercase(importInto^.paletteCategories[i])=oldName then exit(i);
-      result:=-1;
+      for i:=0 to length(importInto^.paletteCategories)-1 do if uppercase(importInto^.paletteCategories[i])=oldName then begin
+        newCategories[oldIndex]:=i;
+        exit(i);
+      end;
+
+      result:=importInto^.addCategory(workspace^.paletteCategories[oldIndex]+' (importiert)');
+      newCategories[oldIndex]:=result;
     end;
 
   VAR k,c:longint;
       anyImported:boolean=false;
       importedBoard: P_circuitBoard;
   begin
+    setLength(newCategories,length(workspace^.paletteCategories));
+    for k:=0 to length(newCategories)-1 do newCategories[k]:=-1;
+
     for k:=0 to length(items)-1 do with items[k]^  do begin
-      board^.categoryIndex:=remapCategory(board^.categoryIndex);
-      board^.name:=board^.name+LineEnding+'(importiert)';
       for c:=0 to length(items)-1 do if (items[c]^.equivalentBoard<>nil) then
         board^.replaceCustomGates(items[c]^.board,items[c]^.equivalentBoard);
       if Selected and not(alreadyExists) then begin
+
+        board^.categoryIndex:=remapCategory(board^.categoryIndex);
+        if board^.categoryIndex<0 then board^.name:=board^.name+LineEnding+'(importiert)';
+
         if draft
         then importInto^.addDraft(board)
         else begin
