@@ -31,6 +31,8 @@ T_uiAdapter=object
     end;
     PROCEDURE peekLabelClick(Sender: TObject);
     PROCEDURE fixWireImageSize;
+    PROCEDURE initWireGraph(CONST start: T_visualGateConnector; CONST includeWires:boolean=true);
+    FUNCTION findWirePath(CONST start:T_visualGateConnector; CONST endPoint:T_point):T_wirePath;
   public
     CONSTRUCTOR create(CONST zoom_:longint; CONST container_:TScrollBox; CONST wireImage_:TImage; CONST gatePopup:TPopupMenu; CONST anyChangeCallback_:F_changeCallback);
     DESTRUCTOR destroy;
@@ -375,6 +377,43 @@ PROCEDURE T_uiAdapter.fixAfterGatePropertiesEdited(CONST gate:P_abstractGate);
        (peekPanels[i].connector.gate=relatedVisual) and
        (peekPanels[i].connector.index>gate^.numberOfOutputs) then peekPanels[i].panel.visible:=false;
     currentBoard^.deleteInvalidWires;
+  end;
+
+PROCEDURE T_uiAdapter.initWireGraph(CONST start: T_visualGateConnector; CONST includeWires: boolean);
+  VAR gate:P_visualGate;
+      x,y,i,j:longint;
+  begin
+    if currentBoard=nil then exit;
+    wireGraph.initDirections;
+    for gate in currentBoard^.gates do begin
+      //Points within the gate cannot be reached
+      for x:=gate^.origin[0] to gate^.origin[0]+gate^.size[0] do
+      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do
+      wireGraph.dropNode(pointOf(x,y));
+      //Input connections:
+      for i:=0 to gate^.numberOfInputs-1
+      do wireGraph.addUnidirectionalEdge(gate^.getInputPositionInGridSize(i)+wd_left,wd_right);
+      //Output connections:
+      for i:=0 to gate^.numberOfOutputs-1
+      do wireGraph.addUnidirectionalEdge(gate^.getOutputPositionInGridSize(i),wd_right);
+      //No diagonals right left and right of the gate (to prevent blocking of I/O)
+      x:=gate^.origin[0];
+      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do wireGraph.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
+      x:=gate^.origin[1]+1;
+      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do wireGraph.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
+    end;
+    if includeWires then
+    for i:=0 to length(currentBoard^.logicWires)-1 do
+    if (currentBoard^.logicWires[i].source<>start) then with currentBoard^.logicWires[i] do
+      for j:=0 to length(wires)-1 do wireGraph.dropWire(wires[j].visual);
+  end;
+
+FUNCTION T_uiAdapter.findWirePath(CONST start: T_visualGateConnector; CONST endPoint: T_point): T_wirePath;
+  begin
+    initWireGraph(start,true);
+    if wireGraph.anyEdgeLeadsTo(endPoint)
+    then result:=wireGraph.findPath(start.gate^.getOutputPositionInGridSize(start.index),endPoint)
+    else setLength(result,0);
   end;
 
 {$endif}

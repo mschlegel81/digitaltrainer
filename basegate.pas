@@ -60,9 +60,7 @@ TYPE
       FUNCTION positionNewGate(CONST gateToAdd:P_visualGate):boolean;
       PROCEDURE addGateWithoutChecking(CONST gateToAdd:P_visualGate);
       FUNCTION isInputConnected(CONST gate:P_visualGate; CONST inputIndex:longint):boolean;
-      PROCEDURE initWireGraph(CONST start: T_visualGateConnector; CONST includeWires:boolean=true);
       PROCEDURE drawAllWires;
-      FUNCTION findWirePath(CONST start:T_visualGateConnector; CONST endPoint:T_point):T_wirePath;
       PROCEDURE finishWireDrag(CONST targetPoint:T_point; CONST previewDuringDrag:boolean=false);
       PROCEDURE WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
       PROCEDURE WireImageMouseMove(Sender: TObject; Shift: TShiftState; X,Y: integer);
@@ -104,6 +102,11 @@ TYPE
 {$undef includeInterface}
 IMPLEMENTATION
 USES sysutils,math,myGenerics,Dialogs,DateUtils;
+OPERATOR =(CONST x,y:T_visualGateConnector):boolean;
+  begin
+    result:=(x.gate=y.gate) and (x.index=y.index);
+  end;
+
 {$define includeImplementation}
 {$i visualgates.inc}
 {$i customGates.inc}
@@ -111,10 +114,6 @@ USES sysutils,math,myGenerics,Dialogs,DateUtils;
 {$i uiAdapter.inc}
 {$undef includeImplementation}
 
-OPERATOR =(CONST x,y:T_visualGateConnector):boolean;
-  begin
-    result:=(x.gate=y.gate) and (x.index=y.index);
-  end;
 
 FUNCTION T_visualGateConnector.gateIndex(CONST board: P_circuitBoard):longint;
   begin
@@ -866,50 +865,14 @@ PROCEDURE T_circuitBoard.drawAllWires;
     end;
   end;
 
-PROCEDURE T_circuitBoard.initWireGraph(CONST start: T_visualGateConnector; CONST includeWires: boolean);
-  VAR gate:P_visualGate;
-      x,y,i,j:longint;
-  begin
-    if GUI=nil then exit;
-    GUI^.wireGraph.initDirections;
-    for gate in gates do begin
-      //Points within the gate cannot be reached
-      for x:=gate^.origin[0] to gate^.origin[0]+gate^.size[0] do
-      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do
-      GUI^.wireGraph.dropNode(pointOf(x,y));
-      //Input connections:
-      for i:=0 to gate^.numberOfInputs-1
-      do GUI^.wireGraph.addUnidirectionalEdge(gate^.getInputPositionInGridSize(i)+wd_left,wd_right);
-      //Output connections:
-      for i:=0 to gate^.numberOfOutputs-1
-      do GUI^.wireGraph.addUnidirectionalEdge(gate^.getOutputPositionInGridSize(i),wd_right);
-      //No diagonals right left and right of the gate (to prevent blocking of I/O)
-      x:=gate^.origin[0];
-      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do GUI^.wireGraph.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
-      x:=gate^.origin[1]+1;
-      for y:=gate^.origin[1] to gate^.origin[1]+gate^.size[1] do GUI^.wireGraph.dropEdges(pointOf(x,y),[wd_leftDown,wd_leftUp,wd_rightDown,wd_rightUp]);
-    end;
-    if includeWires then
-    for i:=0 to length(logicWires)-1 do
-    if (logicWires[i].source<>start) then with logicWires[i] do
-      for j:=0 to length(wires)-1 do GUI^.wireGraph.dropWire(wires[j].visual);
-  end;
-
-FUNCTION T_circuitBoard.findWirePath(CONST start: T_visualGateConnector; CONST endPoint: T_point): T_wirePath;
-  begin
-    initWireGraph(start,true);
-    if GUI^.wireGraph.anyEdgeLeadsTo(endPoint)
-    then result:=GUI^.wireGraph.findPath(start.gate^.getOutputPositionInGridSize(start.index),endPoint)
-    else setLength(result,0);
-  end;
-
+//TODO: Move to T_uiAdapter ?
 PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previewDuringDrag: boolean);
 
   PROCEDURE drawTempWire(CONST targetPoint: T_point);
     VAR wire:T_wirePath;
         i:longint;
     begin
-      wire:=findWirePath(GUI^.incompleteWire.source,targetPoint);
+      wire:=GUI^.findWirePath(GUI^.incompleteWire.source,targetPoint);
       if length(wire)<=0 then begin
         setLength(wire,2);
         wire[0]:=GUI^.incompleteWire.sourcePoint;
@@ -981,6 +944,7 @@ PROCEDURE T_circuitBoard.finishWireDrag(CONST targetPoint: T_point; CONST previe
     if (GUI<>nil) then GUI^.repaint;
   end;
 
+//TODO: Move to T_uiAdapter ?
 PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
   FUNCTION hasHigherPrio(CONST a,b:T_logicWire):boolean;
     VAR aDist:int64=0;
@@ -1045,7 +1009,7 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
 
     connector.gate:=nil;
     connector.index:=0;
-    initWireGraph(connector,false);
+    GUI^.initWireGraph(connector,false);
     initialize(preview);
     setLength(preview,length(logicWires));
     for i:=0 to length(logicWires)-1 do with logicWires[i] do begin
