@@ -421,13 +421,13 @@ PROCEDURE T_visualGate.outputMouseMove(Sender: TObject; Shift: TShiftState; X, Y
   begin
     if board=nil then exit;
     if board^.GUI^.incompleteWire.dragging
-    then board^.finishWireDrag(pointOf(dragX+x,dragY+y),true);
+    then board^.GUI^.finishWireDrag(pointOf(dragX+x,dragY+y),true);
   end;
 
 PROCEDURE T_visualGate.outputMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     if board=nil then exit;
-    board^.finishWireDrag(pointOf(dragX+x,dragY+y));
+    board^.GUI^.finishWireDrag(pointOf(dragX+x,dragY+y));
   end;
 
 FUNCTION T_visualGate.getInputPositionInGridSize(CONST index: longint): T_point;

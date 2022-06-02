@@ -433,7 +433,7 @@ PROCEDURE TDigitaltrainerMainForm.miNewClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miPasteClick(Sender: TObject);
   begin
     BeginFormUpdate;
-    workspace.getCurrentBoard^.pasteFromClipboard;
+    uiAdapter.pasteFromClipboard;
     EndFormUpdate;
     DoAllAutoSize;
     uiAdapter.repaint;

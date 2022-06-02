@@ -100,9 +100,9 @@ TYPE
     PROCEDURE FormCloseQuery(Sender: TObject; VAR CanClose: boolean);
     PROCEDURE FormResize(Sender: TObject);
     PROCEDURE rbBinaryChange(Sender: TObject);
-    PROCEDURE SizesStringGridCompareCells(Sender: TObject; aCol, aRow, BCol,
+    PROCEDURE SizesStringGridCompareCells(Sender: TObject; aCol, aRow, bCol,
       BRow: integer; VAR result: integer);
-    PROCEDURE StringGridCompareCells(Sender: TObject; aCol, aRow, BCol,
+    PROCEDURE StringGridCompareCells(Sender: TObject; aCol, aRow, bCol,
       BRow: integer; VAR result: integer);
     PROCEDURE TimeScrollBarChange(Sender: TObject);
     PROCEDURE UpdateTableButtonClick(Sender: TObject);
@@ -228,7 +228,7 @@ PROCEDURE T_paintable.paint(CONST zoom: longint; CONST scaleType:T_scaleType; CO
 
       i,bitIdx,k:longint;
       x,y:longint;
-      red:boolean=true;
+      paintInRed:boolean=true;
       rowMeta: T_graphMetaDataEntry;
       determinedValue: boolean;
 
@@ -261,12 +261,12 @@ PROCEDURE T_paintable.paint(CONST zoom: longint; CONST scaleType:T_scaleType; CO
           x:=timestepToScreenX(zoom,startIndex,rows[i].dat[0].x);
           y:=rowMeta.transformY(rows[i].dat[0].v,scaleType,determinedValue,bitIdx);
           Canvas.MoveTo(x,y);
-          Canvas.Pen.color:=colorTab[red,determinedValue];
+          Canvas.Pen.color:=colorTab[paintInRed,determinedValue];
           for k:=1 to rows[i].fill-1 do begin
             x:=timestepToScreenX(zoom,startIndex,rows[i].dat[k].x);
             Canvas.LineTo(x,y);
             y:=rowMeta.transformY(rows[i].dat[k].v,scaleType,determinedValue,bitIdx);
-            Canvas.Pen.color:=colorTab[red,determinedValue];
+            Canvas.Pen.color:=colorTab[paintInRed,determinedValue];
             Canvas.LineTo(x,y);
           end;
         end;
@@ -274,16 +274,16 @@ PROCEDURE T_paintable.paint(CONST zoom: longint; CONST scaleType:T_scaleType; CO
         x:=timestepToScreenX(zoom,startIndex,rows[i].dat[0].x);
         y:=rowMeta.transformY(rows[i].dat[0].v,scaleType,determinedValue);
         Canvas.MoveTo(x,y);
-        Canvas.Pen.color:=colorTab[red,determinedValue];
+        Canvas.Pen.color:=colorTab[paintInRed,determinedValue];
         for k:=1 to rows[i].fill-1 do begin
           x:=timestepToScreenX(zoom,startIndex,rows[i].dat[k].x);
           Canvas.LineTo(x,y);
           y:=rowMeta.transformY(rows[i].dat[k].v,scaleType,determinedValue);
-          Canvas.Pen.color:=colorTab[red,determinedValue];
+          Canvas.Pen.color:=colorTab[paintInRed,determinedValue];
           Canvas.LineTo(x,y);
         end;
       end;
-      red:=not(red);
+      paintInRed:=not(paintInRed);
     end;
 
   end;
@@ -715,28 +715,28 @@ PROCEDURE TanalysisForm.rbBinaryChange(Sender: TObject);
     repaintGraph;
   end;
 
-PROCEDURE TanalysisForm.SizesStringGridCompareCells(Sender: TObject; aCol, aRow, BCol, BRow: integer; VAR result: integer);
+PROCEDURE TanalysisForm.SizesStringGridCompareCells(Sender: TObject; aCol, aRow, bCol, BRow: integer; VAR result: integer);
   VAR a,b:int64;
   begin
     if (aCol=1) and (bCol=1) then begin
       a:=StrToInt64Def(SizesStringGrid.Cells[aCol,aRow],-1);
-      b:=StrToInt64Def(SizesStringGrid.Cells[BCol,BRow],-1);
+      b:=StrToInt64Def(SizesStringGrid.Cells[bCol,BRow],-1);
       if a=b then result:=0 else if a>b then result:=1 else result:=-1;
     end else begin
-      if SizesStringGrid.Cells[aCol,aRow]=SizesStringGrid.Cells[BCol,BRow]
+      if SizesStringGrid.Cells[aCol,aRow]=SizesStringGrid.Cells[bCol,BRow]
       then result:=0
-      else if SizesStringGrid.Cells[aCol,aRow]>SizesStringGrid.Cells[BCol,BRow]
+      else if SizesStringGrid.Cells[aCol,aRow]>SizesStringGrid.Cells[bCol,BRow]
       then result:=1
       else result:=-1;
     end;
     if SizesStringGrid.SortOrder=soDescending then result:=-result;
   end;
 
-PROCEDURE TanalysisForm.StringGridCompareCells(Sender: TObject; aCol, aRow, BCol, BRow: integer; VAR result: integer);
+PROCEDURE TanalysisForm.StringGridCompareCells(Sender: TObject; aCol, aRow, bCol, BRow: integer; VAR result: integer);
   VAR a,b:int64;
   begin
     a:=StrToInt64Def(StringGrid.Cells[aCol,aRow],-1);
-    b:=StrToInt64Def(StringGrid.Cells[BCol,BRow],-1);
+    b:=StrToInt64Def(StringGrid.Cells[bCol,BRow],-1);
     if a=b then result:=0 else if a>b then result:=1 else result:=-1;
     if StringGrid.SortOrder=soDescending then result:=-result;
   end;
@@ -831,7 +831,7 @@ PROCEDURE TanalysisForm.repaintGraph;
   VAR simIndex:longint;
       scaleType: T_scaleType;
       i:longint;
-      red:boolean=true;
+      paintInRed:boolean=true;
       paintable:T_paintable;
   begin
     if length(simulationOutputs)=0 then exit;
@@ -847,15 +847,15 @@ PROCEDURE TanalysisForm.repaintGraph;
 
     Image1.picture.Bitmap.Canvas.Font.Orientation:=900;
     for i:=0 to length(graphMetaData.input)-1 do begin
-      if red then Image1.picture.Bitmap.Canvas.Font.color:=clRed
+      if paintInRed then Image1.picture.Bitmap.Canvas.Font.color:=clRed
              else Image1.picture.Bitmap.Canvas.Font.color:=clBlue;
-      red:=not(red);
+      paintInRed:=not(paintInRed);
       Image1.picture.Bitmap.Canvas.textOut(0,graphMetaData.input[i].plotY0,graphMetaData.input[i].caption);
     end;
     for i:=0 to length(graphMetaData.output)-1 do begin
-      if red then Image1.picture.Bitmap.Canvas.Font.color:=clRed
+      if paintInRed then Image1.picture.Bitmap.Canvas.Font.color:=clRed
              else Image1.picture.Bitmap.Canvas.Font.color:=clBlue;
-      red:=not(red);
+      paintInRed:=not(paintInRed);
       Image1.picture.Bitmap.Canvas.textOut(0,graphMetaData.output[i].plotY0,graphMetaData.output[i].caption);
     end;
 

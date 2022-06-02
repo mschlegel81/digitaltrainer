@@ -53,6 +53,14 @@ T_uiAdapter=object
     PROCEDURE performUndo;
     PROCEDURE performRedo;
     PROCEDURE fixAfterGatePropertiesEdited(CONST gate:P_abstractGate);
+
+    PROCEDURE drawAllWires;
+    PROCEDURE finishWireDrag(CONST targetPoint:T_point; CONST previewDuringDrag:boolean=false);
+    PROCEDURE WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE WireImageMouseMove(Sender: TObject; Shift: TShiftState; X,Y: integer);
+    PROCEDURE WireImageMouseUp  (Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE pasteFromClipboard;
 end;
 {$endif}
 {$ifdef includeImplementation}
@@ -79,6 +87,13 @@ CONSTRUCTOR T_uiAdapter.create(CONST zoom_: longint; CONST container_: TScrollBo
     currentBoard:=nil;
     wireGraph.create;
     setLength(peekPanels,0);
+
+    wireImage.OnMouseDown:=@WireImageMouseDown;
+    wireImage.OnMouseUp  :=@WireImageMouseUp;
+    wireImage.OnMouseMove:=@WireImageMouseMove;
+    container.OnMouseDown:=@WireImageMouseDown;
+    container.OnMouseUp  :=@WireImageMouseUp;
+    container.OnMouseMove:=@WireImageMouseMove;
   end;
 
 DESTRUCTOR T_uiAdapter.destroy;
@@ -414,6 +429,240 @@ FUNCTION T_uiAdapter.findWirePath(CONST start: T_visualGateConnector; CONST endP
     if wireGraph.anyEdgeLeadsTo(endPoint)
     then result:=wireGraph.findPath(start.gate^.getOutputPositionInGridSize(start.index),endPoint)
     else setLength(result,0);
+  end;
+
+PROCEDURE T_uiAdapter.anyMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  begin
+    incompleteWire.dragging:=false;
+    drawAllWires;
+  end;
+
+PROCEDURE T_uiAdapter.drawAllWires;
+  PROCEDURE drawWires(CONST index:longint; CONST foreground:boolean);
+    VAR j,k:longint;
+    begin for j:=0 to length(currentBoard^.logicWires[index].wires)-1 do with currentBoard^.logicWires[index].wires[j] do if length(visual)>1 then begin
+      if foreground then begin
+        if currentBoard^.logicWires[index].wires[j].marked
+        then wireImage.Canvas.Pen.color:=clYellow
+        else wireImage.Canvas.Pen.color:=clBlack;
+      end;
+      wireImage.Canvas.MoveTo(visual[0,0]*zoom,visual[0,1]*zoom);
+      for k:=1 to length(visual)-1 do
+      wireImage.Canvas.LineTo(visual[k,0]*zoom,visual[k,1]*zoom);
+    end; end;
+
+  VAR i:longint;
+      wireWidth,gapWidth:longint;
+  begin
+    if wireImage=nil then exit;
+    with wireImage.Canvas do begin
+      Brush.color:=BackgroundColor;
+      clear;
+      for i:=0 to length(currentBoard^.logicWires)-1 do begin
+        case currentBoard^.logicWires[i].width of
+          0..1: begin
+            wireWidth:=max(1,round(zoom*0.08));
+            gapWidth :=max(1,round(zoom*0.38));
+          end;
+          4..7: begin
+            wireWidth:=max(1,round(zoom*0.15));
+            gapWidth :=max(1,round(zoom*0.45));
+          end;
+          8..15: begin
+            wireWidth:=max(1,round(zoom*0.25));
+            gapWidth :=max(1,round(zoom*0.55));
+          end;
+          else begin
+            wireWidth:=max(1,round(zoom*0.35));
+            gapWidth :=max(1,round(zoom*0.65));
+          end;
+        end;
+        Pen.color:=BackgroundColor; Pen.width:=gapWidth;
+        drawWires(i,false);
+
+        Pen.width:=wireWidth;
+        drawWires(i,true);
+      end;
+    end;
+  end;
+
+PROCEDURE T_uiAdapter.finishWireDrag(CONST targetPoint: T_point; CONST previewDuringDrag: boolean);
+
+  PROCEDURE drawTempWire(CONST targetPoint: T_point);
+    VAR wire:T_wirePath;
+        i:longint;
+    begin
+      wire:=findWirePath(incompleteWire.source,targetPoint);
+      if length(wire)<=0 then begin
+        setLength(wire,2);
+        wire[0]:=incompleteWire.sourcePoint;
+        wire[1]:=targetPoint;
+      end;
+      drawAllWires;
+      with wireImage.Canvas do begin
+        Pen.color:=clRed;
+        Pen.width:=max(1,round(zoom*0.15));
+        MoveTo(wire[0,0]*zoom,wire[0,1]*zoom);
+        for i:=1 to length(wire)-1 do LineTo(wire[i,0]*zoom,wire[i,1]*zoom);
+      end;
+    end;
+
+  PROCEDURE cleanup;
+    begin
+      drawAllWires;
+      incompleteWire.dragging:=false;
+    end;
+
+  VAR i:longint=0;
+      j:longint;
+      gate:P_visualGate;
+      connector:T_visualGateConnector;
+
+      distanceToConnector:double=infinity;
+      newDistance:double;
+  begin
+    if not(incompleteWire.dragging) then exit;
+    connector.gate:=nil;
+    for gate in currentBoard^.gates do
+    for j:=0 to gate^.numberOfInputs-1 do begin
+      newDistance:=euklideanDistance(gate^.getInputPositionInGridSize(j)*zoom,targetPoint);
+      if (newDistance<distanceToConnector) and
+         (gate^.behavior^.inputWidth(j)=incompleteWire.width) and
+         not(currentBoard^.isInputConnected(gate,j)) then begin
+        connector.gate:=gate;
+        connector.index:=j;
+        distanceToConnector:=newDistance;
+      end;
+    end;
+
+    if (connector.gate=nil) then begin
+      if not previewDuringDrag
+      then cleanup;
+      exit;
+    end;
+    if previewDuringDrag then begin
+      drawTempWire(connector.gate^.getInputPositionInGridSize(connector.index));
+      exit;
+    end;
+    saveStateToUndoList;
+    currentBoard^.version:=random(maxLongint);
+
+    i:=0;
+    while (i<length(currentBoard^.logicWires)) and (currentBoard^.logicWires[i].source<>incompleteWire.source) do inc(i);
+    if i>=length(currentBoard^.logicWires) then setLength(currentBoard^.logicWires,i+1);
+    with currentBoard^.logicWires[i] do begin
+      source:=incompleteWire.source;
+      width :=incompleteWire.width;
+      j:=length(wires);
+      setLength(wires,j+1);
+      wires[j].sink:=connector;
+    end;
+
+    currentBoard^.rewire;
+    anyChangeCallback(false);
+    cleanup;
+    repaint;
+  end;
+
+PROCEDURE T_uiAdapter.WireImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  FUNCTION wireHitsPoint(CONST p:T_point; CONST wire:T_wirePath):boolean;
+    VAR i:longint;
+        a,b:T_point;
+        t:double;
+    begin
+      for i:=0 to length(wire)-2 do begin
+        a:=wire[i];
+        b:=wire[i+1];
+        if a<>b then begin
+
+          //distance(t)=(a-p)+(b-a)*t
+          //minimize distance(t) ->
+          // 0 = d ((a-p)+(b-a)*t)² / dt
+          //   = d ((a-p)²+2*(a-p)*(b-a)*t+  (b-a)²*t²) / dt
+          //   =           2*(a-p)*(b-a)  +2*(b-a)²*t
+          // -(a-p)*(b-a)/(b-a)² =  t
+          // accept only if 0<=t<=1 !!
+          t:=-((a-p)*(b-a))/((b-a)*(b-a));
+          if (0<t) and (t<1) and (sqr((a[0]-p[0])+(b[0]-a[0])*t)
+                                 +sqr((a[1]-p[1])+(b[1]-a[1])*t)<1) then exit(true);
+
+        end;
+      end;
+      result:=false;
+    end;
+
+  VAR p:T_point;
+      i,j:longint;
+      anyChange:boolean=false;
+  begin
+    if (button=mbLeft) and (ssCtrl in Shift) then begin
+      p:=pointOf(round(x / zoom),round(y / zoom));
+      for i:=0 to length(currentBoard^.logicWires         )-1 do
+      for j:=0 to length(currentBoard^.logicWires[i].wires)-1 do
+      with currentBoard^.logicWires[i].wires[j] do
+      if wireHitsPoint(p,visual)
+      then begin
+        marked:=not(marked);
+        anyChange:=true;
+      end;
+      if anyChange then drawAllWires;
+    end else if (button=mbLeft) then begin
+      selectionFrame.visible:=true;
+      selectionFrame.top :=y; selectionFrame.height:=1;
+      selectionFrame.Left:=X; selectionFrame.width :=1;
+      selectionStart:=pointOf(x,y);
+    end;
+  end;
+
+PROCEDURE T_uiAdapter.WireImageMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
+  VAR low,size:T_point;
+  begin
+    if selectionFrame.visible then begin
+      low :=pointOf(min(x,selectionStart[0]),
+                    min(y,selectionStart[1]));
+      size:=pointOf(max(x,selectionStart[0]),
+                    max(y,selectionStart[1]))-low;
+
+      selectionFrame.Left  :=low[0];
+      selectionFrame.top   :=low[1];
+      selectionFrame.width :=size[0];
+      selectionFrame.height:=size[1];
+    end;
+  end;
+
+PROCEDURE T_uiAdapter.WireImageMouseUp(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  VAR selStart,selEnd:T_point;
+      gate:P_visualGate;
+      i,j:longint;
+      p:T_point;
+      extendSelection:boolean;
+  begin
+    if selectionFrame.visible then begin
+      extendSelection:=ssShift in Shift;
+
+      selStart:=pointOf(floor(min(x,selectionStart[0])/zoom),
+                        floor(min(y,selectionStart[1])/zoom));
+      selEnd  :=pointOf(ceil (max(x,selectionStart[0])/zoom),
+                        ceil (max(y,selectionStart[1])/zoom));
+      selectionFrame.visible:=false;
+
+      for gate in currentBoard^.gates do gate^.setMarked((extendSelection and gate^.marked_) or
+                                         gate^.isCompletelyInsideRect(selStart,selEnd));
+      for i:=0 to length(currentBoard^.logicWires)-1 do
+      for j:=0 to length(currentBoard^.logicWires[i].wires)-1 do
+      with currentBoard^.logicWires[i].wires[j] do if not(extendSelection and currentBoard^.logicWires[i].wires[j].marked) then begin
+        marked:=length(visual)>0;
+        for p in visual do marked:=marked and (p[0]>=selStart[0]) and (p[0]<=selEnd[0]) and (p[1]>=selStart[1]) and (p[1]<=selEnd[1]);
+      end;
+      repaint;
+    end;
+  end;
+
+PROCEDURE T_uiAdapter.pasteFromClipboard;
+  begin
+    saveStateToUndoList;
+    currentBoard^.pasteFrom(Clipboard);
   end;
 
 {$endif}
