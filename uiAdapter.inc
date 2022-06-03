@@ -513,8 +513,7 @@ PROCEDURE T_uiAdapter.finishWireDrag(CONST targetPoint: T_point; CONST previewDu
       incompleteWire.dragging:=false;
     end;
 
-  VAR i:longint=0;
-      j:longint;
+  VAR j:longint;
       gate:P_visualGate;
       connector:T_visualGateConnector;
 
@@ -547,18 +546,8 @@ PROCEDURE T_uiAdapter.finishWireDrag(CONST targetPoint: T_point; CONST previewDu
     saveStateToUndoList;
     currentBoard^.version:=random(maxLongint);
 
-    i:=0;
-    while (i<length(currentBoard^.logicWires)) and (currentBoard^.logicWires[i].source<>incompleteWire.source) do inc(i);
-    if i>=length(currentBoard^.logicWires) then setLength(currentBoard^.logicWires,i+1);
-    with currentBoard^.logicWires[i] do begin
-      source:=incompleteWire.source;
-      width :=incompleteWire.width;
-      j:=length(wires);
-      setLength(wires,j+1);
-      wires[j].sink:=connector;
-    end;
-
-    currentBoard^.rewire;
+    currentBoard^.addWire(incompleteWire.source,connector);
+    currentBoard^.rewire(false);
     anyChangeCallback(false);
     cleanup;
     repaint;
@@ -630,8 +619,7 @@ PROCEDURE T_uiAdapter.WireImageMouseMove(Sender: TObject; Shift: TShiftState; X,
     end;
   end;
 
-PROCEDURE T_uiAdapter.WireImageMouseUp(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE T_uiAdapter.WireImageMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR selStart,selEnd:T_point;
       gate:P_visualGate;
       i,j:longint;

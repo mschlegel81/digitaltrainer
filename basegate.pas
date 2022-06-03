@@ -56,7 +56,7 @@ TYPE
       GUI: P_uiAdapter;
 
       FUNCTION repositionCustomRegion(VAR origin:T_point; CONST size:T_point; CONST considerWires:boolean):T_repositionOutput;
-      FUNCTION canGateBeMovedBy(CONST gateToCheck:P_visualGate; CONST delta:T_point; CONST considerWires,considerMarkedGates:boolean):boolean;
+      FUNCTION canGateBeMovedBy(CONST gateToCheck:P_visualGate; CONST delta:T_point; CONST considerMarkedGates:boolean):boolean;
       FUNCTION positionNewGate(CONST gateToAdd:P_visualGate):boolean;
       PROCEDURE addGateWithoutChecking(CONST gateToAdd:P_visualGate);
       FUNCTION isInputConnected(CONST gate:P_visualGate; CONST inputIndex:longint):boolean;
@@ -64,8 +64,9 @@ TYPE
       FUNCTION clone(CONST includeWirePaths:boolean):P_circuitBoard;
       PROCEDURE enumerateIo;
       PROCEDURE repaint;
-      PROCEDURE sortGates;
+      PROCEDURE sortWires;
       FUNCTION wrapGate(CONST origin:T_point;CONST g:P_abstractGate; CONST template:P_visualGate=nil):P_visualGate;
+      PROCEDURE addWire(CONST src,sink:T_visualGateConnector);
     public
       CONSTRUCTOR create;
       DESTRUCTOR destroy;  virtual;
@@ -248,9 +249,8 @@ FUNCTION T_circuitBoard.repositionCustomRegion(VAR origin:T_point; CONST size:T_
     result:=ro_noPositionFound;
   end;
 
-FUNCTION T_circuitBoard.canGateBeMovedBy(CONST gateToCheck:P_visualGate; CONST delta:T_point; CONST considerWires,considerMarkedGates:boolean):boolean;
+FUNCTION T_circuitBoard.canGateBeMovedBy(CONST gateToCheck:P_visualGate; CONST delta:T_point; CONST considerMarkedGates:boolean):boolean;
   VAR gate:P_visualGate;
-      i,j,k:longint;
       o:T_point;
   begin
     o:=gateToCheck^.origin+delta;
@@ -263,15 +263,6 @@ FUNCTION T_circuitBoard.canGateBeMovedBy(CONST gateToCheck:P_visualGate; CONST d
        (o[0]+gateToCheck^.size[0]>gate^.origin[0]) and (o[0]<gate^.origin[0]+gate^.size[0]) and
        (o[1]+gateToCheck^.size[1]>gate^.origin[1]) and (o[1]<gate^.origin[1]+gate^.size[1])
     then exit(false);
-
-    if considerWires then
-    for i:=0 to length(logicWires)-1 do
-    for j:=0 to length(logicWires[i].wires)-1 do
-    with logicWires[i].wires[j] do begin
-      for k:=0 to length(visual)-2 do
-      if lineCrossesRectangle(visual[k],visual[k+1],o,gateToCheck^.size)
-      then exit(false);
-    end;
   end;
 
 FUNCTION T_circuitBoard.positionNewGate(CONST gateToAdd: P_visualGate): boolean;
@@ -611,7 +602,7 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board: P_circuitBoard; CONST fullCopy:b
       setLength(logicWires[result].wires,0);
     end;
 
-  PROCEDURE addWire(CONST logicWireIndex:longint; CONST clipboardSink:T_visualGateConnector; CONST path:T_wirePath);
+  PROCEDURE addWire_(CONST logicWireIndex:longint; CONST clipboardSink:T_visualGateConnector; CONST path:T_wirePath);
     VAR k,i:longint;
     begin
       k:=length(logicWires[logicWireIndex].wires);
@@ -661,11 +652,12 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board: P_circuitBoard; CONST fullCopy:b
     for i:=0 to length(board^.logicWires)-1 do begin
       lwi:=addLogicWire(board^.logicWires[i].source,board^.logicWires[i].width);
       for j:=0 to length(board^.logicWires[i].wires)-1 do begin
-        addWire(lwi,board^.logicWires[i].wires[j].sink,board^.logicWires[i].wires[j].visual);
+        addWire_(lwi,board^.logicWires[i].wires[j].sink,board^.logicWires[i].wires[j].visual);
         anyWireAdded:=true;
       end;
     end;
 
+    sortWires;
     if anyWireAdded and not(fullCopy) then rewire;
     if GUI<>nil then GUI^.repaint;
   end;
@@ -710,74 +702,6 @@ PROCEDURE T_circuitBoard.repaint;
     end;
   end;
 
-PROCEDURE T_circuitBoard.sortGates;
-  TYPE T_annotatedGate=record gate:P_visualGate; distanceFromInput,inputIndex,fromIndex:longint; end;
-
-  FUNCTION lesserThan(CONST x,y:T_annotatedGate):boolean;
-    begin
-      result:=(x.distanceFromInput<y.distanceFromInput) or
-              (x.distanceFromInput=y.distanceFromInput) and
-                 ((x.inputIndex<y.inputIndex) or
-                  (x.inputIndex=y.inputIndex) and
-                    (x.fromIndex<y.fromIndex));
-    end;
-
-  PROCEDURE copyAnnotations(CONST src:T_annotatedGate; VAR dest:T_annotatedGate);
-    begin
-      dest.distanceFromInput:=src.distanceFromInput;
-      dest.inputIndex       :=src.inputIndex;
-      dest.fromIndex        :=src.fromIndex;
-    end;
-
-  VAR tmp:T_annotatedGate;
-      annotatedGates:array of T_annotatedGate;
-      i,j:longint;
-      logicWire : T_logicWire;
-      wireTrip  : T_wireTrip;
-      sourceGate: T_annotatedGate;
-      updated: boolean;
-  begin
-    setLength(annotatedGates,length(gates));
-    for i:=0 to length(gates)-1 do begin
-      annotatedGates[i].distanceFromInput:=IfThen(gates[i]^.behavior^.gateType=gt_input,0,maxLongint);
-      annotatedGates[i].inputIndex:=0;
-      annotatedGates[i].fromIndex :=0;
-      annotatedGates[i].gate:=gates[i];
-    end;
-
-    repeat
-      updated:=false;
-      for logicWire in logicWires do with logicWire do begin
-        sourceGate:=annotatedGates[source.gateIndex(@self)];
-        tmp.distanceFromInput:=sourceGate.distanceFromInput+1;
-        tmp.fromIndex        :=source.index;
-        if sourceGate.distanceFromInput<maxLongint then for wireTrip in wires do begin
-          i:=wireTrip.sink.gateIndex(@self);
-          tmp.inputIndex:=wireTrip.sink.index;
-          if lesserThan(tmp,annotatedGates[i])
-          then begin
-            copyAnnotations(tmp,annotatedGates[i]);
-            updated:=true;
-          end;
-        end;
-      end;
-    until not updated;
-    //When sorting we must ensure that the order of I/O gates remains unchanged!
-
-    for j:=1 to length(annotatedGates)-1 do
-    for i:=0 to j-1 do
-    if lesserThan(annotatedGates[j],annotatedGates[i]) and
-       not((annotatedGates[j].gate^.getBehavior^.gateType in [gt_input,gt_output]) and
-           (annotatedGates[j].gate^.getBehavior^.gateType=annotatedGates[i].gate^.getBehavior^.gateType)) then begin
-      tmp              :=annotatedGates[i];
-      annotatedGates[i]:=annotatedGates[j];
-      annotatedGates[j]:=tmp;
-    end;
-
-    for i:=0 to length(gates)-1 do gates[i]:=annotatedGates[i].gate;
-    setLength(annotatedGates,0);
-  end;
-
 FUNCTION T_circuitBoard.isInputConnected(CONST gate: P_visualGate; CONST inputIndex: longint): boolean;
   VAR i,j:longint;
   begin
@@ -790,8 +714,7 @@ FUNCTION T_circuitBoard.isInputConnected(CONST gate: P_visualGate; CONST inputIn
           then exit(true);
   end;
 
-//TODO: Move to T_uiAdapter ?
-PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
+PROCEDURE T_circuitBoard.sortWires;
   FUNCTION hasHigherPrio(CONST a,b:T_logicWire):boolean;
     VAR aDist:int64=0;
         bDist:int64=0;
@@ -809,21 +732,37 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
       result:=aDist<bDist;
     end;
 
-  PROCEDURE ensureSorting;
-    VAR alreadySorted:boolean=true;
-        i,j:longint;
-        tmp:T_logicWire;
-    begin
-      for i:=0 to length(logicWires)-2 do alreadySorted:=alreadySorted and not(hasHigherPrio(logicWires[i+1],logicWires[i]));
-      if alreadySorted then exit;
-      for j:=1 to length(logicWires)-1 do
-      for i:=0 to j-1 do if hasHigherPrio(logicWires[j],logicWires[i]) then begin
-        tmp          :=logicWires[i];
-        logicWires[i]:=logicWires[j];
-        logicWires[j]:=tmp;
-      end;
+  VAR alreadySorted:boolean=true;
+      i,j:longint;
+      tmp:T_logicWire;
+  begin
+    for i:=0 to length(logicWires)-2 do alreadySorted:=alreadySorted and not(hasHigherPrio(logicWires[i+1],logicWires[i]));
+    if alreadySorted then exit;
+    for j:=1 to length(logicWires)-1 do
+    for i:=0 to j-1 do if hasHigherPrio(logicWires[j],logicWires[i]) then begin
+      tmp          :=logicWires[i];
+      logicWires[i]:=logicWires[j];
+      logicWires[j]:=tmp;
     end;
+  end;
 
+PROCEDURE T_circuitBoard.addWire(CONST src,sink:T_visualGateConnector);
+  var i, j: Integer;
+  begin
+    i:=0;
+    while (i<length(logicWires)) and (logicWires[i].source<>src) do inc(i);
+    if i>=length(logicWires) then setLength(logicWires,i+1);
+    with logicWires[i] do begin
+      source:=src;
+      width :=src.gate^.behavior^.outputWidth(src.index);
+      j:=length(wires);
+      setLength(wires,j+1);
+      wires[j].sink:=sink;
+    end;
+    sortWires;
+  end;
+
+PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
   FUNCTION wireCrossesGate(CONST path:T_wirePath):boolean;
     VAR gate:P_visualGate;
         gateOrigin,gateSize:T_point;
@@ -851,8 +790,6 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
       paths:T_wirePathArray;
 
   begin
-    if forced then ensureSorting;
-
     connector.gate:=nil;
     connector.index:=0;
     GUI^.initWireGraph(connector,false);
