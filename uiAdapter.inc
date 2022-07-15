@@ -21,6 +21,8 @@ T_uiAdapter=object
     end;
     wireGraph:T_wireGraph;
 
+    wiringInputCs,wiringOutputCs:TRTLCriticalSection;
+
     currentBoard:P_circuitBoard;
 
     peekPanels:array of record
@@ -73,6 +75,9 @@ PROCEDURE T_uiAdapter.peekLabelClick(Sender: TObject);
 
 CONSTRUCTOR T_uiAdapter.create(CONST zoom_: longint; CONST container_: TScrollBox; CONST wireImage_: TImage; CONST gatePopup: TPopupMenu; CONST anyChangeCallback_: F_changeCallback);
   begin
+    initCriticalSection(wiringInputCs);
+    initCriticalSection(wiringOutputCs);
+
     zoom:=zoom_;
     container:=container_;
     wireImage:=wireImage_;
@@ -544,7 +549,7 @@ PROCEDURE T_uiAdapter.finishWireDrag(CONST targetPoint: T_point; CONST previewDu
       exit;
     end;
     saveStateToUndoList;
-    currentBoard^.version:=random(maxLongint);
+    currentBoard^.VERSION:=random(maxLongint);
 
     currentBoard^.addWire(incompleteWire.source,connector);
     currentBoard^.rewire(false);

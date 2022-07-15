@@ -158,7 +158,7 @@ CONSTRUCTOR T_customGate.createFromBoard(CONST origin: P_circuitBoard);
   begin
     inherited create;
     prototype:=origin;
-    prototypeVersion:=origin^.version;
+    prototypeVersion:=origin^.VERSION;
 
     setLength(connections      ,0);
     setLength(inputConnections ,0);
@@ -342,7 +342,7 @@ FUNCTION T_customGate.clone(CONST includeState:boolean): P_abstractGate;
       countedOutputs:longint=0;
   begin
     //rebuild on name change
-    rebuildFromBoard:=(caption<>prototype^.name) or (prototype^.version<>prototypeVersion);
+    rebuildFromBoard:=(caption<>prototype^.name) or (prototype^.VERSION<>prototypeVersion);
     //rebuild if any connection was removed or its witdh changed
     if not(rebuildFromBoard) then for gate in prototype^.gates do case gate^.behavior^.gateType of
       gt_input : begin

@@ -45,7 +45,7 @@ TYPE
   {$i customGates.inc}
   T_circuitBoard=object
     public
-      version    :longint;
+      VERSION    :longint;
       name       :string;
       description:string;
       paletteIndex,categoryIndex:longint;
@@ -135,7 +135,7 @@ PROCEDURE T_visualGateConnector.saveToStream(CONST board: P_circuitBoard; VAR st
 
 CONSTRUCTOR T_circuitBoard.create;
   begin
-    version:=random(maxLongint);
+    VERSION:=random(maxLongint);
     GUI:=nil;
     paletteIndex:=-1;
     categoryIndex:=-1;
@@ -184,7 +184,7 @@ PROCEDURE T_circuitBoard.clear;
     paletteIndex:=-1;
     categoryIndex:=-1;
     description:='';
-    version:=random(maxLongint);
+    VERSION:=random(maxLongint);
     name:=defaultBoardCaption;
     if GUI<>nil then GUI^.repaint;
   end;
@@ -303,7 +303,7 @@ PROCEDURE T_circuitBoard.deleteInvalidWires;
     end;
     if anyDeleted then begin
       rewire(true);
-      version:=random(maxLongint);
+      VERSION:=random(maxLongint);
     end;
     if GUI<>nil then GUI^.repaint;
   end;
@@ -397,7 +397,7 @@ PROCEDURE T_circuitBoard.deleteMarkedElements;
     end;
     setLength(logicWires,j);
 
-    if anyDeleted then version:=random(maxLongint);
+    if anyDeleted then VERSION:=random(maxLongint);
 
     rewire;
     if GUI<>nil then GUI^.repaint;
@@ -636,7 +636,7 @@ PROCEDURE T_circuitBoard.pasteFrom(CONST board: P_circuitBoard; CONST fullCopy:b
       description  :=board^.description;
       paletteIndex :=board^.paletteIndex;
       categoryIndex:=board^.categoryIndex;
-      version      :=board^.version;
+      VERSION      :=board^.VERSION;
       clipOffset   :=ZERO_POINT;
     end else begin
       board^.getBoardExtend(clipOrigin,clipSize);
@@ -747,7 +747,7 @@ PROCEDURE T_circuitBoard.sortWires;
   end;
 
 PROCEDURE T_circuitBoard.addWire(CONST src,sink:T_visualGateConnector);
-  var i, j: Integer;
+  VAR i, j: integer;
   begin
     i:=0;
     while (i<length(logicWires)) and (logicWires[i].source<>src) do inc(i);
