@@ -444,7 +444,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
       xy,xyNeighbor:T_point;
       newCost:longint;
       directionIsValid: boolean;
-      startTicks: QWord;
+      startTicks: qword;
   begin
     startTicks:=GetTickCount64;
     for i:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do
@@ -460,9 +460,11 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
       searching:=false;
       for ii:=i0 to i0+n0-1 do begin
         xy:=p[ii];
-        newCost:=map[xy[0],xy[1]].score+2;
+
         prevStep:=directionBetween(map[xy[0],xy[1]].comeFrom,xy,directionIsValid);
         for dir in directionMask*allowedDirectionsPerPoint[xy[0],xy[1]] do begin
+          newCost:=map[xy[0],xy[1]].score+2;
+          if prevStep<>dir then newCost+=2;
           xyNeighbor:=xy+dir;
           if (newCost<map[xyNeighbor[0],xyNeighbor[1]].score) then begin
             found:=found or (xyNeighbor=endPoint);
@@ -472,7 +474,6 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
                 n1+=1;
               end;
               score:=newCost;
-              if prevStep<>dir then score+=2;
               comeFrom:=xy;
             end;
             searching:=true;
@@ -556,7 +557,7 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wireP
       end;
     end;
 
-    if (length(endPoints)>1) or not(allowDiagonals)
+    if (length(endPoints)>1)
     then mask:=StraightDirections
     else mask:=AllDirections;
 
@@ -564,7 +565,7 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wireP
     for swapTemp in initialRun do with swapTemp do
       result[idx]:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),mask);
 
-    if (length(endPoints)<4) and allowDiagonals then mask:=AllDirections;
+    if (length(endPoints)<4) then mask:=AllDirections;
 
     if length(endPoints)>1 then repeat
 
