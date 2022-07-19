@@ -824,7 +824,7 @@ PROCEDURE T_circuitBoard.rewire(CONST forced:boolean);
     for i:=0 to length(logicWires)-1 do
       with logicWires[i] do
       if preview[i].needRewire then begin
-        paths:=GUI^.wireGraph.findPaths(preview[i].startPoint,preview[i].targetPoints);
+        paths:=GUI^.wireGraph.findPaths(preview[i].startPoint,preview[i].targetPoints,forced);
         for j:=0 to length(wires)-1 do begin
           wires[j].visual:=   paths[j];
           GUI^.wireGraph.dropWire(paths[j]);

@@ -44,7 +44,7 @@ TYPE
   T_wireGraph=object
     private
       allowedDirectionsPerPoint:array[0..BOARD_MAX_SIZE_IN_GRID_ENTRIES-1,0..BOARD_MAX_SIZE_IN_GRID_ENTRIES-1] of T_wireDirectionSet;
-      FUNCTION findPath(CONST startPoint,endPoint:T_point; CONST pathsToPrimeWith:T_wirePathArray; CONST directionMask:T_wireDirectionSet=AllDirections):T_wirePath;
+      FUNCTION findPath(CONST startPoint,endPoint:T_point; CONST pathsToPrimeWith:T_wirePathArray; CONST exhaustiveScan:boolean; CONST directionMask:T_wireDirectionSet=AllDirections):T_wirePath;
       PROCEDURE dropWireSection(CONST a,b:T_point; CONST diagonalsOnly:boolean=false);
       FUNCTION isPathFree(CONST startPoint,endPoint:T_point; VAR path:T_wirePath):boolean;
     public
@@ -56,7 +56,7 @@ TYPE
       PROCEDURE addUnidirectionalEdge(CONST from:T_point; CONST dir:T_wireDirection);
       PROCEDURE dropWire(CONST path:T_wirePath; CONST diagonalsOnly:boolean=false);
       FUNCTION findPath(CONST startPoint,endPoint:T_point):T_wirePath;
-      FUNCTION findPaths(CONST startPoint:T_point; CONST endPoints:T_wirePath):T_wirePathArray;
+      FUNCTION findPaths(CONST startPoint:T_point; CONST endPoints:T_wirePath; CONST exhaustiveScan:boolean):T_wirePathArray;
       FUNCTION anyEdgeLeadsTo(CONST endPoint:T_point):boolean;
       FUNCTION isWireAllowed(CONST path:T_wirePath):boolean;
   end;
@@ -395,7 +395,7 @@ FUNCTION simplifyPath(CONST path:T_wirePath):T_wirePath;
     setLength(result,j+1);
   end;
 
-FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsToPrimeWith:T_wirePathArray; CONST directionMask:T_wireDirectionSet=AllDirections): T_wirePath;
+FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsToPrimeWith:T_wirePathArray; CONST exhaustiveScan:boolean; CONST directionMask:T_wireDirectionSet=AllDirections): T_wirePath;
   CONST UNVISITED=maxLongint;
   VAR map:array[0..BOARD_MAX_SIZE_IN_GRID_ENTRIES-1,0..BOARD_MAX_SIZE_IN_GRID_ENTRIES-1] of record comeFrom:T_point; score:longint; end;
       p:array of T_point;
@@ -428,9 +428,28 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
             comeFrom:=path[k-1];
           end;
         end;
-
       end;
       j :=n0;
+    end;
+
+  PROCEDURE rescore(CONST cf:T_point);
+    VAR x,y:longint;
+        newScore, cf_score:longint;
+        cf_dir: T_point;
+    begin
+      cf_score:=map[cf[0],cf[1]].score;
+      cf_dir  :=cf-map[cf[0],cf[1]].comeFrom;
+
+      for x:=max(0,cf[0]-1) to min(BOARD_MAX_SIZE_IN_GRID_ENTRIES-1,cf[0]+1) do
+      for y:=max(0,cf[1]-1) to min(BOARD_MAX_SIZE_IN_GRID_ENTRIES-1,cf[1]+1) do
+      if map[x,y].comeFrom=cf then begin
+        newScore:=cf_score+2;
+        if pointOf(x,y)-cf<>cf_dir then newScore+=2;
+        if newScore<map[x,y].score then begin
+          map[x,y].score:=newScore;
+          rescore(pointOf(x,y));
+        end;
+      end;
     end;
 
   VAR i0:longint=0;
@@ -445,6 +464,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
       newCost:longint;
       directionIsValid: boolean;
       startTicks: qword;
+      needRescore:boolean;
   begin
     startTicks:=GetTickCount64;
     for i:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do
@@ -456,7 +476,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
 
     prime;
 
-    while searching and not found do begin
+    while searching and (exhaustiveScan or not found) do begin
       searching:=false;
       for ii:=i0 to i0+n0-1 do begin
         xy:=p[ii];
@@ -472,10 +492,12 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
               if score=UNVISITED then begin
                 p[i1+n1]:=xyNeighbor;
                 n1+=1;
-              end;
+                needRescore:=false;
+              end else needRescore:=true;
               score:=newCost;
               comeFrom:=xy;
             end;
+            if needRescore then rescore(xyNeighbor);
             searching:=true;
           end;
         end;
@@ -505,7 +527,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
       setLength(result,0);
     end;
     setLength(p,0);
-    //writeln('Path scan from ',startPoint[0],',',startPoint[1],' to ',endPoint[0],',',endPoint[1],' finished in ',GetTickCount64-startTicks,'; successful: ',found);
+    writeln('Path scan from ',startPoint[0],',',startPoint[1],' to ',endPoint[0],',',endPoint[1],' finished in ',GetTickCount64-startTicks,'; successful: ',found);
   end;
 
 FUNCTION T_wireGraph.findPath(CONST startPoint,endPoint:T_point):T_wirePath;
@@ -513,10 +535,10 @@ FUNCTION T_wireGraph.findPath(CONST startPoint,endPoint:T_point):T_wirePath;
   begin
     if isPathFree(startPoint,endPoint,result) then exit(result);
     setLength(toPrimeWith,0);
-    result:=simplifyPath(findPath(startPoint,endPoint,toPrimeWith));
+    result:=simplifyPath(findPath(startPoint,endPoint,toPrimeWith,false));
   end;
 
-FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wirePath):T_wirePathArray;
+FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wirePath; CONST exhaustiveScan:boolean):T_wirePathArray;
   TYPE T_indexAndDist=record
          idx:longint;
          dist:double;
@@ -563,7 +585,7 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wireP
 
     setLength(result,length(endPoints));
     for swapTemp in initialRun do with swapTemp do
-      result[idx]:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),mask);
+      result[idx]:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),exhaustiveScan,mask);
 
     if (length(endPoints)<4) then mask:=AllDirections;
 
@@ -572,7 +594,7 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wireP
       anyImproved:=false;
       for swapTemp in initialRun do with swapTemp do begin
         if length(result[idx])>0 then begin
-          nextPath:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),mask);
+          nextPath:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),exhaustiveScan,mask);
           if pathScore(nextPath)<pathScore(result[idx])
           then begin
             //writeln('Path score improved from ',pathScore(result[idx]),' to ',pathScore(nextPath));
