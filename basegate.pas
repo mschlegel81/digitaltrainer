@@ -284,15 +284,19 @@ PROCEDURE T_circuitBoard.deleteInvalidWires;
       anyDeleted:boolean=false;
   begin
     for k:=0 to length(logicWires)-1 do with logicWires[k] do begin
-      width:=source.gate^.behavior^.outputWidth(source.index);
       j:=0;
-      for i:=0 to length(wires)-1 do
-      if (wires[i].sink.gate^.behavior^.numberOfInputs>wires[i].sink.index) and
-         (wires[i].sink.gate^.behavior^.inputWidth    (wires[i].sink.index)=width)
-      then begin
-        wires[j]:=wires[i];
-        inc(j);
-      end else anyDeleted:=true;
+      if source.gate^.numberOfOutputs<=source.index
+      then anyDeleted:=true
+      else begin
+        width:=source.gate^.behavior^.outputWidth(source.index);
+        for i:=0 to length(wires)-1 do
+        if (wires[i].sink.gate^.behavior^.numberOfInputs>wires[i].sink.index) and
+           (wires[i].sink.gate^.behavior^.inputWidth    (wires[i].sink.index)=width)
+        then begin
+          wires[j]:=wires[i];
+          inc(j);
+        end else anyDeleted:=true;
+      end;
       setLength(wires,j);
     end;
     j:=0;
