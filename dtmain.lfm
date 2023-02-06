@@ -1,0 +1,549 @@
+object DigitaltrainerMainForm: TDigitaltrainerMainForm
+  Left = 1084
+  Height = 989
+  Top = 161
+  Width = 1624
+  Align = alTop
+  Caption = 'Digitaltrainer'
+  ClientHeight = 969
+  ClientWidth = 1624
+  Color = 8405056
+  Menu = MainMenu1
+  OnCreate = FormCreate
+  OnDestroy = FormDestroy
+  OnResize = FormResize
+  LCLVersion = '2.2.2.0'
+  object PaletteBgShape: TShape
+    Left = 17
+    Height = 889
+    Top = 80
+    Width = 161
+    Align = alLeft
+    Brush.Color = 7354424
+    Pen.Style = psClear
+    Pen.Width = 0
+  end
+  object Panel1: TPanel
+    Left = 0
+    Height = 80
+    Top = 0
+    Width = 1624
+    Align = alTop
+    AutoSize = True
+    BorderSpacing.InnerBorder = 5
+    BevelColor = clBlack
+    BevelOuter = bvNone
+    ClientHeight = 80
+    ClientWidth = 1624
+    Color = 7354424
+    ParentColor = False
+    TabOrder = 0
+    object ZoomInShape: TShape
+      AnchorSideLeft.Control = Panel1
+      AnchorSideTop.Control = Panel1
+      AnchorSideBottom.Control = Panel1
+      Left = 5
+      Height = 65
+      Top = 5
+      Width = 65
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 5
+      Brush.Color = 6303792
+      OnMouseDown = ZoomInShapeMouseDown
+      Shape = stRoundRect
+    end
+    object ZoomInLabel: TLabel
+      AnchorSideLeft.Control = ZoomInShape
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = ZoomInShape
+      AnchorSideTop.Side = asrCenter
+      Left = 16
+      Height = 30
+      Top = 22
+      Width = 43
+      Caption = '🔍+'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -21
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object ZoomOutShape: TShape
+      AnchorSideLeft.Control = ZoomInShape
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = Panel1
+      Left = 75
+      Height = 65
+      Top = 5
+      Width = 65
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 5
+      Brush.Color = 6303792
+      OnMouseDown = ZoomOutShapeMouseDown
+      Shape = stRoundRect
+    end
+    object ZoomOutLabel: TLabel
+      AnchorSideLeft.Control = ZoomOutShape
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = ZoomOutShape
+      AnchorSideTop.Side = asrCenter
+      Left = 89
+      Height = 30
+      Top = 22
+      Width = 37
+      Caption = '🔍-'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -21
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object ResetShape: TShape
+      AnchorSideLeft.Control = ZoomOutShape
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = Panel1
+      Left = 155
+      Height = 65
+      Top = 5
+      Width = 65
+      BorderSpacing.Left = 15
+      BorderSpacing.Top = 5
+      Brush.Color = 6303792
+      OnMouseDown = ResetShapeMouseDown
+      Shape = stRoundRect
+    end
+    object ResetLabel: TLabel
+      AnchorSideLeft.Control = ResetShape
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = ResetShape
+      AnchorSideTop.Side = asrCenter
+      Left = 170
+      Height = 21
+      Top = 27
+      Width = 34
+      Caption = 'reset'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object PlayPauseShape: TShape
+      AnchorSideLeft.Control = ResetShape
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = Panel1
+      Left = 225
+      Height = 65
+      Top = 5
+      Width = 65
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 5
+      Brush.Color = 6303792
+      OnMouseDown = PlayPauseShapeMouseDown
+      Shape = stRoundRect
+    end
+    object PlayPauseLabel: TLabel
+      AnchorSideLeft.Control = PlayPauseShape
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = PlayPauseShape
+      AnchorSideTop.Side = asrCenter
+      Left = 235
+      Height = 45
+      Top = 15
+      Width = 44
+      Caption = '⏯'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -32
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object SpeedBgShape: TShape
+      AnchorSideLeft.Control = PlayPauseShape
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = Panel1
+      Left = 295
+      Height = 65
+      Top = 5
+      Width = 195
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 5
+      Brush.Color = 6303792
+      Shape = stRoundRect
+    end
+    object SpeedTrackBar: TTrackBar
+      AnchorSideLeft.Control = SpeedBgShape
+      AnchorSideTop.Control = SpeedBgShape
+      AnchorSideRight.Control = SpeedBgShape
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = SpeedBgShape
+      AnchorSideBottom.Side = asrBottom
+      Left = 297
+      Height = 40
+      Top = 30
+      Width = 191
+      Position = 0
+      Anchors = [akLeft, akRight, akBottom]
+      BorderSpacing.Left = 2
+      BorderSpacing.Right = 2
+      Color = 6303792
+      ParentColor = False
+      TabOrder = 0
+    end
+    object Label1: TLabel
+      AnchorSideLeft.Control = SpeedBgShape
+      AnchorSideTop.Control = SpeedBgShape
+      Left = 300
+      Height = 15
+      Top = 8
+      Width = 32
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 3
+      Caption = 'Speed'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object TestShape: TShape
+      AnchorSideLeft.Control = ZoomOutShape
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = Panel1
+      AnchorSideRight.Control = Panel1
+      AnchorSideRight.Side = asrBottom
+      Left = 1554
+      Height = 65
+      Top = 5
+      Width = 65
+      Anchors = [akTop, akRight]
+      BorderSpacing.Left = 15
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      Brush.Color = 6303792
+      Shape = stRoundRect
+    end
+    object TestLabel: TLabel
+      AnchorSideLeft.Control = TestShape
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = TestShape
+      AnchorSideTop.Side = asrCenter
+      AnchorSideRight.Side = asrBottom
+      Left = 1574
+      Height = 21
+      Top = 27
+      Width = 25
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      Caption = 'test'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+  end
+  object PaletteScrollBar: TScrollBar
+    Left = 0
+    Height = 889
+    Top = 80
+    Width = 17
+    Align = alLeft
+    Kind = sbVertical
+    PageSize = 0
+    TabOrder = 1
+  end
+  object SubPaletteComboBox: TComboBox
+    AnchorSideLeft.Control = PaletteBgShape
+    AnchorSideTop.Control = PaletteBgShape
+    AnchorSideRight.Control = PaletteBgShape
+    AnchorSideRight.Side = asrBottom
+    Left = 22
+    Height = 23
+    Top = 85
+    Width = 151
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    Color = 6303792
+    Font.Color = clWhite
+    ItemHeight = 15
+    ParentFont = False
+    TabOrder = 2
+  end
+  object BoardVerticalScrollbar: TScrollBar
+    AnchorSideTop.Control = Panel1
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = BoardHorizontalScrollBar
+    Left = 1607
+    Height = 872
+    Top = 80
+    Width = 17
+    Align = alCustom
+    Anchors = [akTop, akRight, akBottom]
+    Kind = sbVertical
+    PageSize = 0
+    TabOrder = 3
+    OnChange = BoardVerticalScrollbarChange
+    OnScroll = BoardVerticalScrollbarScroll
+  end
+  object BoardHorizontalScrollBar: TScrollBar
+    AnchorSideLeft.Control = PaletteBgShape
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideRight.Control = BoardVerticalScrollbar
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 178
+    Height = 17
+    Top = 952
+    Width = 1429
+    Anchors = [akLeft, akRight, akBottom]
+    PageSize = 0
+    TabOrder = 4
+  end
+  object BoardImage: TImage
+    AnchorSideLeft.Control = PaletteBgShape
+    AnchorSideTop.Control = Panel1
+    AnchorSideRight.Control = Panel1
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 178
+    Height = 889
+    Top = 80
+    Width = 1446
+    AntialiasingMode = amOn
+    Align = alClient
+    AutoSize = True
+    StretchOutEnabled = False
+    StretchInEnabled = False
+  end
+  object propEditPanel: TPanel
+    AnchorSideRight.Control = PaletteBgShape
+    Left = 572
+    Height = 272
+    Top = 208
+    Width = 308
+    BevelColor = clBlack
+    ClientHeight = 272
+    ClientWidth = 308
+    Color = 7354424
+    ParentColor = False
+    TabOrder = 5
+    object ValueListEditor1: TValueListEditor
+      AnchorSideLeft.Control = propEditPanel
+      AnchorSideTop.Control = propEditPanel
+      AnchorSideRight.Control = propEditPanel
+      AnchorSideRight.Side = asrBottom
+      Left = 6
+      Height = 188
+      Top = 6
+      Width = 296
+      Anchors = [akTop, akLeft, akRight]
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      Color = 8405056
+      FixedColor = 6303792
+      FixedCols = 0
+      Flat = True
+      Font.Color = clWhite
+      ParentFont = False
+      RowCount = 2
+      TabOrder = 0
+      ColWidths = (
+        64
+        231
+      )
+    end
+    object propDeleteButton: TShape
+      AnchorSideLeft.Control = ValueListEditor1
+      AnchorSideTop.Control = ValueListEditor1
+      AnchorSideTop.Side = asrBottom
+      Left = 6
+      Height = 65
+      Top = 199
+      Width = 65
+      BorderSpacing.Top = 5
+      Brush.Color = 6303792
+      OnMouseDown = propDeleteButtonMouseDown
+      Shape = stRoundRect
+    end
+    object propDeleteLabel: TLabel
+      AnchorSideLeft.Control = propDeleteButton
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = propDeleteButton
+      AnchorSideTop.Side = asrCenter
+      Left = 10
+      Height = 21
+      Top = 221
+      Width = 57
+      Caption = 'Löschen'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object propEditShape: TShape
+      AnchorSideLeft.Control = propDeleteButton
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = propDeleteButton
+      Left = 76
+      Height = 65
+      Top = 199
+      Width = 80
+      BorderSpacing.Left = 5
+      Brush.Color = 6303792
+      OnMouseDown = propEditShapeMouseDown
+      Shape = stRoundRect
+    end
+    object propEditLabel: TLabel
+      AnchorSideLeft.Control = propEditShape
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = propEditShape
+      AnchorSideTop.Side = asrCenter
+      Left = 79
+      Height = 42
+      Top = 210
+      Width = 74
+      Caption = 'Schaltung'#13#10'Bearbeiten'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object propOkShape: TShape
+      AnchorSideLeft.Control = propEditShape
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = propEditShape
+      Left = 161
+      Height = 65
+      Top = 199
+      Width = 65
+      BorderSpacing.Left = 5
+      Brush.Color = 6303792
+      OnMouseDown = propOkShapeMouseDown
+      Shape = stRoundRect
+    end
+    object propOkLabel: TLabel
+      AnchorSideLeft.Control = propOkShape
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = propOkShape
+      AnchorSideTop.Side = asrCenter
+      Left = 180
+      Height = 21
+      Top = 221
+      Width = 27
+      Caption = 'O.K.'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object propCancelShape: TShape
+      AnchorSideLeft.Control = propOkShape
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = propOkShape
+      AnchorSideRight.Control = ValueListEditor1
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = propEditPanel
+      AnchorSideBottom.Side = asrBottom
+      Left = 231
+      Height = 67
+      Top = 199
+      Width = 71
+      Anchors = [akTop, akLeft, akRight, akBottom]
+      BorderSpacing.Left = 5
+      BorderSpacing.Bottom = 5
+      Brush.Color = 6303792
+      OnMouseDown = propCancelShapeMouseDown
+      Shape = stRoundRect
+    end
+    object propCancelLabel: TLabel
+      AnchorSideLeft.Control = propCancelShape
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = propCancelShape
+      AnchorSideTop.Side = asrCenter
+      Left = 237
+      Height = 21
+      Top = 222
+      Width = 59
+      Caption = 'Abbruch'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+  end
+  object MainMenu1: TMainMenu
+    Left = 600
+    Top = 16
+    object miBoard: TMenuItem
+      Caption = 'Schaltung'
+      object miAddToPalette: TMenuItem
+        Caption = 'Zur &Palette hinzufügen'
+      end
+      object miSaveAsTask: TMenuItem
+        Caption = 'Als &Aufgabe speichern'
+      end
+      object miNewBoard: TMenuItem
+        Caption = '&Neu'
+      end
+    end
+    object miView: TMenuItem
+      Caption = 'Ansicht'
+      object miFullScreen: TMenuItem
+        Caption = '&Vollbild'
+        ShortCut = 122
+        ShortCutKey2 = 32781
+        OnClick = miFullScreenClick
+      end
+      object miEditMode: TMenuItem
+        Caption = '&Freier Modus'
+        OnClick = miEditModeClick
+      end
+      object miTasks: TMenuItem
+        Caption = '&Aufgaben'
+      end
+    end
+  end
+  object AnimationTimer: TTimer
+    Enabled = False
+    Interval = 25
+    OnTimer = AnimationTimerTimer
+    Left = 170
+    Top = 180
+  end
+  object SimulationTimer: TTimer
+    Enabled = False
+    OnTimer = SimulationTimerTimer
+    Left = 250
+    Top = 259
+  end
+end

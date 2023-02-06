@@ -4,7 +4,6 @@ UNIT wiringUtil;
 
 INTERFACE
 USES serializationUtil;
-CONST BOARD_MAX_SIZE_IN_GRID_ENTRIES=200;
 TYPE T_wireDirection=(wd_left,wd_leftDown,wd_down,wd_rightDown,wd_right,wd_rightUp,wd_up,wd_leftUp);
      T_wireDirectionSet=bitpacked set of T_wireDirection;
      T_wireDirections=array of T_wireDirection;
@@ -43,12 +42,14 @@ TYPE
   P_wireGraph=^T_wireGraph;
   T_wireGraph=object
     private
-      allowedDirectionsPerPoint:array[0..BOARD_MAX_SIZE_IN_GRID_ENTRIES-1,0..BOARD_MAX_SIZE_IN_GRID_ENTRIES-1] of T_wireDirectionSet;
+      width,height:longint;
+      allowedDirections:array of T_wireDirectionSet;
+
       FUNCTION findPath(CONST startPoint,endPoint:T_point; CONST pathsToPrimeWith:T_wirePathArray; CONST exhaustiveScan:boolean; CONST directionMask:T_wireDirectionSet=AllDirections):T_wirePath;
       PROCEDURE dropWireSection(CONST a,b:T_point; CONST diagonalsOnly:boolean=false);
       FUNCTION isPathFree(CONST startPoint,endPoint:T_point; VAR path:T_wirePath):boolean;
     public
-      CONSTRUCTOR create;
+      CONSTRUCTOR create(CONST width_,height_:longint);
       DESTRUCTOR destroy;
       PROCEDURE initDirections;
       PROCEDURE dropEdges(CONST i:T_point; CONST dirs:T_wireDirectionSet);
@@ -56,6 +57,7 @@ TYPE
       PROCEDURE addUnidirectionalEdge(CONST from:T_point; CONST dir:T_wireDirection);
       PROCEDURE dropWire(CONST path:T_wirePath; CONST diagonalsOnly:boolean=false);
       FUNCTION findPath(CONST startPoint,endPoint:T_point):T_wirePath;
+      FUNCTION findPath(CONST startPoint,endPoint:T_point; CONST toPrimeWith:T_wirePathArray):T_wirePath;
       FUNCTION findPaths(CONST startPoint:T_point; CONST endPoints:T_wirePath; CONST exhaustiveScan:boolean):T_wirePathArray;
       FUNCTION anyEdgeLeadsTo(CONST endPoint:T_point):boolean;
       FUNCTION isWireAllowed(CONST path:T_wirePath):boolean;
@@ -79,7 +81,7 @@ FUNCTION pathScore(CONST path:T_wirePath):double;
 FUNCTION linesIntersect(CONST a0,a1,b0,b1:T_point):boolean;
 FUNCTION lineCrossesRectangle(CONST a0,a1,rectangleOrigin,rectangleExtend:T_point):boolean;
 
-VAR enableShortcuts:boolean=true;
+VAR enableShortcuts:boolean=false;
     allowDiagonals :boolean=false;
 IMPLEMENTATION
 USES math,sysutils;
@@ -211,8 +213,11 @@ FUNCTION wireStep(CONST start:T_point; CONST direction:T_wireDirection; CONST st
     result[1]:=start[1]+WIRE_DELTA[direction,1]*steps;
   end;
 
-CONSTRUCTOR T_wireGraph.create;
+CONSTRUCTOR T_wireGraph.create(CONST width_, height_: longint);
   begin
+    width:=width_;
+    height:=height_;
+    setLength(allowedDirections,width*height);
     initDirections;
   end;
 
@@ -221,45 +226,44 @@ DESTRUCTOR T_wireGraph.destroy;
   end;
 
 PROCEDURE T_wireGraph.initDirections;
-  VAR x,y:longint;
+  VAR x,y,i:longint;
       dirs:T_wireDirectionSet;
   begin
     if allowDiagonals
     then dirs:=AllDirections
     else dirs:=StraightDirections;
 
-    for x:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do
-    for y:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do allowedDirectionsPerPoint[x,y]:=dirs;
-    y:=BOARD_MAX_SIZE_IN_GRID_ENTRIES-1;
-    for x:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do begin
-      allowedDirectionsPerPoint[x,0]-=[wd_up  ,wd_leftUp  ,wd_rightUp  ];
-      allowedDirectionsPerPoint[x,y]-=[wd_down,wd_leftDown,wd_rightDown];
+    i:=0;
+    for y:=0 to height-1 do for x:=0 to width-1 do begin
+      allowedDirections[i]:=dirs;
+      if y=height-1 then allowedDirections[i]-=[wd_down ,wd_leftDown ,wd_rightDown];
+      if y=0        then allowedDirections[i]-=[wd_up   ,wd_leftUp   ,wd_rightUp  ];
+      if x=width-1  then allowedDirections[i]-=[wd_right,wd_rightDown,wd_rightUp ];
+      if x=0        then allowedDirections[i]-=[wd_left ,wd_leftDown ,wd_leftUp];
+      inc(i);
     end;
-    for y:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do
-      allowedDirectionsPerPoint[0,y]-=[wd_left ,wd_leftUp ,wd_leftDown ];
-    x:=BOARD_MAX_SIZE_IN_GRID_ENTRIES-1;
-    for y:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do
-      allowedDirectionsPerPoint[x,y]-=[wd_right,wd_rightUp,wd_rightDown];
   end;
 
 PROCEDURE T_wireGraph.dropEdges(CONST i: T_point; CONST dirs: T_wireDirectionSet);
   VAR j:T_point;
+      k:longint;
       dir:T_wireDirection;
   begin
-    allowedDirectionsPerPoint[i[0],i[1]]-=dirs;
+    if (i[0]<0) or (i[0]>=width) or (i[1]<0) or (i[1]>=height) then exit;
+    allowedDirections[i[0]+i[1]*width]-=dirs;
     for dir in dirs do begin
       j:=i+dir;
-      if (j[0]>=0) and (j[0]<BOARD_MAX_SIZE_IN_GRID_ENTRIES) and
-         (j[1]>=0) and (j[1]<BOARD_MAX_SIZE_IN_GRID_ENTRIES) then
-      Exclude(allowedDirectionsPerPoint[j[0],j[1]],OppositeDirection[dir]);
+      if (j[0]>=0) and (j[0]<width) and
+         (j[1]>=0) and (j[1]<height) then
+      Exclude(allowedDirections[j[0]+j[1]*width],OppositeDirection[dir]);
     end;
   end;
 
-PROCEDURE T_wireGraph.addUnidirectionalEdge(CONST from:T_point; CONST dir:T_wireDirection);
+PROCEDURE T_wireGraph.addUnidirectionalEdge(CONST from: T_point; CONST dir: T_wireDirection);
   begin
-    if (from[0]<0) or (from[0]>=BOARD_MAX_SIZE_IN_GRID_ENTRIES) or
-       (from[1]<0) or (from[1]>=BOARD_MAX_SIZE_IN_GRID_ENTRIES) then exit;
-    include(allowedDirectionsPerPoint[from[0],from[1]],dir);
+    if (from[0]<0) or (from[0]>=width) or
+       (from[1]<0) or (from[1]>=height) then exit;
+    include(allowedDirections[from[0]+from[1]*width],dir);
   end;
 
 PROCEDURE T_wireGraph.dropNode(CONST i: T_point);
@@ -287,7 +291,8 @@ FUNCTION allPointsBetween(CONST startP, endP: T_point; OUT dir: T_wireDirection)
     end;
   end;
 
-PROCEDURE T_wireGraph.dropWireSection(CONST a, b: T_point; CONST diagonalsOnly:boolean=false);
+PROCEDURE T_wireGraph.dropWireSection(CONST a, b: T_point;
+  CONST diagonalsOnly: boolean);
   CONST DIRECTIONS_TO_DROP:array[T_wireDirection] of T_wireDirectionSet=(
   {wd_left     }[wd_left,wd_leftDown,        wd_rightDown,wd_right,wd_rightUp,      wd_leftUp],
   {wd_leftDown }[wd_left,wd_leftDown,wd_down,             wd_right,wd_rightUp,wd_up          ],
@@ -312,13 +317,14 @@ PROCEDURE T_wireGraph.dropWireSection(CONST a, b: T_point; CONST diagonalsOnly:b
     dropNode(b);
   end;
 
-PROCEDURE T_wireGraph.dropWire(CONST path:T_wirePath; CONST diagonalsOnly:boolean=false);
+PROCEDURE T_wireGraph.dropWire(CONST path: T_wirePath;
+  CONST diagonalsOnly: boolean);
   VAR i:longint;
   begin
     for i:=0 to length(path)-2 do dropWireSection(path[i],path[i+1],diagonalsOnly);
   end;
 
-FUNCTION T_wireGraph.isPathFree(CONST startPoint,endPoint:T_point; VAR path:T_wirePath):boolean;
+FUNCTION T_wireGraph.isPathFree(CONST startPoint, endPoint: T_point; VAR path: T_wirePath): boolean;
   VAR len:longint;
       i:longint;
       w:double;
@@ -335,7 +341,7 @@ FUNCTION T_wireGraph.isPathFree(CONST startPoint,endPoint:T_point; VAR path:T_wi
       w:=i/len;
       p:=pointOf(round((startPoint[0]+1)*(1-w)+(endPoint[0]-1)*w),
                  round( startPoint[1]   *(1-w)+ endPoint[1]   *w));
-      if allowedDirectionsPerPoint[p[0],p[1]]=[] then exit(false);
+      if allowedDirections[p[0]+p[1]*width]=[] then exit(false);
     end;
     if startPoint[1]=endPoint[1] then begin
       setLength(path,2);
@@ -352,13 +358,12 @@ FUNCTION T_wireGraph.isPathFree(CONST startPoint,endPoint:T_point; VAR path:T_wi
     result:=true;
   end;
 
-CONST DirectionCost:array[T_wireDirection] of double=(1,1.5,
-                                                      1,1.5,
-                                                      1,1.5,
-                                                      1,1.5);
-      ChangeDirectionPenalty=1;
-
 FUNCTION pathScore(CONST path:T_wirePath):double;
+  CONST DirectionCost:array[T_wireDirection] of double=(1,1.5,
+                                                        1,1.5,
+                                                        1,1.5,
+                                                        1,1.5);
+      ChangeDirectionPenalty=1;
   VAR i:longint;
       dir,dirBefore:T_wireDirection;
       valid:boolean;
@@ -395,9 +400,33 @@ FUNCTION simplifyPath(CONST path:T_wirePath):T_wirePath;
     setLength(result,j+1);
   end;
 
-FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsToPrimeWith:T_wirePathArray; CONST exhaustiveScan:boolean; CONST directionMask:T_wireDirectionSet=AllDirections): T_wirePath;
+FUNCTION expandPath(CONST path:T_wirePath):T_wirePath;
+  VAR i,j,j0:longint;
+      dir:T_wireDirection;
+      intermediate:T_wirePath;
+  begin
+    if length(path)<=1 then exit(path);
+    setLength(result,1);
+    result[0]:=path[0];
+    for i:=1 to length(path)-1 do begin
+      intermediate:=allPointsBetween(path[i-1],path[i],dir);
+      j0:=length(result)-1;
+      setLength(result,j0+length(intermediate));
+      for j:=1 to length(intermediate)-1 do result[j+j0]:=intermediate[j];
+    end;
+  end;
+
+FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point;
+  CONST pathsToPrimeWith: T_wirePathArray; CONST exhaustiveScan: boolean;
+  CONST directionMask: T_wireDirectionSet): T_wirePath;
   CONST UNVISITED=maxLongint;
-  VAR map:array[0..BOARD_MAX_SIZE_IN_GRID_ENTRIES-1,0..BOARD_MAX_SIZE_IN_GRID_ENTRIES-1] of record comeFrom:T_point; score:longint; end;
+  CONST DirectionCost:array[T_wireDirection] of longint=(2,3,
+                                                         2,3,
+                                                         2,3,
+                                                         2,3);
+        ChangeDirectionPenalty=2;
+
+  VAR map:array of record comeFrom:T_point; score:longint; end;
       p:array of T_point;
       n0:longint=0;
       n1:longint=0;
@@ -408,23 +437,29 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
         k:longint;
         point:T_point;
         aggregatedCost:longint;
+        dir:T_wireDirection;
+        directionIsValid: boolean;
     begin
       p[0]:=startPoint;
-      map[startPoint[0],startPoint[1]].score:=0;
+      map[startPoint[0]+startPoint[1]*width].score:=0;
       inc(n0);
       for path in pathsToPrimeWith do begin
         aggregatedCost:=0;
+        if length(path)>1 then dir:=directionBetween(path[0],path[1],directionIsValid);
         for k:=1 to length(path)-1 do begin
           if (k=1) or (path[k-1]-path[k-2]=path[k]-path[k-1])
-          then aggregatedCost+=1
-          else aggregatedCost+=2;
+          then aggregatedCost+=DirectionCost[dir]
+          else begin
+            directionBetween(path[k],path[k-1],directionIsValid);
+            aggregatedCost+=DirectionCost[dir]+ChangeDirectionPenalty;
+          end;
           point:=path[k];
-          with map[point[0],point[1]] do if score>aggregatedCost then begin
+          with map[point[0]+point[1]*width] do if score>(aggregatedCost shr 1) then begin
             if score=UNVISITED then begin
               p[n0]:=point;
               inc(n0);
             end;
-            score:=aggregatedCost;
+            score:=aggregatedCost shr 1;
             comeFrom:=path[k-1];
           end;
         end;
@@ -436,39 +471,41 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
     VAR x,y:longint;
         newScore, cf_score:longint;
         cf_dir: T_point;
+        directionIsValid: boolean;
     begin
-      cf_score:=map[cf[0],cf[1]].score;
-      cf_dir  :=cf-map[cf[0],cf[1]].comeFrom;
+      cf_score:=map[cf[0]+cf[1]*width].score;
+      cf_dir  :=cf-map[cf[0]+cf[1]*width].comeFrom;
 
-      for x:=max(0,cf[0]-1) to min(BOARD_MAX_SIZE_IN_GRID_ENTRIES-1,cf[0]+1) do
-      for y:=max(0,cf[1]-1) to min(BOARD_MAX_SIZE_IN_GRID_ENTRIES-1,cf[1]+1) do
-      if map[x,y].comeFrom=cf then begin
-        newScore:=cf_score+2;
-        if pointOf(x,y)-cf<>cf_dir then newScore+=2;
-        if newScore<map[x,y].score then begin
-          map[x,y].score:=newScore;
+      for y:=max(0,cf[1]-1) to min(height-1,cf[1]+1) do
+      for x:=max(0,cf[0]-1) to min(width -1,cf[0]+1) do
+      if map[x+y*width].comeFrom=cf then begin
+        newScore:=cf_score+DirectionCost[directionBetween(cf,pointOf(x,y),directionIsValid)];
+        if pointOf(x,y)-cf<>cf_dir then newScore+=ChangeDirectionPenalty;
+        if newScore<map[x+y*width].score then begin
+          map[x+y*width].score:=newScore;
           rescore(pointOf(x,y));
         end;
       end;
     end;
 
   VAR i0:longint=0;
-      i1:longint=BOARD_MAX_SIZE_IN_GRID_ENTRIES*BOARD_MAX_SIZE_IN_GRID_ENTRIES;
+      i1:longint;
       i:longint=0;
       found:boolean=false;
       searching:boolean=true;
-      ii:longint;
+      II:longint;
       prevStep,
       dir:T_wireDirection;
       xy,xyNeighbor:T_point;
       newCost:longint;
       directionIsValid: boolean;
-      startTicks: qword;
+      //startTicks: qword;
       needRescore:boolean;
   begin
-    startTicks:=GetTickCount64;
-    for i:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do
-    for j:=0 to BOARD_MAX_SIZE_IN_GRID_ENTRIES-1 do with map[i,j] do begin
+    setLength(map,width*height);
+    i1:=width*height;
+    //startTicks:=GetTickCount64;
+    for j:=0 to height-1 do for i:=0 to width-1 do with map[i+j*width] do begin
       score:=UNVISITED;
       comeFrom:=startPoint;
     end;
@@ -478,17 +515,17 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
 
     while searching and (exhaustiveScan or not found) do begin
       searching:=false;
-      for ii:=i0 to i0+n0-1 do begin
-        xy:=p[ii];
+      for II:=i0 to i0+n0-1 do begin
+        xy:=p[II];
 
-        prevStep:=directionBetween(map[xy[0],xy[1]].comeFrom,xy,directionIsValid);
-        for dir in directionMask*allowedDirectionsPerPoint[xy[0],xy[1]] do begin
-          newCost:=map[xy[0],xy[1]].score+2;
-          if prevStep<>dir then newCost+=2;
+        prevStep:=directionBetween(map[xy[0]+xy[1]*width].comeFrom,xy,directionIsValid);
+        for dir in directionMask*allowedDirections[xy[0]+xy[1]*width] do begin
+          newCost:=map[xy[0]+xy[1]*width].score+DirectionCost[dir];
+          if prevStep<>dir then newCost+=ChangeDirectionPenalty;
           xyNeighbor:=xy+dir;
-          if (newCost<map[xyNeighbor[0],xyNeighbor[1]].score) then begin
+          if (newCost<map[xyNeighbor[0]+xyNeighbor[1]*width].score) then begin
             found:=found or (xyNeighbor=endPoint);
-            with map[xyNeighbor[0],xyNeighbor[1]] do begin
+            with map[xyNeighbor[0]+xyNeighbor[1]*width] do begin
               if score=UNVISITED then begin
                 p[i1+n1]:=xyNeighbor;
                 n1+=1;
@@ -503,18 +540,18 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
         end;
       end;
       j+=1;
-      ii:=i0+n0; i0:=i1; i1:=ii; n0:=n1; n1:=0;
+      II:=i0+n0; i0:=i1; i1:=II; n0:=n1; n1:=0;
     end;
     if found then begin
       xy:=endPoint;
       xyNeighbor:=xy;
-      setLength(result,map[endPoint[0],endPoint[1]].score);
+      setLength(result,map[endPoint[0]+endPoint[1]*width].score);
       j:=0;
       i:=0;
       while (xyNeighbor<>startPoint) and (i<length(result)) do begin
         result[i]:=xy; inc(i);
         xyNeighbor:=xy;
-        xy:=map[xy[0],xy[1]].comeFrom;
+        xy:=map[xy[0]+xy[1]*width].comeFrom;
       end;
       setLength(result,i);
       for i:=0 to (length(result)-1) div 2 do begin
@@ -526,11 +563,10 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
     end else begin
       setLength(result,0);
     end;
-    setLength(p,0);
-    writeln('Path scan from ',startPoint[0],',',startPoint[1],' to ',endPoint[0],',',endPoint[1],' finished in ',GetTickCount64-startTicks,'; successful: ',found);
+    setLength(map,0);
   end;
 
-FUNCTION T_wireGraph.findPath(CONST startPoint,endPoint:T_point):T_wirePath;
+FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
   VAR toPrimeWith:T_wirePathArray;
   begin
     if isPathFree(startPoint,endPoint,result) then exit(result);
@@ -538,7 +574,17 @@ FUNCTION T_wireGraph.findPath(CONST startPoint,endPoint:T_point):T_wirePath;
     result:=simplifyPath(findPath(startPoint,endPoint,toPrimeWith,false));
   end;
 
-FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wirePath; CONST exhaustiveScan:boolean):T_wirePathArray;
+FUNCTION T_wireGraph.findPath(CONST startPoint,endPoint:T_point; CONST toPrimeWith:T_wirePathArray):T_wirePath;
+  VAR expanded:T_wirePathArray;
+      k:longint;
+  begin
+    if isPathFree(startPoint,endPoint,result) then exit(result);
+    setLength(expanded,length(toPrimeWith));
+    for k:=0 to length(expanded)-1 do expanded[k]:=expandPath(toPrimeWith[k]);
+    result:=simplifyPath(findPath(startPoint,endPoint,expanded,false));
+  end;
+
+FUNCTION T_wireGraph.findPaths(CONST startPoint: T_point; CONST endPoints: T_wirePath; CONST exhaustiveScan: boolean): T_wirePathArray;
   TYPE T_indexAndDist=record
          idx:longint;
          dist:double;
@@ -547,9 +593,10 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wireP
   VAR nextPath:T_wirePath;
       initialRun:array of T_indexAndDist;
       swapTemp:T_indexAndDist;
-      i,j:longint;
+      i,j,k:longint;
       anyImproved: boolean;
       mask:T_wireDirectionSet;
+      pt:T_point;
   FUNCTION listExceptEntry(CONST list:T_wirePathArray; CONST indexToDrop:longint):T_wirePathArray;
     VAR i:longint;
         k:longint=0;
@@ -568,10 +615,15 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wireP
       exit(result);
     end;
 
+    if (length(endPoints)>4)
+    then mask:=StraightDirections
+    else mask:=AllDirections;
+
     setLength(initialRun,length(endPoints));
+    setLength(result,length(endPoints));
     for i:=0 to length(endPoints)-1 do begin
       initialRun[i].idx:=i;
-      initialRun[i].dist:=sqr(startPoint[0]-endPoints[i,0])+sqr(startPoint[1]-endPoints[i,1]);
+      initialRun[i].dist:=euklideanDistance(startPoint,endPoints[i]);
       for j:=0 to i-1 do if initialRun[i].dist<initialRun[j].dist then begin
         swapTemp     :=initialRun[i];
         initialRun[i]:=initialRun[j];
@@ -579,25 +631,25 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wireP
       end;
     end;
 
-    if (length(endPoints)>1)
-    then mask:=StraightDirections
-    else mask:=AllDirections;
-
-    setLength(result,length(endPoints));
-    for swapTemp in initialRun do with swapTemp do
+    for i:=0 to length(initialRun)-1 do with initialRun[i] do begin
       result[idx]:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),exhaustiveScan,mask);
-
-    if (length(endPoints)<4) then mask:=AllDirections;
+      for j:=i+1 to length(initialRun)-1 do begin
+        for pt in result[idx] do initialRun[j].dist:=min(initialRun[j].dist,euklideanDistance(endPoints[initialRun[j].idx],pt));
+        for k:=i+1 to j-1 do if initialRun[j].dist<initialRun[k].dist then begin
+          swapTemp     :=initialRun[k];
+          initialRun[i]:=initialRun[j];
+          initialRun[k]:=swapTemp;
+        end;
+      end;
+    end;
 
     if length(endPoints)>1 then repeat
-
       anyImproved:=false;
       for swapTemp in initialRun do with swapTemp do begin
         if length(result[idx])>0 then begin
           nextPath:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),exhaustiveScan,mask);
           if pathScore(nextPath)<pathScore(result[idx])
           then begin
-            //writeln('Path score improved from ',pathScore(result[idx]),' to ',pathScore(nextPath));
             setLength(result[idx],0);
             result[idx]:=nextPath;
             anyImproved:=true;
@@ -610,20 +662,20 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint:T_point; CONST endPoints:T_wireP
     setLength(initialRun,0);
   end;
 
-FUNCTION T_wireGraph.anyEdgeLeadsTo(CONST endPoint:T_point):boolean;
+FUNCTION T_wireGraph.anyEdgeLeadsTo(CONST endPoint: T_point): boolean;
   VAR d:T_wireDirection;
       p:T_point;
   begin
     for d in AllDirections do begin
       p:=endPoint+d;
-      if (p[0]>=0) and (p[0]<BOARD_MAX_SIZE_IN_GRID_ENTRIES) and
-         (p[1]>=0) and (p[1]<BOARD_MAX_SIZE_IN_GRID_ENTRIES) and
-         (OppositeDirection[d] in allowedDirectionsPerPoint[p[0],p[1]]) then exit(true);
+      if (p[0]>=0) and (p[0]<width) and
+         (p[1]>=0) and (p[1]<height) and
+         (OppositeDirection[d] in allowedDirections[p[0]+p[1]*width]) then exit(true);
     end;
     result:=false;
   end;
 
-FUNCTION T_wireGraph.isWireAllowed(CONST path:T_wirePath):boolean;
+FUNCTION T_wireGraph.isWireAllowed(CONST path: T_wirePath): boolean;
   VAR p:T_point;
       i,k,len:longint;
       dir:T_wireDirection;
@@ -631,8 +683,8 @@ FUNCTION T_wireGraph.isWireAllowed(CONST path:T_wirePath):boolean;
   begin
     for p in path do if (p[0]<0)
     or (p[1]<0)
-    or (p[0]>=BOARD_MAX_SIZE_IN_GRID_ENTRIES)
-    or (p[1]>=BOARD_MAX_SIZE_IN_GRID_ENTRIES) then exit(false);
+    or (p[0]>=width)
+    or (p[1]>=height) then exit(false);
 
     for i:=0 to length(path)-2 do begin
       p:=path[i];
@@ -640,7 +692,7 @@ FUNCTION T_wireGraph.isWireAllowed(CONST path:T_wirePath):boolean;
       if valid then begin
         len:=maxNormDistance(path[i],path[i+1]);
         for k:=0 to len-1 do begin
-          if not(dir in allowedDirectionsPerPoint[p[0],p[1]]) then exit(false);
+          if not(dir in allowedDirections[p[0]+p[1]*width]) then exit(false);
           p+=dir;
         end;
       end;

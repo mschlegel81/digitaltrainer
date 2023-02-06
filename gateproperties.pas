@@ -1,13 +1,15 @@
 UNIT gateProperties;
 {$mode objfpc}{$H+}
 INTERFACE
-USES logicGates;
+USES logicalGates,compoundGates, myGenerics,paletteHandling,ValEdit,Classes;
 TYPE
-  T_gatePropertyType=(pt_number,pt_string,pt_wireWidth,pt_connectionCount);
-  T_gatePropertyEnum=(gpe_caption,
+  T_gatePropertyType=(pt_number,pt_string,pt_wireWidth,pt_connectionCount,pt_enumWithOptionForNewEntry);
+  T_gatePropertyEnum=(gpe_captionReadOnly,
+                      gpe_caption,
+                      gpe_subPalette,
+                      gpe_descriptionReadOnly,
                       gpe_description,
                       gpe_editableLabel,
-                      gpe_ioIndex,
                       gpe_intervalGreaterZero,
                       gpe_inputWidth,
                       gpe_outputWidth,
@@ -23,31 +25,34 @@ TYPE
 CONST
   C_gateProperty:array[T_gatePropertyEnum] of T_gateProperty=
   ((name:'Name'        ;            typ:pt_string; minValue:0; maxValue:         0; readonly:true),
+   (name:'Name'        ;            typ:pt_string; minValue:0; maxValue:         0; readonly:false),
+   (name:'Palette'     ;            typ:pt_enumWithOptionForNewEntry; minValue:0; maxValue: 0; readonly:false),
    (name:'Beschreibung';            typ:pt_string; minValue:0; maxValue:         0; readonly:true),
+   (name:'Beschreibung';            typ:pt_string; minValue:0; maxValue:         0; readonly:false),
    (name:'Label';                   typ:pt_string; minValue:0; maxValue:         0; readonly:false),
-   (name:'Nummer';                  typ:pt_number; minValue:0; maxValue:maxLongint; readonly:false),
    (name:'Intervall';               typ:pt_number; minValue:1; maxValue:1024; readonly:false),
    (name:'Breite Eingang (bits)';   typ:pt_wireWidth; minValue:1; maxValue:WIRE_MAX_WIDTH; readonly:false),
    (name:'Breite Ausgang (bits)';   typ:pt_wireWidth; minValue:1; maxValue:WIRE_MAX_WIDTH; readonly:false),
    (name:'Anzahl Eingänge';         typ:pt_connectionCount; minValue:2; maxValue:WIRE_MAX_WIDTH; readonly:false));
-  C_availableProperies:array[T_gateType] of T_gatePropertyEnums=
-  {gt_notGate} ([gpe_caption],
-  {gt_andGate}  [gpe_caption,gpe_inputCount],
-  {gt_orGate}   [gpe_caption,gpe_inputCount],
-  {gt_xorGate}  [gpe_caption,gpe_inputCount],
-  {gt_nandGate} [gpe_caption,gpe_inputCount],
-  {gt_norGate}  [gpe_caption,gpe_inputCount],
-  {gt_nxorGate} [gpe_caption,gpe_inputCount],
-  {gt_input}    [gpe_editableLabel,gpe_outputWidth,gpe_ioIndex],
-  {gt_output}   [gpe_editableLabel,gpe_inputWidth,gpe_ioIndex],
-  {gt_compound} [gpe_caption,gpe_description],
-  {gt_clock}    [gpe_caption,gpe_intervalGreaterZero],
-  {gt_adapter}  [gpe_caption,gpe_inputWidth,gpe_outputWidth],
-                [gpe_caption],
-                [gpe_caption],
-  {gt_gatedCl..}[gpe_caption,gpe_intervalGreaterZero],
-  {1/2->1}      [gpe_caption,gpe_inputWidth],
-  {1/2->0}      [gpe_caption,gpe_inputWidth]);
+  C_availableProperies:array[T_gateType,false..true] of T_gatePropertyEnums=
+  {gt_notGate} (([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly]),
+  {gt_andGate}  ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputCount]),
+  {gt_orGate}   ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputCount]),
+  {gt_xorGate}  ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputCount]),
+  {gt_nandGate} ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputCount]),
+  {gt_norGate}  ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputCount]),
+  {gt_nxorGate} ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputCount]),
+  {gt_input}    ([gpe_captionReadOnly,gpe_subPalette],          [gpe_editableLabel,gpe_outputWidth]),
+  {gt_output}   ([gpe_captionReadOnly,gpe_subPalette],          [gpe_editableLabel,gpe_inputWidth]),
+  {gt_compound} ([gpe_caption,gpe_description,gpe_subPalette],  [gpe_captionReadOnly,gpe_descriptionReadOnly]),
+  {gt_clock}    ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_intervalGreaterZero]),
+  {gt_adapter}  ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputWidth,gpe_outputWidth]),
+                ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly]),
+                ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly]),
+  {gt_gatedCl..}([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_intervalGreaterZero]),
+  {1/2->1}      ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputWidth]),
+  {1/2->0}      ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputWidth]));
+
 
 TYPE
   T_gatePropertyValue=record
@@ -55,55 +60,57 @@ TYPE
     n:longint;
   end;
 
+
   T_gateProperties=array of T_gateProperty;
 
   { T_gatePropertyValues }
 
   T_gatePropertyValues=object
     private
+      onAccept: TNotifyEvent;
       gate:P_abstractGate;
+      palette:P_workspacePalette;
       entry:array of record
-        prop :T_gatePropertyEnum;
-        value:T_gatePropertyValue;
+        prop   :T_gatePropertyEnum;
+        value  :T_gatePropertyValue;
         modified:boolean;
       end;
       FUNCTION fetchValue(CONST prop:T_gatePropertyEnum):T_gatePropertyValue;
       PROCEDURE applyValue(CONST prop:T_gatePropertyEnum; CONST value:T_gatePropertyValue);
 
+      PROCEDURE ValueListEditorValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
+      PROCEDURE connectEditor(editor:TValueListEditor);
     public
-      CONSTRUCTOR create(CONST gate_:P_abstractGate);
-      DESTRUCTOR destroy;
+      CONSTRUCTOR createForPaletteEntry(editor:TValueListEditor; onModify:TNotifyEvent; CONST gate_:P_abstractGate; CONST palette_:P_palette);
+      CONSTRUCTOR createForBoardEntry  (editor:TValueListEditor; onModify:TNotifyEvent; CONST gate_:P_abstractGate);
 
-      FUNCTION count:longint;
-      FUNCTION key           (CONST index:longint):string;
-      FUNCTION value         (CONST index:longint):string;
+      DESTRUCTOR destroy;
       FUNCTION acceptNewValue(CONST index:longint; CONST newValue:string):boolean;
-      PROCEDURE applyValues;
+      FUNCTION applyValues:boolean;
+      FUNCTION arePropertiesForBoard:boolean;
+
+
   end;
 
 IMPLEMENTATION
 USES sysutils;
 { T_gatePropertyValues }
 
-FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum): T_gatePropertyValue;
+function T_gatePropertyValues.fetchValue(const prop: T_gatePropertyEnum): T_gatePropertyValue;
   begin
     result.n:=0;
     result.s:='';
     case prop of
       gpe_caption:
-        result.s:=gate^.caption;
+        result.s:=gate^.getCaption;
       gpe_description:
         result.s:=gate^.getDescription;
       gpe_editableLabel:
         if gate^.gateType in [gt_input,gt_output]
-        then result.s:=P_inputGate(gate)^.caption;
+        then result.s:=P_inputGate(gate)^.getCaption;
       gpe_intervalGreaterZero:
         if gate^.gateType in [gt_clock,gt_gatedClock]
         then result.n:=P_clock(gate)^.interval;
-      gpe_ioIndex:
-        if gate^.gateType in [gt_input,gt_output]
-        then result.n:=P_inputGate(gate)^.ioIndex;
-
       gpe_inputWidth:
         case gate^.gateType of
           gt_output: result.n:=P_outputGate(gate)^.width;
@@ -119,18 +126,23 @@ FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum): T_gate
       gpe_inputCount :
         if gate^.gateType in [gt_andGate,gt_orGate,gt_xorGate,gt_nandGate,gt_norGate,gt_nxorGate]
         then result.n:=P_binaryBaseGate(gate)^.inputCount;
+      else assert(false);
     end;
   end;
 
-PROCEDURE T_gatePropertyValues.applyValue(CONST prop: T_gatePropertyEnum; CONST value: T_gatePropertyValue);
+procedure T_gatePropertyValues.applyValue(const prop: T_gatePropertyEnum;
+  const value: T_gatePropertyValue);
   begin
     case prop of
+      gpe_caption,
+      gpe_subPalette,
+      gpe_description: begin
+
+        //P_circuitBoard^.prototype();
+      end;
       gpe_editableLabel: if gate^.gateType in [gt_input,gt_output] then begin
         P_inputGate(gate)^.ioLabel:=value.s;
       end;
-      gpe_ioIndex:
-        if gate^.gateType in [gt_input,gt_output]
-        then P_inputGate(gate)^.ioIndex:=value.n;
       gpe_intervalGreaterZero: if gate^.gateType in [gt_clock,gt_gatedClock] then begin
         P_clock(gate)^.interval:=value.n;
       end;
@@ -158,45 +170,94 @@ PROCEDURE T_gatePropertyValues.applyValue(CONST prop: T_gatePropertyEnum; CONST 
     end;
   end;
 
-CONSTRUCTOR T_gatePropertyValues.create(CONST gate_: P_abstractGate);
+procedure T_gatePropertyValues.ValueListEditorValidateEntry(Sender: TObject;
+  aCol, aRow: integer; const oldValue: string; var newValue: string);
+  begin
+    if aCol=0 then begin
+      newValue:=oldValue;
+    end else begin
+      if acceptNewValue(aRow-1,newValue)
+      then onAccept(Sender)
+      else newValue:=oldValue;
+    end;
+  end;
+
+procedure T_gatePropertyValues.connectEditor(editor: TValueListEditor);
+  var
+    i: Integer;
+    s: string;
+  begin
+    editor.OnValidateEntry:=@ValueListEditorValidateEntry;
+    editor.clear;
+    editor.rowCount:=length(entry);
+    for i:=0 to length(entry)-1 do begin
+      editor.Cells[0,i+1]:=C_gateProperty[entry[i].prop].name;
+      case C_gateProperty[entry[i].prop].typ of
+        pt_number,pt_wireWidth,pt_connectionCount: begin
+          editor.Cells[1,i+1]:=intToStr(entry[i].value.n);
+          editor.ItemProps[i].EditStyle:=esSimple;
+        end;
+        pt_string: begin
+          editor.Cells[1,i+1]:=entry[i].value.s;
+          editor.ItemProps[i].EditStyle:=esSimple;
+        end;
+        pt_enumWithOptionForNewEntry: begin
+          editor.Cells[1,i+1]:=entry[i].value.s;
+          editor.ItemProps[i].EditStyle:=esPickList;
+          editor.ItemProps[i].PickList.Clear;
+          for s in palette^.subPaletteNames do editor.ItemProps[i].PickList.Add(s);
+        end;
+      end;
+    end;
+    editor.AutoSizeColumn(0);
+  end;
+
+constructor T_gatePropertyValues.createForPaletteEntry(
+  editor: TValueListEditor; onModify: TNotifyEvent;
+  const gate_: P_abstractGate; const palette_: P_palette);
   VAR p:T_gatePropertyEnum;
       i:longint=0;
   begin
+    onAccept:=onModify;
     gate:=gate_;
+    palette:=nil;
     setLength(entry,0);
-    for p in C_availableProperies[gate^.gateType] do begin
+    for p in C_availableProperies[gate^.gateType,false] do begin
       setLength(entry,i+1);
       entry[i].prop:=p;
       entry[i].value:=fetchValue(p);
       entry[i].modified:=false;
       inc(i);
     end;
+    connectEditor(editor);
   end;
 
-DESTRUCTOR T_gatePropertyValues.destroy;
+constructor T_gatePropertyValues.createForBoardEntry(editor: TValueListEditor;
+  onModify: TNotifyEvent; const gate_: P_abstractGate);
+  VAR p:T_gatePropertyEnum;
+      i:longint=0;
+  begin
+    onAccept:=onModify;
+    gate:=gate_;
+    palette:=nil;
+    setLength(entry,0);
+    for p in C_availableProperies[gate^.gateType,true] do begin
+      setLength(entry,i+1);
+      entry[i].prop:=p;
+      entry[i].value:=fetchValue(p);
+      entry[i].modified:=false;
+      inc(i);
+    end;
+    connectEditor(editor);
+  end;
+
+destructor T_gatePropertyValues.destroy;
   begin
     setLength(entry,0);
   end;
 
-FUNCTION T_gatePropertyValues.count:longint;
-  begin
-    result:=length(entry);
-  end;
-
-FUNCTION T_gatePropertyValues.key(CONST index: longint): string;
-  begin
-    result:=C_gateProperty[entry[index].prop].name;
-  end;
-
-FUNCTION T_gatePropertyValues.value(CONST index: longint): string;
-  begin
-    case C_gateProperty[entry[index].prop].typ of
-      pt_number,pt_wireWidth,pt_connectionCount: result:=intToStr(entry[index].value.n);
-      pt_string: result:=         entry[index].value.s;
-    end;
-  end;
-
-FUNCTION T_gatePropertyValues.acceptNewValue(CONST index: longint; CONST newValue: string): boolean;
+function T_gatePropertyValues.acceptNewValue(const index: longint;
+  const newValue: string): boolean;
   VAR newNumber:int64;
   begin
     if C_gateProperty[entry[index].prop].readonly then exit(false);
@@ -232,13 +293,22 @@ FUNCTION T_gatePropertyValues.acceptNewValue(CONST index: longint; CONST newValu
     end;
   end;
 
-PROCEDURE T_gatePropertyValues.applyValues;
+function T_gatePropertyValues.applyValues:boolean;
   VAR i:longint;
   begin
+    result:=false;
     for i:=0 to length(entry)-1 do
     with entry[i] do
     if modified
-    then applyValue(prop,value);
+    then begin
+      applyValue(prop,value);
+      result:=true;
+    end;
+  end;
+
+function T_gatePropertyValues.arePropertiesForBoard: boolean;
+  begin
+    result:=palette=nil;
   end;
 
 end.
