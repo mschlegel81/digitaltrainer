@@ -53,13 +53,11 @@ CONST
   {1/2->1}      ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputWidth]),
   {1/2->0}      ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputWidth]));
 
-
 TYPE
   T_gatePropertyValue=record
     s:string;
     n:longint;
   end;
-
 
   T_gateProperties=array of T_gateProperty;
 
@@ -89,14 +87,13 @@ TYPE
       FUNCTION applyValues:boolean;
       FUNCTION arePropertiesForBoard:boolean;
 
-
   end;
 
 IMPLEMENTATION
 USES sysutils;
 { T_gatePropertyValues }
 
-function T_gatePropertyValues.fetchValue(const prop: T_gatePropertyEnum): T_gatePropertyValue;
+FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum): T_gatePropertyValue;
   begin
     result.n:=0;
     result.s:='';
@@ -144,12 +141,11 @@ function T_gatePropertyValues.fetchValue(const prop: T_gatePropertyEnum): T_gate
         end;
       end;
 
-
       else assert(false);
     end;
   end;
 
-procedure T_gatePropertyValues.applyValue(const prop: T_gatePropertyEnum; const value: T_gatePropertyValue);
+PROCEDURE T_gatePropertyValues.applyValue(CONST prop: T_gatePropertyEnum; CONST value: T_gatePropertyValue);
   begin
     case prop of
       gpe_caption,
@@ -191,8 +187,8 @@ procedure T_gatePropertyValues.applyValue(const prop: T_gatePropertyEnum; const 
     end;
   end;
 
-procedure T_gatePropertyValues.ValueListEditorValidateEntry(Sender: TObject;
-  aCol, aRow: integer; const oldValue: string; var newValue: string);
+PROCEDURE T_gatePropertyValues.ValueListEditorValidateEntry(Sender: TObject;
+  aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
   begin
     if aCol=0 then begin
       newValue:=oldValue;
@@ -203,9 +199,9 @@ procedure T_gatePropertyValues.ValueListEditorValidateEntry(Sender: TObject;
     end;
   end;
 
-procedure T_gatePropertyValues.connectEditor(editor: TValueListEditor);
-  var
-    i: Integer;
+PROCEDURE T_gatePropertyValues.connectEditor(editor: TValueListEditor);
+  VAR
+    i: integer;
     s: string;
   begin
 
@@ -226,19 +222,19 @@ procedure T_gatePropertyValues.connectEditor(editor: TValueListEditor);
         pt_enumWithOptionForNewEntry: begin
           editor.Cells[1,i+1]:=entry[i].value.s;
           editor.ItemProps[i].EditStyle:=esPickList;
-          editor.ItemProps[i].PickList.Clear;
-          for s in palette^.subPaletteNames do editor.ItemProps[i].PickList.Add(s);
+          editor.ItemProps[i].PickList.clear;
+          for s in palette^.subPaletteNames do editor.ItemProps[i].PickList.add(s);
         end;
       end;
     end;
-    editor.Editor.Color:=$00703838;
-    editor.Editor.Font.Color:=$00FFFFFF;
+    editor.editor.color:=$00703838;
+    editor.editor.Font.color:=$00FFFFFF;
     editor.AutoSizeColumn(0);
   end;
 
-constructor T_gatePropertyValues.createForPaletteEntry(
+CONSTRUCTOR T_gatePropertyValues.createForPaletteEntry(
   editor: TValueListEditor; onModify: TNotifyEvent;
-  const gate_: P_abstractGate; const palette_: P_palette);
+  CONST gate_: P_abstractGate; CONST palette_: P_palette);
   VAR p:T_gatePropertyEnum;
       i:longint=0;
   begin
@@ -256,8 +252,8 @@ constructor T_gatePropertyValues.createForPaletteEntry(
     connectEditor(editor);
   end;
 
-constructor T_gatePropertyValues.createForBoardEntry(editor: TValueListEditor;
-  onModify: TNotifyEvent; const gate_: P_abstractGate);
+CONSTRUCTOR T_gatePropertyValues.createForBoardEntry(editor: TValueListEditor;
+  onModify: TNotifyEvent; CONST gate_: P_abstractGate);
   VAR p:T_gatePropertyEnum;
       i:longint=0;
   begin
@@ -275,13 +271,13 @@ constructor T_gatePropertyValues.createForBoardEntry(editor: TValueListEditor;
     connectEditor(editor);
   end;
 
-destructor T_gatePropertyValues.destroy;
+DESTRUCTOR T_gatePropertyValues.destroy;
   begin
     setLength(entry,0);
   end;
 
-function T_gatePropertyValues.acceptNewValue(const index: longint;
-  const newValue: string): boolean;
+FUNCTION T_gatePropertyValues.acceptNewValue(CONST index: longint;
+  CONST newValue: string): boolean;
   VAR newNumber:int64;
   begin
     if C_gateProperty[entry[index].prop].readonly then exit(false);
@@ -322,7 +318,7 @@ function T_gatePropertyValues.acceptNewValue(const index: longint;
     end;
   end;
 
-function T_gatePropertyValues.applyValues:boolean;
+FUNCTION T_gatePropertyValues.applyValues:boolean;
   VAR i:longint;
   begin
     result:=false;
@@ -335,7 +331,7 @@ function T_gatePropertyValues.applyValues:boolean;
     end;
   end;
 
-function T_gatePropertyValues.arePropertiesForBoard: boolean;
+FUNCTION T_gatePropertyValues.arePropertiesForBoard: boolean;
   begin
     result:=palette=nil;
   end;

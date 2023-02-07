@@ -580,15 +580,15 @@ FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
 
 { T_captionedAndIndexed }
 
-procedure T_captionedAndIndexed.setCaption(const s: string);
+PROCEDURE T_captionedAndIndexed.setCaption(CONST s: string);
   begin
   end;
 
-procedure T_captionedAndIndexed.setDescription(const s: string);
+PROCEDURE T_captionedAndIndexed.setDescription(CONST s: string);
   begin
   end;
 
-function T_captionedAndIndexed.getIndexInPalette: longint;
+FUNCTION T_captionedAndIndexed.getIndexInPalette: longint;
   begin
     result:=-1;
   end;

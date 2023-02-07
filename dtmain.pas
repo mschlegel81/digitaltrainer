@@ -63,18 +63,18 @@ TYPE
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE FormDestroy(Sender: TObject);
     PROCEDURE FormResize(Sender: TObject);
-    procedure miAddToPaletteClick(Sender: TObject);
+    PROCEDURE miAddToPaletteClick(Sender: TObject);
     PROCEDURE miEditModeClick(Sender: TObject);
     PROCEDURE miFullScreenClick(Sender: TObject);
     PROCEDURE PlayPauseShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
-    procedure propCancelShapeMouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
-    procedure propDeleteButtonMouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
-    procedure propEditShapeMouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
-    procedure propOkShapeMouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
+    PROCEDURE propCancelShapeMouseDown(Sender: TObject; button: TMouseButton;
+      Shift: TShiftState; X, Y: integer);
+    PROCEDURE propDeleteButtonMouseDown(Sender: TObject; button: TMouseButton;
+      Shift: TShiftState; X, Y: integer);
+    PROCEDURE propEditShapeMouseDown(Sender: TObject; button: TMouseButton;
+      Shift: TShiftState; X, Y: integer);
+    PROCEDURE propOkShapeMouseDown(Sender: TObject; button: TMouseButton;
+      Shift: TShiftState; X, Y: integer);
     PROCEDURE ResetShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE SimulationTimerTimer(Sender: TObject);
     PROCEDURE ZoomInShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -106,7 +106,7 @@ IMPLEMENTATION
 
 { TDigitaltrainerMainForm }
 
-procedure TDigitaltrainerMainForm.FormCreate(Sender: TObject);
+PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
   PROCEDURE addButton(Shape:TShape; lab:TLabel);
     VAR k:longint;
     begin
@@ -129,7 +129,6 @@ procedure TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     addButton(propOkShape,propOkLabel);
     addButton(propCancelShape,propCancelLabel);
 
-
     uiAdapter.create(self,selectionShape,@showPropertyEditor);
 
     new(P_workspacePalette(currentPalette),create);
@@ -142,18 +141,18 @@ procedure TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     currentChallenge:=nil;
   end;
 
-procedure TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
+PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
   begin
 
   end;
 
-procedure TDigitaltrainerMainForm.FormResize(Sender: TObject);
+PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
   begin
     currentPalette^.checkSizes;
     activeBoard^.checkSizes;
   end;
 
-procedure TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
+PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
   begin
     if AddToPaletteForm.showFor(P_workspacePalette(currentPalette),activeBoard) then begin
       activeBoard^.clear;
@@ -162,12 +161,12 @@ procedure TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
     end;
   end;
 
-procedure TDigitaltrainerMainForm.miEditModeClick(Sender: TObject);
+PROCEDURE TDigitaltrainerMainForm.miEditModeClick(Sender: TObject);
   begin
     //TODO
   end;
 
-procedure TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
+PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
   begin
     if miFullScreen.checked then begin
       WindowState:=wsMaximized;
@@ -179,53 +178,53 @@ procedure TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
     miFullScreen.checked:=not(miFullScreen.checked);
   end;
 
-procedure TDigitaltrainerMainForm.PlayPauseShapeMouseDown(Sender: TObject;
+PROCEDURE TDigitaltrainerMainForm.PlayPauseShapeMouseDown(Sender: TObject;
   button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     buttonClicked(PlayPauseShape);
     //Todo: Change icon
-    SimulationTimer.Enabled:=not(SimulationTimer.Enabled);
+    SimulationTimer.enabled:=not(SimulationTimer.enabled);
   end;
 
-procedure TDigitaltrainerMainForm.propCancelShapeMouseDown(Sender: TObject;
-  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+PROCEDURE TDigitaltrainerMainForm.propCancelShapeMouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
 begin
   buttonClicked(propCancelShape);
   ValueListEditor1.OnValidateEntry:=nil;
   gateProperties.destroy;
-  propEditPanel.Visible:=false;
+  propEditPanel.visible:=false;
   uiAdapter.resetState;
 end;
 
-procedure TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject;
-  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+PROCEDURE TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
 begin
   buttonClicked(propDeleteButton);
   ValueListEditor1.OnValidateEntry:=nil;
   gateProperties.destroy;
-  propEditPanel.Visible:=false;
+  propEditPanel.visible:=false;
   uiAdapter.resetState;
 end;
 
-procedure TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject;
-  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
 begin
   buttonClicked(propEditShape);
   ValueListEditor1.OnValidateEntry:=nil;
   gateProperties.destroy;
-  propEditPanel.Visible:=false;
+  propEditPanel.visible:=false;
   uiAdapter.resetState;
 end;
 
-procedure TDigitaltrainerMainForm.propOkShapeMouseDown(Sender: TObject;
-  Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+PROCEDURE TDigitaltrainerMainForm.propOkShapeMouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
 begin
   buttonClicked(propEditShape);
-  propEditPanel.Visible:=false;
+  propEditPanel.visible:=false;
   if gateProperties.applyValues then begin
     uiAdapter.draggedGate^.propertyEditDone(not(gateProperties.arePropertiesForBoard),
-      BoardImage.Left-BoardHorizontalScrollBar.Position,
-      BoardImage.Top -BoardVerticalScrollbar.Position);
+      BoardImage.Left-BoardHorizontalScrollBar.position,
+      BoardImage.top -BoardVerticalScrollbar.position);
     activeBoard^.afterGatePropertiesEdited(uiAdapter.draggedGate);
     if not(gateProperties.arePropertiesForBoard) then begin
       currentPalette^.ensureVisualPaletteItems;
@@ -237,19 +236,18 @@ begin
   uiAdapter.resetState;
 end;
 
-procedure TDigitaltrainerMainForm.ResetShapeMouseDown(Sender: TObject;
+PROCEDURE TDigitaltrainerMainForm.ResetShapeMouseDown(Sender: TObject;
   button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     buttonClicked(ResetShape);
   end;
 
-procedure TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
+PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
   begin
     activeBoard^.simulateSteps(1);
   end;
 
-
-procedure TDigitaltrainerMainForm.ZoomInShapeMouseDown(Sender: TObject;
+PROCEDURE TDigitaltrainerMainForm.ZoomInShapeMouseDown(Sender: TObject;
   button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     buttonClicked(ZoomInShape);
@@ -258,7 +256,7 @@ procedure TDigitaltrainerMainForm.ZoomInShapeMouseDown(Sender: TObject;
     activeBoard^.checkSizes;
   end;
 
-procedure TDigitaltrainerMainForm.ZoomOutShapeMouseDown(Sender: TObject;
+PROCEDURE TDigitaltrainerMainForm.ZoomOutShapeMouseDown(Sender: TObject;
   button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     buttonClicked(ZoomOutShape);
@@ -267,14 +265,14 @@ procedure TDigitaltrainerMainForm.ZoomOutShapeMouseDown(Sender: TObject;
     activeBoard^.checkSizes;
   end;
 
-procedure TDigitaltrainerMainForm.buttonClicked(Shape: TShape);
+PROCEDURE TDigitaltrainerMainForm.buttonClicked(Shape: TShape);
   begin
     Buttons[Shape.Tag].colorIndex:=10;
     Shape.Brush.color:=$00FF7F7F;
     if not(AnimationTimer.enabled) then AnimationTimer.enabled:=true;
   end;
 
-procedure TDigitaltrainerMainForm.startChallenge(const challenge: P_challenge);
+PROCEDURE TDigitaltrainerMainForm.startChallenge(CONST challenge: P_challenge);
   begin
     //currentChallenge:=challenge;
     //activeBoard:=challenge^.getBoard;
@@ -284,19 +282,19 @@ procedure TDigitaltrainerMainForm.startChallenge(const challenge: P_challenge);
     //SubPaletteComboBox.Visible:=false;
   end;
 
-procedure TDigitaltrainerMainForm.propertyValueChanged(Sender: TObject);
+PROCEDURE TDigitaltrainerMainForm.propertyValueChanged(Sender: TObject);
   begin
     setEnableButton(propOkShape,propOkLabel,true);
   end;
 
-procedure TDigitaltrainerMainForm.showPropertyEditor(const gate: P_visualGate;
-  const fromBoard: boolean; const mouseX, mouseY: longint);
+PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate;
+  CONST fromBoard: boolean; CONST mouseX, mouseY: longint);
   begin
-    propEditPanel.Visible:=true;
+    propEditPanel.visible:=true;
     propEditPanel.Left:=mouseX;
     propEditPanel.top:=mouseY;
-    if propEditPanel.Left+propEditPanel.Width>width then propEditPanel.Left:=Width-propEditPanel.Width;
-    if propEditPanel.Top+propEditPanel.Height>Height then propEditPanel.Top:=Height-propEditPanel.Height;
+    if propEditPanel.Left+propEditPanel.width>width then propEditPanel.Left:=width-propEditPanel.width;
+    if propEditPanel.top+propEditPanel.height>height then propEditPanel.top:=height-propEditPanel.height;
     propEditPanel.BringToFront;
 
     if fromBoard
@@ -309,7 +307,7 @@ procedure TDigitaltrainerMainForm.showPropertyEditor(const gate: P_visualGate;
     setEnableButton(propOkShape     ,propOkLabel    ,false);
   end;
 
-procedure TDigitaltrainerMainForm.AnimationTimerTimer(Sender: TObject);
+PROCEDURE TDigitaltrainerMainForm.AnimationTimerTimer(Sender: TObject);
   CONST buttonColorTable:array[0..9] of longint=($00603030,$00703838,$00804040,$00904848,$00A05050,$00B05858,$00BF5F5F,$00CF6767,$00DF6F6F,$00EF7777);
   VAR i:longint;
       anythingDone:boolean=false;
@@ -321,7 +319,6 @@ procedure TDigitaltrainerMainForm.AnimationTimerTimer(Sender: TObject);
     end;
     if not(anythingDone) then AnimationTimer.enabled:=false;
   end;
-
 
 end.
 

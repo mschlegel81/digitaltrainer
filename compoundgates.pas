@@ -31,7 +31,6 @@ TYPE
 
   F_queryLongint=FUNCTION():longint of object;
 
-
   { T_circuitBoard }
   T_circuitBoard=object(T_abstractGate)
     protected
@@ -156,7 +155,7 @@ FUNCTION T_wire.simulateStep: boolean;
 
 { T_circuitBoard }
 
-constructor T_circuitBoard.create(const prototypeSrc: P_abstractPrototypeSource
+CONSTRUCTOR T_circuitBoard.create(CONST prototypeSrc: P_abstractPrototypeSource
   );
   begin
     inherited create;
@@ -168,7 +167,7 @@ constructor T_circuitBoard.create(const prototypeSrc: P_abstractPrototypeSource
     captionString:='';
   end;
 
-destructor T_circuitBoard.destroy;
+DESTRUCTOR T_circuitBoard.destroy;
   VAR i:longint;
   begin
     inherited;
@@ -182,7 +181,7 @@ destructor T_circuitBoard.destroy;
     setLength(outputs,0);
   end;
 
-procedure T_circuitBoard.reset;
+PROCEDURE T_circuitBoard.reset;
   VAR g:P_abstractGate;
   begin
     for g in inputs do g^.reset;
@@ -191,7 +190,7 @@ procedure T_circuitBoard.reset;
     lastStepBusy:=true;
   end;
 
-function T_circuitBoard.clone(const includeState: boolean): P_abstractGate;
+FUNCTION T_circuitBoard.clone(CONST includeState: boolean): P_abstractGate;
   VAR cloned:P_circuitBoard;
       i,j:longint;
   FUNCTION gateInClone(CONST gate:P_abstractGate):P_abstractGate;
@@ -225,38 +224,38 @@ function T_circuitBoard.clone(const includeState: boolean): P_abstractGate;
     result:=cloned;
   end;
 
-function T_circuitBoard.getCaption: string;
+FUNCTION T_circuitBoard.getCaption: string;
   begin
     if prototype=nil
     then result:=captionString
     else result:=prototype^.getCaption;
   end;
 
-function T_circuitBoard.getDescription: string;
+FUNCTION T_circuitBoard.getDescription: string;
   begin
     if prototype=nil
     then result:=descriptionString
     else result:=prototype^.getDescription;
   end;
 
-function T_circuitBoard.getIndexInPalette: longint;
+FUNCTION T_circuitBoard.getIndexInPalette: longint;
   begin
     if prototype=nil
     then result:=myIndex
     else result:=prototype^.getIndexInPalette;
   end;
 
-function T_circuitBoard.numberOfInputs: longint;
+FUNCTION T_circuitBoard.numberOfInputs: longint;
   begin
     result:=length(inputs);
   end;
 
-function T_circuitBoard.numberOfOutputs: longint;
+FUNCTION T_circuitBoard.numberOfOutputs: longint;
   begin
     result:=length(outputs);
   end;
 
-function T_circuitBoard.getIoLocations: T_ioLocations;
+FUNCTION T_circuitBoard.getIoLocations: T_ioLocations;
   VAR i:longint;
   begin
     setLength(result[gt_input],length(inputs));
@@ -273,26 +272,26 @@ function T_circuitBoard.getIoLocations: T_ioLocations;
     end;
   end;
 
-function T_circuitBoard.inputWidth(const index: longint): byte;
+FUNCTION T_circuitBoard.inputWidth(CONST index: longint): byte;
   begin
     if (index>=0) and (index<length(inputs))
     then result:=inputs[index]^.outputWidth(0)
     else result:=1;
   end;
 
-function T_circuitBoard.outputWidth(const index: longint): byte;
+FUNCTION T_circuitBoard.outputWidth(CONST index: longint): byte;
   begin
     if (index>=0) and (index<length(outputs))
     then result:=outputs[index]^.inputWidth(0)
     else result:=1;
   end;
 
-function T_circuitBoard.gateType: T_gateType;
+FUNCTION T_circuitBoard.gateType: T_gateType;
   begin
     result:=gt_compound;
   end;
 
-function T_circuitBoard.simulateStep: boolean;
+FUNCTION T_circuitBoard.simulateStep: boolean;
   VAR wire:T_wire;
       g:P_abstractGate;
   begin
@@ -305,13 +304,13 @@ function T_circuitBoard.simulateStep: boolean;
     lastStepBusy:=result;
   end;
 
-function T_circuitBoard.getOutput(const index: longint): T_wireValue;
+FUNCTION T_circuitBoard.getOutput(CONST index: longint): T_wireValue;
   begin
     if (index>=0) and (index<length(outputs))
     then result:=outputs[index]^.getInput(0);
   end;
 
-function T_circuitBoard.setInput(const index: longint; const value: T_wireValue
+FUNCTION T_circuitBoard.setInput(CONST index: longint; CONST value: T_wireValue
   ): boolean;
   begin
     if (index>=0) and (index<length(inputs))
@@ -319,14 +318,14 @@ function T_circuitBoard.setInput(const index: longint; const value: T_wireValue
     else result:=false;
   end;
 
-function T_circuitBoard.getInput(const index: longint): T_wireValue;
+FUNCTION T_circuitBoard.getInput(CONST index: longint): T_wireValue;
   begin
     if (index>=0) and (index<length(inputs))
     then result:=inputs[index]^.getOutput(0);
   end;
 
-procedure T_circuitBoard.writePrototypeToStream(
-  var stream: T_bufferedOutputStreamWrapper; const acutalIndex: longint);
+PROCEDURE T_circuitBoard.writePrototypeToStream(
+  VAR stream: T_bufferedOutputStreamWrapper; CONST acutalIndex: longint);
   FUNCTION gateIndexForSerialization(CONST gate:P_abstractGate):longint;
     VAR i: longint;
     begin
@@ -357,8 +356,8 @@ procedure T_circuitBoard.writePrototypeToStream(
     end;
   end;
 
-function T_circuitBoard.readPrototypeFromStream(
-  var stream: T_bufferedInputStreamWrapper; const acutalIndex: longint
+FUNCTION T_circuitBoard.readPrototypeFromStream(
+  VAR stream: T_bufferedInputStreamWrapper; CONST acutalIndex: longint
   ): boolean;
   FUNCTION gateFromDeserialization(index:longint):P_abstractGate;
     begin
@@ -388,20 +387,20 @@ function T_circuitBoard.readPrototypeFromStream(
     end;
   end;
 
-procedure T_circuitBoard.writeToStream(var stream: T_bufferedOutputStreamWrapper
+PROCEDURE T_circuitBoard.writeToStream(VAR stream: T_bufferedOutputStreamWrapper
   );
   begin
     stream.writeByte(byte(gateType));
     stream.writeLongint(prototype^.getIndexInPalette);
   end;
 
-procedure T_circuitBoard.readMetaDataFromStream(
-  var stream: T_bufferedInputStreamWrapper);
+PROCEDURE T_circuitBoard.readMetaDataFromStream(
+  VAR stream: T_bufferedInputStreamWrapper);
   begin
     assert(false,'This should never be called');
   end;
 
-procedure T_circuitBoard.countGates(var gateCount: T_gateCount);
+PROCEDURE T_circuitBoard.countGates(VAR gateCount: T_gateCount);
   VAR gate: P_abstractGate;
   begin
     inc(gateCount[gt_input ],length(inputs));
@@ -409,13 +408,13 @@ procedure T_circuitBoard.countGates(var gateCount: T_gateCount);
     for gate in gates do gate^.countGates(gateCount);
   end;
 
-function T_circuitBoard.equals(const other: P_abstractGate): boolean;
+FUNCTION T_circuitBoard.equals(CONST other: P_abstractGate): boolean;
   begin
     assert(false,'Not implemented');
     result:=(gateType=other^.gateType) and ((P_circuitBoard(other)^.prototype=prototype) or (P_circuitBoard(other)^.prototype=prototype));
   end;
 
-function T_circuitBoard.usesPrototype(const p: P_circuitBoard): boolean;
+FUNCTION T_circuitBoard.usesPrototype(CONST p: P_circuitBoard): boolean;
   VAR g:P_abstractGate;
   begin
     result:=false;
@@ -423,7 +422,7 @@ function T_circuitBoard.usesPrototype(const p: P_circuitBoard): boolean;
     for g in gates do if (g^.gateType=gt_compound) and P_circuitBoard(g)^.usesPrototype(p) then result:=true;
   end;
 
-function T_circuitBoard.getPrototypeIndex: longint;
+FUNCTION T_circuitBoard.getPrototypeIndex: longint;
   begin
     result:=myIndex;
   end;

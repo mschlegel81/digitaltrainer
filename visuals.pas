@@ -1,11 +1,11 @@
-unit visuals;
+UNIT visuals;
 
-{$mode ObjFPC}{$H+}
+{$mode objfpc}{$H+}
 
-interface
+INTERFACE
 
-uses
-  Classes, SysUtils, StdCtrls,ExtCtrls;
+USES
+  Classes, sysutils, StdCtrls,ExtCtrls;
 
 TYPE   T_shapeAndLabel=record colorIndex:byte; Shape:TShape; labl:TLabel; end;
 
@@ -14,20 +14,19 @@ CONST ENABLED_BUTTON_COLOR =$00603030;
       ENABLED_TEXT_COLOR   =$00FFFFFF;
       DISABLED_TEXT_COLOR  =$00909090;
 
-
 PROCEDURE setEnableButton(Shape:TShape; CONST labl:TLabel; CONST enable:boolean);
-implementation
+IMPLEMENTATION
 
-procedure setEnableButton(Shape: TShape; CONST labl:TLabel; const enable: boolean);
+PROCEDURE setEnableButton(Shape: TShape; CONST labl:TLabel; CONST enable: boolean);
   begin
-    shape.Enabled:=enable;
-    labl .Enabled:=enable;
+    Shape.enabled:=enable;
+    labl .enabled:=enable;
     if enable then begin
       Shape.Brush.color:=ENABLED_BUTTON_COLOR;
-      labl.Font.Color:=ENABLED_TEXT_COLOR;
+      labl.Font.color:=ENABLED_TEXT_COLOR;
     end else begin
       Shape.Brush.color:=DISABLED_BUTTON_COLOR;
-      labl.Font.Color:=DISABLED_TEXT_COLOR;
+      labl.Font.color:=DISABLED_TEXT_COLOR;
     end;
   end;
 

@@ -115,7 +115,7 @@ TYPE
       activeBoard:P_visualBoard;
 
       helperState:record
-        clipboard:P_visualBoard;
+        Clipboard:P_visualBoard;
         undoList,
         redoList:array of P_visualBoard;
       end;
@@ -134,8 +134,8 @@ TYPE
       PROCEDURE propertyEditorShown(CONST gate:P_visualGate; CONST fromBoard:boolean);
       FUNCTION draggedGate:P_visualGate;
 
-      PROCEDURE startDrag(const evtX,evtY:longint; CONST eventOrigin:TGraphicControl;  CONST gateToDrag:P_visualGate; CONST newState:T_uiAdapterState; CONST outputIndex:longint=-1);
-      PROCEDURE startDragSelectionFrame(const evtX,evtY:longint);
+      PROCEDURE startDrag(CONST evtX,evtY:longint; CONST eventOrigin:TGraphicControl;  CONST gateToDrag:P_visualGate; CONST newState:T_uiAdapterState; CONST outputIndex:longint=-1);
+      PROCEDURE startDragSelectionFrame(CONST evtX,evtY:longint);
       PROCEDURE endSelectionDrag;
 
       PROCEDURE zoomIn;
@@ -203,9 +203,9 @@ TYPE
       PROCEDURE paintWirePreview(CONST wireStart:T_point; CONST screenX,screenY:longint);
 
       FUNCTION getCaption: string; virtual;
-      PROCEDURE setCaption(const s: string); virtual;
+      PROCEDURE setCaption(CONST s: string); virtual;
       FUNCTION getDescription: string; virtual;
-      PROCEDURE setDescription(const s: string); virtual;
+      PROCEDURE setDescription(CONST s: string); virtual;
       FUNCTION getIndexInPalette: longint; virtual;
 
       PROCEDURE afterGatePropertiesEdited(CONST editedGate:P_visualGate);
@@ -223,7 +223,7 @@ IMPLEMENTATION
 
 { T_visualWire }
 
-procedure T_visualWire.dropWiresAssociatedWith(const gate: P_visualGate);
+PROCEDURE T_visualWire.dropWiresAssociatedWith(CONST gate: P_visualGate);
   VAR i,j:longint;
   begin
     if source=gate then begin
@@ -240,7 +240,7 @@ procedure T_visualWire.dropWiresAssociatedWith(const gate: P_visualGate);
     end;
   end;
 
-function T_visualWire.simulateStep: boolean;
+FUNCTION T_visualWire.simulateStep: boolean;
   VAR value:T_wireValue;
       i:longint;
   begin
@@ -299,8 +299,8 @@ FUNCTION wireToScreen(CONST wire:T_wirePath; CONST x0, y0: longint; CONST zoom: 
     setLength(wrap,0);
   end;
 
-procedure T_visualWire.paint(const x0, y0: longint; const zoom: longint;
-  const image: TImage);
+PROCEDURE T_visualWire.paint(CONST x0, y0: longint; CONST zoom: longint;
+  CONST image: TImage);
   VAR wrap:T_wirePathArray;
       i:longint;
   begin
@@ -312,7 +312,7 @@ procedure T_visualWire.paint(const x0, y0: longint; const zoom: longint;
     setLength(wrap,0);
   end;
 
-function T_visualWire.isWirePosition(const gridX, gridY: longint; out horizontalWire: boolean): boolean;
+FUNCTION T_visualWire.isWirePosition(CONST gridX, gridY: longint; OUT horizontalWire: boolean): boolean;
   VAR i:longint;
       orientation: T_wireDirection;
   begin
@@ -323,7 +323,7 @@ function T_visualWire.isWirePosition(const gridX, gridY: longint; out horizontal
     result:=false;
   end;
 
-PROCEDURE  T_visualWire.dropWiresTouchingPosition(const gridX, gridY: longint; const horizontalWire: boolean);
+PROCEDURE  T_visualWire.dropWiresTouchingPosition(CONST gridX, gridY: longint; CONST horizontalWire: boolean);
   VAR i:longint;
       j:longint=0;
       orientation: T_wireDirection;
@@ -337,7 +337,7 @@ PROCEDURE  T_visualWire.dropWiresTouchingPosition(const gridX, gridY: longint; c
     setLength(sink,j);
   end;
 
-constructor T_visualBoard.create(const palette: P_abstractPrototypeSource);
+CONSTRUCTOR T_visualBoard.create(CONST palette: P_abstractPrototypeSource);
   begin
     associatedPalette:=palette;
     myIndex:=0;
@@ -345,7 +345,7 @@ constructor T_visualBoard.create(const palette: P_abstractPrototypeSource);
     gridOutputY0:=8;
   end;
 
-procedure T_visualBoard.clear;
+PROCEDURE T_visualBoard.clear;
   VAR i:longint;
   begin
     myIndex:=-1;
@@ -360,13 +360,13 @@ procedure T_visualBoard.clear;
     setLength(wires,0);
   end;
 
-destructor T_visualBoard.destroy;
+DESTRUCTOR T_visualBoard.destroy;
   begin
     clear;
     detachUI;
   end;
 
-procedure T_visualBoard.checkSizes;
+PROCEDURE T_visualBoard.checkSizes;
   VAR e:P_visualGate;
       zoom:longint;
       x0,y0:longint;
@@ -411,7 +411,7 @@ procedure T_visualBoard.checkSizes;
     paintWires;
   end;
 
-procedure T_visualBoard.detachUI;
+PROCEDURE T_visualBoard.detachUI;
   begin
     if ui.uiAdapter=nil then exit;
     ui.wireImage.OnMouseMove:=nil;
@@ -421,9 +421,9 @@ procedure T_visualBoard.detachUI;
     ui.uiAdapter:=nil;
   end;
 
-procedure T_visualBoard.attachUI(const wireImage: TImage;
-  const horizontalScrollBar, verticalScrollBar: TScrollBar;
-  const uiAdapter: P_uiAdapter);
+PROCEDURE T_visualBoard.attachUI(CONST wireImage: TImage;
+  CONST horizontalScrollBar, verticalScrollBar: TScrollBar;
+  CONST uiAdapter: P_uiAdapter);
   VAR e:P_visualGate;
   begin
     ui.wireImage:=wireImage;
@@ -439,7 +439,7 @@ procedure T_visualBoard.attachUI(const wireImage: TImage;
     for e in gates   do e^.uiAdapter:=uiAdapter;
   end;
 
-procedure T_visualBoard.elementAdded(const newElement: P_visualGate; const screenX, screenY: longint);
+PROCEDURE T_visualBoard.elementAdded(CONST newElement: P_visualGate; CONST screenX, screenY: longint);
   VAR element,g:P_visualGate;
       highestIoIndex:longint=-1;
   begin
@@ -457,7 +457,7 @@ procedure T_visualBoard.elementAdded(const newElement: P_visualGate; const scree
     end;
   end;
 
-procedure T_visualBoard.repositionElement(const elements: array of P_visualGate
+PROCEDURE T_visualBoard.repositionElement(CONST elements: array of P_visualGate
   );
   VAR gridX, gridY: longint;
       i,j:longint;
@@ -552,10 +552,9 @@ procedure T_visualBoard.repositionElement(const elements: array of P_visualGate
     boardOriginX:=ui.wireImage.Left-ui.horizontalScrollBar.position;
     boardOriginY:=ui.wireImage.top -ui.verticalScrollBar  .position;
 
-
     for element in elements do begin
       gridX:=round((element^.shapes[0].Left-boardOriginX)/ui.uiAdapter^.getZoom);
-      gridY:=round((element^.shapes[0].Top -boardOriginY)/ui.uiAdapter^.getZoom);
+      gridY:=round((element^.shapes[0].top -boardOriginY)/ui.uiAdapter^.getZoom);
       needToRemove:=needToRemove or (gridX<0) or (gridY<0);
     end;
 
@@ -582,7 +581,7 @@ procedure T_visualBoard.repositionElement(const elements: array of P_visualGate
 
     for element in elements do begin
       gridX:=round((element^.shapes[0].Left-boardOriginX)/ui.uiAdapter^.getZoom);
-      gridY:=round((element^.shapes[0].Top -boardOriginY)/ui.uiAdapter^.getZoom);
+      gridY:=round((element^.shapes[0].top -boardOriginY)/ui.uiAdapter^.getZoom);
 
       element^.gridPos[0]:=gridX;
       element^.gridPos[1]:=gridY;
@@ -634,30 +633,30 @@ procedure T_visualBoard.repositionElement(const elements: array of P_visualGate
     enumerateIo;
   end;
 
-function T_visualBoard.loadFromStream(var stream: T_bufferedInputStreamWrapper
+FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
   ): boolean;
 begin
 
 end;
 
-procedure T_visualBoard.saveToStream(var stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_visualBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
 begin
 
 end;
 
-procedure T_visualBoard.savePaletteEntryToStream(
-  var stream: T_bufferedOutputStreamWrapper; const paletteIndex: longint);
+PROCEDURE T_visualBoard.savePaletteEntryToStream(
+  VAR stream: T_bufferedOutputStreamWrapper; CONST paletteIndex: longint);
   begin
     myIndex:=paletteIndex;
   end;
 
-procedure T_visualBoard.loadPaletteEntryFromStream(
-  var stream: T_bufferedInputStreamWrapper; const paletteIndex: longint);
+PROCEDURE T_visualBoard.loadPaletteEntryFromStream(
+  VAR stream: T_bufferedInputStreamWrapper; CONST paletteIndex: longint);
   begin
     myIndex:=paletteIndex;
   end;
 
-function T_visualBoard.extractBehavior: P_circuitBoard;
+FUNCTION T_visualBoard.extractBehavior: P_circuitBoard;
   VAR cloned:P_circuitBoard;
       i,j:longint;
   FUNCTION gateInClone(CONST gate:P_visualGate):P_abstractGate;
@@ -692,7 +691,7 @@ function T_visualBoard.extractBehavior: P_circuitBoard;
     result:=cloned;
   end;
 
-function T_visualBoard.clone: P_visualBoard;
+FUNCTION T_visualBoard.clone: P_visualBoard;
   VAR cloned:P_visualBoard;
       i,j:longint;
   FUNCTION gateInClone(CONST gate:P_visualGate):P_visualGate;
@@ -728,7 +727,7 @@ function T_visualBoard.clone: P_visualBoard;
     result:=cloned;
   end;
 
-procedure T_visualBoard.enumerateIo;
+PROCEDURE T_visualBoard.enumerateIo;
   VAR i,j:longint;
   begin
     for i:=0 to length(inputs )-1 do P_inputGate (inputs [i]^.behavior)^.ioIndex:=i;
@@ -736,10 +735,9 @@ procedure T_visualBoard.enumerateIo;
 
     //Todo: update physical indexes...
 
-
   end;
 
-function T_visualBoard.getWireGraph(const dropExistingWires: boolean): P_wireGraph;
+FUNCTION T_visualBoard.getWireGraph(CONST dropExistingWires: boolean): P_wireGraph;
   VAR graph:P_wireGraph;
   PROCEDURE punchOutGate(CONST gate:P_visualGate);
     VAR x,y:longint;
@@ -780,7 +778,7 @@ function T_visualBoard.getWireGraph(const dropExistingWires: boolean): P_wireGra
     result:=graph;
   end;
 
-procedure T_visualBoard.rewire;
+PROCEDURE T_visualBoard.rewire;
   VAR graph:P_wireGraph;
   VAR i,j:longint;
       startPoint:T_point;
@@ -802,26 +800,26 @@ procedure T_visualBoard.rewire;
     dispose(graph,destroy);
   end;
 
-procedure T_visualBoard.paintWires;
+PROCEDURE T_visualBoard.paintWires;
   VAR i:longint;
   begin
     ui.wireImage.visible:=true;
     ui.wireImage.Canvas.Brush.color:=$00804040;
     ui.wireImage.Canvas.FillRect(0,0,ui.wireImage.width,ui.wireImage.height);
 
-    ui.wireImage.Canvas.Pen.Color:=$00603030;
+    ui.wireImage.Canvas.Pen.color:=$00603030;
 
-    i:=-ui.horizontalScrollBar.Position+ui.uiAdapter^.zoom*gridOutputX0;
-    ui.wireImage.Canvas.Line(i,0,i,ui.wireImage.Height);
+    i:=-ui.horizontalScrollBar.position+ui.uiAdapter^.zoom*gridOutputX0;
+    ui.wireImage.Canvas.line(i,0,i,ui.wireImage.height);
 
-    i:=-ui.horizontalScrollBar.Position+ui.uiAdapter^.zoom*4;
-    ui.wireImage.Canvas.Line(i,0,i,ui.wireImage.Height);
+    i:=-ui.horizontalScrollBar.position+ui.uiAdapter^.zoom*4;
+    ui.wireImage.Canvas.line(i,0,i,ui.wireImage.height);
 
-    i:=-ui.verticalScrollBar.Position+ui.uiAdapter^.zoom*gridOutputY0;
-    ui.wireImage.Canvas.Line(0,i,ui.wireImage.Width,i);
+    i:=-ui.verticalScrollBar.position+ui.uiAdapter^.zoom*gridOutputY0;
+    ui.wireImage.Canvas.line(0,i,ui.wireImage.width,i);
 
-    i:=-ui.verticalScrollBar.Position+ui.uiAdapter^.zoom*4;
-    ui.wireImage.Canvas.Line(0,i,ui.wireImage.Width,i);
+    i:=-ui.verticalScrollBar.position+ui.uiAdapter^.zoom*4;
+    ui.wireImage.Canvas.line(0,i,ui.wireImage.width,i);
 
     for i:=0 to length(wires)-1 do
       wires[i].paint(-ui.horizontalScrollBar.position,
@@ -830,13 +828,13 @@ procedure T_visualBoard.paintWires;
                       ui.wireImage);
   end;
 
-procedure T_visualBoard.boardImageMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
+PROCEDURE T_visualBoard.boardImageMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
   VAR gridX,gridY:longint;
       i:longint;
       horizontal: boolean;
   begin
-    gridX:=round((x+ui.horizontalScrollBar.Position)/ui.uiAdapter^.zoom);
-    gridY:=round((y+ui.verticalScrollBar  .Position)/ui.uiAdapter^.zoom);
+    gridX:=round((x+ui.horizontalScrollBar.position)/ui.uiAdapter^.zoom);
+    gridY:=round((y+ui.verticalScrollBar  .position)/ui.uiAdapter^.zoom);
 
     if ui.uiAdapter^.state=uas_draggingGridOutputX0 then begin
       ui.wireImage.Cursor:=crSizeWE;
@@ -850,10 +848,10 @@ procedure T_visualBoard.boardImageMouseMove(Sender: TObject; Shift: TShiftState;
     end;
 
     if ui.uiAdapter^.state=uas_draggingSelectionFrame then begin
-      ui.uiAdapter^.selectionShape.Left  :=Min(x+ui.wireImage.Left,ui.uiAdapter^.dragData.startX);
-      ui.uiAdapter^.selectionShape.Width :=Abs(x+ui.wireImage.Left-ui.uiAdapter^.dragData.startX);
-      ui.uiAdapter^.selectionShape.Top   :=Min(y+ui.wireImage.Top ,ui.uiAdapter^.dragData.startY);
-      ui.uiAdapter^.selectionShape.Height:=Abs(y+ui.wireImage.Top -ui.uiAdapter^.dragData.startY);
+      ui.uiAdapter^.selectionShape.Left  :=min(x+ui.wireImage.Left,ui.uiAdapter^.dragData.startX);
+      ui.uiAdapter^.selectionShape.width :=abs(x+ui.wireImage.Left-ui.uiAdapter^.dragData.startX);
+      ui.uiAdapter^.selectionShape.top   :=min(y+ui.wireImage.top ,ui.uiAdapter^.dragData.startY);
+      ui.uiAdapter^.selectionShape.height:=abs(y+ui.wireImage.top -ui.uiAdapter^.dragData.startY);
     end;
 
     if gridX=gridOutputX0 then ui.wireImage.Cursor:=crSizeWE else
@@ -868,7 +866,7 @@ procedure T_visualBoard.boardImageMouseMove(Sender: TObject; Shift: TShiftState;
 
   end;
 
-procedure T_visualBoard.boardImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE T_visualBoard.boardImageMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR gridX,gridY:longint;
       i:longint=0;
       j:longint=0;
@@ -876,8 +874,8 @@ procedure T_visualBoard.boardImageMouseDown(Sender: TObject; button: TMouseButto
       needToDropWire: boolean=false;
       g:P_visualGate;
   begin
-    gridX:=round((x+ui.horizontalScrollBar.Position)/ui.uiAdapter^.zoom);
-    gridY:=round((y+ui.verticalScrollBar  .Position)/ui.uiAdapter^.zoom);
+    gridX:=round((x+ui.horizontalScrollBar.position)/ui.uiAdapter^.zoom);
+    gridY:=round((y+ui.verticalScrollBar  .position)/ui.uiAdapter^.zoom);
     if gridX=gridOutputX0 then begin
       ui.wireImage.Cursor:=crSizeWE;
       ui.uiAdapter^.state:=uas_draggingGridOutputX0;
@@ -909,15 +907,15 @@ procedure T_visualBoard.boardImageMouseDown(Sender: TObject; button: TMouseButto
       for g in outputs do begin g^.marked:=false; g^.updateVisuals; end;
       for g in gates   do begin g^.marked:=false; g^.updateVisuals; end;
     end;
-    ui.uiAdapter^.startDragSelectionFrame(X+ui.wireImage.Left,Y+ui.wireImage.Top);
+    ui.uiAdapter^.startDragSelectionFrame(X+ui.wireImage.Left,Y+ui.wireImage.top);
   end;
 
-procedure T_visualBoard.boardImageMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE T_visualBoard.boardImageMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR x0,x1,y0,y1,i:longint;
   PROCEDURE mark(CONST gate:P_visualGate);
     begin
-      if (gate^.shapes[0].Left>=x0) and (gate^.shapes[0].Left+gate^.shapes[0].Width<=x1) and
-         (gate^.shapes[0].Top >=y0) and (gate^.shapes[0].Top+gate^.shapes[0].Height<=y1) then begin
+      if (gate^.shapes[0].Left>=x0) and (gate^.shapes[0].Left+gate^.shapes[0].width<=x1) and
+         (gate^.shapes[0].top >=y0) and (gate^.shapes[0].top+gate^.shapes[0].height<=y1) then begin
         gate^.marked:=true;
         gate^.updateVisuals;
       end;
@@ -931,7 +929,7 @@ procedure T_visualBoard.boardImageMouseUp(Sender: TObject; button: TMouseButton;
         x0:=ui.uiAdapter^.dragData.startX;
         x1:=x+ui.wireImage.Left;
         y0:=ui.uiAdapter^.dragData.startY;
-        y1:=y+ui.wireImage.Top;
+        y1:=y+ui.wireImage.top;
         if x1<x0 then begin i:=x0; x0:=x1; x1:=i; end;
         if y1<y0 then begin i:=y0; y0:=y1; y1:=i; end;
 
@@ -945,7 +943,7 @@ procedure T_visualBoard.boardImageMouseUp(Sender: TObject; button: TMouseButton;
 
   end;
 
-procedure T_visualBoard.reshapeGrid(const newGridOutputX0, newGridOutputY0: longint);
+PROCEDURE T_visualBoard.reshapeGrid(CONST newGridOutputX0, newGridOutputY0: longint);
   VAR gate:P_visualGate;
   begin
     for gate in outputs do begin
@@ -958,8 +956,8 @@ procedure T_visualBoard.reshapeGrid(const newGridOutputX0, newGridOutputY0: long
     checkSizes;
   end;
 
-procedure T_visualBoard.paintWirePreview(const wireStart: T_point;
-  const screenX, screenY: longint);
+PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point;
+  CONST screenX, screenY: longint);
   CONST MAX_INT64= 9223372036854775807;
   VAR tgt ,closestTarget:T_point;
       dist,distToClosest:int64;
@@ -1011,8 +1009,6 @@ procedure T_visualBoard.paintWirePreview(const wireStart: T_point;
 
     if distToClosest=MAX_INT64 then exit;
 
-
-
     paintWires;
     paintWire(ui.wireImage,
               wireWidth,
@@ -1022,42 +1018,42 @@ procedure T_visualBoard.paintWirePreview(const wireStart: T_point;
 
   end;
 
-function T_visualBoard.getCaption: string;
+FUNCTION T_visualBoard.getCaption: string;
 begin
   result:=captionString;
 end;
 
-procedure T_visualBoard.setCaption(const s: string);
+PROCEDURE T_visualBoard.setCaption(CONST s: string);
 begin
   captionString:=s;
 end;
 
-function T_visualBoard.getDescription: string;
+FUNCTION T_visualBoard.getDescription: string;
 begin
   result:=descriptionString;
 end;
 
-procedure T_visualBoard.setDescription(const s: string);
+PROCEDURE T_visualBoard.setDescription(CONST s: string);
 begin
   descriptionString:=s;
 end;
 
-function T_visualBoard.getIndexInPalette: longint;
+FUNCTION T_visualBoard.getIndexInPalette: longint;
 begin
   result:=myIndex;
 end;
 
-procedure T_visualBoard.afterGatePropertiesEdited(const editedGate: P_visualGate);
+PROCEDURE T_visualBoard.afterGatePropertiesEdited(CONST editedGate: P_visualGate);
   VAR g:P_visualGate;
   begin
     for g in gates do if g^.behavior^.equals(editedGate^.behavior) then g^.propertyEditDone(false,
-      ui.wireImage.Left-ui.horizontalScrollBar.Position,
-      ui.wireImage.Top -ui.verticalScrollBar.Position);
+      ui.wireImage.Left-ui.horizontalScrollBar.position,
+      ui.wireImage.top -ui.verticalScrollBar.position);
     rewire;
   end;
 
-function T_visualBoard.isInputConnected(const gate: P_visualGate;
-  const gateInputIndex: longint): boolean;
+FUNCTION T_visualBoard.isInputConnected(CONST gate: P_visualGate;
+  CONST gateInputIndex: longint): boolean;
   VAR i,j:longint;
   begin
     result:=false;
@@ -1066,17 +1062,17 @@ function T_visualBoard.isInputConnected(const gate: P_visualGate;
          (wires[i].sink[j].gateInputIndex=gateInputIndex) then exit(true);
   end;
 
-function T_visualBoard.isOutputputConnected(const gate: P_visualGate;
-  const gateOutputIndex: longint): boolean;
+FUNCTION T_visualBoard.isOutputputConnected(CONST gate: P_visualGate;
+  CONST gateOutputIndex: longint): boolean;
   VAR i:longint;
   begin
     result:=false;
     for i:=0 to length(wires)-1 do with wires[i] do if (source=gate) and (sourceOutputIndex=gateOutputIndex) then exit(true);
   end;
 
-procedure T_visualBoard.addWire(const sourceGate: P_visualGate;
-  const sourceOutputIndex: longint; const sinkGate: P_visualGate;
-  const sinkInputIndex: longint);
+PROCEDURE T_visualBoard.addWire(CONST sourceGate: P_visualGate;
+  CONST sourceOutputIndex: longint; CONST sinkGate: P_visualGate;
+  CONST sinkInputIndex: longint);
   VAR i:longint=0;
       j:longint;
   begin
@@ -1092,7 +1088,7 @@ procedure T_visualBoard.addWire(const sourceGate: P_visualGate;
     if wires[i].simulateStep then sinkGate^.updateVisuals;
   end;
 
-function T_visualBoard.simulateSteps(const count: longint): longint;
+FUNCTION T_visualBoard.simulateSteps(CONST count: longint): longint;
   VAR changed:boolean;
       step:longint;
       g:P_visualGate;
@@ -1114,7 +1110,7 @@ function T_visualBoard.simulateSteps(const count: longint): longint;
     end;
   end;
 
-function T_visualBoard.startMultiDrag(const primaryGate: P_visualGate): boolean;
+FUNCTION T_visualBoard.startMultiDrag(CONST primaryGate: P_visualGate): boolean;
   VAR marked:array of P_visualGate;
       g:P_visualGate;
       i:longint=1;
@@ -1137,9 +1133,9 @@ function T_visualBoard.startMultiDrag(const primaryGate: P_visualGate): boolean;
 
 { T_UIAdapter }
 
-constructor T_uiAdapter.create(const mainForm_: TForm;
-  const selectionShape_: TShape;
-  const showPropertyEditorCallback_: F_showPropertyEditorCallback);
+CONSTRUCTOR T_uiAdapter.create(CONST mainForm_: TForm;
+  CONST selectionShape_: TShape;
+  CONST showPropertyEditorCallback_: F_showPropertyEditorCallback);
   begin
     mainForm :=mainForm_;
     selectionShape:=selectionShape_;
@@ -1148,7 +1144,7 @@ constructor T_uiAdapter.create(const mainForm_: TForm;
     showPropertyEditorCallback:=showPropertyEditorCallback_;
   end;
 
-procedure T_uiAdapter.paletteEntryMouseMove(Sender: TObject;
+PROCEDURE T_uiAdapter.paletteEntryMouseMove(Sender: TObject;
   Shift: TShiftState; X, Y: integer);
   begin
     if state=uas_draggingFromPalette then
@@ -1156,7 +1152,7 @@ procedure T_uiAdapter.paletteEntryMouseMove(Sender: TObject;
       draggedGate^.paintAll(x+startX-relPosX,y+startY-relPosY,zoom);
   end;
 
-procedure T_uiAdapter.paletteEntryMouseUp(Sender: TObject;
+PROCEDURE T_uiAdapter.paletteEntryMouseUp(Sender: TObject;
   button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR screenX,screenY:longint;
   begin
@@ -1172,7 +1168,7 @@ procedure T_uiAdapter.paletteEntryMouseUp(Sender: TObject;
     end;
   end;
 
-procedure T_uiAdapter.boardElementMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
+PROCEDURE T_uiAdapter.boardElementMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
   VAR i,g0x,g0y,dx,dy:longint;
   begin
     if state=uas_draggingFromBoard then with dragData do begin
@@ -1181,12 +1177,12 @@ procedure T_uiAdapter.boardElementMouseMove(Sender: TObject; Shift: TShiftState;
       startY+=y-relPosY;
     end else if state=uas_multiDragFromBoard then with dragData do begin
       g0x:=draggedGates[0]^.shapes[0].Left;
-      g0y:=draggedGates[0]^.shapes[0].Top;
+      g0y:=draggedGates[0]^.shapes[0].top;
       dx:=x+startX-relPosX-g0x;
       dy:=y+startY-relPosY-g0y;
       for i:=length(draggedGates)-1 downto 1 do draggedGates[i]^.paintAll(
         draggedGates[i]^.shapes[0].Left+dx,
-        draggedGates[i]^.shapes[0].Top+dy,
+        draggedGates[i]^.shapes[0].top+dy,
         zoom);
       draggedGate^.paintAll(x+startX-relPosX,y+startY-relPosY,zoom);
       startX+=x-relPosX;
@@ -1194,7 +1190,7 @@ procedure T_uiAdapter.boardElementMouseMove(Sender: TObject; Shift: TShiftState;
     end;
   end;
 
-procedure T_uiAdapter.boardElementMouseUp(Sender: TObject;
+PROCEDURE T_uiAdapter.boardElementMouseUp(Sender: TObject;
   button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR screenX,screenY:longint;
   begin
@@ -1210,7 +1206,7 @@ procedure T_uiAdapter.boardElementMouseUp(Sender: TObject;
     state:=uas_initial;
   end;
 
-procedure T_uiAdapter.boardOutputMouseMove(Sender: TObject; Shift: TShiftState;
+PROCEDURE T_uiAdapter.boardOutputMouseMove(Sender: TObject; Shift: TShiftState;
   X, Y: integer);
   begin
     if state=uas_draggingWire then begin
@@ -1221,7 +1217,7 @@ procedure T_uiAdapter.boardOutputMouseMove(Sender: TObject; Shift: TShiftState;
     end;
   end;
 
-procedure T_uiAdapter.boardOutputMouseUp(Sender: TObject; button: TMouseButton;
+PROCEDURE T_uiAdapter.boardOutputMouseUp(Sender: TObject; button: TMouseButton;
   Shift: TShiftState; X, Y: integer);
   begin
     if state=uas_draggingWire then with dragData do
@@ -1230,7 +1226,7 @@ procedure T_uiAdapter.boardOutputMouseUp(Sender: TObject; button: TMouseButton;
     state:=uas_initial;
   end;
 
-procedure T_uiAdapter.paletteSizeUpdated(const Right: longint);
+PROCEDURE T_uiAdapter.paletteSizeUpdated(CONST Right: longint);
   begin
     if activeBoard<>nil then begin
       activeBoard^.ui.wireImage.Left:=Right;
@@ -1238,8 +1234,8 @@ procedure T_uiAdapter.paletteSizeUpdated(const Right: longint);
     end;
   end;
 
-procedure T_uiAdapter.propertyEditorShown(const gate: P_visualGate;
-  const fromBoard: boolean);
+PROCEDURE T_uiAdapter.propertyEditorShown(CONST gate: P_visualGate;
+  CONST fromBoard: boolean);
   begin
     if fromBoard
     then state:=uas_propertyEditFromBoard
@@ -1248,20 +1244,20 @@ procedure T_uiAdapter.propertyEditorShown(const gate: P_visualGate;
     dragData.draggedGates[0]:=gate;
   end;
 
-function T_uiAdapter.draggedGate: P_visualGate;
+FUNCTION T_uiAdapter.draggedGate: P_visualGate;
   begin
     if length(dragData.draggedGates)>0
     then result:=dragData.draggedGates[0]
     else result:=nil;
   end;
 
-procedure T_uiAdapter.startDrag(const evtX, evtY: longint;
-  const eventOrigin: TGraphicControl; const gateToDrag: P_visualGate;
-  const newState: T_uiAdapterState; const outputIndex: longint);
+PROCEDURE T_uiAdapter.startDrag(CONST evtX, evtY: longint;
+  CONST eventOrigin: TGraphicControl; CONST gateToDrag: P_visualGate;
+  CONST newState: T_uiAdapterState; CONST outputIndex: longint);
   begin
     state:=newState;
     dragData.startX:=eventOrigin.Left+evtX;
-    dragData.startY:=eventOrigin.Top +evtY;
+    dragData.startY:=eventOrigin.top +evtY;
     dragData.relPosX:=evtX;
     dragData.relPosY:=evtY;
     setLength(dragData.draggedGates,1);
@@ -1279,62 +1275,62 @@ procedure T_uiAdapter.startDrag(const evtX, evtY: longint;
 
   end;
 
-procedure T_uiAdapter.startDragSelectionFrame(const evtX, evtY: longint);
+PROCEDURE T_uiAdapter.startDragSelectionFrame(CONST evtX, evtY: longint);
   begin
     state:=uas_draggingSelectionFrame;
     with dragData do begin
       startX:=evtX;
       startY:=evtY;
-      selectionShape.Visible:=true;
+      selectionShape.visible:=true;
       selectionShape.Left:=startX;
-      selectionShape.Top :=startY;
+      selectionShape.top :=startY;
       selectionShape.width :=0;
-      selectionShape.Height:=0;
+      selectionShape.height:=0;
     end;
   end;
 
-procedure T_uiAdapter.endSelectionDrag;
+PROCEDURE T_uiAdapter.endSelectionDrag;
   begin
-    selectionShape.Visible:=false;
+    selectionShape.visible:=false;
     state:=uas_initial;
   end;
 
-procedure T_uiAdapter.zoomIn;
+PROCEDURE T_uiAdapter.zoomIn;
   begin
     zoom:=round(zoom*1.1);
   end;
 
-procedure T_uiAdapter.zoomOut;
+PROCEDURE T_uiAdapter.zoomOut;
   begin
     zoom:=round(zoom/1.1);
   end;
 
-procedure T_uiAdapter.resetState;
+PROCEDURE T_uiAdapter.resetState;
   begin
     state:=uas_initial;
   end;
 
-procedure T_uiAdapter.clearUndoList;
+PROCEDURE T_uiAdapter.clearUndoList;
   begin
     //TODO T_uiAdapter.clearUndoList;
   end;
 
-procedure T_uiAdapter.saveStateToUndoList;
+PROCEDURE T_uiAdapter.saveStateToUndoList;
 begin
   //TODO: stub
 end;
 
-procedure T_uiAdapter.peformUndo;
+PROCEDURE T_uiAdapter.peformUndo;
 begin
   //TODO: stub
 end;
 
-procedure T_uiAdapter.performRedo;
+PROCEDURE T_uiAdapter.performRedo;
 begin
   //TODO: stub
 end;
 
-procedure T_visualGate.ioEditKeyPress(Sender: TObject; var key: char);
+PROCEDURE T_visualGate.ioEditKeyPress(Sender: TObject; VAR key: char);
   VAR AllowedKeys:array[T_multibitWireRepresentation] of set of char=
       (['0','1'     ,#8], //wr_binary,
        ['0'..'9'    ,#8], //wr_decimal,
@@ -1344,14 +1340,14 @@ procedure T_visualGate.ioEditKeyPress(Sender: TObject; var key: char);
     else if not(key in AllowedKeys[ioMode]) then key:=#0;
   end;
 
-procedure T_visualGate.ioEditEditingDone(Sender: TObject);
+PROCEDURE T_visualGate.ioEditEditingDone(Sender: TObject);
   begin
     behavior^.setInput(0,parseWire(ioEdit.text,behavior^.inputWidth(0),ioMode));
     ioEdit.text:=getWireString(behavior^.getInput(0),ioMode);
     updateVisuals;
   end;
 
-constructor T_visualGate.create(const behavior_: P_abstractGate);
+CONSTRUCTOR T_visualGate.create(CONST behavior_: P_abstractGate);
   begin
     uiAdapter :=nil;
     gridPos[0]:=0;
@@ -1364,12 +1360,12 @@ constructor T_visualGate.create(const behavior_: P_abstractGate);
     setLength(labels,0);
   end;
 
-destructor T_visualGate.destroy;
+DESTRUCTOR T_visualGate.destroy;
   begin
     disposeGuiElements;
   end;
 
-procedure T_visualGate.ensureGuiElements(const container: TWinControl);
+PROCEDURE T_visualGate.ensureGuiElements(CONST container: TWinControl);
   VAR gateType:T_gateType;
       i:longint;
       index:longint=1;
@@ -1412,7 +1408,7 @@ procedure T_visualGate.ensureGuiElements(const container: TWinControl);
       shapes[index]:=TShape.create(nil);
       shapes[index].Shape:=stCircle;
       shapes[index].Brush.color:=$00804040;
-      shapes[index].pen.Color:=$00FFFFFF;
+      shapes[index].Pen.color:=$00FFFFFF;
       shapes[index].Tag:=i;
       shapes[index].parent:=container;
 
@@ -1432,7 +1428,7 @@ procedure T_visualGate.ensureGuiElements(const container: TWinControl);
       shapes[index].Shape:=stCircle;
       shapes[index].Tag:=i;
       shapes[index].Brush.color:=$00804040;
-      shapes[index].pen.Color:=$00FFFFFF;
+      shapes[index].Pen.color:=$00FFFFFF;
       shapes[index].parent:=container;
 
       labels[index]:=TLabel.create(nil);
@@ -1479,7 +1475,7 @@ procedure T_visualGate.ensureGuiElements(const container: TWinControl);
 
   end;
 
-procedure T_visualGate.disposeGuiElements;
+PROCEDURE T_visualGate.disposeGuiElements;
   VAR i:longint;
   begin
     for i:=0 to length(labels)-1 do begin
@@ -1495,12 +1491,12 @@ procedure T_visualGate.disposeGuiElements;
     setLength(shapes,0);
   end;
 
-function T_visualGate.simulateStep: boolean;
+FUNCTION T_visualGate.simulateStep: boolean;
   begin
     result:=behavior^.simulateStep;
   end;
 
-procedure T_visualGate.updateVisuals;
+PROCEDURE T_visualGate.updateVisuals;
   FUNCTION colorOf(CONST w:T_wireValue):longint;
     begin
       if w.width>1 then begin
@@ -1520,9 +1516,8 @@ procedure T_visualGate.updateVisuals;
   begin
     if length(shapes)=0 then exit;
     if marked
-    then shapes[0].Pen.Color:=$0000AAFF
-    else shapes[0].pen.color:=$00000000;
-
+    then shapes[0].Pen.color:=$0000AAFF
+    else shapes[0].Pen.color:=$00000000;
 
     for i:=0 to behavior^.numberOfInputs-1 do begin
       shapes[shapeIndex].Brush.color:=colorOf(behavior^.getInput(i));
@@ -1536,7 +1531,7 @@ procedure T_visualGate.updateVisuals;
     if (ioEdit<>nil) and not(ioEdit.Focused) then ioEdit.text:=getWireString(behavior^.getInput(0),ioMode);
   end;
 
-procedure T_visualGate.paintAll(const x, y: longint; const zoom: longint);
+PROCEDURE T_visualGate.paintAll(CONST x, y: longint; CONST zoom: longint);
   VAR k: integer;
       p: T_point;
       shapeIndex:longint=1;
@@ -1586,18 +1581,18 @@ procedure T_visualGate.paintAll(const x, y: longint; const zoom: longint);
 
   end;
 
-function T_visualGate.clone: P_visualGate;
+FUNCTION T_visualGate.clone: P_visualGate;
   begin
     new(result,create(behavior^.clone(false)));
     result^.uiAdapter:=uiAdapter;
   end;
 
-procedure T_visualGate.propertyEditDone(const paletteElement: boolean;
-  const x0, y0: longint);
+PROCEDURE T_visualGate.propertyEditDone(CONST paletteElement: boolean;
+  CONST x0, y0: longint);
   begin
     disposeGuiElements;
     ensureGuiElements(uiAdapter^.mainForm);
-    paintall(x0+gridPos[0]*uiAdapter^.getZoom,
+    paintAll(x0+gridPos[0]*uiAdapter^.getZoom,
              y0+gridPos[1]*uiAdapter^.getZoom,uiAdapter^.getZoom);
     updateVisuals;
     if paletteElement
@@ -1605,7 +1600,7 @@ procedure T_visualGate.propertyEditDone(const paletteElement: boolean;
     else setBoardElementMouseActions;
   end;
 
-function T_visualGate.visualHeight: longint;
+FUNCTION T_visualGate.visualHeight: longint;
   VAR s:TShape;
       y0:longint= 1000000;
       y1:longint=-1000000;
@@ -1620,7 +1615,7 @@ function T_visualGate.visualHeight: longint;
     if result<0 then result:=0;
   end;
 
-function T_visualGate.visualWidth: longint;
+FUNCTION T_visualGate.visualWidth: longint;
   VAR s:TShape;
       x0:longint= 1000000;
       x1:longint=-1000000;
@@ -1635,7 +1630,7 @@ function T_visualGate.visualWidth: longint;
     if result<0 then result:=0;
   end;
 
-function T_visualGate.getInputPositionInGridSize(const index: longint): T_point;
+FUNCTION T_visualGate.getInputPositionInGridSize(CONST index: longint): T_point;
   begin
     if ioLocations[gt_input,index].leftOrRight
     then begin
@@ -1647,7 +1642,7 @@ function T_visualGate.getInputPositionInGridSize(const index: longint): T_point;
     end;
   end;
 
-function T_visualGate.getOutputPositionInGridSize(const index: longint
+FUNCTION T_visualGate.getOutputPositionInGridSize(CONST index: longint
   ): T_point;
   begin
     if ioLocations[gt_output,index].leftOrRight
@@ -1660,13 +1655,13 @@ function T_visualGate.getOutputPositionInGridSize(const index: longint
     end;
   end;
 
-function T_visualGate.overlaps(const other: P_visualGate): boolean;
+FUNCTION T_visualGate.overlaps(CONST other: P_visualGate): boolean;
   begin
     result:=(max(gridPos[0],other^.gridPos[0])<min(gridPos[0]+gridWidth ,other^.gridPos[0]+other^.gridWidth ))
         and (max(gridPos[1],other^.gridPos[1])<min(gridPos[1]+gridHeight,other^.gridPos[1]+other^.gridHeight));
   end;
 
-procedure T_visualGate.setPaletteEntryMouseActions;
+PROCEDURE T_visualGate.setPaletteEntryMouseActions;
   begin
     if length(shapes)=0 then exit;
     shapes[0].OnMouseDown:=@paletteEntryMouseDown;
@@ -1679,7 +1674,7 @@ procedure T_visualGate.setPaletteEntryMouseActions;
     shapes[0].Hint:=behavior^.getDescription;
   end;
 
-procedure T_visualGate.paletteEntryMouseDown(Sender: TObject;
+PROCEDURE T_visualGate.paletteEntryMouseDown(Sender: TObject;
   button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR clonedSelf:P_visualGate;
   begin
@@ -1689,16 +1684,16 @@ procedure T_visualGate.paletteEntryMouseDown(Sender: TObject;
     if button=mbLeft then begin
       clonedSelf:=clone;
       clonedSelf^.ensureGuiElements(uiAdapter^.mainForm);
-      clonedSelf^.paintAll(shapes[0].Left,shapes[0].Top,uiAdapter^.zoom);
-      uiAdapter^.startDrag(x,y,TGraphicControl(sender),
+      clonedSelf^.paintAll(shapes[0].Left,shapes[0].top,uiAdapter^.zoom);
+      uiAdapter^.startDrag(x,y,TGraphicControl(Sender),
                            clonedSelf,
                            uas_draggingFromPalette);
     end else if button=mbRight then begin
-      uiAdapter^.showPropertyEditorCallback(@self,false,shapes[0].left+shapes[0].Width,shapes[0].Top);
+      uiAdapter^.showPropertyEditorCallback(@self,false,shapes[0].Left+shapes[0].width,shapes[0].top);
     end
   end;
 
-procedure T_visualGate.boardElementMouseDown(Sender: TObject;
+PROCEDURE T_visualGate.boardElementMouseDown(Sender: TObject;
   button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     if uiAdapter=nil then exit;
@@ -1708,28 +1703,28 @@ procedure T_visualGate.boardElementMouseDown(Sender: TObject;
       if ssShift in Shift then begin
         marked:=not(marked);
         updateVisuals;
-      end else uiAdapter^.startDrag(x,y,TGraphicControl(sender),
+      end else uiAdapter^.startDrag(x,y,TGraphicControl(Sender),
                                     @self,
                                     uas_draggingFromBoard);
     end else if button=mbRight then begin
-      uiAdapter^.showPropertyEditorCallback(@self,true,shapes[0].left+shapes[0].Width,shapes[0].Top);
+      uiAdapter^.showPropertyEditorCallback(@self,true,shapes[0].Left+shapes[0].width,shapes[0].top);
     end;
   end;
 
-procedure T_visualGate.boardElementOutputMouseDown(Sender: TObject;
+PROCEDURE T_visualGate.boardElementOutputMouseDown(Sender: TObject;
   button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     if uiAdapter=nil then exit;
     if uiAdapter^.state<>uas_initial then exit;
     if button=mbLeft then begin
-      uiAdapter^.startDrag(x,y,TGraphicControl(sender),
+      uiAdapter^.startDrag(x,y,TGraphicControl(Sender),
                            @self,
                            uas_draggingWire,
-                           TGraphicControl(sender).Tag);
+                           TGraphicControl(Sender).Tag);
     end;
   end;
 
-procedure T_visualGate.ioModeShapeMouseDown(Sender: TObject;
+PROCEDURE T_visualGate.ioModeShapeMouseDown(Sender: TObject;
   button: TMouseButton; Shift: TShiftState; X, Y: integer);
   CONST next:array[T_multibitWireRepresentation] of T_multibitWireRepresentation=(wr_decimal,wr_2complement,wr_binary);
         prev:array[T_multibitWireRepresentation] of T_multibitWireRepresentation=(wr_2complement,wr_binary,wr_decimal);
@@ -1743,7 +1738,7 @@ procedure T_visualGate.ioModeShapeMouseDown(Sender: TObject;
     updateVisuals;
   end;
 
-procedure T_visualGate.setBoardElementMouseActions;
+PROCEDURE T_visualGate.setBoardElementMouseActions;
   VAR index,i:longint;
 
   begin

@@ -1,14 +1,14 @@
-unit addToPaletteDialog;
+UNIT addToPaletteDialog;
 
-{$mode ObjFPC}{$H+}
+{$mode objfpc}{$H+}
 
-interface
+INTERFACE
 
-uses
-  Classes, SysUtils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
+USES
+  Classes, sysutils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
   paletteHandling,visualGates,visuals;
 
-type
+TYPE
 
   { TAddToPaletteForm }
 
@@ -25,14 +25,14 @@ type
     propOkLabel1: TLabel;
     propOkShape: TShape;
     propOkShape1: TShape;
-    procedure CaptionEditEditingDone(Sender: TObject);
-    procedure DescriptionMemoEditingDone(Sender: TObject);
-    procedure propCancelShapeMouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
-    procedure propOkShape1MouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
-    procedure propOkShapeMouseDown(Sender: TObject; Button: TMouseButton;
-      Shift: TShiftState; X, Y: Integer);
+    PROCEDURE CaptionEditEditingDone(Sender: TObject);
+    PROCEDURE DescriptionMemoEditingDone(Sender: TObject);
+    PROCEDURE propCancelShapeMouseDown(Sender: TObject; button: TMouseButton;
+      Shift: TShiftState; X, Y: integer);
+    PROCEDURE propOkShape1MouseDown(Sender: TObject; button: TMouseButton;
+      Shift: TShiftState; X, Y: integer);
+    PROCEDURE propOkShapeMouseDown(Sender: TObject; button: TMouseButton;
+      Shift: TShiftState; X, Y: integer);
   private
     currentBoard:P_visualBoard;
     currentPalette:P_workspacePalette;
@@ -43,14 +43,14 @@ type
   end;
 
 FUNCTION AddToPaletteForm: TAddToPaletteForm;
-implementation
-var
+IMPLEMENTATION
+VAR
   myAddToPaletteForm: TAddToPaletteForm=nil;
 
-function AddToPaletteForm: TAddToPaletteForm;
+FUNCTION AddToPaletteForm: TAddToPaletteForm;
   begin
     if myAddToPaletteForm=nil then
-    myAddToPaletteForm:=TAddToPaletteForm.Create(nil);
+    myAddToPaletteForm:=TAddToPaletteForm.create(nil);
     result:=myAddToPaletteForm;
   end;
 
@@ -58,52 +58,52 @@ function AddToPaletteForm: TAddToPaletteForm;
 
 { TAddToPaletteForm }
 
-procedure TAddToPaletteForm.CaptionEditEditingDone(Sender: TObject);
+PROCEDURE TAddToPaletteForm.CaptionEditEditingDone(Sender: TObject);
   begin
-    currentBoard^.setCaption(CaptionEdit.Text);
+    currentBoard^.setCaption(CaptionEdit.text);
   end;
 
-procedure TAddToPaletteForm.DescriptionMemoEditingDone(Sender: TObject);
+PROCEDURE TAddToPaletteForm.DescriptionMemoEditingDone(Sender: TObject);
   begin
-    currentBoard^.setDescription(DescriptionMemo.Text);
+    currentBoard^.setDescription(DescriptionMemo.text);
   end;
 
-procedure TAddToPaletteForm.propCancelShapeMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+PROCEDURE TAddToPaletteForm.propCancelShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     ModalResult:=mrCancel;
   end;
 
-procedure TAddToPaletteForm.propOkShape1MouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+PROCEDURE TAddToPaletteForm.propOkShape1MouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
-    ModalResult:=mrOK;
-    currentPalette^.updateEntry(currentBoard,PaletteCombobox.ItemIndex,PaletteCombobox.Text);
+    ModalResult:=mrOk;
+    currentPalette^.updateEntry(currentBoard,PaletteCombobox.ItemIndex,PaletteCombobox.text);
   end;
 
-procedure TAddToPaletteForm.propOkShapeMouseDown(Sender: TObject; Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
+PROCEDURE TAddToPaletteForm.propOkShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
-    ModalResult:=mrOK;
-    currentPalette^.addBoard(currentBoard,PaletteCombobox.ItemIndex,PaletteCombobox.Text);
+    ModalResult:=mrOk;
+    currentPalette^.addBoard(currentBoard,PaletteCombobox.ItemIndex,PaletteCombobox.text);
   end;
 
-function TAddToPaletteForm.showFor(const palette: P_workspacePalette; const board: P_visualBoard): boolean;
+FUNCTION TAddToPaletteForm.showFor(CONST palette: P_workspacePalette; CONST board: P_visualBoard): boolean;
   VAR s:string;
   begin
     currentBoard  :=board;
     currentPalette:=palette;
 
-    CaptionEdit    .Text:=board^.getCaption;
-    DescriptionMemo.Text:=board^.getDescription;
-    PaletteCombobox.items.Clear;
+    CaptionEdit    .text:=board^.getCaption;
+    DescriptionMemo.text:=board^.getDescription;
+    PaletteCombobox.items.clear;
 
     setEnableButton(propOkShape1,propOkLabel1,board^.getIndexInPalette>=0);
 
-    for s in palette^.subPaletteNames do PaletteCombobox.Items.Add(s);
-    if ShowModal=mrOK
+    for s in palette^.subPaletteNames do PaletteCombobox.items.add(s);
+    if ShowModal=mrOk
     then result:=true
     else result:=false;
   end;
 
-finalization
+FINALIZATION
   if myAddToPaletteForm<>nil then FreeAndNil(myAddToPaletteForm);
 end.
 

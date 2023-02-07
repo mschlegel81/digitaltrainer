@@ -86,7 +86,7 @@ VAR enableShortcuts:boolean=false;
     allowDiagonals :boolean=false;
 IMPLEMENTATION
 USES math,sysutils;
-function linesIntersect(const a0, a1, b0, b1: T_point): boolean;
+FUNCTION linesIntersect(CONST a0, a1, b0, b1: T_point): boolean;
   FUNCTION inUnitRange(CONST x:double):boolean; inline;
     begin result:=(x>=0) and (x<=1); end;
   VAR u,v,w:T_point;
@@ -101,7 +101,7 @@ function linesIntersect(const a0, a1, b0, b1: T_point): boolean;
             inUnitRange(( u[0]*w[1]-u[1]*w[0])/f);
   end;
 
-function lineCrossesRectangle(const a0, a1, rectangleOrigin,
+FUNCTION lineCrossesRectangle(CONST a0, a1, rectangleOrigin,
   rectangleExtend: T_point): boolean;
   begin
     if (a0[0]<=rectangleOrigin[0]                   ) and (a1[0]<=rectangleOrigin[0]                   ) then exit(false);
@@ -115,71 +115,71 @@ function lineCrossesRectangle(const a0, a1, rectangleOrigin,
          or linesIntersect(a0,a1,rectangleOrigin                ,pointOf(rectangleOrigin[0]                   ,rectangleOrigin[1]+rectangleExtend[1]));
   end;
 
-function pointOf(const x, y: longint): T_point;
+FUNCTION pointOf(CONST x, y: longint): T_point;
   begin
     result[0]:=x;
     result[1]:=y;
   end;
 
-operator+(const x, y: T_point): T_point;
+OPERATOR+(CONST x, y: T_point): T_point;
   begin
     result[0]:=x[0]+y[0];
     result[1]:=x[1]+y[1];
   end;
 
-operator-(const x, y: T_point): T_point;
+OPERATOR-(CONST x, y: T_point): T_point;
   begin
     result[0]:=x[0]-y[0];
     result[1]:=x[1]-y[1];
   end;
 
-operator+(const x: T_point; const y: T_wireDirection): T_point;
+OPERATOR+(CONST x: T_point; CONST y: T_wireDirection): T_point;
   begin
     result[0]:=x[0]+WIRE_DELTA[y,0];
     result[1]:=x[1]+WIRE_DELTA[y,1];
   end;
 
-operator-(const x: T_point; const y: T_wireDirection): T_point;
+OPERATOR-(CONST x: T_point; CONST y: T_wireDirection): T_point;
   begin
     result[0]:=x[0]-WIRE_DELTA[y,0];
     result[1]:=x[1]-WIRE_DELTA[y,1];
   end;
 
-operator*(const x: T_point; const y: longint): T_point;
+OPERATOR*(CONST x: T_point; CONST y: longint): T_point;
   begin
     result[0]:=x[0]*y;
     result[1]:=x[1]*y;
   end;
 
-operator*(const x, y: T_point): longint;
+OPERATOR*(CONST x, y: T_point): longint;
   begin
     result:=x[0]*y[0]+x[1]*y[1];
   end;
 
-operator=(const x, y: T_point): boolean;
+OPERATOR=(CONST x, y: T_point): boolean;
   begin
     result:=(x[0]=y[0]) and (x[1]=y[1]);
   end;
 
-procedure writePointToStream(var stream: T_bufferedOutputStreamWrapper;
-  const p: T_point);
+PROCEDURE writePointToStream(VAR stream: T_bufferedOutputStreamWrapper;
+  CONST p: T_point);
   begin
     stream.writeLongint(p[0]);
     stream.writeLongint(p[1]);
   end;
 
-function readPoint(var stream: T_bufferedInputStreamWrapper): T_point;
+FUNCTION readPoint(VAR stream: T_bufferedInputStreamWrapper): T_point;
   begin
     result[0]:=stream.readLongint;
     result[1]:=stream.readLongint;
   end;
 
-function maxNormDistance(const x, y: T_point): longint;
+FUNCTION maxNormDistance(CONST x, y: T_point): longint;
   begin
     result:=max(abs(x[0]-y[0]),abs(x[1]-y[1]));
   end;
 
-function euklideanDistance(const x, y: T_point): double;
+FUNCTION euklideanDistance(CONST x, y: T_point): double;
   begin
     result:=sqrt(sqr(x[0]-y[0])+sqr(x[1]-y[1]));
   end;
@@ -273,7 +273,7 @@ PROCEDURE T_wireGraph.dropNode(CONST i: T_point);
     dropEdges(i,AllDirections);
   end;
 
-function allPointsBetween(const startP, endP: T_point; out dir: T_wireDirection): T_wirePath;
+FUNCTION allPointsBetween(CONST startP, endP: T_point; OUT dir: T_wireDirection): T_wirePath;
   VAR p:T_point;
       len:longint;
       i:longint;
@@ -360,7 +360,7 @@ FUNCTION T_wireGraph.isPathFree(CONST startPoint, endPoint: T_point; VAR path: T
     result:=true;
   end;
 
-function pathScore(const path: T_wirePath): double;
+FUNCTION pathScore(CONST path: T_wirePath): double;
   CONST DirectionCost:array[T_wireDirection] of double=(1,1.5,
                                                         1,1.5,
                                                         1,1.5,
@@ -418,7 +418,7 @@ FUNCTION expandPath(CONST path:T_wirePath):T_wirePath;
     end;
   end;
 
-function pathContains(const path: T_wirePath; const x, y: longint; out orientation: T_wireDirection): boolean;
+FUNCTION pathContains(CONST path: T_wirePath; CONST x, y: longint; OUT orientation: T_wireDirection): boolean;
   VAR i:longint;
       intermediate: T_wirePath;
       p:T_point;
