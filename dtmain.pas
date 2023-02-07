@@ -182,6 +182,7 @@ procedure TDigitaltrainerMainForm.propCancelShapeMouseDown(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
   buttonClicked(propCancelShape);
+  ValueListEditor1.OnValidateEntry:=nil;
   gateProperties.destroy;
   propEditPanel.Visible:=false;
 end;
@@ -190,6 +191,7 @@ procedure TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
   buttonClicked(propDeleteButton);
+  ValueListEditor1.OnValidateEntry:=nil;
   gateProperties.destroy;
   propEditPanel.Visible:=false;
 end;
@@ -198,6 +200,7 @@ procedure TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject;
   Button: TMouseButton; Shift: TShiftState; X, Y: Integer);
 begin
   buttonClicked(propEditShape);
+  ValueListEditor1.OnValidateEntry:=nil;
   gateProperties.destroy;
   propEditPanel.Visible:=false;
 end;
@@ -208,10 +211,13 @@ begin
   buttonClicked(propEditShape);
   propEditPanel.Visible:=false;
   if gateProperties.applyValues then begin
-    uiAdapter.draggedGate^.propertyEditDone(gateProperties.arePropertiesForBoard);
+    uiAdapter.draggedGate^.propertyEditDone(not(gateProperties.arePropertiesForBoard),
+      BoardImage.Left-BoardHorizontalScrollBar.Position,
+      BoardImage.Top -BoardVerticalScrollbar.Position);
     activeBoard^.afterGatePropertiesEdited(uiAdapter.draggedGate);
     if not(gateProperties.arePropertiesForBoard) then currentPalette^.ensureVisualPaletteItems;
   end;
+  ValueListEditor1.OnValidateEntry:=nil;
   gateProperties.destroy;
 end;
 
@@ -290,7 +296,7 @@ procedure TDigitaltrainerMainForm.showPropertyEditor(const gate: P_visualGate;
     propEditPanel.top:=mouseY;
     if propEditPanel.Left+propEditPanel.Width>width then propEditPanel.Left:=Width-propEditPanel.Width;
     if propEditPanel.Top+propEditPanel.Height>Height then propEditPanel.Top:=Height-propEditPanel.Height;
-
+    propEditPanel.BringToFront;
 
     if fromBoard
     then gateProperties.createForBoardEntry  (ValueListEditor1,@propertyValueChanged,gate^.getBehavior)

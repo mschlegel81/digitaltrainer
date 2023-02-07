@@ -72,6 +72,7 @@ OPERATOR =(CONST x,y:T_point):boolean;
 OPERATOR *(CONST x:T_point; CONST y:longint):T_point;
 OPERATOR *(CONST x,y:T_point):longint;
 FUNCTION allPointsBetween(CONST startP,endP:T_point; OUT dir:T_wireDirection):T_wirePath;
+FUNCTION pathContains(CONST path:T_wirePath; CONST x,y:longint; OUT orientation:T_wireDirection):boolean;
 PROCEDURE writePointToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST p:T_point);
 FUNCTION readPoint(VAR stream: T_bufferedInputStreamWrapper):T_point;
 FUNCTION maxNormDistance(CONST x,y:T_point):longint;
@@ -85,7 +86,7 @@ VAR enableShortcuts:boolean=false;
     allowDiagonals :boolean=false;
 IMPLEMENTATION
 USES math,sysutils;
-FUNCTION linesIntersect(CONST a0,a1,b0,b1:T_point):boolean;
+function linesIntersect(const a0, a1, b0, b1: T_point): boolean;
   FUNCTION inUnitRange(CONST x:double):boolean; inline;
     begin result:=(x>=0) and (x<=1); end;
   VAR u,v,w:T_point;
@@ -100,7 +101,8 @@ FUNCTION linesIntersect(CONST a0,a1,b0,b1:T_point):boolean;
             inUnitRange(( u[0]*w[1]-u[1]*w[0])/f);
   end;
 
-FUNCTION lineCrossesRectangle(CONST a0,a1,rectangleOrigin,rectangleExtend:T_point):boolean;
+function lineCrossesRectangle(const a0, a1, rectangleOrigin,
+  rectangleExtend: T_point): boolean;
   begin
     if (a0[0]<=rectangleOrigin[0]                   ) and (a1[0]<=rectangleOrigin[0]                   ) then exit(false);
     if (a0[0]>=rectangleOrigin[0]+rectangleExtend[0]) and (a1[0]>=rectangleOrigin[0]+rectangleExtend[0]) then exit(false);
@@ -113,71 +115,71 @@ FUNCTION lineCrossesRectangle(CONST a0,a1,rectangleOrigin,rectangleExtend:T_poin
          or linesIntersect(a0,a1,rectangleOrigin                ,pointOf(rectangleOrigin[0]                   ,rectangleOrigin[1]+rectangleExtend[1]));
   end;
 
-FUNCTION pointOf(CONST x, y: longint): T_point;
+function pointOf(const x, y: longint): T_point;
   begin
     result[0]:=x;
     result[1]:=y;
   end;
 
-OPERATOR+(CONST x, y: T_point): T_point;
+operator+(const x, y: T_point): T_point;
   begin
     result[0]:=x[0]+y[0];
     result[1]:=x[1]+y[1];
   end;
 
-OPERATOR-(CONST x, y: T_point): T_point;
+operator-(const x, y: T_point): T_point;
   begin
     result[0]:=x[0]-y[0];
     result[1]:=x[1]-y[1];
   end;
 
-OPERATOR+(CONST x: T_point; CONST y: T_wireDirection): T_point;
+operator+(const x: T_point; const y: T_wireDirection): T_point;
   begin
     result[0]:=x[0]+WIRE_DELTA[y,0];
     result[1]:=x[1]+WIRE_DELTA[y,1];
   end;
 
-OPERATOR-(CONST x: T_point; CONST y: T_wireDirection): T_point;
+operator-(const x: T_point; const y: T_wireDirection): T_point;
   begin
     result[0]:=x[0]-WIRE_DELTA[y,0];
     result[1]:=x[1]-WIRE_DELTA[y,1];
   end;
 
-OPERATOR*(CONST x: T_point; CONST y: longint): T_point;
+operator*(const x: T_point; const y: longint): T_point;
   begin
     result[0]:=x[0]*y;
     result[1]:=x[1]*y;
   end;
 
-OPERATOR *(CONST x,y:T_point):longint;
+operator*(const x, y: T_point): longint;
   begin
     result:=x[0]*y[0]+x[1]*y[1];
   end;
 
-OPERATOR=(CONST x, y: T_point): boolean;
+operator=(const x, y: T_point): boolean;
   begin
     result:=(x[0]=y[0]) and (x[1]=y[1]);
   end;
 
-PROCEDURE writePointToStream(VAR stream: T_bufferedOutputStreamWrapper;
-  CONST p: T_point);
+procedure writePointToStream(var stream: T_bufferedOutputStreamWrapper;
+  const p: T_point);
   begin
     stream.writeLongint(p[0]);
     stream.writeLongint(p[1]);
   end;
 
-FUNCTION readPoint(VAR stream: T_bufferedInputStreamWrapper): T_point;
+function readPoint(var stream: T_bufferedInputStreamWrapper): T_point;
   begin
     result[0]:=stream.readLongint;
     result[1]:=stream.readLongint;
   end;
 
-FUNCTION maxNormDistance(CONST x, y: T_point): longint;
+function maxNormDistance(const x, y: T_point): longint;
   begin
     result:=max(abs(x[0]-y[0]),abs(x[1]-y[1]));
   end;
 
-FUNCTION euklideanDistance(CONST x, y: T_point): double;
+function euklideanDistance(const x, y: T_point): double;
   begin
     result:=sqrt(sqr(x[0]-y[0])+sqr(x[1]-y[1]));
   end;
@@ -271,7 +273,7 @@ PROCEDURE T_wireGraph.dropNode(CONST i: T_point);
     dropEdges(i,AllDirections);
   end;
 
-FUNCTION allPointsBetween(CONST startP, endP: T_point; OUT dir: T_wireDirection): T_wirePath;
+function allPointsBetween(const startP, endP: T_point; out dir: T_wireDirection): T_wirePath;
   VAR p:T_point;
       len:longint;
       i:longint;
@@ -358,7 +360,7 @@ FUNCTION T_wireGraph.isPathFree(CONST startPoint, endPoint: T_point; VAR path: T
     result:=true;
   end;
 
-FUNCTION pathScore(CONST path:T_wirePath):double;
+function pathScore(const path: T_wirePath): double;
   CONST DirectionCost:array[T_wireDirection] of double=(1,1.5,
                                                         1,1.5,
                                                         1,1.5,
@@ -414,6 +416,19 @@ FUNCTION expandPath(CONST path:T_wirePath):T_wirePath;
       setLength(result,j0+length(intermediate));
       for j:=1 to length(intermediate)-1 do result[j+j0]:=intermediate[j];
     end;
+  end;
+
+function pathContains(const path: T_wirePath; const x, y: longint; out orientation: T_wireDirection): boolean;
+  VAR i:longint;
+      intermediate: T_wirePath;
+      p:T_point;
+  begin
+    if length(path)<=0 then exit(false);
+    for i:=1 to length(path)-1 do begin
+      intermediate:=allPointsBetween(path[i-1],path[i],orientation);
+      for p in intermediate do if (p[0]=x) and (p[1]=y) then exit(true);
+    end;
+    result:=false;
   end;
 
 FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point;

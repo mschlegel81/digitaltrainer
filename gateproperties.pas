@@ -101,9 +101,9 @@ function T_gatePropertyValues.fetchValue(const prop: T_gatePropertyEnum): T_gate
     result.n:=0;
     result.s:='';
     case prop of
-      gpe_caption:
+      gpe_caption,gpe_captionReadOnly:
         result.s:=gate^.getCaption;
-      gpe_description:
+      gpe_description,gpe_descriptionReadOnly:
         result.s:=gate^.getDescription;
       gpe_editableLabel:
         if gate^.gateType in [gt_input,gt_output]
@@ -187,6 +187,7 @@ procedure T_gatePropertyValues.connectEditor(editor: TValueListEditor);
     i: Integer;
     s: string;
   begin
+
     editor.OnValidateEntry:=@ValueListEditorValidateEntry;
     editor.clear;
     editor.rowCount:=length(entry);
@@ -209,6 +210,8 @@ procedure T_gatePropertyValues.connectEditor(editor: TValueListEditor);
         end;
       end;
     end;
+    editor.Editor.Color:=$00703838;
+    editor.Editor.Font.Color:=$00FFFFFF;
     editor.AutoSizeColumn(0);
   end;
 

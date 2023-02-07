@@ -322,6 +322,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
+    Cursor = crCross
     Left = 178
     Height = 889
     Top = 80
@@ -358,6 +359,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       BorderSpacing.Top = 5
       BorderSpacing.Right = 5
       Color = 8405056
+      ExtendedSelect = False
       FixedColor = 6303792
       FixedCols = 0
       Flat = True
@@ -365,6 +367,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       ParentFont = False
       RowCount = 2
       TabOrder = 0
+      TitleCaptions.Strings = (
+        'Eigenschaft'
+        'Wert'
+      )
       ColWidths = (
         64
         231
