@@ -1,0 +1,217 @@
+object AddToPaletteForm: TAddToPaletteForm
+  Left = 750
+  Height = 241
+  Top = 560
+  Width = 537
+  BorderStyle = bsDialog
+  Caption = 'Zu Palette hinzufügen'
+  ClientHeight = 241
+  ClientWidth = 537
+  Color = 8405056
+  LCLVersion = '2.2.2.0'
+  object Label1: TLabel
+    AnchorSideLeft.Control = Label2
+    AnchorSideTop.Control = CaptionEdit
+    Left = 10
+    Height = 15
+    Top = 10
+    Width = 67
+    Caption = 'Beschriftung'
+    Font.Color = clWhite
+    ParentColor = False
+    ParentFont = False
+  end
+  object Label2: TLabel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = DescriptionMemo
+    Left = 10
+    Height = 15
+    Top = 38
+    Width = 72
+    BorderSpacing.Left = 10
+    Caption = 'Beschreibung'
+    Font.Color = clWhite
+    ParentColor = False
+    ParentFont = False
+  end
+  object Label3: TLabel
+    AnchorSideLeft.Control = Label2
+    AnchorSideTop.Control = PaletteCombobox
+    Left = 10
+    Height = 15
+    Top = 133
+    Width = 36
+    Caption = 'Palette'
+    Font.Color = clWhite
+    ParentColor = False
+    ParentFont = False
+  end
+  object CaptionEdit: TEdit
+    AnchorSideLeft.Control = Label2
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 92
+    Height = 23
+    Top = 10
+    Width = 435
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Left = 10
+    BorderSpacing.Top = 10
+    BorderSpacing.Right = 10
+    Color = 7354424
+    Font.Color = clWhite
+    OnEditingDone = CaptionEditEditingDone
+    ParentFont = False
+    TabOrder = 0
+  end
+  object DescriptionMemo: TMemo
+    AnchorSideLeft.Control = Label2
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = CaptionEdit
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 91
+    Height = 90
+    Top = 38
+    Width = 436
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Left = 9
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 10
+    Color = 7354424
+    Font.Color = clWhite
+    OnEditingDone = DescriptionMemoEditingDone
+    ParentFont = False
+    TabOrder = 1
+  end
+  object PaletteCombobox: TComboBox
+    AnchorSideLeft.Control = Label2
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = DescriptionMemo
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 92
+    Height = 23
+    Top = 133
+    Width = 435
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Left = 10
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 10
+    Color = 7354424
+    Font.Color = clWhite
+    ItemHeight = 15
+    ParentFont = False
+    TabOrder = 2
+  end
+  object propCancelShape: TShape
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = PaletteCombobox
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = PaletteCombobox
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Side = asrBottom
+    Left = 456
+    Height = 67
+    Top = 161
+    Width = 71
+    Anchors = [akTop, akRight]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = propCancelShapeMouseDown
+    Shape = stRoundRect
+  end
+  object propOkShape1: TShape
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = propCancelShape
+    AnchorSideRight.Control = propOkShape
+    Left = 266
+    Height = 65
+    Top = 161
+    Width = 90
+    Anchors = [akTop, akRight]
+    BorderSpacing.Left = 5
+    BorderSpacing.Right = 5
+    Brush.Color = 6303792
+    OnMouseDown = propOkShape1MouseDown
+    Shape = stRoundRect
+  end
+  object propCancelLabel: TLabel
+    AnchorSideLeft.Control = propCancelShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = propCancelShape
+    AnchorSideTop.Side = asrCenter
+    Left = 462
+    Height = 21
+    Top = 184
+    Width = 59
+    Caption = 'Abbruch'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = propCancelShapeMouseDown
+  end
+  object propOkShape: TShape
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = propCancelShape
+    AnchorSideRight.Control = propCancelShape
+    Left = 361
+    Height = 65
+    Top = 161
+    Width = 90
+    Anchors = [akTop, akRight]
+    BorderSpacing.Left = 5
+    BorderSpacing.Right = 5
+    Brush.Color = 6303792
+    OnMouseDown = propOkShapeMouseDown
+    Shape = stRoundRect
+  end
+  object propOkLabel: TLabel
+    AnchorSideLeft.Control = propOkShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = propOkShape
+    AnchorSideTop.Side = asrCenter
+    Left = 367
+    Height = 21
+    Top = 183
+    Width = 78
+    Caption = 'hinzufügen'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = propOkShapeMouseDown
+  end
+  object propOkLabel1: TLabel
+    AnchorSideLeft.Control = propOkShape1
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = propOkShape1
+    AnchorSideTop.Side = asrCenter
+    Left = 282
+    Height = 21
+    Top = 183
+    Width = 58
+    Caption = 'ersetzen'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = propOkShape1MouseDown
+  end
+end

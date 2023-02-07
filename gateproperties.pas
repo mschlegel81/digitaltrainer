@@ -126,19 +126,40 @@ function T_gatePropertyValues.fetchValue(const prop: T_gatePropertyEnum): T_gate
       gpe_inputCount :
         if gate^.gateType in [gt_andGate,gt_orGate,gt_xorGate,gt_nandGate,gt_norGate,gt_nxorGate]
         then result.n:=P_binaryBaseGate(gate)^.inputCount;
+      gpe_subPalette: begin
+        assert(palette<>nil);
+        result.n:=palette^.findEntry(gate);
+        if (result.n>=0) and (result.n<length(palette^.paletteEntries))
+        then begin
+          result.n:=palette^.paletteEntries[result.n].subPaletteIndex;
+          if (result.n>=0) and (result.n<length(palette^.paletteNames))
+          then result.s:=palette^.paletteNames[result.n]
+          else begin
+            result.s:='?';
+            result.n:=-1;
+          end;
+        end else begin
+          result.s:='?';
+          result.n:=-1;
+        end;
+      end;
+
+
       else assert(false);
     end;
   end;
 
-procedure T_gatePropertyValues.applyValue(const prop: T_gatePropertyEnum;
-  const value: T_gatePropertyValue);
+procedure T_gatePropertyValues.applyValue(const prop: T_gatePropertyEnum; const value: T_gatePropertyValue);
   begin
     case prop of
       gpe_caption,
-      gpe_subPalette,
       gpe_description: begin
 
         //P_circuitBoard^.prototype();
+      end;
+      gpe_subPalette: begin
+        //we could fetch the value first, so all should be okay...
+        palette^.reassignEntry(gate,value.s);
       end;
       gpe_editableLabel: if gate^.gateType in [gt_input,gt_output] then begin
         P_inputGate(gate)^.ioLabel:=value.s;
@@ -223,7 +244,7 @@ constructor T_gatePropertyValues.createForPaletteEntry(
   begin
     onAccept:=onModify;
     gate:=gate_;
-    palette:=nil;
+    palette:=P_workspacePalette(palette_);
     setLength(entry,0);
     for p in C_availableProperies[gate^.gateType,false] do begin
       setLength(entry,i+1);
@@ -292,6 +313,11 @@ function T_gatePropertyValues.acceptNewValue(const index: longint;
         entry[index].value.s:=newValue;
         result:=true;
       end;
+      pt_enumWithOptionForNewEntry: begin
+        entry[index].modified:=entry[index].modified or (entry[index].value.s<>newValue);
+        entry[index].value.s:=newValue;
+        result:=true;
+      end
       else result:=false;
     end;
   end;

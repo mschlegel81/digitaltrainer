@@ -6,11 +6,10 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
-  Buttons, StdCtrls, Menus, ValEdit,visualGates,logicalGates,challenges,paletteHandling,
-  gateProperties;
+  Buttons, StdCtrls, Menus, ValEdit, CheckLst, Grids, visualGates, logicalGates,
+  challenges, paletteHandling, gateProperties, addToPaletteDialog, visuals;
 
 TYPE
-  T_shapeAndLabel=record colorIndex:byte; Shape:TShape; labl:TLabel; end;
 
   { TDigitaltrainerMainForm }
 
@@ -27,6 +26,7 @@ TYPE
     propEditShape: TShape;
     propOkShape: TShape;
     propCancelShape: TShape;
+    selectionShape: TShape;
     TestLabel: TLabel;
     TestShape: TShape;
     SubPaletteComboBox: TComboBox;
@@ -63,6 +63,7 @@ TYPE
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE FormDestroy(Sender: TObject);
     PROCEDURE FormResize(Sender: TObject);
+    procedure miAddToPaletteClick(Sender: TObject);
     PROCEDURE miEditModeClick(Sender: TObject);
     PROCEDURE miFullScreenClick(Sender: TObject);
     PROCEDURE PlayPauseShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -89,7 +90,6 @@ TYPE
     gateProperties  :T_gatePropertyValues;
 
     PROCEDURE buttonClicked(Shape:TShape);
-    PROCEDURE setEnableButton(Shape:TShape; CONST enable:boolean);
     PROCEDURE startChallenge(CONST challenge:P_challenge);
     PROCEDURE propertyValueChanged(Sender: TObject);
     PROCEDURE showPropertyEditor(CONST gate:P_visualGate; CONST fromBoard:boolean; CONST mouseX,mouseY:longint);
@@ -130,7 +130,7 @@ procedure TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     addButton(propCancelShape,propCancelLabel);
 
 
-    uiAdapter.create(self,@showPropertyEditor);
+    uiAdapter.create(self,selectionShape,@showPropertyEditor);
 
     new(P_workspacePalette(currentPalette),create);
     P_workspacePalette(currentPalette)^.initDefaults;
@@ -153,9 +153,18 @@ procedure TDigitaltrainerMainForm.FormResize(Sender: TObject);
     activeBoard^.checkSizes;
   end;
 
+procedure TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
+  begin
+    if AddToPaletteForm.showFor(P_workspacePalette(currentPalette),activeBoard) then begin
+      activeBoard^.clear;
+      currentPalette^.ensureVisualPaletteItems;
+      uiAdapter.clearUndoList;
+    end;
+  end;
+
 procedure TDigitaltrainerMainForm.miEditModeClick(Sender: TObject);
   begin
-
+    //TODO
   end;
 
 procedure TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
@@ -185,6 +194,7 @@ begin
   ValueListEditor1.OnValidateEntry:=nil;
   gateProperties.destroy;
   propEditPanel.Visible:=false;
+  uiAdapter.resetState;
 end;
 
 procedure TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject;
@@ -194,6 +204,7 @@ begin
   ValueListEditor1.OnValidateEntry:=nil;
   gateProperties.destroy;
   propEditPanel.Visible:=false;
+  uiAdapter.resetState;
 end;
 
 procedure TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject;
@@ -203,6 +214,7 @@ begin
   ValueListEditor1.OnValidateEntry:=nil;
   gateProperties.destroy;
   propEditPanel.Visible:=false;
+  uiAdapter.resetState;
 end;
 
 procedure TDigitaltrainerMainForm.propOkShapeMouseDown(Sender: TObject;
@@ -215,10 +227,14 @@ begin
       BoardImage.Left-BoardHorizontalScrollBar.Position,
       BoardImage.Top -BoardVerticalScrollbar.Position);
     activeBoard^.afterGatePropertiesEdited(uiAdapter.draggedGate);
-    if not(gateProperties.arePropertiesForBoard) then currentPalette^.ensureVisualPaletteItems;
+    if not(gateProperties.arePropertiesForBoard) then begin
+      currentPalette^.ensureVisualPaletteItems;
+      currentPalette^.checkSizes;
+    end;
   end;
   ValueListEditor1.OnValidateEntry:=nil;
   gateProperties.destroy;
+  uiAdapter.resetState;
 end;
 
 procedure TDigitaltrainerMainForm.ResetShapeMouseDown(Sender: TObject;
@@ -258,21 +274,6 @@ procedure TDigitaltrainerMainForm.buttonClicked(Shape: TShape);
     if not(AnimationTimer.enabled) then AnimationTimer.enabled:=true;
   end;
 
-procedure TDigitaltrainerMainForm.setEnableButton(Shape: TShape; const enable: boolean);
-  VAR labl:TLabel;
-  begin
-    labl:=Buttons[shape.Tag].labl;
-    shape.Enabled:=enable;
-    labl .Enabled:=enable;
-    if enable then begin
-      Shape.Brush.color:=$00603030;
-      labl.Font.Color:=clWhite;
-    end else begin
-      Shape.Brush.color:=$00703838;
-      labl.Font.Color:=clSilver;
-    end;
-  end;
-
 procedure TDigitaltrainerMainForm.startChallenge(const challenge: P_challenge);
   begin
     //currentChallenge:=challenge;
@@ -285,7 +286,7 @@ procedure TDigitaltrainerMainForm.startChallenge(const challenge: P_challenge);
 
 procedure TDigitaltrainerMainForm.propertyValueChanged(Sender: TObject);
   begin
-    setEnableButton(propOkShape,true);
+    setEnableButton(propOkShape,propOkLabel,true);
   end;
 
 procedure TDigitaltrainerMainForm.showPropertyEditor(const gate: P_visualGate;
@@ -303,9 +304,9 @@ procedure TDigitaltrainerMainForm.showPropertyEditor(const gate: P_visualGate;
     else gateProperties.createForPaletteEntry(ValueListEditor1,@propertyValueChanged,gate^.getBehavior,currentPalette);
 
     uiAdapter.propertyEditorShown(gate,fromBoard);
-    setEnableButton(propEditShape   ,not(fromBoard) and (gate^.getBehavior^.gateType=gt_compound));
-    setEnableButton(propDeleteButton,fromBoard or (gate^.getBehavior^.gateType=gt_compound));
-    setEnableButton(propOkShape     ,false);
+    setEnableButton(propEditShape   ,propEditLabel  ,not(fromBoard) and (gate^.getBehavior^.gateType=gt_compound));
+    setEnableButton(propDeleteButton,propDeleteLabel,fromBoard or ((gate^.getBehavior^.gateType=gt_compound) and (activeBoard^.getIndexInPalette<0) and (currentPalette^.allowDeletion(gate^.getBehavior)));
+    setEnableButton(propOkShape     ,propOkLabel    ,false);
   end;
 
 procedure TDigitaltrainerMainForm.AnimationTimerTimer(Sender: TObject);
@@ -321,16 +322,6 @@ procedure TDigitaltrainerMainForm.AnimationTimerTimer(Sender: TObject);
     if not(anythingDone) then AnimationTimer.enabled:=false;
   end;
 
-procedure TDigitaltrainerMainForm.BoardVerticalScrollbarChange(Sender: TObject);
-begin
-
-end;
-
-procedure TDigitaltrainerMainForm.BoardVerticalScrollbarScroll(Sender: TObject;
-  ScrollCode: TScrollCode; var ScrollPos: integer);
-begin
-
-end;
 
 end.
 

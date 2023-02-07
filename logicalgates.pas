@@ -27,6 +27,24 @@ TYPE
 
 CONST
   C_multibitWireRepresentationName:array[T_multibitWireRepresentation] of string=('bin','dec','2cmp');
+  C_gateDefaultDescription:array [T_gateType] of string=
+  {gt_notGate}   ('Logische Negation',
+  {gt_andGate}    'Logisches und',
+  {gt_orGate}     'Logisches oder (inklusiv)',
+  {gt_xorGate}    'Logisches oder (exklusiv)',
+  {gt_nandGate}   'Logisches nicht-und',
+  {gt_norGate}    'Logisches nicht-oder',
+  {gt_nxorGate}   'Logisches nicht-exklusiv-oder',
+  {gt_input}      'Eingabe-Baustein',
+  {gt_output}     'Ausgabe-Baustein',
+  {gt_compound}   '<compound>',
+  {gt_clock}      'Zeitgeber'+LineEnding+'Ausgangssignal wechselt periodisch',
+  {gt_adapter}    'Ein Adapter für unterschiedliche Kabel-Breiten',
+  {gt_true}       'Konstant 1',
+  {gt_false}      'Konstant 0',
+  {gt_gatedClock} 'Geschalter Zeitgeber'+LineEnding+'Ausgangssignal wechselt periodisch'+LineEnding+'falls am Eingang 1 anliegt',
+  {gt_un....true} 'Gibt für unbestimmten Eingang 1 aus',
+  {gt_un...false} 'Gibt für unbestimmten Eingang 0 aus');
 
   C_gateTypeName:array[T_gateType] of string=
     {gt_notGate}   ('not',
@@ -1110,7 +1128,7 @@ DESTRUCTOR T_abstractGate.destroy;
   begin end; //pro forma
 
 FUNCTION T_abstractGate.getDescription: string;
-  begin result:=''; end; //plausible default
+  begin result:=C_gateDefaultDescription[gateType]; end;
 
 FUNCTION T_abstractGate.getIoLocations: T_ioLocations;
   VAR i:longint;

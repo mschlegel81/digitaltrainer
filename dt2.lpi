@@ -66,6 +66,18 @@
         <Filename Value="challenges.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
+      <Unit>
+        <Filename Value="addtopalettedialog.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="AddToPaletteForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="addToPaletteDialog"/>
+      </Unit>
+      <Unit>
+        <Filename Value="visuals.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

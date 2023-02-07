@@ -335,9 +335,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   end
   object propEditPanel: TPanel
     AnchorSideRight.Control = PaletteBgShape
-    Left = 572
+    Left = 216
     Height = 272
-    Top = 208
+    Top = 128
     Width = 308
     BevelColor = clBlack
     ClientHeight = 272
@@ -345,6 +345,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Color = 7354424
     ParentColor = False
     TabOrder = 5
+    Visible = False
     object ValueListEditor1: TValueListEditor
       AnchorSideLeft.Control = propEditPanel
       AnchorSideTop.Control = propEditPanel
@@ -507,6 +508,15 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       ParentFont = False
     end
   end
+  object selectionShape: TShape
+    Left = 336
+    Height = 65
+    Top = 440
+    Width = 65
+    Brush.Style = bsClear
+    Pen.Color = 43775
+    Visible = False
+  end
   object MainMenu1: TMainMenu
     Left = 600
     Top = 16
@@ -514,6 +524,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       Caption = 'Schaltung'
       object miAddToPalette: TMenuItem
         Caption = 'Zur &Palette hinzufügen'
+        OnClick = miAddToPaletteClick
       end
       object miSaveAsTask: TMenuItem
         Caption = 'Als &Aufgabe speichern'
