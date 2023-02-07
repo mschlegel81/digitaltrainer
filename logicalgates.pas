@@ -89,6 +89,7 @@ TYPE
     PROCEDURE setCaption(CONST s:string);       virtual;
     PROCEDURE setDescription(CONST s:string);   virtual;
     FUNCTION  getIndexInPalette:longint; virtual;
+    FUNCTION  isVisualBoard:boolean; virtual;
   end;
 
   P_abstractGate=^T_abstractGate;
@@ -593,6 +594,11 @@ FUNCTION T_captionedAndIndexed.getIndexInPalette: longint;
     result:=-1;
   end;
 
+FUNCTION T_captionedAndIndexed.isVisualBoard: boolean;
+  begin
+    result:=false;
+  end;
+
 CONSTRUCTOR T_tendToFalse.create;
   begin inherited; end;
 
@@ -1029,7 +1035,7 @@ FUNCTION T_outputGate.gateType: T_gateType;
 { T_inputGate }
 
 CONSTRUCTOR T_inputGate.create;
-  begin inherited; io:=tsv_true; ioLabel:=''; width:=1; end;
+  begin inherited; io:=tsv_true; ioLabel:=''; width:=1; onLeftOrRightSide:=true; positionIndex:=0; end;
 
 PROCEDURE T_inputGate.reset;
   VAR i:longint;
@@ -1386,6 +1392,8 @@ FUNCTION T_inputGate.clone(CONST includeState: boolean): P_abstractGate;
     P_inputGate(result)^.ioIndex:=ioIndex;
     P_inputGate(result)^.ioLabel:=ioLabel;
     P_inputGate(result)^.width:=width;
+    P_inputGate(result)^.onLeftOrRightSide:=onLeftOrRightSide;
+    P_inputGate(result)^.positionIndex:=positionIndex;
     result^.reset;
     if includeState then P_inputGate(result)^.io:=io;
   end;
@@ -1396,6 +1404,8 @@ FUNCTION T_outputGate.clone(CONST includeState:boolean):P_abstractGate;
     P_outputGate(result)^.ioIndex:=ioIndex;
     P_outputGate(result)^.ioLabel:=ioLabel;
     P_outputGate(result)^.width:=width;
+    P_inputGate(result)^.onLeftOrRightSide:=onLeftOrRightSide;
+    P_inputGate(result)^.positionIndex:=positionIndex;
     result^.reset;
     if includeState then P_outputGate(result)^.io:=io;
   end;

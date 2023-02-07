@@ -35,7 +35,7 @@ TYPE
 
     PROCEDURE comboBoxSelect(Sender:TObject);
     PROCEDURE ScrollbarScroll(Sender: TObject; ScrollCode: TScrollCode; VAR ScrollPos: integer);
-    FUNCTION allowDeletion(CONST gate:P_abstractGate):boolean;
+    FUNCTION allowDeletion(CONST gate:P_abstractGate):boolean; virtual;
   end;
 
   { T_workspacePalette }
@@ -70,6 +70,8 @@ TYPE
     PROCEDURE addBoard   (CONST board:P_visualBoard; subPaletteIndex:longint; CONST subPaletteName:string);
     PROCEDURE updateEntry(CONST board:P_visualBoard; subPaletteIndex:longint; CONST subPaletteName:string);
     PROCEDURE deleteEntry(CONST index:longint);
+    FUNCTION  allowDeletion(CONST gate:P_abstractGate):boolean; virtual;
+
   end;
 
   { T_challengePalette }
@@ -78,7 +80,7 @@ TYPE
     paletteEntries:array of record
       visible:boolean;
       entryType:T_gateType;
-      prototype:P_circuitBoard;
+      prototype:P_compoundGate;
     end;
     CONSTRUCTOR create;
     DESTRUCTOR destroy;
@@ -213,6 +215,7 @@ FUNCTION T_workspacePalette.loadFromStream(
   VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i:longint;
   begin
+
     setLength(paletteNames,stream.readNaturalNumber);
     for i:=0 to length(paletteNames)-1 do paletteNames[i]:=stream.readAnsiString;
 
@@ -290,12 +293,12 @@ PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
       behavior: P_abstractGate;
   begin
     for i:=0 to length(visualPaletteItems)-1 do dispose(visualPaletteItems[i],destroy);
+    setLength(visualPaletteItems,0);
     k:=0;
     for i:=0 to length(paletteEntries)-1 do if paletteEntries[i].subPaletteIndex=ui.lastSubPaletteIndex then begin
       if paletteEntries[i].entryType=gt_compound
       then behavior:=paletteEntries[i].prototype^.extractBehavior
       else behavior:=newBaseGate(paletteEntries[i].entryType);
-
       setLength(visualPaletteItems,k+1);
       new(visualPaletteItems[k],create(behavior));
       visualPaletteItems[k]^.uiAdapter:=ui.uiAdapter;
@@ -326,7 +329,7 @@ FUNCTION T_workspacePalette.findEntry(CONST gate: P_abstractGate): longint;
   VAR i:longint;
   begin
     for i:=0 to length(paletteEntries)-1 do if paletteEntries[i].entryType=gate^.gateType then begin
-      if (gate^.gateType=gt_compound) and (P_circuitBoard(gate)^.prototype=P_captionedAndIndexed(paletteEntries[i].prototype)) or
+      if (gate^.gateType=gt_compound) and (P_compoundGate(gate)^.prototype=P_captionedAndIndexed(paletteEntries[i].prototype)) or
          (gate^.gateType<>gt_compound) then exit(i);
     end;
     result:=-1;
@@ -335,6 +338,7 @@ FUNCTION T_workspacePalette.findEntry(CONST gate: P_abstractGate): longint;
 PROCEDURE T_workspacePalette.reassignEntry(CONST gate: P_abstractGate; CONST newPalette: string);
   VAR entryIndex:longint;
       paletteIndex:longint=0;
+      previousPaletteIndex:longint;
   begin
     entryIndex:=findEntry(gate);
     if entryIndex<0 then exit;
@@ -343,11 +347,26 @@ PROCEDURE T_workspacePalette.reassignEntry(CONST gate: P_abstractGate; CONST new
       setLength(paletteNames,paletteIndex+1);
       paletteNames[paletteIndex]:=newPalette;
     end;
-    //TODO: Remove empty subpalettes
+    previousPaletteIndex:=paletteEntries[entryIndex].subPaletteIndex;
     paletteEntries[entryIndex].subPaletteIndex:=paletteIndex;
+
+    //previous palette may not contain any entries anymore...
+    for entryIndex:=0 to length(paletteEntries)-1 do
+    if paletteEntries[entryIndex].subPaletteIndex=previousPaletteIndex then exit;
+
+    //if so, decrease all subPaletteIndexes>previousPaletteIndex ...
+    for entryIndex:=0 to length(paletteEntries)-1 do
+      if paletteEntries[entryIndex].subPaletteIndex>previousPaletteIndex
+      then dec(paletteEntries[entryIndex].subPaletteIndex);
+
+    //... and remove palette name
+    for paletteIndex:=previousPaletteIndex to length(paletteNames)-2 do
+      paletteNames[paletteIndex]:=paletteNames[paletteIndex+1];
+    setLength(paletteNames,length(paletteNames)-1);
   end;
 
-PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string);
+PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard;
+  subPaletteIndex: longint; CONST subPaletteName: string);
   VAR i:longint;
   begin
     if subPaletteIndex<0 then for i:=0 to length(paletteNames)-1 do if paletteNames[i]=subPaletteName then subPaletteIndex:=i;
@@ -364,7 +383,8 @@ PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard; subPaletteInde
     reindex;
   end;
 
-PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string);
+PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard;
+  subPaletteIndex: longint; CONST subPaletteName: string);
   VAR i:longint;
   begin
     if board^.getIndexInPalette<0 then exit;
@@ -392,6 +412,22 @@ PROCEDURE T_workspacePalette.deleteEntry(CONST index: longint);
 
     end;
     reindex;
+  end;
+
+FUNCTION T_workspacePalette.allowDeletion(CONST gate: P_abstractGate): boolean;
+  VAR i:longint;
+      prototype: P_visualBoard;
+  begin
+    if gate^.gateType<>gt_compound then exit(false);
+    if P_compoundGate(gate)^.prototype=nil then exit(false);
+    if not(P_compoundGate(gate)^.prototype^.isVisualBoard) then exit(false);
+    prototype:=P_visualBoard(P_compoundGate(gate)^.prototype);
+
+    for i:=0 to length(paletteEntries)-1 do
+      if (i<>prototype^.getIndexInPalette) and
+         (paletteEntries[i].prototype<>nil) and
+         (paletteEntries[i].prototype^.usesPrototype(prototype)) then exit(false);
+    result:=true;
   end;
 
 { T_palette }
@@ -483,9 +519,7 @@ PROCEDURE T_palette.ScrollbarScroll(Sender: TObject; ScrollCode: TScrollCode; VA
 
 FUNCTION T_palette.allowDeletion(CONST gate: P_abstractGate): boolean;
   begin
-    if gate^.gateType<>gt_compound then exit(false);
-    //TODO...
-
+    result:=false;
   end;
 
 end.

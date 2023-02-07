@@ -13,7 +13,7 @@ TYPE
     FUNCTION readGate(VAR stream:T_bufferedInputStreamWrapper):P_abstractGate; virtual; abstract;
   end;
 
-  P_circuitBoard=^T_circuitBoard;
+  P_compoundGate=^T_compoundGate;
 
   { T_wire }
   T_wire=object
@@ -31,8 +31,8 @@ TYPE
 
   F_queryLongint=FUNCTION():longint of object;
 
-  { T_circuitBoard }
-  T_circuitBoard=object(T_abstractGate)
+  { T_compoundGate }
+  T_compoundGate=object(T_abstractGate)
     protected
       prototypeSource:P_abstractPrototypeSource;
       myIndex:longint;
@@ -75,7 +75,7 @@ TYPE
       PROCEDURE countGates(VAR gateCount:T_gateCount); virtual;
       FUNCTION equals(CONST other:P_abstractGate):boolean; virtual;
 
-      FUNCTION usesPrototype(CONST p:P_circuitBoard):boolean;
+      FUNCTION usesPrototype(CONST p:P_captionedAndIndexed):boolean;
       FUNCTION getPrototypeIndex:longint;
     end;
 
@@ -83,7 +83,7 @@ IMPLEMENTATION
 
 { T_abstractPrototypeSource }
 
-//procedure T_abstractPrototypeSource.addPrototype(const prototype: P_circuitBoard);
+//procedure T_abstractPrototypeSource.addPrototype(const prototype: P_compoundGate);
 //  VAR i:longint=0;
 //      j:longint;
 //  begin
@@ -100,7 +100,7 @@ IMPLEMENTATION
 //
 //function T_abstractPrototypeSource.loadFromStream(var stream: T_bufferedInputStreamWrapper): boolean;
 //  VAR i:longint;
-//      prototype:P_circuitBoard;
+//      prototype:P_compoundGate;
 //      prototypeCount: QWord;
 //  begin
 //    result:=inherited;
@@ -153,9 +153,9 @@ FUNCTION T_wire.simulateStep: boolean;
     for i:=0 to length(sink)-1 do if sink[i].gate^.setInput(sink[i].gateInputIndex,value) then result:=true;
   end;
 
-{ T_circuitBoard }
+{ T_compoundGate }
 
-CONSTRUCTOR T_circuitBoard.create(CONST prototypeSrc: P_abstractPrototypeSource
+CONSTRUCTOR T_compoundGate.create(CONST prototypeSrc: P_abstractPrototypeSource
   );
   begin
     inherited create;
@@ -167,7 +167,7 @@ CONSTRUCTOR T_circuitBoard.create(CONST prototypeSrc: P_abstractPrototypeSource
     captionString:='';
   end;
 
-DESTRUCTOR T_circuitBoard.destroy;
+DESTRUCTOR T_compoundGate.destroy;
   VAR i:longint;
   begin
     inherited;
@@ -181,7 +181,7 @@ DESTRUCTOR T_circuitBoard.destroy;
     setLength(outputs,0);
   end;
 
-PROCEDURE T_circuitBoard.reset;
+PROCEDURE T_compoundGate.reset;
   VAR g:P_abstractGate;
   begin
     for g in inputs do g^.reset;
@@ -190,8 +190,8 @@ PROCEDURE T_circuitBoard.reset;
     lastStepBusy:=true;
   end;
 
-FUNCTION T_circuitBoard.clone(CONST includeState: boolean): P_abstractGate;
-  VAR cloned:P_circuitBoard;
+FUNCTION T_compoundGate.clone(CONST includeState: boolean): P_abstractGate;
+  VAR cloned:P_compoundGate;
       i,j:longint;
   FUNCTION gateInClone(CONST gate:P_abstractGate):P_abstractGate;
     VAR i:longint;
@@ -224,93 +224,91 @@ FUNCTION T_circuitBoard.clone(CONST includeState: boolean): P_abstractGate;
     result:=cloned;
   end;
 
-FUNCTION T_circuitBoard.getCaption: string;
+FUNCTION T_compoundGate.getCaption: string;
   begin
     if prototype=nil
     then result:=captionString
     else result:=prototype^.getCaption;
   end;
 
-FUNCTION T_circuitBoard.getDescription: string;
+FUNCTION T_compoundGate.getDescription: string;
   begin
     if prototype=nil
     then result:=descriptionString
     else result:=prototype^.getDescription;
   end;
 
-FUNCTION T_circuitBoard.getIndexInPalette: longint;
+FUNCTION T_compoundGate.getIndexInPalette: longint;
   begin
     if prototype=nil
     then result:=myIndex
     else result:=prototype^.getIndexInPalette;
   end;
 
-FUNCTION T_circuitBoard.numberOfInputs: longint;
+FUNCTION T_compoundGate.numberOfInputs: longint;
   begin
     result:=length(inputs);
   end;
 
-FUNCTION T_circuitBoard.numberOfOutputs: longint;
+FUNCTION T_compoundGate.numberOfOutputs: longint;
   begin
     result:=length(outputs);
   end;
 
-FUNCTION T_circuitBoard.getIoLocations: T_ioLocations;
+FUNCTION T_compoundGate.getIoLocations: T_ioLocations;
   VAR i:longint;
   begin
     setLength(result[gt_input],length(inputs));
     for i:=0 to length(inputs)-1 do begin
       result[gt_input,i].positionIndex:=inputs[i]^.positionIndex;
       result[gt_input,i].leftOrRight  :=inputs[i]^.onLeftOrRightSide;
-      result[gt_input,i].ioLabel      :=inputs[i]^.ioLabel;
+      result[gt_input,i].ioLabel      :=inputs[i]^.getCaption;
     end;
     setLength(result[gt_output],length(outputs));
     for i:=0 to length(outputs)-1 do begin
       result[gt_output,i].positionIndex:=outputs[i]^.positionIndex;
       result[gt_output,i].leftOrRight  :=outputs[i]^.onLeftOrRightSide;
-      result[gt_output,i].ioLabel      :=outputs[i]^.ioLabel;
+      result[gt_output,i].ioLabel      :=outputs[i]^.getCaption;
     end;
   end;
 
-FUNCTION T_circuitBoard.inputWidth(CONST index: longint): byte;
+FUNCTION T_compoundGate.inputWidth(CONST index: longint): byte;
   begin
     if (index>=0) and (index<length(inputs))
     then result:=inputs[index]^.outputWidth(0)
     else result:=1;
   end;
 
-FUNCTION T_circuitBoard.outputWidth(CONST index: longint): byte;
+FUNCTION T_compoundGate.outputWidth(CONST index: longint): byte;
   begin
     if (index>=0) and (index<length(outputs))
     then result:=outputs[index]^.inputWidth(0)
     else result:=1;
   end;
 
-FUNCTION T_circuitBoard.gateType: T_gateType;
+FUNCTION T_compoundGate.gateType: T_gateType;
   begin
     result:=gt_compound;
   end;
 
-FUNCTION T_circuitBoard.simulateStep: boolean;
+FUNCTION T_compoundGate.simulateStep: boolean;
   VAR wire:T_wire;
       g:P_abstractGate;
   begin
     result:=false;
-    for g in inputs do if g^.simulateStep then result:=true;
+    for wire in wires do if wire.simulateStep then result:=true;
     if not(result) and not(lastStepBusy) then exit(false);
-    for wire in wires   do if wire.simulateStep then result:=true;
-    for g    in gates   do if g  ^.simulateStep then result:=true;
-    for g    in outputs do if g  ^.simulateStep then result:=true;
+    for g in gates do if g^.simulateStep then result:=true;
     lastStepBusy:=result;
   end;
 
-FUNCTION T_circuitBoard.getOutput(CONST index: longint): T_wireValue;
+FUNCTION T_compoundGate.getOutput(CONST index: longint): T_wireValue;
   begin
     if (index>=0) and (index<length(outputs))
     then result:=outputs[index]^.getInput(0);
   end;
 
-FUNCTION T_circuitBoard.setInput(CONST index: longint; CONST value: T_wireValue
+FUNCTION T_compoundGate.setInput(CONST index: longint; CONST value: T_wireValue
   ): boolean;
   begin
     if (index>=0) and (index<length(inputs))
@@ -318,13 +316,13 @@ FUNCTION T_circuitBoard.setInput(CONST index: longint; CONST value: T_wireValue
     else result:=false;
   end;
 
-FUNCTION T_circuitBoard.getInput(CONST index: longint): T_wireValue;
+FUNCTION T_compoundGate.getInput(CONST index: longint): T_wireValue;
   begin
     if (index>=0) and (index<length(inputs))
     then result:=inputs[index]^.getOutput(0);
   end;
 
-PROCEDURE T_circuitBoard.writePrototypeToStream(
+PROCEDURE T_compoundGate.writePrototypeToStream(
   VAR stream: T_bufferedOutputStreamWrapper; CONST acutalIndex: longint);
   FUNCTION gateIndexForSerialization(CONST gate:P_abstractGate):longint;
     VAR i: longint;
@@ -356,7 +354,7 @@ PROCEDURE T_circuitBoard.writePrototypeToStream(
     end;
   end;
 
-FUNCTION T_circuitBoard.readPrototypeFromStream(
+FUNCTION T_compoundGate.readPrototypeFromStream(
   VAR stream: T_bufferedInputStreamWrapper; CONST acutalIndex: longint
   ): boolean;
   FUNCTION gateFromDeserialization(index:longint):P_abstractGate;
@@ -387,20 +385,20 @@ FUNCTION T_circuitBoard.readPrototypeFromStream(
     end;
   end;
 
-PROCEDURE T_circuitBoard.writeToStream(VAR stream: T_bufferedOutputStreamWrapper
+PROCEDURE T_compoundGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper
   );
   begin
     stream.writeByte(byte(gateType));
     stream.writeLongint(prototype^.getIndexInPalette);
   end;
 
-PROCEDURE T_circuitBoard.readMetaDataFromStream(
+PROCEDURE T_compoundGate.readMetaDataFromStream(
   VAR stream: T_bufferedInputStreamWrapper);
   begin
     assert(false,'This should never be called');
   end;
 
-PROCEDURE T_circuitBoard.countGates(VAR gateCount: T_gateCount);
+PROCEDURE T_compoundGate.countGates(VAR gateCount: T_gateCount);
   VAR gate: P_abstractGate;
   begin
     inc(gateCount[gt_input ],length(inputs));
@@ -408,21 +406,20 @@ PROCEDURE T_circuitBoard.countGates(VAR gateCount: T_gateCount);
     for gate in gates do gate^.countGates(gateCount);
   end;
 
-FUNCTION T_circuitBoard.equals(CONST other: P_abstractGate): boolean;
+FUNCTION T_compoundGate.equals(CONST other: P_abstractGate): boolean;
   begin
-    assert(false,'Not implemented');
-    result:=(gateType=other^.gateType) and ((P_circuitBoard(other)^.prototype=prototype) or (P_circuitBoard(other)^.prototype=prototype));
+    result:=(gateType=other^.gateType) and ((P_compoundGate(other)^.prototype=prototype) or (P_compoundGate(other)^.prototype=prototype));
   end;
 
-FUNCTION T_circuitBoard.usesPrototype(CONST p: P_circuitBoard): boolean;
+FUNCTION T_compoundGate.usesPrototype(CONST p: P_captionedAndIndexed): boolean;
   VAR g:P_abstractGate;
   begin
     result:=false;
-    if (prototype=p^.prototype) then exit(true);
-    for g in gates do if (g^.gateType=gt_compound) and P_circuitBoard(g)^.usesPrototype(p) then result:=true;
+    if (prototype=p) then exit(true);
+    for g in gates do if (g^.gateType=gt_compound) and P_compoundGate(g)^.usesPrototype(p) then result:=true;
   end;
 
-FUNCTION T_circuitBoard.getPrototypeIndex: longint;
+FUNCTION T_compoundGate.getPrototypeIndex: longint;
   begin
     result:=myIndex;
   end;

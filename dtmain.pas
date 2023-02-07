@@ -57,9 +57,6 @@ TYPE
     PlayPauseShape: TShape;
     SpeedBgShape: TShape;
     PROCEDURE AnimationTimerTimer(Sender: TObject);
-    PROCEDURE BoardVerticalScrollbarChange(Sender: TObject);
-    PROCEDURE BoardVerticalScrollbarScroll(Sender: TObject;
-      ScrollCode: TScrollCode; VAR ScrollPos: integer);
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE FormDestroy(Sender: TObject);
     PROCEDURE FormResize(Sender: TObject);
@@ -83,11 +80,11 @@ TYPE
     Buttons:array of T_shapeAndLabel;
 
     uiAdapter:T_uiAdapter;
+    gateProperties  :T_gatePropertyValues;
 
     activeBoard     :P_visualBoard;
     currentChallenge:P_challenge;
     currentPalette  :P_palette;
-    gateProperties  :T_gatePropertyValues;
 
     PROCEDURE buttonClicked(Shape:TShape);
     PROCEDURE startChallenge(CONST challenge:P_challenge);
@@ -156,7 +153,9 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
   begin
     if AddToPaletteForm.showFor(P_workspacePalette(currentPalette),activeBoard) then begin
       activeBoard^.clear;
-      currentPalette^.ensureVisualPaletteItems;
+      activeBoard^.paintWires;
+      currentPalette^.attachUI(PaletteBgShape,SubPaletteComboBox,PaletteScrollBar,@uiAdapter);
+      currentPalette^.checkSizes;
       uiAdapter.clearUndoList;
     end;
   end;
@@ -274,6 +273,7 @@ PROCEDURE TDigitaltrainerMainForm.buttonClicked(Shape: TShape);
 
 PROCEDURE TDigitaltrainerMainForm.startChallenge(CONST challenge: P_challenge);
   begin
+    //TODO...
     //currentChallenge:=challenge;
     //activeBoard:=challenge^.getBoard;
     //uiAdapter^.setActiveBoard(activeBoard);
@@ -303,7 +303,8 @@ PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate;
 
     uiAdapter.propertyEditorShown(gate,fromBoard);
     setEnableButton(propEditShape   ,propEditLabel  ,not(fromBoard) and (gate^.getBehavior^.gateType=gt_compound));
-    setEnableButton(propDeleteButton,propDeleteLabel,fromBoard or ((gate^.getBehavior^.gateType=gt_compound) and (activeBoard^.getIndexInPalette<0) and (currentPalette^.allowDeletion(gate^.getBehavior)));
+    setEnableButton(propDeleteButton,propDeleteLabel,
+      fromBoard or ((gate^.getBehavior^.gateType=gt_compound) and (activeBoard^.getIndexInPalette<0) and (currentPalette^.allowDeletion(gate^.getBehavior))));
     setEnableButton(propOkShape     ,propOkLabel    ,false);
   end;
 

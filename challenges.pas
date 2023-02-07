@@ -9,16 +9,15 @@ USES
 
 TYPE
   P_challenge=^T_challenge;
-  T_challenge=object
+  T_challenge=object(T_serializable)
     challengeLevel      :byte;
     callengeCompleted   :boolean;
     board               :P_visualBoard;
     resultTemplate      :P_visualBoard;
-    expectedBehavior    :P_circuitBoard;
+    expectedBehavior    :P_compoundGate;
     palette             :P_challengePalette;
     challengeTitle      :string;
     challengeDescription:string;
-
   end;
 
   T_challengeSet=object(T_serializable)

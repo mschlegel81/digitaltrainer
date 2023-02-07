@@ -151,7 +151,7 @@ PROCEDURE T_gatePropertyValues.applyValue(CONST prop: T_gatePropertyEnum; CONST 
       gpe_caption,
       gpe_description: begin
 
-        //P_circuitBoard^.prototype();
+        //P_compoundGate^.prototype();
       end;
       gpe_subPalette: begin
         //we could fetch the value first, so all should be okay...
