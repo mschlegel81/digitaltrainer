@@ -31,9 +31,7 @@ TYPE
     PROCEDURE dropWiresTouchingPosition(CONST gridX,gridY:longint; CONST horizontalWire:boolean);
   end;
 
-  { T_visualGate }
-
-  T_visualGate=object(T_serializable)
+  T_visualGate=object
     private
       gridPos:T_point;
       gridWidth,gridHeight:longint;
@@ -181,6 +179,7 @@ TYPE
       DESTRUCTOR destroy;
 
       PROCEDURE checkSizes;
+      PROCEDURE checkBoardExtend;
 
       PROCEDURE detachUI;
       PROCEDURE attachUI(CONST wireImage:TImage;
@@ -189,8 +188,8 @@ TYPE
       PROCEDURE elementAdded(CONST newElement:P_visualGate; CONST screenX,screenY:longint);
       PROCEDURE repositionElement(CONST elements: array of P_visualGate);
 
-      FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
-      PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+      FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean;
+      PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper);
       PROCEDURE savePaletteEntryToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST paletteIndex:longint);
       PROCEDURE loadPaletteEntryFromStream(VAR stream:T_bufferedInputStreamWrapper; CONST paletteIndex:longint);
       FUNCTION extractBehavior:P_compoundGate;
@@ -414,6 +413,26 @@ PROCEDURE T_visualBoard.checkSizes;
     paintWires;
   end;
 
+PROCEDURE T_visualBoard.checkBoardExtend;
+  PROCEDURE growIfNecessary(CONST gate:P_visualGate; CONST isOutput:boolean=false);
+    VAR corner:T_point;
+    begin
+      corner:=gate^.gridPos;
+      if not(isOutput) then begin
+        corner[0]+=gate^.gridWidth;
+        corner[1]+=gate^.gridHeight;
+      end;
+      if corner[0]>gridOutputX0 then gridOutputX0:=corner[0];
+      if corner[1]>gridOutputY0 then gridOutputY0:=corner[1];
+    end;
+
+  VAR gate:P_visualGate;
+  begin
+    for gate in inputs  do growIfNecessary(gate);
+    for gate in outputs do growIfNecessary(gate,true);
+    for gate in gates   do growIfNecessary(gate);
+  end;
+
 PROCEDURE T_visualBoard.detachUI;
   begin
     if ui.uiAdapter=nil then exit;
@@ -437,15 +456,16 @@ PROCEDURE T_visualBoard.attachUI(CONST wireImage: TImage;
     ui.verticalScrollBar :=verticalScrollBar;
     ui.uiAdapter:=uiAdapter;
     uiAdapter^.activeBoard:=@self;
-    for e in inputs  do e^.uiAdapter:=uiAdapter;
-    for e in outputs do e^.uiAdapter:=uiAdapter;
-    for e in gates   do e^.uiAdapter:=uiAdapter;
+    for e in inputs  do begin e^.uiAdapter:=uiAdapter; e^.ensureGuiElements(wireImage.parent); e^.setBoardElementMouseActions; end;
+    for e in outputs do begin e^.uiAdapter:=uiAdapter; e^.ensureGuiElements(wireImage.parent); e^.setBoardElementMouseActions; end;
+    for e in gates   do begin e^.uiAdapter:=uiAdapter; e^.ensureGuiElements(wireImage.parent); e^.setBoardElementMouseActions; end;
+    checkBoardExtend;
+    rewire;
   end;
 
 PROCEDURE T_visualBoard.elementAdded(CONST newElement: P_visualGate;
   CONST screenX, screenY: longint);
-  VAR element,g:P_visualGate;
-      highestIoIndex:longint=-1;
+  VAR element:P_visualGate;
   begin
     element:=newElement;
     if (screenX<ui.wireImage.Left) or (screenY<ui.wireImage.top)
@@ -637,31 +657,128 @@ PROCEDURE T_visualBoard.repositionElement(CONST elements: array of P_visualGate
                         element^.gridPos[1]*ui.uiAdapter^.getZoom+boardOriginY,
                                        ui.uiAdapter^.getZoom);
     end;
+    checkBoardExtend;
     rewire;
     enumerateIo;
   end;
 
 FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
   ): boolean;
-begin
+  FUNCTION gateByIndex(index:longint):P_visualGate;
+    begin
+      if index<length(inputs) then exit(inputs[index]); dec(index,length(inputs));
+      if index<length(gates)  then exit(gates [index]); dec(index,length(gates));
+      result:=outputs[index];
+    end;
 
-end;
+  VAR i,j:longint;
+      inputGate :P_inputGate;
+      outputGate:P_outputGate;
+      behavior  :P_abstractGate;
+  begin
+    result:=true;
+    captionString:=stream.readAnsiString;
+    descriptionString:=stream.readAnsiString;
+    if not(stream.allOkay) then exit(false);
+    gridOutputX0:=0;
+    gridOutputY0:=0;
+    setLength(inputs,stream.readNaturalNumber);
+    for i:=0 to length(inputs)-1 do begin
+      new(inputGate,create);
+      inputGate^.readMetaDataFromStream(stream);
+      new(inputs[i],create(inputGate));
+      inputs[i]^.gridPos:=readPoint(stream);
+    end;
+    if not(stream.allOkay) then exit(false);
+
+    setLength(gates,stream.readNaturalNumber);
+    for i:=0 to length(gates)-1 do begin
+      behavior:=associatedPalette^.readGate(stream);
+      new(gates[i],create(behavior));
+      gates[i]^.gridPos:=readPoint(stream);
+    end;
+    if not(stream.allOkay) then exit(false);
+
+    setLength(outputs,stream.readNaturalNumber);
+    for i:=0 to length(outputs)-1 do begin
+      new(outputGate,create);
+      outputGate^.readMetaDataFromStream(stream);
+      new(outputs[i],create(outputGate));
+      outputs[i]^.gridPos:=readPoint(stream);
+    end;
+    if not(stream.allOkay) then exit(false);
+
+    setLength(wires,stream.readNaturalNumber);
+    for i:=0 to length(wires)-1 do with wires[i] do begin
+      source:=gateByIndex(stream.readNaturalNumber);
+      sourceOutputIndex:= stream.readNaturalNumber;
+      setLength(sink,stream.readNaturalNumber);
+      for j:=0 to length(sink)-1 do with sink[j] do begin
+        gate:=gateByIndex(stream.readNaturalNumber);
+        gateInputIndex:=  stream.readNaturalNumber;
+        Selected:=false;
+      end;
+    end;
+    result:=stream.allOkay;
+  end;
 
 PROCEDURE T_visualBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
-begin
+  FUNCTION gateToIndex(CONST g:P_visualGate):longint;
+    VAR i:longint;
+        offset:longint=0;
+    begin
+      result:=0;
+      for i:=0 to length(inputs )-1 do if inputs [i]=g then exit(offset+i); inc(offset,length(inputs));
+      for i:=0 to length(gates  )-1 do if gates  [i]=g then exit(offset+i); inc(offset,length(gates));
+      for i:=0 to length(outputs)-1 do if outputs[i]=g then exit(offset+i);
+    end;
 
-end;
+  VAR i,j:longint;
+  begin
+    stream.writeAnsiString(captionString);
+    stream.writeAnsiString(descriptionString);
+    stream.writeNaturalNumber(length(inputs));
+    for i:=0 to length(inputs)-1 do begin
+      inputs[i]^.behavior^.writeToStream(stream,true);
+      writePointToStream(stream,inputs[i]^.gridPos);
+    end;
+
+    stream.writeNaturalNumber(length(gates));
+    for i:=0 to length(gates)-1 do begin
+      gates[i]^.behavior^.writeToStream(stream);
+      writePointToStream(stream,gates[i]^.gridPos);
+    end;
+
+    stream.writeNaturalNumber(length(outputs));
+    for i:=0 to length(outputs)-1 do begin
+      outputs[i]^.behavior^.writeToStream(stream,true);
+      writePointToStream(stream,outputs[i]^.gridPos);
+    end;
+
+    stream.writeNaturalNumber(length(wires));
+    for i:=0 to length(wires)-1 do with wires[i] do begin
+      stream.writeNaturalNumber(gateToIndex(source));
+      stream.writeNaturalNumber(sourceOutputIndex);
+      stream.writeNaturalNumber(length(sink));
+      for j:=0 to length(sink)-1 do with sink[j] do begin
+        stream.writeNaturalNumber(gateToIndex(gate));
+        stream.writeNaturalNumber(gateInputIndex);
+      end;
+    end;
+  end;
 
 PROCEDURE T_visualBoard.savePaletteEntryToStream(
   VAR stream: T_bufferedOutputStreamWrapper; CONST paletteIndex: longint);
   begin
     myIndex:=paletteIndex;
+    saveToStream(stream);
   end;
 
 PROCEDURE T_visualBoard.loadPaletteEntryFromStream(
   VAR stream: T_bufferedInputStreamWrapper; CONST paletteIndex: longint);
   begin
     myIndex:=paletteIndex;
+    loadFromStream(stream);
   end;
 
 FUNCTION T_visualBoard.extractBehavior: P_compoundGate;
@@ -681,8 +798,8 @@ FUNCTION T_visualBoard.extractBehavior: P_compoundGate;
     new(cloned,create(associatedPalette));
 
     cloned^.prototype:=@self;
-    cloned^.captionString:=captionString;
-    cloned^.descriptionString:=descriptionString;
+    cloned^.captionString:='';
+    cloned^.descriptionString:='';
     setLength(cloned^.inputs ,length(inputs )); for i:=0 to length(inputs )-1 do cloned^.inputs [i]:=P_inputGate (inputs [i]^.behavior^.clone(false));
     setLength(cloned^.outputs,length(outputs)); for i:=0 to length(outputs)-1 do cloned^.outputs[i]:=P_outputGate(outputs[i]^.behavior^.clone(false));
     setLength(cloned^.gates  ,length(gates));   for i:=0 to length(gates  )-1 do cloned^.gates  [i]:=             gates  [i]^.behavior^.clone(false);

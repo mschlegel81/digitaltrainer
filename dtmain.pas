@@ -6,8 +6,8 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
-  Buttons, StdCtrls, Menus, ValEdit, CheckLst, Grids, visualGates, logicalGates,
-  challenges, paletteHandling, gateProperties, addToPaletteDialog, visuals;
+  Buttons, StdCtrls, Menus, ValEdit, Grids, visualGates, logicalGates,
+  challenges, paletteHandling, gateProperties, addToPaletteDialog, visuals,workspaces;
 
 TYPE
 
@@ -82,9 +82,7 @@ TYPE
     uiAdapter:T_uiAdapter;
     gateProperties  :T_gatePropertyValues;
 
-    activeBoard     :P_visualBoard;
-    currentChallenge:P_challenge;
-    currentPalette  :P_palette;
+    workspace:T_workspace;
 
     PROCEDURE buttonClicked(Shape:TShape);
     PROCEDURE startChallenge(CONST challenge:P_challenge);
@@ -128,34 +126,29 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
 
     uiAdapter.create(self,selectionShape,@showPropertyEditor);
 
-    new(P_workspacePalette(currentPalette),create);
-    P_workspacePalette(currentPalette)^.initDefaults;
-    currentPalette^.attachUI(PaletteBgShape,SubPaletteComboBox,PaletteScrollBar,@uiAdapter);
-
-    new(activeBoard,create(currentPalette));
-    activeBoard^.attachUI(BoardImage,BoardHorizontalScrollBar,BoardVerticalScrollbar,@uiAdapter);
-
-    currentChallenge:=nil;
+    workspace.create;
+    workspace.activePalette^.attachUI(PaletteBgShape,SubPaletteComboBox,PaletteScrollBar        ,@uiAdapter);
+    workspace.activeBoard  ^.attachUI(BoardImage,BoardHorizontalScrollBar,BoardVerticalScrollbar,@uiAdapter);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
   begin
-
+    workspace.destroy;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
   begin
-    currentPalette^.checkSizes;
-    activeBoard^.checkSizes;
+    workspace.activePalette^.checkSizes;
+    workspace.activeBoard  ^.checkSizes;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
   begin
-    if AddToPaletteForm.showFor(P_workspacePalette(currentPalette),activeBoard) then begin
-      activeBoard^.clear;
-      activeBoard^.paintWires;
-      currentPalette^.attachUI(PaletteBgShape,SubPaletteComboBox,PaletteScrollBar,@uiAdapter);
-      currentPalette^.checkSizes;
+    if workspace.EditorMode and AddToPaletteForm.showFor(P_workspacePalette(workspace.activePalette),workspace.activeBoard) then begin
+      workspace.activeBoard^.clear;
+      workspace.activeBoard^.paintWires;
+      workspace.activePalette^.attachUI(PaletteBgShape,SubPaletteComboBox,PaletteScrollBar,@uiAdapter);
+      workspace.activePalette^.checkSizes;
       uiAdapter.clearUndoList;
     end;
   end;
@@ -224,10 +217,10 @@ begin
     uiAdapter.draggedGate^.propertyEditDone(not(gateProperties.arePropertiesForBoard),
       BoardImage.Left-BoardHorizontalScrollBar.position,
       BoardImage.top -BoardVerticalScrollbar.position);
-    activeBoard^.afterGatePropertiesEdited(uiAdapter.draggedGate);
+    workspace.activeBoard^.afterGatePropertiesEdited(uiAdapter.draggedGate);
     if not(gateProperties.arePropertiesForBoard) then begin
-      currentPalette^.ensureVisualPaletteItems;
-      currentPalette^.checkSizes;
+      workspace.activePalette^.ensureVisualPaletteItems;
+      workspace.activePalette^.checkSizes;
     end;
   end;
   ValueListEditor1.OnValidateEntry:=nil;
@@ -243,7 +236,7 @@ PROCEDURE TDigitaltrainerMainForm.ResetShapeMouseDown(Sender: TObject;
 
 PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
   begin
-    activeBoard^.simulateSteps(1);
+    workspace.activeBoard^.simulateSteps(1);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ZoomInShapeMouseDown(Sender: TObject;
@@ -251,8 +244,8 @@ PROCEDURE TDigitaltrainerMainForm.ZoomInShapeMouseDown(Sender: TObject;
   begin
     buttonClicked(ZoomInShape);
     uiAdapter.zoomIn;
-    currentPalette^.checkSizes;
-    activeBoard^.checkSizes;
+    workspace.activePalette^.checkSizes;
+    workspace.activeBoard^.checkSizes;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ZoomOutShapeMouseDown(Sender: TObject;
@@ -260,8 +253,8 @@ PROCEDURE TDigitaltrainerMainForm.ZoomOutShapeMouseDown(Sender: TObject;
   begin
     buttonClicked(ZoomOutShape);
     uiAdapter.zoomOut;
-    currentPalette^.checkSizes;
-    activeBoard^.checkSizes;
+    workspace.activePalette^.checkSizes;
+    workspace.activeBoard^.checkSizes;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.buttonClicked(Shape: TShape);
@@ -287,8 +280,7 @@ PROCEDURE TDigitaltrainerMainForm.propertyValueChanged(Sender: TObject);
     setEnableButton(propOkShape,propOkLabel,true);
   end;
 
-PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate;
-  CONST fromBoard: boolean; CONST mouseX, mouseY: longint);
+PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate; CONST fromBoard: boolean; CONST mouseX, mouseY: longint);
   begin
     propEditPanel.visible:=true;
     propEditPanel.Left:=mouseX;
@@ -299,12 +291,14 @@ PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate;
 
     if fromBoard
     then gateProperties.createForBoardEntry  (ValueListEditor1,@propertyValueChanged,gate^.getBehavior)
-    else gateProperties.createForPaletteEntry(ValueListEditor1,@propertyValueChanged,gate^.getBehavior,currentPalette);
+    else gateProperties.createForPaletteEntry(ValueListEditor1,@propertyValueChanged,gate^.getBehavior,workspace.activePalette);
 
     uiAdapter.propertyEditorShown(gate,fromBoard);
-    setEnableButton(propEditShape   ,propEditLabel  ,not(fromBoard) and (gate^.getBehavior^.gateType=gt_compound));
+    setEnableButton(propEditShape   ,propEditLabel  ,not(fromBoard) and (gate^.getBehavior^.gateType=gt_compound) and workspace.EditorMode);
     setEnableButton(propDeleteButton,propDeleteLabel,
-      fromBoard or ((gate^.getBehavior^.gateType=gt_compound) and (activeBoard^.getIndexInPalette<0) and (currentPalette^.allowDeletion(gate^.getBehavior))));
+      fromBoard or ((gate^.getBehavior^.gateType=gt_compound) and
+                    (workspace.activeBoard^.getIndexInPalette<0) and
+                    (workspace.activePalette^.allowDeletion(gate^.getBehavior))));
     setEnableButton(propOkShape     ,propOkLabel    ,false);
   end;
 

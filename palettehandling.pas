@@ -242,7 +242,7 @@ PROCEDURE T_workspacePalette.saveToStream(
     for i:=0 to length(paletteEntries)-1 do with paletteEntries[i] do begin
       stream.writeNaturalNumber(subPaletteIndex);
       stream.writeByte(byte(entryType));
-      if entryType=gt_compound then prototype^.saveToStream(stream);
+      if entryType=gt_compound then prototype^.savePaletteEntryToStream(stream,i);
     end;
   end;
 
@@ -316,7 +316,7 @@ FUNCTION T_workspacePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
   begin
     gateType:=T_gateType(stream.readByte([byte(low(gateType))..byte(high(gateType))]));
     if gateType=gt_compound then begin
-      prototypeIndex:=stream.readNaturalNumber;
+      prototypeIndex:=stream.readLongint;
       assert((prototypeIndex>=0) and (prototypeIndex<length(paletteEntries)),'Prototype index out of bounds');
       result:=paletteEntries[prototypeIndex].prototype^.extractBehavior;
     end else begin

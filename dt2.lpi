@@ -78,6 +78,15 @@
         <Filename Value="visuals.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
+      <Unit>
+        <Filename Value="workspaces.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="wiringutil.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="wiringUtil"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

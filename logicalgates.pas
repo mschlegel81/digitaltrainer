@@ -115,7 +115,7 @@ TYPE
       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual; abstract;
       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual; abstract;
 
-      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
 
       PROCEDURE countGates(VAR gateCount:T_gateCount); virtual;
@@ -197,7 +197,7 @@ TYPE
       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
 
-      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
       FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
   end;
@@ -234,7 +234,7 @@ TYPE
       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
       PROCEDURE setIoWidth(CONST inW,outW:byte);
 
-      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
       FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
   end;
@@ -255,7 +255,7 @@ TYPE
        FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
        FUNCTION  getInput(CONST index:longint):T_wireValue;              virtual;
 
-       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
        PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
        FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
    end;
@@ -319,7 +319,7 @@ TYPE
       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
 
-      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
       FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
     end;
@@ -353,7 +353,7 @@ TYPE
        FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
        FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
        FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
-       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
        PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
        FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
    end;
@@ -390,9 +390,12 @@ FUNCTION parseWire           (CONST s:string; CONST width:byte; CONST mode:T_mul
 FUNCTION getDecimalValue     (CONST wire:T_wireValue; OUT valid:boolean):longint;
 FUNCTION get2ComplementValue (CONST wire:T_wireValue; OUT valid:boolean):longint;
 
+FUNCTION serialize(CONST wireValue:T_wireValue):qword;
+FUNCTION deserialize(n:qword):T_wireValue;
+
 IMPLEMENTATION
 USES sysutils;
-FUNCTION getBinaryString(CONST wire:T_wireValue):string;
+FUNCTION getBinaryString(CONST wire: T_wireValue): string;
   VAR i:longint;
   begin
     result:='';
@@ -404,7 +407,7 @@ FUNCTION getBinaryString(CONST wire:T_wireValue):string;
     end;
   end;
 
-FUNCTION getDecimalString(CONST wire:T_wireValue):string;
+FUNCTION getDecimalString(CONST wire: T_wireValue): string;
   VAR i:longint;
       k:int64=0;
   begin
@@ -419,7 +422,7 @@ FUNCTION getDecimalString(CONST wire:T_wireValue):string;
     result:=intToStr(k);
   end;
 
-FUNCTION getDecimalValue(CONST wire:T_wireValue; OUT valid:boolean):longint;
+FUNCTION getDecimalValue(CONST wire: T_wireValue; OUT valid: boolean): longint;
   VAR i:longint;
       k:int64=0;
   begin
@@ -438,7 +441,7 @@ FUNCTION getDecimalValue(CONST wire:T_wireValue; OUT valid:boolean):longint;
     result:=k;
   end;
 
-FUNCTION get2ComplementString(CONST wire:T_wireValue):string;
+FUNCTION get2ComplementString(CONST wire: T_wireValue): string;
   VAR i:longint;
       k:int64=0;
       maxVal:int64;
@@ -458,7 +461,8 @@ FUNCTION get2ComplementString(CONST wire:T_wireValue):string;
     result:=intToStr(k);
   end;
 
-FUNCTION getWireString(CONST wire: T_wireValue; CONST mode: T_multibitWireRepresentation): string;
+FUNCTION getWireString(CONST wire: T_wireValue;
+  CONST mode: T_multibitWireRepresentation): string;
   begin
     case mode of
       wr_binary     : result:=getBinaryString(wire);
@@ -467,7 +471,8 @@ FUNCTION getWireString(CONST wire: T_wireValue; CONST mode: T_multibitWireRepres
     end;
   end;
 
-FUNCTION get2ComplementValue(CONST wire:T_wireValue; OUT valid:boolean):longint;
+FUNCTION get2ComplementValue(CONST wire: T_wireValue; OUT valid: boolean
+  ): longint;
   VAR i:longint;
       k:int64=0;
       maxVal:int64;
@@ -489,6 +494,25 @@ FUNCTION get2ComplementValue(CONST wire:T_wireValue; OUT valid:boolean):longint;
       if k>maxVal then k-=maxVal+maxVal;
     end;
     result:=k;
+  end;
+
+FUNCTION serialize(CONST wireValue: T_wireValue): qword;
+  CONST BYTE_OF:array[T_triStateValue] of byte=(1,2,3);
+  VAR i:longint;
+  begin
+    result:=0;
+    for i:=wireValue.width-1 downto 0 do
+      result:=(result shl 2)+BYTE_OF[wireValue.bit[i]];
+  end;
+
+FUNCTION deserialize(n: qword): T_wireValue;
+  CONST WIRE_VALUE_OF:array[0..3] of T_triStateValue=(tsv_undetermined,tsv_false,tsv_undetermined,tsv_true);
+  begin
+    result.width:=0;
+    while n>0 do begin
+      result.bit[result.width]:=WIRE_VALUE_OF[n and 3];
+      n:=n shr 2;
+    end;
   end;
 
 FUNCTION parseWireBin(CONST s: string; CONST width: byte): T_wireValue;
@@ -539,7 +563,8 @@ FUNCTION parseWire2Complement(CONST s: string; CONST width: byte): T_wireValue;
     end;
   end;
 
-FUNCTION parseWire(CONST s: string; CONST width: byte; CONST mode: T_multibitWireRepresentation): T_wireValue;
+FUNCTION parseWire(CONST s: string; CONST width: byte;
+  CONST mode: T_multibitWireRepresentation): T_wireValue;
   begin
     case mode of
       wr_binary     : result:=parseWireBin(s,width);
@@ -548,7 +573,7 @@ FUNCTION parseWire(CONST s: string; CONST width: byte; CONST mode: T_multibitWir
     end;
   end;
 
-OPERATOR =(CONST x,y:T_gateConnector):boolean;
+OPERATOR=(CONST x, y: T_gateConnector): boolean;
   begin
     result:=(x.gate=y.gate) and (x.index=y.index);
   end;
@@ -556,7 +581,7 @@ OPERATOR =(CONST x,y:T_gateConnector):boolean;
 VAR lastAdapterInputWidth:byte=1;
     lastAdapterOutputWidth:byte=4;
 
-FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
+FUNCTION newBaseGate(CONST gateType: T_gateType): P_abstractGate;
   begin
     case gateType of
       gt_notGate : new(P_notGate   (result),create);
@@ -713,7 +738,7 @@ FUNCTION T_tendToTrue.getInput(CONST index: longint): T_wireValue;
     result:=input;
   end;
 
-PROCEDURE T_tendToTrue.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_tendToTrue.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);
   begin
     inherited;
     stream.writeByte(input.width);
@@ -912,7 +937,7 @@ PROCEDURE T_adapter.setIoWidth(CONST inW, outW: byte);
     lastAdapterOutputWidth:=outWidth;
   end;
 
-PROCEDURE T_adapter.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_adapter.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);
   begin
     inherited;
     stream.writeByte(inWidth);
@@ -966,7 +991,7 @@ FUNCTION T_clock.simulateStep: boolean;
     result:=true;
   end;
 
-OPERATOR :=(CONST x:T_triStateValue):T_wireValue;
+OPERATOR:=(CONST x: T_triStateValue): T_wireValue;
   VAR i:longint;
   begin
     result.width:=1;
@@ -974,14 +999,14 @@ OPERATOR :=(CONST x:T_triStateValue):T_wireValue;
     for i:=1 to WIRE_MAX_WIDTH-1 do result.bit[i]:=tsv_undetermined;
   end;
 
-FUNCTION isFullyDefined(CONST w:T_wireValue):boolean;
+FUNCTION isFullyDefined(CONST w: T_wireValue): boolean;
   VAR i:longint;
   begin
     result:=true;
     for i:=0 to w.width-1 do if not(w.bit[i] in [tsv_true,tsv_false]) then exit(false);
   end;
 
-OPERATOR =(CONST x,y:T_wireValue):boolean;
+OPERATOR=(CONST x, y: T_wireValue): boolean;
   VAR i:longint;
   begin
     result:=x.width=y.width;
@@ -1000,7 +1025,7 @@ FUNCTION T_clock.setInput(CONST index: longint; CONST value: T_wireValue):boolea
 FUNCTION T_clock.getInput(CONST index: longint): T_wireValue;
   begin result:=tsv_undetermined; end;
 
-PROCEDURE T_clock.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_clock.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);
   begin
     inherited;
     stream.writeNaturalNumber(interval);
@@ -1105,7 +1130,7 @@ FUNCTION T_inputGate.setInput(CONST index: longint; CONST value: T_wireValue
 FUNCTION T_inputGate.getInput(CONST index: longint): T_wireValue;
   begin result:=io; end;
 
-PROCEDURE T_inputGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_inputGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);
   begin
     inherited;
     stream.writeShortString(ioLabel);
@@ -1159,10 +1184,9 @@ FUNCTION T_abstractGate.inputWidth(CONST index: longint): byte;
 FUNCTION T_abstractGate.outputWidth(CONST index: longint): byte;
   begin result:=1; end;
 
-PROCEDURE T_abstractGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper
-  );
+PROCEDURE T_abstractGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);
   begin
-    stream.writeByte(byte(gateType));
+    if not(metaDataOnly) then stream.writeByte(byte(gateType));
   end;
 
 PROCEDURE T_abstractGate.readMetaDataFromStream(
@@ -1268,7 +1292,7 @@ FUNCTION T_binaryBaseGate.setInput(CONST index: longint; CONST value: T_wireValu
 FUNCTION T_binaryBaseGate.getInput(CONST index: longint): T_wireValue;
   begin result:=input[index]; end;
 
-PROCEDURE T_binaryBaseGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_binaryBaseGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);
   begin
     inherited;
     stream.writeByte(inputCount);

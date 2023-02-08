@@ -69,7 +69,7 @@ TYPE
       PROCEDURE writePrototypeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST acutalIndex:longint);
       FUNCTION readPrototypeFromStream(VAR stream:T_bufferedInputStreamWrapper; CONST acutalIndex:longint):boolean;
 
-      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
 
       PROCEDURE countGates(VAR gateCount:T_gateCount); virtual;
@@ -385,10 +385,9 @@ FUNCTION T_compoundGate.readPrototypeFromStream(
     end;
   end;
 
-PROCEDURE T_compoundGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper
-  );
+PROCEDURE T_compoundGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);
   begin
-    stream.writeByte(byte(gateType));
+    inherited;
     stream.writeLongint(prototype^.getIndexInPalette);
   end;
 
