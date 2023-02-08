@@ -532,6 +532,19 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         Caption = '&Neu'
       end
     end
+    object miEdit: TMenuItem
+      Caption = 'Bearbeiten'
+      object miCopy: TMenuItem
+        Caption = '&Kopieren'
+        ShortCut = 16451
+        OnClick = miCopyClick
+      end
+      object miPaste: TMenuItem
+        Caption = '&Einfügen'
+        ShortCut = 16470
+        OnClick = miPasteClick
+      end
+    end
     object miView: TMenuItem
       Caption = 'Ansicht'
       object miFullScreen: TMenuItem

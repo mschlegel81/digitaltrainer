@@ -16,6 +16,9 @@ TYPE
   TDigitaltrainerMainForm = class(TForm)
     BoardHorizontalScrollBar: TScrollBar;
     BoardImage: TImage;
+    miPaste: TMenuItem;
+    miCopy: TMenuItem;
+    miEdit: TMenuItem;
     miTasks: TMenuItem;
     propEditPanel: TPanel;
     propDeleteLabel: TLabel;
@@ -61,8 +64,10 @@ TYPE
     PROCEDURE FormDestroy(Sender: TObject);
     PROCEDURE FormResize(Sender: TObject);
     PROCEDURE miAddToPaletteClick(Sender: TObject);
+    PROCEDURE miCopyClick(Sender: TObject);
     PROCEDURE miEditModeClick(Sender: TObject);
     PROCEDURE miFullScreenClick(Sender: TObject);
+    PROCEDURE miPasteClick(Sender: TObject);
     PROCEDURE PlayPauseShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE propCancelShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
@@ -153,6 +158,11 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
     end;
   end;
 
+PROCEDURE TDigitaltrainerMainForm.miCopyClick(Sender: TObject);
+  begin
+    workspace.activeBoard^.copySelectionToClipboard;
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.miEditModeClick(Sender: TObject);
   begin
     //TODO
@@ -168,6 +178,11 @@ PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
       BorderStyle:=bsNone;
     end;
     miFullScreen.checked:=not(miFullScreen.checked);
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miPasteClick(Sender: TObject);
+  begin
+    workspace.activeBoard^.pasteFromClipboard;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.PlayPauseShapeMouseDown(Sender: TObject;
