@@ -292,6 +292,7 @@ PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
   VAR i,k:longint;
       behavior: P_abstractGate;
   begin
+    ui.uiAdapter^.beginFormUpdate();
     for i:=0 to length(visualPaletteItems)-1 do dispose(visualPaletteItems[i],destroy);
     setLength(visualPaletteItems,0);
     k:=0;
@@ -307,6 +308,7 @@ PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
       visualPaletteItems[k]^.setPaletteEntryMouseActions;
       inc(k);
     end;
+    ui.uiAdapter^.endFormUpdate();
   end;
 
 FUNCTION T_workspacePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
@@ -440,6 +442,7 @@ PROCEDURE T_palette.checkSizes;
       requiredWidth:longint=0;
       y0:longint;
   begin
+    ui.uiAdapter^.beginFormUpdate();
     for i:=0 to length(visualPaletteItems)-1 do begin
       totalPaletteHeightInCurrentZoom+=visualPaletteItems[i]^.visualHeight;
       width:=visualPaletteItems[i]^.visualWidth;
@@ -473,6 +476,7 @@ PROCEDURE T_palette.checkSizes;
     end;
     ui.uiAdapter^.paletteSizeUpdated(ui.bgShape.Left+ui.bgShape.width);
 
+    ui.uiAdapter^.endFormUpdate();
   end;
 
 PROCEDURE T_palette.detachUI;

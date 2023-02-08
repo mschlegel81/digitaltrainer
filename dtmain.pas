@@ -129,7 +129,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     addButton(propOkShape,propOkLabel);
     addButton(propCancelShape,propCancelLabel);
 
-    uiAdapter.create(self,selectionShape,@showPropertyEditor);
+    uiAdapter.create(self,selectionShape,@showPropertyEditor,@BeginFormUpdate,@EndFormUpdate);
 
     workspace.create;
     workspace.activePalette^.attachUI(PaletteBgShape,SubPaletteComboBox,PaletteScrollBar        ,@uiAdapter);
