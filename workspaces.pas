@@ -26,6 +26,7 @@ TYPE
 
     FUNCTION activePalette:P_palette;
     FUNCTION activeBoard  :P_visualBoard;
+    PROCEDURE setActiveBoard(CONST board:P_visualBoard);
     FUNCTION EditorMode   :boolean;
   end;
 
@@ -106,6 +107,13 @@ FUNCTION T_workspace.activeBoard: P_visualBoard;
     if activeChallenge=nil
     then result:=workspaceBoard
     else result:=activeChallenge^.board;
+  end;
+
+PROCEDURE T_workspace.setActiveBoard(CONST board: P_visualBoard);
+  begin
+    if activeChallenge=nil
+    then workspaceBoard:=board
+    else activeChallenge^.board:=board;
   end;
 
 FUNCTION T_workspace.EditorMode: boolean;

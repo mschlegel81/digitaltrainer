@@ -16,6 +16,8 @@ TYPE
   TDigitaltrainerMainForm = class(TForm)
     BoardHorizontalScrollBar: TScrollBar;
     BoardImage: TImage;
+    miRedo: TMenuItem;
+    miUndo: TMenuItem;
     miPaste: TMenuItem;
     miCopy: TMenuItem;
     miEdit: TMenuItem;
@@ -68,6 +70,8 @@ TYPE
     PROCEDURE miEditModeClick(Sender: TObject);
     PROCEDURE miFullScreenClick(Sender: TObject);
     PROCEDURE miPasteClick(Sender: TObject);
+    PROCEDURE miRedoClick(Sender: TObject);
+    PROCEDURE miUndoClick(Sender: TObject);
     PROCEDURE PlayPauseShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE propCancelShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
@@ -129,7 +133,9 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     addButton(propOkShape,propOkLabel);
     addButton(propCancelShape,propCancelLabel);
 
-    uiAdapter.create(self,selectionShape,@showPropertyEditor,@BeginFormUpdate,@EndFormUpdate);
+    uiAdapter.create(self,selectionShape,@showPropertyEditor,
+                     BoardImage,BoardHorizontalScrollBar,BoardVerticalScrollbar,
+                     @BeginFormUpdate,@EndFormUpdate);
 
     workspace.create;
     workspace.activePalette^.attachUI(PaletteBgShape,SubPaletteComboBox,PaletteScrollBar        ,@uiAdapter);
@@ -183,6 +189,16 @@ PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miPasteClick(Sender: TObject);
   begin
     workspace.activeBoard^.pasteFromClipboard;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miRedoClick(Sender: TObject);
+  begin
+    uiAdapter.performRedo(@workspace.setActiveBoard);
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
+  begin
+    uiAdapter.performUndo(@workspace.setActiveBoard);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.PlayPauseShapeMouseDown(Sender: TObject;

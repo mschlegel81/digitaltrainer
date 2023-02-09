@@ -544,6 +544,16 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         ShortCut = 16470
         OnClick = miPasteClick
       end
+      object miUndo: TMenuItem
+        Caption = '&Rückgängig'
+        ShortCut = 16474
+        OnClick = miUndoClick
+      end
+      object miRedo: TMenuItem
+        Caption = '&Wiederholen'
+        ShortCut = 16473
+        OnClick = miRedoClick
+      end
     end
     object miView: TMenuItem
       Caption = 'Ansicht'
