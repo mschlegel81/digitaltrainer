@@ -16,6 +16,8 @@ TYPE
   {$i uiAdapters.inc}
   {$i visualBoards.inc}
 
+  { T_visualGate }
+
   T_visualGate=object
     private
       gridPos:T_point;
@@ -62,6 +64,7 @@ TYPE
       PROCEDURE setPaletteEntryMouseActions();
       PROCEDURE setBoardElementMouseActions;
       PROPERTY  getBehavior:P_abstractGate read behavior;
+      PROCEDURE BringToFront;
   end;
 {$undef includeInterface}
 IMPLEMENTATION
@@ -103,6 +106,7 @@ CONSTRUCTOR T_visualGate.create(CONST behavior_: P_abstractGate);
 DESTRUCTOR T_visualGate.destroy;
   begin
     disposeGuiElements;
+    dispose(behavior,destroy);
   end;
 
 PROCEDURE T_visualGate.ensureGuiElements(CONST container: TWinControl);
@@ -138,6 +142,7 @@ PROCEDURE T_visualGate.ensureGuiElements(CONST container: TWinControl);
     labels[0].parent:=container;
     labels[0].AnchorVerticalCenterTo  (shapes[0]);
     labels[0].AnchorHorizontalCenterTo(shapes[0]);
+    labels[0].Alignment:=taCenter;
 
     for i:=0 to behavior^.numberOfInputs-1 do begin
       shapes[index]:=TShape.create(nil);
@@ -522,6 +527,15 @@ PROCEDURE T_visualGate.setBoardElementMouseActions;
 
     shapes[0].ShowHint:=true;
     shapes[0].Hint:=behavior^.getDescription;
+  end;
+
+PROCEDURE T_visualGate.BringToFront;
+  VAR i:longint;
+  begin
+    if length(shapes)=0 then exit;
+    for i:=0 to length(shapes)-1 do shapes[i].BringToFront;
+    for i:=0 to length(labels)-1 do labels[i].BringToFront;
+    if ioEdit<>nil then ioEdit.BringToFront;
   end;
 
 end.

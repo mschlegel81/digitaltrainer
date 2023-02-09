@@ -99,9 +99,9 @@ FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum): T_gate
     result.s:='';
     case prop of
       gpe_caption,gpe_captionReadOnly:
-        result.s:=gate^.getCaption;
+        result.s:=StringReplace(gate^.getCaption,LineEnding,'\n',[rfReplaceAll]);
       gpe_description,gpe_descriptionReadOnly:
-        result.s:=gate^.getDescription;
+        result.s:=StringReplace(gate^.getDescription,LineEnding,'\n',[rfReplaceAll]);
       gpe_editableLabel:
         if gate^.gateType in [gt_input,gt_output]
         then result.s:=P_inputGate(gate)^.getCaption;
@@ -148,10 +148,11 @@ FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum): T_gate
 PROCEDURE T_gatePropertyValues.applyValue(CONST prop: T_gatePropertyEnum; CONST value: T_gatePropertyValue);
   begin
     case prop of
-      gpe_caption,
+      gpe_caption: begin
+        P_compoundGate(gate)^.prototype^.setCaption(StringReplace(value.s,'\n',LineEnding,[rfReplaceAll]));
+      end;
       gpe_description: begin
-
-        //P_compoundGate^.prototype();
+        P_compoundGate(gate)^.prototype^.setDescription(StringReplace(value.s,'\n',LineEnding,[rfReplaceAll]));
       end;
       gpe_subPalette: begin
         //we could fetch the value first, so all should be okay...

@@ -256,6 +256,26 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       ParentColor = False
       ParentFont = False
     end
+    object infoLabel: TLabel
+      AnchorSideLeft.Control = SpeedBgShape
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = Panel1
+      AnchorSideRight.Control = TestShape
+      AnchorSideBottom.Control = Panel1
+      AnchorSideBottom.Side = asrBottom
+      Left = 501
+      Height = 60
+      Top = 10
+      Width = 691
+      Anchors = [akTop, akLeft, akRight, akBottom]
+      BorderSpacing.Left = 11
+      BorderSpacing.Top = 10
+      BorderSpacing.Right = 10
+      BorderSpacing.Bottom = 10
+      Font.Color = clWhite
+      ParentColor = False
+      ParentFont = False
+    end
   end
   object PaletteScrollBar: TScrollBar
     Left = 0
@@ -532,6 +552,8 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
       object miNewBoard: TMenuItem
         Caption = '&Neu'
+        ShortCut = 16462
+        OnClick = miNewBoardClick
       end
     end
     object miEdit: TMenuItem

@@ -10,6 +10,7 @@ USES
 TYPE
   P_abstractPrototypeSource=^T_abstractPrototypeSource;
   T_abstractPrototypeSource=object(T_serializable)
+    PROCEDURE BringToFront; virtual; abstract;
     FUNCTION readGate(VAR stream:T_bufferedInputStreamWrapper):P_abstractGate; virtual; abstract;
   end;
 

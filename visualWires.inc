@@ -19,18 +19,20 @@ end;
 
 {$endif}
 {$ifdef includeImplementation}
-PROCEDURE paintWire(CONST image:TImage; CONST bitWidth:byte; CONST path:T_wirePathArray; CONST preview:boolean=false);
-  CONST surround=4;
+PROCEDURE paintWire(CONST image:TImage; CONST zoom:longint; CONST bitWidth:byte; CONST path:T_wirePathArray; CONST preview:boolean=false);
   VAR w:longint=1;
       run:longint;
       i,j:longint;
+      surround:longint;
   begin
+    surround:=zoom div 2;
     case bitWidth of
-       1..3: w:=1+surround;
-       4..7: w:=2+surround;
-      8..15: w:=3+surround;
-       else  w:=4+surround;
+       1..3: w:=(1*zoom) shr 4;
+       4..7: w:=(2*zoom) shr 4;
+      8..15: w:=(3*zoom) shr 4;
+       else  w:=(4*zoom) shr 4;
     end;
+    if w<1 then w:=1; w+=surround;
     for run:=0 to 1 do begin
       image.Canvas.Pen.width:=w;
       w-=surround;
@@ -102,7 +104,7 @@ PROCEDURE T_visualWire.paint(CONST x0, y0: longint; CONST zoom: longint;
   begin
     setLength(wrap,length(sink));
     for i:=0 to length(wrap)-1 do wrap[i]:=sink[i].path;
-    paintWire(image,
+    paintWire(image,zoom,
               source^.behavior^.outputWidth(sourceOutputIndex),
               wireToScreen(wrap,x0,y0,zoom));
     setLength(wrap,0);

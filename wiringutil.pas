@@ -83,7 +83,7 @@ FUNCTION linesIntersect(CONST a0,a1,b0,b1:T_point):boolean;
 FUNCTION lineCrossesRectangle(CONST a0,a1,rectangleOrigin,rectangleExtend:T_point):boolean;
 
 VAR enableShortcuts:boolean=false;
-    allowDiagonals :boolean=false;
+    allowDiagonals :boolean=true;
 IMPLEMENTATION
 USES math,sysutils;
 FUNCTION linesIntersect(CONST a0, a1, b0, b1: T_point): boolean;
@@ -248,7 +248,6 @@ PROCEDURE T_wireGraph.initDirections;
 
 PROCEDURE T_wireGraph.dropEdges(CONST i: T_point; CONST dirs: T_wireDirectionSet);
   VAR j:T_point;
-      k:longint;
       dir:T_wireDirection;
   begin
     if (i[0]<0) or (i[0]>=width) or (i[1]<0) or (i[1]>=height) then exit;
@@ -517,6 +516,12 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point;
       //startTicks: qword;
       needRescore:boolean;
   begin
+    if (startPoint[0]<0) or (endPoint[0]<0) or (startPoint[1]<0) or (endPoint[1]<0) or
+       (startPoint[0]>=width) or (endPoint[0]>=width) or (startPoint[1]>=height) or (endPoint[1]>=height) then begin
+     setLength(result,0);
+     exit(result);
+    end;
+
     setLength(map,width*height);
     i1:=width*height;
     //startTicks:=GetTickCount64;
@@ -580,6 +585,161 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point;
     end;
     setLength(map,0);
   end;
+
+//VAR CURRENT_END_POINT:T_point;
+//
+//FUNCTION negativeDistToTarget(CONST p:T_point):double;
+//  begin
+//    result:=-abs(p[0]-CURRENT_END_POINT[0])*2
+//            -abs(p[1]-CURRENT_END_POINT[1])*2;
+//  end;
+//
+//FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsToPrimeWith: T_wirePathArray; CONST exhaustiveScan: boolean; CONST directionMask: T_wireDirectionSet): T_wirePath;
+//  TYPE T_heap=specialize T_binaryHeap<T_point>;
+//
+//  CONST UNVISITED=maxLongint;
+//  CONST DirectionCost:array[T_wireDirection] of longint=(2,3,
+//                                                         2,3,
+//                                                         2,3,
+//                                                         2,3);
+//        ChangeDirectionPenalty=2;
+//
+//
+//  VAR map:array of record comeFrom:T_point; score:longint; end;
+//      n0:longint=0;
+//      n1:longint=0;
+//      j:longint=1;
+//      heap:T_heap;
+//
+//  PROCEDURE prime;
+//    VAR path:T_wirePath;
+//        k:longint;
+//        point:T_point;
+//        aggregatedCost:longint;
+//        dir:T_wireDirection;
+//        directionIsValid: boolean;
+//    begin
+//      heap.insert(startPoint);
+//      map[startPoint[0]+startPoint[1]*width].score:=0;
+//      inc(n0);
+//      for path in pathsToPrimeWith do begin
+//        //writeln('Priming with path of length ',length(path));
+//        aggregatedCost:=0;
+//        if length(path)>1 then dir:=directionBetween(path[0],path[1],directionIsValid);
+//        for k:=1 to length(path)-1 do begin
+//          if (k=1) or (path[k-1]-path[k-2]=path[k]-path[k-1])
+//          then aggregatedCost+=DirectionCost[dir]
+//          else begin
+//            directionBetween(path[k],path[k-1],directionIsValid);
+//            aggregatedCost+=DirectionCost[dir]+ChangeDirectionPenalty;
+//          end;
+//          point:=path[k];
+//          with map[point[0]+point[1]*width] do if score>(aggregatedCost shr 1) then begin
+//            if score=UNVISITED then begin
+//              //writeln('Prime point: ',point[0],',',point[1]);
+//              heap.insert(point);
+//              inc(n0);
+//            end;
+//            score:=aggregatedCost shr 1;
+//            comeFrom:=path[k-1];
+//          end;
+//        end;
+//      end;
+//    end;
+//
+//  PROCEDURE rescore(CONST cf:T_point);
+//    VAR x,y:longint;
+//        newScore, cf_score:longint;
+//        cf_dir: T_point;
+//        directionIsValid: boolean;
+//    begin
+//      cf_score:=map[cf[0]+cf[1]*width].score;
+//      cf_dir  :=cf-map[cf[0]+cf[1]*width].comeFrom;
+//
+//      for y:=max(0,cf[1]-1) to min(height-1,cf[1]+1) do
+//      for x:=max(0,cf[0]-1) to min(width -1,cf[0]+1) do
+//      if map[x+y*width].comeFrom=cf then begin
+//        newScore:=cf_score+DirectionCost[directionBetween(cf,pointOf(x,y),directionIsValid)];
+//        if pointOf(x,y)-cf<>cf_dir then newScore+=ChangeDirectionPenalty;
+//        if newScore<map[x+y*width].score then begin
+//          map[x+y*width].score:=newScore;
+//          rescore(pointOf(x,y));
+//        end;
+//      end;
+//    end;
+//
+//  VAR i:longint=0;
+//      found:boolean=false;
+//      prevStep,
+//      dir:T_wireDirection;
+//      xy,xyNeighbor:T_point;
+//      newCost:longint;
+//      directionIsValid: boolean;
+//      //startTicks: qword;
+//      needRescore:boolean;
+//  begin
+//    //writeln('Searching path from ',startPoint[0],',',startPoint[1],' to ',endPoint[0],',',endPoint[1]);
+//    setLength(map,width*height);
+//    CURRENT_END_POINT:=endPoint;
+//    heap.createWithNumericPriority(@negativeDistToTarget);
+//
+//    for j:=0 to height-1 do for i:=0 to width-1 do with map[i+j*width] do begin
+//      score:=UNVISITED;
+//      comeFrom:=startPoint;
+//    end;
+//
+//    prime;
+//
+//    while (heap.size>0) and (exhaustiveScan or not found) do begin
+//
+//
+//      xy:=heap.extractHighestPrio;
+//      //writeln('Examining point ',xy[0],',',xy[1]);
+//
+//      prevStep:=directionBetween(map[xy[0]+xy[1]*width].comeFrom,xy,directionIsValid);
+//      for dir in directionMask*allowedDirections[xy[0]+xy[1]*width] do begin
+//        newCost:=map[xy[0]+xy[1]*width].score+DirectionCost[dir];
+//        if prevStep<>dir then newCost+=ChangeDirectionPenalty;
+//        xyNeighbor:=xy+dir;
+//        if (newCost<map[xyNeighbor[0]+xyNeighbor[1]*width].score) then begin
+//          found:=found or (xyNeighbor=endPoint);
+//          with map[xyNeighbor[0]+xyNeighbor[1]*width] do begin
+//            if score=UNVISITED then begin
+//              heap.insert(xyNeighbor);
+//              n1+=1;
+//              needRescore:=false;
+//            end else needRescore:=true;
+//            score:=newCost;
+//            comeFrom:=xy;
+//          end;
+//          if needRescore then rescore(xyNeighbor);
+//        end;
+//      end;
+//
+//    end;
+//    if found then begin
+//      xy:=endPoint;
+//      xyNeighbor:=xy;
+//      setLength(result,map[endPoint[0]+endPoint[1]*width].score);
+//      j:=0;
+//      i:=0;
+//      while (xyNeighbor<>startPoint) and (i<length(result)) do begin
+//        result[i]:=xy; inc(i);
+//        xyNeighbor:=xy;
+//        xy:=map[xy[0]+xy[1]*width].comeFrom;
+//      end;
+//      setLength(result,i);
+//      for i:=0 to (length(result)-1) div 2 do begin
+//        j:=length(result)-1-i;
+//        xy:=result[j];
+//        result[j]:=result[i];
+//        result[i]:=xy;
+//      end;
+//    end else begin
+//      setLength(result,0);
+//    end;
+//    setLength(map,0);
+//  end;
 
 FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
   VAR toPrimeWith:T_wirePathArray;

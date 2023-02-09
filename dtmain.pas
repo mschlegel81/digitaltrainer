@@ -16,6 +16,7 @@ TYPE
   TDigitaltrainerMainForm = class(TForm)
     BoardHorizontalScrollBar: TScrollBar;
     BoardImage: TImage;
+    infoLabel: TLabel;
     miRedo: TMenuItem;
     miUndo: TMenuItem;
     miPaste: TMenuItem;
@@ -69,6 +70,7 @@ TYPE
     PROCEDURE miCopyClick(Sender: TObject);
     PROCEDURE miEditModeClick(Sender: TObject);
     PROCEDURE miFullScreenClick(Sender: TObject);
+    PROCEDURE miNewBoardClick(Sender: TObject);
     PROCEDURE miPasteClick(Sender: TObject);
     PROCEDURE miRedoClick(Sender: TObject);
     PROCEDURE miUndoClick(Sender: TObject);
@@ -89,6 +91,7 @@ TYPE
   private
     Buttons:array of T_shapeAndLabel;
 
+    stepsTotal:longint;
     uiAdapter:T_uiAdapter;
     gateProperties  :T_gatePropertyValues;
 
@@ -142,11 +145,13 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     workspace.create;
     workspace.activePalette^.attachUI(PaletteBgShape,SubPaletteComboBox,PaletteScrollBar        ,@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
+    stepsTotal:=0;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
   begin
     workspace.destroy;
+    uiAdapter.destroy;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
@@ -188,9 +193,16 @@ PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
     miFullScreen.checked:=not(miFullScreen.checked);
   end;
 
+PROCEDURE TDigitaltrainerMainForm.miNewBoardClick(Sender: TObject);
+  begin
+    workspace.clearBoard(@uiAdapter);
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.miPasteClick(Sender: TObject);
   begin
-    workspace.activeBoard^.pasteFromClipboard;
+    workspace.activeBoard^.pasteFromClipboard(
+      round((mouse.CursorPos.X-BoardImage.Left+BoardHorizontalScrollBar.position)/uiAdapter.getZoom),
+      round((mouse.CursorPos.Y-BoardImage.top +BoardVerticalScrollbar  .position)/uiAdapter.getZoom));
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miRedoClick(Sender: TObject);
@@ -226,7 +238,7 @@ PROCEDURE TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject; but
     ValueListEditor1.OnValidateEntry:=nil;
     if gateProperties.arePropertiesForBoard
     then workspace.activeBoard^.remove(uiAdapter.draggedGate,false)
-    else P_workspacePalette(workspace.activePalette)^.deleteEntry(P_compoundGate(uiAdapter.draggedGate)^.prototype);
+    else P_workspacePalette(workspace.activePalette)^.deleteEntry(P_compoundGate(uiAdapter.draggedGate^.getBehavior)^.prototype);
     gateProperties.destroy;
     propEditPanel.visible:=false;
     uiAdapter.resetState;
@@ -284,6 +296,7 @@ PROCEDURE TDigitaltrainerMainForm.ResetShapeMouseDown(Sender: TObject; button: T
   begin
     buttonClicked(ResetShape);
     workspace.activeBoard^.reset;
+    stepsTotal:=0;
   end;
 
 CONST SPEED_SETTING:array[0..34] of record
@@ -334,6 +347,8 @@ PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
     startTicks:=GetTickCount64;
     stepsToSimulate:=SPEED_SETTING[speedTrackBar.position].simSteps;
     stepsSimulated:=workspace.activeBoard^.simulateSteps(stepsToSimulate);
+    stepsTotal+=stepsSimulated;
+    infoLabel.Caption:='Schritte simuliert: '+IntToStr(stepsTotal);
     if stepsSimulated>=stepsToSimulate
     then begin
       if (GetTickCount64-startTicks>SPEED_SETTING[speedTrackBar.position].timerInterval) and (speedTrackBar.position>0)
@@ -342,9 +357,10 @@ PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
         SimulationTimer.interval:=SPEED_SETTING[speedTrackBar.position].timerInterval;
       end;
     end else begin
-      SimulationTimer.enabled:=false;
-      PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
+//      SimulationTimer.enabled:=false;
+//      PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
     end;
+
   end;
 
 PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);

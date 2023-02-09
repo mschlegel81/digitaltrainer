@@ -52,6 +52,7 @@ T_uiAdapter=object
     CONSTRUCTOR create(CONST mainForm_:TForm; CONST selectionShape_:TShape; CONST showPropertyEditorCallback_:F_showPropertyEditorCallback;
                        CONST wireImage_:TImage; CONST BoardHorizontalScrollBar,BoardVerticalScrollbar:TScrollBar;
                        CONST beginFormUpdate_,endFormUpdate_:F_procedure);
+    DESTRUCTOR destroy;
 
     PROCEDURE paletteEntryMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
     PROCEDURE paletteEntryMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -97,6 +98,12 @@ CONSTRUCTOR T_uiAdapter.create(CONST mainForm_: TForm;
     zoom:=20;
     state:=uas_initial;
     showPropertyEditorCallback:=showPropertyEditorCallback_;
+  end;
+
+DESTRUCTOR T_uiAdapter.destroy;
+  begin
+    clearUndoList;
+    if helperState.Clipboard<>nil then dispose(helperState.Clipboard,destroy);
   end;
 
 PROCEDURE T_uiAdapter.paletteEntryMouseMove(Sender: TObject;

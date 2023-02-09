@@ -29,6 +29,7 @@ TYPE
     PROCEDURE setActiveBoard(CONST board:P_visualBoard);
     FUNCTION EditorMode   :boolean;
     PROCEDURE editPaletteEntry(CONST prototype:P_visualBoard; CONST uiAdapter:P_uiAdapter);
+    PROCEDURE clearBoard(CONST uiAdapter: P_uiAdapter);
   end;
 
 IMPLEMENTATION
@@ -72,7 +73,7 @@ DESTRUCTOR T_workspace.destroy;
 
 FUNCTION T_workspace.getSerialVersion: dword;
   begin
-    result:=serialVersionOf('T_workspace',0);
+    result:=serialVersionOf('T_workspace',1);
   end;
 
 FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
@@ -123,15 +124,29 @@ FUNCTION T_workspace.EditorMode: boolean;
     result:=activeChallenge=nil;
   end;
 
-PROCEDURE T_workspace.editPaletteEntry(CONST prototype:P_visualBoard; CONST uiAdapter:P_uiAdapter);
+PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard;
+  CONST uiAdapter: P_uiAdapter);
   begin
     if activeChallenge<>nil then exit;
     uiAdapter^.BeginFormUpdate();
     dispose(workspaceBoard,destroy);
+    workspacePalette^.setFilter(prototype^.getIndexInPalette);
     workspaceBoard:=prototype^.clone;
     workspaceBoard^.attachUI(uiAdapter);
     uiAdapter^.EndFormUpdate();
     workspaceBoard^.checkSizes;
+  end;
+
+PROCEDURE T_workspace.clearBoard(CONST uiAdapter: P_uiAdapter);
+  begin
+    if activeChallenge<>nil then begin
+      dispose(activeChallenge^.board,destroy);
+      activeChallenge^.board:=activeChallenge^.resultTemplate^.clone;
+      activeChallenge^.board^.attachUI(uiAdapter);
+    end else begin
+      workspaceBoard^.clear;
+      workspacePalette^.setFilter(maxLongint);
+    end;
   end;
 
 end.
