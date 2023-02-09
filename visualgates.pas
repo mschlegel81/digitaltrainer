@@ -106,25 +106,20 @@ DESTRUCTOR T_visualGate.destroy;
   end;
 
 PROCEDURE T_visualGate.ensureGuiElements(CONST container: TWinControl);
-  VAR gateType:T_gateType;
-      i:longint;
+  VAR i:longint;
       index:longint=1;
   begin
     if length(shapes)>0 then exit;
     ioLocations:=behavior^.getIoLocations;
 
     gridHeight:=1;
-    if (length(ioLocations[gt_input])>0) and (length(ioLocations[gt_output])>0)
+    if (length(ioLocations.p[gt_input])>0) and (length(ioLocations.p[gt_output])>0)
     then gridWidth:=2
     else gridWidth:=1;
 
-    for gateType:=gt_input to gt_output do for i:=0 to length(ioLocations[gateType])-1 do begin
-      if ioLocations[gateType,i].leftOrRight then begin
-        if ioLocations[gateType,i].positionIndex>=gridHeight then gridHeight:=ioLocations[gateType,i].positionIndex+1;
-      end else begin
-        if ioLocations[gateType,i].positionIndex>=gridWidth  then gridWidth :=ioLocations[gateType,i].positionIndex+1;
-      end;
-    end;
+    gridHeight:=max(gridHeight,max(ioLocations.numberOfLeftInputs,ioLocations.numberOfRightOutputs));
+    gridWidth :=max(gridWidth,max(ioLocations.numberOfTopInputs,ioLocations.numberOfBottomOutputs));
+
     gridWidth*=2;
     gridHeight*=2;
 
@@ -153,7 +148,7 @@ PROCEDURE T_visualGate.ensureGuiElements(CONST container: TWinControl);
       shapes[index].parent:=container;
 
       labels[index]:=TLabel.create(nil);
-      labels[index].caption:=ioLocations[gt_input,i].ioLabel;
+      labels[index].caption:=ioLocations.p[gt_input,i].ioLabel;
       if labels[index].caption='' then labels[index].visible:=false;
       labels[index].AutoSize:=true;
       labels[index].Font.size:=6;
@@ -173,7 +168,7 @@ PROCEDURE T_visualGate.ensureGuiElements(CONST container: TWinControl);
       shapes[index].parent:=container;
 
       labels[index]:=TLabel.create(nil);
-      labels[index].caption:=ioLocations[gt_output,i].ioLabel;
+      labels[index].caption:=ioLocations.p[gt_output,i].ioLabel;
       if labels[index].caption='' then labels[index].visible:=false;
       labels[index].AutoSize:=true;
       labels[index].Font.size:=6;
@@ -256,8 +251,7 @@ PROCEDURE T_visualGate.updateVisuals;
       end;
     end;
 
-  VAR Shape:TShape;
-      shapeIndex:longint=1;
+  VAR shapeIndex:longint=1;
       i:longint;
   begin
     if length(shapes)=0 then exit;
@@ -385,12 +379,12 @@ FUNCTION T_visualGate.visualWidth: longint;
 
 FUNCTION T_visualGate.getInputPositionInGridSize(CONST index: longint): T_point;
   begin
-    if ioLocations[gt_input,index].leftOrRight
+    if ioLocations.p[gt_input,index].leftOrRight
     then begin
       result[0]:=0;
-      result[1]:=(ioLocations[gt_input,index].positionIndex*2-(length(ioLocations[gt_input])-1))+gridHeight div 2;
+      result[1]:=(ioLocations.p[gt_input,index].positionIndex*2-(ioLocations.numberOfLeftInputs-1))+gridHeight div 2;
     end else begin
-      result[0]:=(ioLocations[gt_input,index].positionIndex*2-(length(ioLocations[gt_input])-1))+gridWidth div 2;
+      result[0]:=(ioLocations.p[gt_input,index].positionIndex*2-(ioLocations.numberOfTopInputs-1))+gridWidth div 2;
       result[1]:=0;
     end;
   end;
@@ -398,12 +392,12 @@ FUNCTION T_visualGate.getInputPositionInGridSize(CONST index: longint): T_point;
 FUNCTION T_visualGate.getOutputPositionInGridSize(CONST index: longint
   ): T_point;
   begin
-    if ioLocations[gt_output,index].leftOrRight
+    if ioLocations.p[gt_output,index].leftOrRight
     then begin
       result[0]:=gridWidth;
-      result[1]:=(ioLocations[gt_output,index].positionIndex*2-(length(ioLocations[gt_output])-1))+gridHeight div 2;
+      result[1]:=(ioLocations.p[gt_output,index].positionIndex*2-(ioLocations.numberOfRightOutputs-1))+gridHeight div 2;
     end else begin
-      result[0]:=(ioLocations[gt_output,index].positionIndex*2-(length(ioLocations[gt_output])-1))+gridWidth div 2;
+      result[0]:=(ioLocations.p[gt_output,index].positionIndex*2-(ioLocations.numberOfBottomOutputs-1))+gridWidth div 2;
       result[1]:=gridHeight;
     end;
   end;

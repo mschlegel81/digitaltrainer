@@ -69,7 +69,7 @@ TYPE
 
     PROCEDURE addBoard   (CONST board:P_visualBoard; subPaletteIndex:longint; CONST subPaletteName:string);
     PROCEDURE updateEntry(CONST board:P_visualBoard; subPaletteIndex:longint; CONST subPaletteName:string);
-    PROCEDURE deleteEntry(CONST index:longint);
+    PROCEDURE deleteEntry(CONST prototype:P_captionedAndIndexed);
     FUNCTION  allowDeletion(CONST gate:P_abstractGate):boolean; virtual;
 
   end;
@@ -304,11 +304,12 @@ PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
       new(visualPaletteItems[k],create(behavior));
       visualPaletteItems[k]^.uiAdapter:=ui.uiAdapter;
       visualPaletteItems[k]^.ensureGuiElements(ui.bgShape.parent);
-      visualPaletteItems[k]^.paintAll(0,0,ui.uiAdapter^.getZoom);
+      visualPaletteItems[k]^.paintAll(0,0,ui.uiAdapter^.getZoom-1);
       visualPaletteItems[k]^.setPaletteEntryMouseActions;
       inc(k);
     end;
     ui.uiAdapter^.EndFormUpdate();
+    for k:=0 to length(visualPaletteItems)-1 do visualPaletteItems[k]^.paintAll(0,0,ui.uiAdapter^.getZoom);
   end;
 
 FUNCTION T_workspacePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
@@ -385,9 +386,9 @@ PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard;
     reindex;
   end;
 
-PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard;
-  subPaletteIndex: longint; CONST subPaletteName: string);
+PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string);
   VAR i:longint;
+      previous:P_visualBoard;
   begin
     if board^.getIndexInPalette<0 then exit;
     if subPaletteIndex<0 then for i:=0 to length(paletteNames)-1 do if paletteNames[i]=subPaletteName then subPaletteIndex:=i;
@@ -398,6 +399,8 @@ PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard;
     end;
     i:=board^.getIndexInPalette;
     paletteEntries[i].entryType:=gt_compound;
+    //TODO: Update prototype wherever it is referenced (loop over all palette prototypes)
+
     if  paletteEntries[i].prototype<>nil
     then dispose(paletteEntries[i].prototype,destroy);
     paletteEntries[i].prototype:=board^.clone;
@@ -405,14 +408,14 @@ PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard;
     reindex;
   end;
 
-PROCEDURE T_workspacePalette.deleteEntry(CONST index: longint);
+PROCEDURE T_workspacePalette.deleteEntry(CONST prototype:P_captionedAndIndexed);
   VAR j:longint;
   begin
     //Todo: ensure that this is never called while a palette entry is being edited!
     //Todo: ensure that no entry is deleted which is referenced by another entry!
-    if (index>=0) and (index<length(paletteEntries)) then begin
-
-    end;
+//    if (index>=0) and (index<length(paletteEntries)) then begin
+//
+//    end;
     reindex;
   end;
 

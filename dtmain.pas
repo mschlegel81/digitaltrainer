@@ -83,6 +83,7 @@ TYPE
       Shift: TShiftState; X, Y: integer);
     PROCEDURE ResetShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE SimulationTimerTimer(Sender: TObject);
+    PROCEDURE speedTrackBarChange(Sender: TObject);
     PROCEDURE ZoomInShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE ZoomOutShapeMouseDown(Sender: TObject; button: TMouseButton;  Shift: TShiftState; X, Y: integer);
   private
@@ -94,7 +95,6 @@ TYPE
     workspace:T_workspace;
 
     PROCEDURE buttonClicked(Shape:TShape);
-    PROCEDURE startChallenge(CONST challenge:P_challenge);
     PROCEDURE propertyValueChanged(Sender: TObject);
     PROCEDURE showPropertyEditor(CONST gate:P_visualGate; CONST fromBoard:boolean; CONST mouseX,mouseY:longint);
   public
@@ -105,6 +105,8 @@ VAR
   DigitaltrainerMainForm: TDigitaltrainerMainForm;
 
 IMPLEMENTATION
+USES compoundGates;
+CONST playPauseGlyph:array[false..true] of string=('⏵','⏸');
 
 {$R *.lfm}
 
@@ -139,7 +141,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
 
     workspace.create;
     workspace.activePalette^.attachUI(PaletteBgShape,SubPaletteComboBox,PaletteScrollBar        ,@uiAdapter);
-    workspace.activeBoard  ^.attachUI(BoardImage,BoardHorizontalScrollBar,BoardVerticalScrollbar,@uiAdapter);
+    workspace.activeBoard  ^.attachUI(@uiAdapter);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
@@ -205,39 +207,58 @@ PROCEDURE TDigitaltrainerMainForm.PlayPauseShapeMouseDown(Sender: TObject;
   button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     buttonClicked(PlayPauseShape);
-    //Todo: Change icon
     SimulationTimer.enabled:=not(SimulationTimer.enabled);
+    PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
   end;
 
-PROCEDURE TDigitaltrainerMainForm.propCancelShapeMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
-begin
-  buttonClicked(propCancelShape);
-  ValueListEditor1.OnValidateEntry:=nil;
-  gateProperties.destroy;
-  propEditPanel.visible:=false;
-  uiAdapter.resetState;
-end;
+PROCEDURE TDigitaltrainerMainForm.propCancelShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  begin
+    buttonClicked(propCancelShape);
+    ValueListEditor1.OnValidateEntry:=nil;
+    gateProperties.destroy;
+    propEditPanel.visible:=false;
+    uiAdapter.resetState;
+  end;
 
-PROCEDURE TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
-begin
-  buttonClicked(propDeleteButton);
-  ValueListEditor1.OnValidateEntry:=nil;
-  gateProperties.destroy;
-  propEditPanel.visible:=false;
-  uiAdapter.resetState;
-end;
+PROCEDURE TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  begin
+    buttonClicked(propDeleteButton);
+    ValueListEditor1.OnValidateEntry:=nil;
+    if gateProperties.arePropertiesForBoard
+    then workspace.activeBoard^.remove(uiAdapter.draggedGate,false)
+    else P_workspacePalette(workspace.activePalette)^.deleteEntry(P_compoundGate(uiAdapter.draggedGate)^.prototype);
+    gateProperties.destroy;
+    propEditPanel.visible:=false;
+    uiAdapter.resetState;
+  end;
 
-PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
-begin
-  buttonClicked(propEditShape);
-  ValueListEditor1.OnValidateEntry:=nil;
-  gateProperties.destroy;
-  propEditPanel.visible:=false;
-  uiAdapter.resetState;
-end;
+PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+
+  VAR
+    forInspection: P_abstractGate;
+    forInspectionTyp: T_gateType;
+    forInspectionProto: P_captionedAndIndexed;
+    vb: boolean;
+    board:P_visualBoard;
+  begin
+    forInspection:=uiAdapter.draggedGate^.getBehavior;
+    forInspectionTyp:=forInspection^.gateType;
+    forInspectionProto:=P_compoundGate(forInspection)^.prototype;
+    vb:=forInspectionProto^.isVisualBoard;
+    board:=P_visualBoard(forInspectionProto);
+
+    buttonClicked(propEditShape);
+    ValueListEditor1.OnValidateEntry:=nil;
+    if not(gateProperties.arePropertiesForBoard)
+    then begin
+
+      workspace.editPaletteEntry(P_visualBoard(P_compoundGate(uiAdapter.draggedGate^.getBehavior)^.prototype),@uiAdapter);
+
+    end;
+    gateProperties.destroy;
+    propEditPanel.visible:=false;
+    uiAdapter.resetState;
+  end;
 
 PROCEDURE TDigitaltrainerMainForm.propOkShapeMouseDown(Sender: TObject;
   button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -259,15 +280,76 @@ begin
   uiAdapter.resetState;
 end;
 
-PROCEDURE TDigitaltrainerMainForm.ResetShapeMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TDigitaltrainerMainForm.ResetShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     buttonClicked(ResetShape);
+    workspace.activeBoard^.reset;
   end;
 
+CONST SPEED_SETTING:array[0..34] of record
+        timerInterval,
+        simSteps:longint;
+        labelCaption:string;
+      end=((timerInterval:1000; simSteps:   1; labelCaption:'1.00Hz'),
+           (timerInterval: 707; simSteps:   1; labelCaption:'1.41Hz'),
+           (timerInterval: 500; simSteps:   1; labelCaption:'2.00Hz'),
+           (timerInterval: 354; simSteps:   1; labelCaption:'2.82Hz'),
+           (timerInterval: 250; simSteps:   1; labelCaption:'4.00Hz'),
+           (timerInterval: 177; simSteps:   1; labelCaption:'5.65Hz'),
+           (timerInterval: 125; simSteps:   1; labelCaption:'8.00Hz'),
+           (timerInterval:  88; simSteps:   1; labelCaption:'11.36Hz'),
+           (timerInterval:  62; simSteps:   1; labelCaption:'16.13Hz'),
+           (timerInterval:  44; simSteps:   1; labelCaption:'22.73Hz'),
+           (timerInterval:  40; simSteps:   1; labelCaption:' 25Hz'),
+           (timerInterval:  40; simSteps:   2; labelCaption:' 50Hz'),
+           (timerInterval:  40; simSteps:   3; labelCaption:' 75Hz'),
+           (timerInterval:  40; simSteps:   4; labelCaption:'100Hz'),
+           (timerInterval:  40; simSteps:   5; labelCaption:'125Hz'),
+           (timerInterval:  40; simSteps:   7; labelCaption:'175Hz'),
+           (timerInterval:  40; simSteps:  10; labelCaption:'250Hz'),
+           (timerInterval:  40; simSteps:  14; labelCaption:'350Hz'),
+           (timerInterval:  40; simSteps:  20; labelCaption:'500Hz'),
+           (timerInterval:  40; simSteps:  29; labelCaption:'725Hz'),
+           (timerInterval:  40; simSteps:  41; labelCaption:'1.0kHz'),
+           (timerInterval:  40; simSteps:  58; labelCaption:'1.5kHz'),
+           (timerInterval:  40; simSteps:  82; labelCaption:'2.1kHz'),
+           (timerInterval:  40; simSteps: 116; labelCaption:'2.9kHz'),
+           (timerInterval:  40; simSteps: 164; labelCaption:'4.1kHz'),
+           (timerInterval:  40; simSteps: 232; labelCaption:'5.8kHz'),
+           (timerInterval:  40; simSteps: 328; labelCaption:'8.2kHz'),
+           (timerInterval:  40; simSteps: 463; labelCaption:'11.6kHz'),
+           (timerInterval:  40; simSteps: 655; labelCaption:'16.4kHz'),
+           (timerInterval:  40; simSteps: 927; labelCaption:'23.2kHz'),
+           (timerInterval:  40; simSteps:1311; labelCaption:'32.8kHz'),
+           (timerInterval:  40; simSteps:1854; labelCaption:'46.4kHz'),
+           (timerInterval:  40; simSteps:2621; labelCaption:'65.5kHz'),
+           (timerInterval:  40; simSteps:3707; labelCaption:'92.7kHz'),
+           (timerInterval:  40; simSteps:5243; labelCaption:'131.1kHz'));
+
 PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
+  VAR startTicks: qword;
+      stepsSimulated: longint;
+      stepsToSimulate:longint;
   begin
-    workspace.activeBoard^.simulateSteps(1);
+    startTicks:=GetTickCount64;
+    stepsToSimulate:=SPEED_SETTING[speedTrackBar.position].simSteps;
+    stepsSimulated:=workspace.activeBoard^.simulateSteps(stepsToSimulate);
+    if stepsSimulated>=stepsToSimulate
+    then begin
+      if (GetTickCount64-startTicks>SPEED_SETTING[speedTrackBar.position].timerInterval) and (speedTrackBar.position>0)
+      then begin
+        speedTrackBar.position:=speedTrackBar.position-1;
+        SimulationTimer.interval:=SPEED_SETTING[speedTrackBar.position].timerInterval;
+      end;
+    end else begin
+      SimulationTimer.enabled:=false;
+      PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
+    end;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);
+  begin
+    SimulationTimer.interval:=SPEED_SETTING[speedTrackBar.position].timerInterval;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ZoomInShapeMouseDown(Sender: TObject;
@@ -293,17 +375,6 @@ PROCEDURE TDigitaltrainerMainForm.buttonClicked(Shape: TShape);
     Buttons[Shape.Tag].colorIndex:=10;
     Shape.Brush.color:=$00FF7F7F;
     if not(AnimationTimer.enabled) then AnimationTimer.enabled:=true;
-  end;
-
-PROCEDURE TDigitaltrainerMainForm.startChallenge(CONST challenge: P_challenge);
-  begin
-    //TODO...
-    //currentChallenge:=challenge;
-    //activeBoard:=challenge^.getBoard;
-    //uiAdapter^.setActiveBoard(activeBoard);
-    //TestShape.Visible:=true;
-    //TestLabel.Visible:=true;
-    //SubPaletteComboBox.Visible:=false;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.propertyValueChanged(Sender: TObject);

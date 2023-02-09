@@ -28,6 +28,7 @@ TYPE
     FUNCTION activeBoard  :P_visualBoard;
     PROCEDURE setActiveBoard(CONST board:P_visualBoard);
     FUNCTION EditorMode   :boolean;
+    PROCEDURE editPaletteEntry(CONST prototype:P_visualBoard; CONST uiAdapter:P_uiAdapter);
   end;
 
 IMPLEMENTATION
@@ -74,7 +75,8 @@ FUNCTION T_workspace.getSerialVersion: dword;
     result:=serialVersionOf('T_workspace',0);
   end;
 
-FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
+  ): boolean;
   begin
     result:=inherited and
     workspacePalette^.loadFromStream(stream) and
@@ -119,6 +121,17 @@ PROCEDURE T_workspace.setActiveBoard(CONST board: P_visualBoard);
 FUNCTION T_workspace.EditorMode: boolean;
   begin
     result:=activeChallenge=nil;
+  end;
+
+PROCEDURE T_workspace.editPaletteEntry(CONST prototype:P_visualBoard; CONST uiAdapter:P_uiAdapter);
+  begin
+    if activeChallenge<>nil then exit;
+    uiAdapter^.BeginFormUpdate();
+    dispose(workspaceBoard,destroy);
+    workspaceBoard:=prototype^.clone;
+    workspaceBoard^.attachUI(uiAdapter);
+    uiAdapter^.EndFormUpdate();
+    workspaceBoard^.checkSizes;
   end;
 
 end.

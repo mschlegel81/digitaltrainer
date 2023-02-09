@@ -68,10 +68,20 @@ CONST
 TYPE
   T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
 
-  T_ioLocations=array[gt_input..gt_output] of array of record
-    leftOrRight:boolean;
-    positionIndex:longint;
-    ioLabel:string;
+  { T_ioLocations }
+
+  T_ioLocations=object
+    numberOfLeftInputs,
+    numberOfTopInputs,
+    numberOfRightOutputs,
+    numberOfBottomOutputs:longint;
+    p:array[gt_input..gt_output] of array of record
+      leftOrRight:boolean;
+      positionIndex:longint;
+      ioLabel:string;
+    end;
+    PROCEDURE init;
+    PROCEDURE add(CONST gt:T_gateType; CONST leftOrRight:boolean; CONST pos:longint; CONST lab:string);
   end;
 
   T_wireValue=record
@@ -604,6 +614,38 @@ FUNCTION newBaseGate(CONST gateType: T_gateType): P_abstractGate;
     end;
   end;
 
+{ T_ioLocations }
+
+PROCEDURE T_ioLocations.init;
+  begin
+    numberOfLeftInputs   :=0;
+    numberOfTopInputs    :=0;
+    numberOfRightOutputs :=0;
+    numberOfBottomOutputs:=0;
+    setLength(p[gt_input ],0);
+    setLength(p[gt_output],0);
+  end;
+
+PROCEDURE T_ioLocations.add(CONST gt: T_gateType; CONST leftOrRight: boolean; CONST pos: longint; CONST lab: string);
+  VAR i:longint;
+  begin
+    i:=length(p[gt]);
+    setLength(p[gt],i+1);
+    p[gt,i].leftOrRight  :=leftOrRight;
+    p[gt,i].positionIndex:=pos;
+    p[gt,i].ioLabel      :=lab;
+    case gt of
+      gt_input:
+        if leftOrRight
+        then inc(numberOfLeftInputs)
+        else inc(numberOfTopInputs);
+      gt_output:
+        if leftOrRight
+        then inc(numberOfRightOutputs)
+        else inc(numberOfBottomOutputs);
+    end;
+  end;
+
 { T_captionedAndIndexed }
 
 PROCEDURE T_captionedAndIndexed.setCaption(CONST s: string);
@@ -1085,18 +1127,9 @@ FUNCTION T_inputGate.numberOfOutputs: longint;
 FUNCTION T_inputGate.getIoLocations: T_ioLocations;
   VAR i:longint;
   begin
-    setLength(result[gt_input],numberOfInputs);
-    for i:=0 to numberOfInputs-1 do begin
-      result[gt_input,i].leftOrRight:=onLeftOrRightSide;
-      result[gt_input,i].positionIndex:=i;
-      result[gt_input,i].ioLabel:='';
-    end;
-    setLength(result[gt_output],numberOfOutputs);
-    for i:=0 to numberOfOutputs-1 do begin
-      result[gt_output,i].leftOrRight:=onLeftOrRightSide;
-      result[gt_output,i].positionIndex:=i;
-      result[gt_output,i].ioLabel:='';
-    end;
+    result.init;
+    for i:=0 to numberOfInputs-1  do result.add(gt_input ,onLeftOrRightSide,i,'');
+    for i:=0 to numberOfOutputs-1 do result.add(gt_output,onLeftOrRightSide,i,'');
   end;
 
 FUNCTION T_inputGate.inputWidth(CONST index: longint): byte;
@@ -1164,18 +1197,9 @@ FUNCTION T_abstractGate.getDescription: string;
 FUNCTION T_abstractGate.getIoLocations: T_ioLocations;
   VAR i:longint;
   begin
-    setLength(result[gt_input],numberOfInputs);
-    for i:=0 to numberOfInputs-1 do begin
-      result[gt_input,i].leftOrRight:=true;
-      result[gt_input,i].positionIndex:=i;
-      result[gt_input,i].ioLabel:='';
-    end;
-    setLength(result[gt_output],numberOfOutputs);
-    for i:=0 to numberOfOutputs-1 do begin
-      result[gt_output,i].leftOrRight:=true;
-      result[gt_output,i].positionIndex:=i;
-      result[gt_output,i].ioLabel:='';
-    end;
+    result.init;
+    for i:=0 to numberOfInputs-1  do result.add(gt_input,true,i,'');
+    for i:=0 to numberOfOutputs-1 do result.add(gt_output,true,i,'');
   end;
 
 FUNCTION T_abstractGate.inputWidth(CONST index: longint): byte;

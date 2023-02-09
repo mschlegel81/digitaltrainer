@@ -258,18 +258,9 @@ FUNCTION T_compoundGate.numberOfOutputs: longint;
 FUNCTION T_compoundGate.getIoLocations: T_ioLocations;
   VAR i:longint;
   begin
-    setLength(result[gt_input],length(inputs));
-    for i:=0 to length(inputs)-1 do begin
-      result[gt_input,i].positionIndex:=inputs[i]^.positionIndex;
-      result[gt_input,i].leftOrRight  :=inputs[i]^.onLeftOrRightSide;
-      result[gt_input,i].ioLabel      :=inputs[i]^.getCaption;
-    end;
-    setLength(result[gt_output],length(outputs));
-    for i:=0 to length(outputs)-1 do begin
-      result[gt_output,i].positionIndex:=outputs[i]^.positionIndex;
-      result[gt_output,i].leftOrRight  :=outputs[i]^.onLeftOrRightSide;
-      result[gt_output,i].ioLabel      :=outputs[i]^.getCaption;
-    end;
+    result.init;
+    for i:=0 to length(inputs )-1 do with inputs [i]^ do result.add(gt_input ,onLeftOrRightSide,positionIndex,getCaption);
+    for i:=0 to length(outputs)-1 do with outputs[i]^ do result.add(gt_output,onLeftOrRightSide,positionIndex,getCaption);
   end;
 
 FUNCTION T_compoundGate.inputWidth(CONST index: longint): byte;

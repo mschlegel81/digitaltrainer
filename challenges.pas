@@ -52,6 +52,8 @@ TYPE
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
   end;
 
+CONST checkMark='✓';
+
 IMPLEMENTATION
 
 { T_challengeSet }

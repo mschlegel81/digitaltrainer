@@ -302,10 +302,7 @@ PROCEDURE T_uiAdapter.performUndo(CONST setBoard: F_setBoardCallback);
       activeBoard:=undoList[length(undoList)-1];
       setLength(undoList,length(undoList)-1);
       setBoard(activeBoard);
-      activeBoard^.attachUI(boardUiElements.wireImage,
-                            boardUiElements.horizontalScrollBar,
-                            boardUiElements.verticalScrollBar,
-                            @self);
+      activeBoard^.attachUI(@self);
       EndFormUpdate();
       activeBoard^.checkSizes;
     end;
@@ -321,10 +318,7 @@ PROCEDURE T_uiAdapter.performRedo(CONST setBoard: F_setBoardCallback);
       activeBoard:=redoList[length(redoList)-1];
       setLength(redoList,length(redoList)-1);
       setBoard(activeBoard);
-      activeBoard^.attachUI(boardUiElements.wireImage,
-                            boardUiElements.horizontalScrollBar,
-                            boardUiElements.verticalScrollBar,
-                            @self);
+      activeBoard^.attachUI(@self);
       EndFormUpdate();
       activeBoard^.checkSizes;
     end;
