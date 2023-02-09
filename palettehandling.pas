@@ -198,7 +198,7 @@ FUNCTION T_challengePalette.readGate(VAR stream: T_bufferedInputStreamWrapper): 
 
 { T_workspacePalette }
 
-procedure T_workspacePalette.removeSubPalette(const index: longint);
+PROCEDURE T_workspacePalette.removeSubPalette(CONST index: longint);
   VAR i:longint;
   begin
     //if so, decrease all subPaletteIndexes>previousPaletteIndex ...
@@ -212,9 +212,9 @@ procedure T_workspacePalette.removeSubPalette(const index: longint);
     setLength(paletteNames,length(paletteNames)-1);
   end;
 
-procedure T_workspacePalette.reindex;
+PROCEDURE T_workspacePalette.reindex;
   VAR paletteNameUsed:array of boolean;
-      i,j: Integer;
+      i,j: integer;
       tmp:T_workspacePaletteEntry;
       anySwapped:boolean=true;
   begin
@@ -241,14 +241,14 @@ procedure T_workspacePalette.reindex;
     for i:=0 to length(paletteEntries)-1 do if paletteEntries[i].prototype<>nil then paletteEntries[i].prototype^.setIndexInPalette(i);
   end;
 
-constructor T_workspacePalette.create;
+CONSTRUCTOR T_workspacePalette.create;
   begin
     setLength(paletteEntries,0);
     setLength(paletteNames,0);
     filter:=maxLongint;
   end;
 
-destructor T_workspacePalette.destroy;
+DESTRUCTOR T_workspacePalette.destroy;
   VAR i:longint;
   begin
     detachUI;
@@ -257,8 +257,8 @@ destructor T_workspacePalette.destroy;
     setLength(paletteNames,0);
   end;
 
-function T_workspacePalette.loadFromStream(
-  var stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_workspacePalette.loadFromStream(
+  VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i:longint;
   begin
     filter:=stream.readLongint;
@@ -277,8 +277,8 @@ function T_workspacePalette.loadFromStream(
     result:=stream.allOkay;
   end;
 
-procedure T_workspacePalette.saveToStream(
-  var stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_workspacePalette.saveToStream(
+  VAR stream: T_bufferedOutputStreamWrapper);
   VAR i:longint;
   begin
     stream.writeLongint(filter);
@@ -293,7 +293,7 @@ procedure T_workspacePalette.saveToStream(
     end;
   end;
 
-procedure T_workspacePalette.initDefaults;
+PROCEDURE T_workspacePalette.initDefaults;
   begin
     setLength(paletteNames,3);
     paletteNames[0]:='I/O';
@@ -320,12 +320,12 @@ procedure T_workspacePalette.initDefaults;
     with paletteEntries[15] do begin prototype:=nil; entryType:=gt_undeterminedToFalse; subPaletteIndex:=2; end;
   end;
 
-function T_workspacePalette.subPaletteNames: T_arrayOfString;
+FUNCTION T_workspacePalette.subPaletteNames: T_arrayOfString;
   begin
     result:=paletteNames;
   end;
 
-procedure T_workspacePalette.selectSubPalette(const index: longint);
+PROCEDURE T_workspacePalette.selectSubPalette(CONST index: longint);
   begin
     if index=ui.lastSubPaletteIndex then exit;
     if index<0 then ui.combobox.ItemIndex:=ui.lastSubPaletteIndex
@@ -336,7 +336,7 @@ procedure T_workspacePalette.selectSubPalette(const index: longint);
     end;
   end;
 
-procedure T_workspacePalette.ensureVisualPaletteItems;
+PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
   FUNCTION excludedByFilter(CONST paletteIndex:longint):boolean;
     begin
       if (filter<0) or
@@ -371,7 +371,7 @@ procedure T_workspacePalette.ensureVisualPaletteItems;
     for k:=0 to length(visualPaletteItems)-1 do visualPaletteItems[k]^.paintAll(0,0,ui.uiAdapter^.getZoom);
   end;
 
-function T_workspacePalette.readGate(var stream: T_bufferedInputStreamWrapper
+FUNCTION T_workspacePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
   ): P_abstractGate;
   VAR gateType:T_gateType;
       prototypeIndex:longint;
@@ -387,7 +387,7 @@ function T_workspacePalette.readGate(var stream: T_bufferedInputStreamWrapper
     end;
   end;
 
-function T_workspacePalette.findEntry(const gate: P_abstractGate): longint;
+FUNCTION T_workspacePalette.findEntry(CONST gate: P_abstractGate): longint;
   VAR i:longint;
   begin
     for i:=0 to length(paletteEntries)-1 do if paletteEntries[i].entryType=gate^.gateType then begin
@@ -397,8 +397,8 @@ function T_workspacePalette.findEntry(const gate: P_abstractGate): longint;
     result:=-1;
   end;
 
-procedure T_workspacePalette.reassignEntry(const gate: P_abstractGate;
-  const newPalette: string);
+PROCEDURE T_workspacePalette.reassignEntry(CONST gate: P_abstractGate;
+  CONST newPalette: string);
   VAR entryIndex:longint;
       paletteIndex:longint=0;
       previousPaletteIndex:longint;
@@ -419,8 +419,8 @@ procedure T_workspacePalette.reassignEntry(const gate: P_abstractGate;
     removeSubPalette(previousPaletteIndex);
   end;
 
-procedure T_workspacePalette.addBoard(const board: P_visualBoard;
-  subPaletteIndex: longint; const subPaletteName: string);
+PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard;
+  subPaletteIndex: longint; CONST subPaletteName: string);
   VAR i:longint;
   begin
     if subPaletteIndex<0 then for i:=0 to length(paletteNames)-1 do if paletteNames[i]=subPaletteName then subPaletteIndex:=i;
@@ -438,8 +438,8 @@ procedure T_workspacePalette.addBoard(const board: P_visualBoard;
     filter:=-1;
   end;
 
-procedure T_workspacePalette.updateEntry(const board: P_visualBoard;
-  subPaletteIndex: longint; const subPaletteName: string);
+PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard;
+  subPaletteIndex: longint; CONST subPaletteName: string);
   VAR i:longint;
   begin
     if board^.getIndexInPalette<0 then exit;
@@ -461,7 +461,7 @@ procedure T_workspacePalette.updateEntry(const board: P_visualBoard;
     filter:=-1;
   end;
 
-procedure T_workspacePalette.deleteEntry(const prototype: P_captionedAndIndexed);
+PROCEDURE T_workspacePalette.deleteEntry(CONST prototype: P_captionedAndIndexed);
   VAR i,i0:longint;
   begin
     i0:=prototype^.getIndexInPalette;
@@ -477,7 +477,7 @@ procedure T_workspacePalette.deleteEntry(const prototype: P_captionedAndIndexed)
     ensureVisualPaletteItems;
   end;
 
-function T_workspacePalette.allowDeletion(const gate: P_abstractGate): boolean;
+FUNCTION T_workspacePalette.allowDeletion(CONST gate: P_abstractGate): boolean;
   VAR i:longint;
       prototype: P_visualBoard;
   begin
@@ -493,7 +493,7 @@ function T_workspacePalette.allowDeletion(const gate: P_abstractGate): boolean;
     result:=true;
   end;
 
-procedure T_workspacePalette.setFilter(const newValue: longint);
+PROCEDURE T_workspacePalette.setFilter(CONST newValue: longint);
   VAR changed:boolean;
   begin
     if (newValue>=0) and (newValue<length(paletteEntries)) and (paletteEntries[newValue].prototype=nil) then exit;

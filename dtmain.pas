@@ -348,7 +348,7 @@ PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
     stepsToSimulate:=SPEED_SETTING[speedTrackBar.position].simSteps;
     stepsSimulated:=workspace.activeBoard^.simulateSteps(stepsToSimulate);
     stepsTotal+=stepsSimulated;
-    infoLabel.Caption:='Schritte simuliert: '+IntToStr(stepsTotal);
+    infoLabel.caption:='Schritte simuliert: '+intToStr(stepsTotal);
     if stepsSimulated>=stepsToSimulate
     then begin
       if (GetTickCount64-startTicks>SPEED_SETTING[speedTrackBar.position].timerInterval) and (speedTrackBar.position>0)

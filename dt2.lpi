@@ -87,6 +87,13 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="wiringUtil"/>
       </Unit>
+      <Unit>
+        <Filename Value="createtaskunit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="CreateTaskForm"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="createTaskUnit"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
