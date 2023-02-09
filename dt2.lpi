@@ -91,6 +91,7 @@
         <Filename Value="createtaskunit.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="CreateTaskForm"/>
+        <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="createTaskUnit"/>
       </Unit>

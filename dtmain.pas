@@ -7,7 +7,7 @@ INTERFACE
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
   Buttons, StdCtrls, Menus, ValEdit, Grids, visualGates, logicalGates,
-  challenges, paletteHandling, gateProperties, addToPaletteDialog, visuals,workspaces;
+  challenges, paletteHandling, gateProperties, addToPaletteDialog, visuals,workspaces,createTaskUnit;
 
 TYPE
 
@@ -73,6 +73,7 @@ TYPE
     PROCEDURE miNewBoardClick(Sender: TObject);
     PROCEDURE miPasteClick(Sender: TObject);
     PROCEDURE miRedoClick(Sender: TObject);
+    PROCEDURE miSaveAsTaskClick(Sender: TObject);
     PROCEDURE miUndoClick(Sender: TObject);
     PROCEDURE PlayPauseShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE propCancelShapeMouseDown(Sender: TObject; button: TMouseButton;
@@ -209,6 +210,11 @@ PROCEDURE TDigitaltrainerMainForm.miRedoClick(Sender: TObject);
   begin
     uiAdapter.performRedo(@workspace.setActiveBoard);
   end;
+
+PROCEDURE TDigitaltrainerMainForm.miSaveAsTaskClick(Sender: TObject);
+begin
+  if workspace.EditorMode then CreateTaskForm.showFor(workspace.activeBoard,workspace.getChallenges);
+end;
 
 PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
   begin

@@ -1,13 +1,14 @@
 object DigitaltrainerMainForm: TDigitaltrainerMainForm
-  Left = 599
+  Left = 1037
   Height = 737
-  Top = 151
+  Top = 110
   Width = 1277
   Align = alTop
   Caption = 'Digitaltrainer'
-  ClientHeight = 717
+  ClientHeight = 712
   ClientWidth = 1277
   Color = 8405056
+  DesignTimePPI = 120
   Menu = MainMenu1
   OnCreate = FormCreate
   OnDestroy = FormDestroy
@@ -15,10 +16,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   LCLVersion = '2.2.2.0'
   WindowState = wsMaximized
   object PaletteBgShape: TShape
-    Left = 17
-    Height = 637
-    Top = 80
-    Width = 161
+    Left = 21
+    Height = 613
+    Top = 99
+    Width = 201
     Align = alLeft
     Brush.Color = 7354424
     Pen.Style = psClear
@@ -26,15 +27,15 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   end
   object Panel1: TPanel
     Left = 0
-    Height = 80
+    Height = 99
     Top = 0
     Width = 1277
     Align = alTop
     AutoSize = True
-    BorderSpacing.InnerBorder = 5
+    BorderSpacing.InnerBorder = 6
     BevelColor = clBlack
     BevelOuter = bvNone
-    ClientHeight = 80
+    ClientHeight = 99
     ClientWidth = 1277
     Color = 7354424
     ParentColor = False
@@ -43,12 +44,12 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideLeft.Control = Panel1
       AnchorSideTop.Control = Panel1
       AnchorSideBottom.Control = Panel1
-      Left = 5
-      Height = 65
-      Top = 5
-      Width = 65
-      BorderSpacing.Left = 5
-      BorderSpacing.Top = 5
+      Left = 6
+      Height = 81
+      Top = 6
+      Width = 81
+      BorderSpacing.Left = 6
+      BorderSpacing.Top = 6
       Brush.Color = 6303792
       OnMouseDown = ZoomInShapeMouseDown
       Shape = stRoundRect
@@ -58,14 +59,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideLeft.Side = asrCenter
       AnchorSideTop.Control = ZoomInShape
       AnchorSideTop.Side = asrCenter
-      Left = 16
-      Height = 30
-      Top = 22
-      Width = 43
+      Left = 19
+      Height = 36
+      Top = 28
+      Width = 54
       Caption = '🔍+'
       Font.CharSet = ANSI_CHARSET
       Font.Color = clWhite
-      Font.Height = -21
+      Font.Height = -26
       Font.Pitch = fpVariable
       Font.Quality = fqDraft
       ParentColor = False
@@ -75,12 +76,12 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideLeft.Control = ZoomInShape
       AnchorSideLeft.Side = asrBottom
       AnchorSideTop.Control = Panel1
-      Left = 75
-      Height = 65
-      Top = 5
-      Width = 65
-      BorderSpacing.Left = 5
-      BorderSpacing.Top = 5
+      Left = 93
+      Height = 81
+      Top = 6
+      Width = 81
+      BorderSpacing.Left = 6
+      BorderSpacing.Top = 6
       Brush.Color = 6303792
       OnMouseDown = ZoomOutShapeMouseDown
       Shape = stRoundRect
@@ -90,14 +91,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideLeft.Side = asrCenter
       AnchorSideTop.Control = ZoomOutShape
       AnchorSideTop.Side = asrCenter
-      Left = 89
-      Height = 30
-      Top = 22
-      Width = 37
+      Left = 110
+      Height = 36
+      Top = 28
+      Width = 46
       Caption = '🔍-'
       Font.CharSet = ANSI_CHARSET
       Font.Color = clWhite
-      Font.Height = -21
+      Font.Height = -26
       Font.Pitch = fpVariable
       Font.Quality = fqDraft
       ParentColor = False
@@ -107,12 +108,12 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideLeft.Control = ZoomOutShape
       AnchorSideLeft.Side = asrBottom
       AnchorSideTop.Control = Panel1
-      Left = 155
-      Height = 65
-      Top = 5
-      Width = 65
-      BorderSpacing.Left = 15
-      BorderSpacing.Top = 5
+      Left = 193
+      Height = 81
+      Top = 6
+      Width = 81
+      BorderSpacing.Left = 19
+      BorderSpacing.Top = 6
       Brush.Color = 6303792
       OnMouseDown = ResetShapeMouseDown
       Shape = stRoundRect
@@ -122,14 +123,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideLeft.Side = asrCenter
       AnchorSideTop.Control = ResetShape
       AnchorSideTop.Side = asrCenter
-      Left = 170
-      Height = 21
-      Top = 27
-      Width = 34
+      Left = 212
+      Height = 28
+      Top = 32
+      Width = 42
       Caption = 'reset'
       Font.CharSet = ANSI_CHARSET
       Font.Color = clWhite
-      Font.Height = -16
+      Font.Height = -20
       Font.Pitch = fpVariable
       Font.Quality = fqDraft
       ParentColor = False
@@ -139,12 +140,12 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideLeft.Control = ResetShape
       AnchorSideLeft.Side = asrBottom
       AnchorSideTop.Control = Panel1
-      Left = 225
-      Height = 65
-      Top = 5
-      Width = 65
-      BorderSpacing.Left = 5
-      BorderSpacing.Top = 5
+      Left = 280
+      Height = 81
+      Top = 6
+      Width = 81
+      BorderSpacing.Left = 6
+      BorderSpacing.Top = 6
       Brush.Color = 6303792
       OnMouseDown = PlayPauseShapeMouseDown
       Shape = stRoundRect
@@ -154,14 +155,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideLeft.Side = asrCenter
       AnchorSideTop.Control = PlayPauseShape
       AnchorSideTop.Side = asrCenter
-      Left = 241
-      Height = 45
-      Top = 15
-      Width = 32
+      Left = 300
+      Height = 54
+      Top = 19
+      Width = 40
       Caption = '⏵'
       Font.CharSet = ANSI_CHARSET
       Font.Color = clWhite
-      Font.Height = -32
+      Font.Height = -40
       Font.Pitch = fpVariable
       Font.Quality = fqDraft
       ParentColor = False
@@ -171,12 +172,12 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideLeft.Control = PlayPauseShape
       AnchorSideLeft.Side = asrBottom
       AnchorSideTop.Control = Panel1
-      Left = 295
-      Height = 65
-      Top = 5
-      Width = 195
-      BorderSpacing.Left = 5
-      BorderSpacing.Top = 5
+      Left = 367
+      Height = 81
+      Top = 6
+      Width = 244
+      BorderSpacing.Left = 6
+      BorderSpacing.Top = 6
       Brush.Color = 6303792
       Shape = stRoundRect
     end
@@ -187,10 +188,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideRight.Side = asrBottom
       AnchorSideBottom.Control = SpeedBgShape
       AnchorSideBottom.Side = asrBottom
-      Left = 297
-      Height = 40
-      Top = 30
-      Width = 191
+      Left = 369
+      Height = 50
+      Top = 37
+      Width = 240
       Max = 34
       OnChange = SpeedTrackBarChange
       Position = 0
@@ -204,12 +205,12 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     object Label1: TLabel
       AnchorSideLeft.Control = SpeedBgShape
       AnchorSideTop.Control = SpeedBgShape
-      Left = 300
-      Height = 15
-      Top = 8
-      Width = 32
-      BorderSpacing.Left = 5
-      BorderSpacing.Top = 3
+      Left = 373
+      Height = 20
+      Top = 10
+      Width = 42
+      BorderSpacing.Left = 6
+      BorderSpacing.Top = 4
       Caption = 'Speed'
       Font.CharSet = ANSI_CHARSET
       Font.Color = clWhite
@@ -224,14 +225,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideTop.Control = Panel1
       AnchorSideRight.Control = Panel1
       AnchorSideRight.Side = asrBottom
-      Left = 1207
-      Height = 65
-      Top = 5
-      Width = 65
+      Left = 1190
+      Height = 81
+      Top = 6
+      Width = 81
       Anchors = [akTop, akRight]
-      BorderSpacing.Left = 15
-      BorderSpacing.Top = 5
-      BorderSpacing.Right = 5
+      BorderSpacing.Left = 19
+      BorderSpacing.Top = 6
+      BorderSpacing.Right = 6
       Brush.Color = 6303792
       Shape = stRoundRect
     end
@@ -241,16 +242,16 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideTop.Control = TestShape
       AnchorSideTop.Side = asrCenter
       AnchorSideRight.Side = asrBottom
-      Left = 1227
-      Height = 21
-      Top = 27
-      Width = 25
-      BorderSpacing.Top = 5
-      BorderSpacing.Right = 5
+      Left = 1214
+      Height = 28
+      Top = 32
+      Width = 32
+      BorderSpacing.Top = 6
+      BorderSpacing.Right = 6
       Caption = 'test'
       Font.CharSet = ANSI_CHARSET
       Font.Color = clWhite
-      Font.Height = -16
+      Font.Height = -20
       Font.Pitch = fpVariable
       Font.Quality = fqDraft
       ParentColor = False
@@ -263,15 +264,15 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideRight.Control = TestShape
       AnchorSideBottom.Control = Panel1
       AnchorSideBottom.Side = asrBottom
-      Left = 501
-      Height = 60
-      Top = 10
-      Width = 691
+      Left = 625
+      Height = 75
+      Top = 12
+      Width = 546
       Anchors = [akTop, akLeft, akRight, akBottom]
-      BorderSpacing.Left = 11
-      BorderSpacing.Top = 10
-      BorderSpacing.Right = 10
-      BorderSpacing.Bottom = 10
+      BorderSpacing.Left = 14
+      BorderSpacing.Top = 12
+      BorderSpacing.Right = 12
+      BorderSpacing.Bottom = 12
       Font.Color = clWhite
       ParentColor = False
       ParentFont = False
@@ -279,9 +280,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   end
   object PaletteScrollBar: TScrollBar
     Left = 0
-    Height = 637
-    Top = 80
-    Width = 17
+    Height = 613
+    Top = 99
+    Width = 21
     Align = alLeft
     Kind = sbVertical
     PageSize = 0
@@ -292,17 +293,17 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     AnchorSideTop.Control = PaletteBgShape
     AnchorSideRight.Control = PaletteBgShape
     AnchorSideRight.Side = asrBottom
-    Left = 22
-    Height = 23
-    Top = 85
-    Width = 151
+    Left = 27
+    Height = 28
+    Top = 105
+    Width = 189
     Anchors = [akTop, akLeft, akRight]
-    BorderSpacing.Left = 5
-    BorderSpacing.Top = 5
-    BorderSpacing.Right = 5
+    BorderSpacing.Left = 6
+    BorderSpacing.Top = 6
+    BorderSpacing.Right = 6
     Color = 6303792
     Font.Color = clWhite
-    ItemHeight = 15
+    ItemHeight = 20
     ParentFont = False
     TabOrder = 2
   end
@@ -313,8 +314,8 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = BoardHorizontalScrollBar
     Left = 1260
-    Height = 620
-    Top = 80
+    Height = 592
+    Top = 99
     Width = 17
     Align = alCustom
     Anchors = [akTop, akRight, akBottom]
@@ -328,10 +329,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     AnchorSideRight.Control = BoardVerticalScrollbar
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 178
-    Height = 17
-    Top = 700
-    Width = 1082
+    Left = 222
+    Height = 21
+    Top = 691
+    Width = 1038
     Anchors = [akLeft, akRight, akBottom]
     PageSize = 0
     TabOrder = 4
@@ -344,10 +345,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
     Cursor = crCross
-    Left = 178
-    Height = 637
-    Top = 80
-    Width = 1099
+    Left = 222
+    Height = 613
+    Top = 99
+    Width = 1055
     AntialiasingMode = amOn
     Align = alClient
     AutoSize = True
@@ -356,13 +357,13 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   end
   object propEditPanel: TPanel
     AnchorSideRight.Control = PaletteBgShape
-    Left = 216
-    Height = 272
-    Top = 128
-    Width = 308
+    Left = 270
+    Height = 340
+    Top = 160
+    Width = 385
     BevelColor = clBlack
-    ClientHeight = 272
-    ClientWidth = 308
+    ClientHeight = 340
+    ClientWidth = 385
     Color = 7354424
     ParentColor = False
     TabOrder = 5
@@ -372,14 +373,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideTop.Control = propEditPanel
       AnchorSideRight.Control = propEditPanel
       AnchorSideRight.Side = asrBottom
-      Left = 6
-      Height = 188
-      Top = 6
-      Width = 296
+      Left = 7
+      Height = 235
+      Top = 7
+      Width = 371
       Anchors = [akTop, akLeft, akRight]
-      BorderSpacing.Left = 5
-      BorderSpacing.Top = 5
-      BorderSpacing.Right = 5
+      BorderSpacing.Left = 6
+      BorderSpacing.Top = 6
+      BorderSpacing.Right = 6
       Color = 8405056
       ExtendedSelect = False
       FixedColor = 6303792
@@ -394,19 +395,19 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         'Wert'
       )
       ColWidths = (
-        64
-        231
+        80
+        290
       )
     end
     object propDeleteButton: TShape
       AnchorSideLeft.Control = ValueListEditor1
       AnchorSideTop.Control = ValueListEditor1
       AnchorSideTop.Side = asrBottom
-      Left = 6
-      Height = 65
-      Top = 199
-      Width = 65
-      BorderSpacing.Top = 5
+      Left = 7
+      Height = 81
+      Top = 248
+      Width = 81
+      BorderSpacing.Top = 6
       Brush.Color = 6303792
       OnMouseDown = propDeleteButtonMouseDown
       Shape = stRoundRect
@@ -416,14 +417,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideLeft.Side = asrCenter
       AnchorSideTop.Control = propDeleteButton
       AnchorSideTop.Side = asrCenter
-      Left = 10
-      Height = 21
-      Top = 221
-      Width = 57
+      Left = 12
+      Height = 28
+      Top = 274
+      Width = 70
       Caption = 'Löschen'
       Font.CharSet = ANSI_CHARSET
       Font.Color = clWhite
-      Font.Height = -16
+      Font.Height = -20
       Font.Pitch = fpVariable
       Font.Quality = fqDraft
       ParentColor = False
@@ -433,11 +434,11 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideLeft.Control = propDeleteButton
       AnchorSideLeft.Side = asrBottom
       AnchorSideTop.Control = propDeleteButton
-      Left = 76
-      Height = 65
-      Top = 199
-      Width = 80
-      BorderSpacing.Left = 5
+      Left = 94
+      Height = 81
+      Top = 248
+      Width = 100
+      BorderSpacing.Left = 6
       Brush.Color = 6303792
       OnMouseDown = propEditShapeMouseDown
       Shape = stRoundRect
@@ -447,14 +448,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideLeft.Side = asrCenter
       AnchorSideTop.Control = propEditShape
       AnchorSideTop.Side = asrCenter
-      Left = 79
-      Height = 42
-      Top = 210
-      Width = 74
+      Left = 98
+      Height = 56
+      Top = 260
+      Width = 93
       Caption = 'Schaltung'#13#10'Bearbeiten'
       Font.CharSet = ANSI_CHARSET
       Font.Color = clWhite
-      Font.Height = -16
+      Font.Height = -20
       Font.Pitch = fpVariable
       Font.Quality = fqDraft
       ParentColor = False
@@ -464,11 +465,11 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideLeft.Control = propEditShape
       AnchorSideLeft.Side = asrBottom
       AnchorSideTop.Control = propEditShape
-      Left = 161
-      Height = 65
-      Top = 199
-      Width = 65
-      BorderSpacing.Left = 5
+      Left = 200
+      Height = 81
+      Top = 248
+      Width = 81
+      BorderSpacing.Left = 6
       Brush.Color = 6303792
       OnMouseDown = propOkShapeMouseDown
       Shape = stRoundRect
@@ -478,14 +479,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideLeft.Side = asrCenter
       AnchorSideTop.Control = propOkShape
       AnchorSideTop.Side = asrCenter
-      Left = 180
-      Height = 21
-      Top = 221
-      Width = 27
+      Left = 223
+      Height = 28
+      Top = 274
+      Width = 35
       Caption = 'O.K.'
       Font.CharSet = ANSI_CHARSET
       Font.Color = clWhite
-      Font.Height = -16
+      Font.Height = -20
       Font.Pitch = fpVariable
       Font.Quality = fqDraft
       ParentColor = False
@@ -499,13 +500,13 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideRight.Side = asrBottom
       AnchorSideBottom.Control = propEditPanel
       AnchorSideBottom.Side = asrBottom
-      Left = 231
-      Height = 67
-      Top = 199
-      Width = 71
+      Left = 287
+      Height = 85
+      Top = 248
+      Width = 91
       Anchors = [akTop, akLeft, akRight, akBottom]
-      BorderSpacing.Left = 5
-      BorderSpacing.Bottom = 5
+      BorderSpacing.Left = 6
+      BorderSpacing.Bottom = 6
       Brush.Color = 6303792
       OnMouseDown = propCancelShapeMouseDown
       Shape = stRoundRect
@@ -515,14 +516,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       AnchorSideLeft.Side = asrCenter
       AnchorSideTop.Control = propCancelShape
       AnchorSideTop.Side = asrCenter
-      Left = 237
-      Height = 21
-      Top = 222
-      Width = 59
+      Left = 295
+      Height = 28
+      Top = 276
+      Width = 75
       Caption = 'Abbruch'
       Font.CharSet = ANSI_CHARSET
       Font.Color = clWhite
-      Font.Height = -16
+      Font.Height = -20
       Font.Pitch = fpVariable
       Font.Quality = fqDraft
       ParentColor = False
@@ -530,17 +531,17 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     end
   end
   object selectionShape: TShape
-    Left = 336
-    Height = 65
-    Top = 440
-    Width = 65
+    Left = 420
+    Height = 81
+    Top = 550
+    Width = 81
     Brush.Style = bsClear
     Pen.Color = 43775
     Visible = False
   end
   object MainMenu1: TMainMenu
-    Left = 600
-    Top = 16
+    Left = 750
+    Top = 20
     object miBoard: TMenuItem
       Caption = 'Schaltung'
       object miAddToPalette: TMenuItem
@@ -549,6 +550,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
       object miSaveAsTask: TMenuItem
         Caption = 'Als &Aufgabe speichern'
+        OnClick = miSaveAsTaskClick
       end
       object miNewBoard: TMenuItem
         Caption = '&Neu'
@@ -600,13 +602,13 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Enabled = False
     Interval = 25
     OnTimer = AnimationTimerTimer
-    Left = 170
-    Top = 180
+    Left = 213
+    Top = 225
   end
   object SimulationTimer: TTimer
     Enabled = False
     OnTimer = SimulationTimerTimer
-    Left = 250
-    Top = 259
+    Left = 313
+    Top = 324
   end
 end

@@ -30,6 +30,7 @@ TYPE
     FUNCTION EditorMode   :boolean;
     PROCEDURE editPaletteEntry(CONST prototype:P_visualBoard; CONST uiAdapter:P_uiAdapter);
     PROCEDURE clearBoard(CONST uiAdapter: P_uiAdapter);
+    PROPERTY getChallenges:P_challengeSet read challenges;
   end;
 
 IMPLEMENTATION
