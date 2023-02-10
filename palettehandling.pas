@@ -534,12 +534,17 @@ PROCEDURE T_palette.checkSizes;
 
     if availableHeight>totalPaletteHeightInCurrentZoom then begin
       ui.paletteScroll.position:=0;
+      ui.paletteScroll.Left:=0;
       ui.paletteScroll.visible:=false;
     end else begin
-      ui.paletteScroll.visible:=true;
-      ui.paletteScroll.Left:=0;
-      ui.paletteScroll.min:=0;
-      ui.paletteScroll.max:=totalPaletteHeightInCurrentZoom-availableHeight;
+      if not(ui.paletteScroll.visible) then begin
+        ui.uiAdapter^.EndFormUpdate();
+        ui.paletteScroll.visible:=true;
+        ui.paletteScroll.Left:=0;
+        ui.paletteScroll.min:=0;
+        ui.paletteScroll.max:=totalPaletteHeightInCurrentZoom-availableHeight;
+        ui.uiAdapter^.BeginFormUpdate();
+      end;
     end;
 
     y0-=ui.paletteScroll.position;
