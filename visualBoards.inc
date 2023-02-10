@@ -407,7 +407,7 @@ PROCEDURE T_visualBoard.repositionElement(CONST elements: T_visualGateArray;
                                        ui.uiAdapter^.getZoom);
     end;
     checkBoardExtend(false,false);
-    rewire(false);
+    rewire(true);
     enumerateIo;
   end;
 
@@ -745,64 +745,138 @@ FUNCTION T_visualBoard.getWireGraph(CONST dropExistingWires: boolean
   end;
 
 PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
-  VAR graph:P_wireGraph;
-  VAR i,j,io,jo:longint;
-      startPoint:T_point;
-      endPoints: T_wirePath;
-      paths: T_wirePathArray;
-      startTicks: qword;
-      wireNeedsUpdate:boolean;
+  //VAR graph:P_wireGraph;
+  //    i,j,io,jo:longint;
+  //    startPoint:T_point;
+  //    endPoints: T_wirePath;
+  //    paths: T_wirePathArray;
+  //    startTicks: qword;
+  //    wireNeedsUpdate:boolean;
+  PROCEDURE dropWiresReferringToNonexitentPorts;
+    VAR io, i, jo, j: integer;
+    begin
+      io:=0;
+      for i:=0 to length(wires)-1 do begin
+        with wires[i] do begin
+          if sourceOutputIndex>=source^.behavior^.numberOfOutputs then setLength(sink,0);
+          jo:=0;
+          for j:=0 to length(sink)-1 do
+          if (sink[j].gateInputIndex<sink[j].gate^.behavior^.numberOfInputs) and
+             (sink[j].gate^.behavior^.inputWidth(sink[j].gateInputIndex)=source^.behavior^.outputWidth(sourceOutputIndex))
+          then begin
+            if j<>jo then sink[jo]:=sink[j];
+            inc(jo);
+          end;
+          setLength(sink,jo);
+        end;
+        if jo>0 then begin
+          if i<>io then wires[io]:=wires[i];
+          inc(io);
+        end;
+      end;
+      setLength(wires,io);
+    end;
+
+  PROCEDURE sortWires;
+    VAR gateRank:array of longint;
+    FUNCTION getGateRank(CONST gate:P_visualGate):longint;
+      VAR k:longint;
+      begin
+        result:=maxLongint;
+        for k:=0 to length(gates)-1 do if gates[k]=gate then exit(gateRank[k]);
+      end;
+
+    FUNCTION setGateRank(CONST gate:P_visualGate; CONST rank:longint):boolean;
+      VAR k:longint;
+      begin
+        for k:=0 to length(gates)-1 do if gates[k]=gate then begin
+          if rank<gateRank[k] then begin
+            gateRank[k]:=rank;
+            exit(true);
+          end else exit(false);
+        end;
+        result:=false;
+      end;
+
+    VAR wireRank:array of longint;
+        i,j,sourceRank:longint;
+        anyChange:boolean;
+
+        tempWire:T_visualWire;
+    begin
+      setLength(gateRank,length(gates));
+      for i:=0 to length(gates)-1 do gateRank[i]:=maxLongint;
+
+      setLength(wireRank,length(wires));
+      for i:=0 to length(wires)-1 do
+      if wires[i].source^.getBehavior^.gateType=gt_input
+      then begin
+        wireRank[i]:=0;
+        for j:=0 to length(wires[i].sink)-1 do setGateRank(wires[i].sink[j].gate,1);
+      end else wireRank[i]:=maxLongint;
+
+      repeat
+        anyChange:=false;
+        for i:=0 to length(wires)-1 do if wireRank[i]=maxLongint then begin
+          sourceRank:=getGateRank(wires[i].source);
+          if sourceRank<maxLongint then begin
+            wireRank[i]:=sourceRank+1;
+            for j:=0 to length(wires[i].sink)-1 do
+              if setGateRank(wires[i].sink[j].gate,sourceRank+2) then anyChange:=true;
+          end;
+        end;
+      until not(anyChange);
+      setLength(gateRank,0);
+
+      for i:=1 to length(wires)-1 do for j:=0 to i-1 do
+      if wireRank[i]<wireRank[j] then begin
+        sourceRank:=wireRank[i]; wireRank[i]:=wireRank[j]; wireRank[j]:=sourceRank;
+        tempWire  :=wires   [i]; wires   [i]:=wires   [j]; wires   [j]:=tempWire;
+      end;
+      setLength(wireRank,0);
+    end;
+
+  PROCEDURE updateWirePaths;
+    VAR graph: P_wireGraph;
+        i, j: integer;
+        startPoint: T_point;
+        endPoints: T_wirePath;
+        paths: T_wirePathArray;
+        wireNeedsUpdate: boolean;
+    begin
+      graph:=getWireGraph(false);
+      for i:=0 to length(wires)-1 do begin
+        startPoint:=wires[i].source^.getOutputPositionInGridSize(wires[i].sourceOutputIndex)+wires[i].source^.gridPos;
+        setLength(endPoints,length(wires[i].sink));
+
+        for j:=0 to length(endPoints)-1 do endPoints[j]:=wires[i].sink[j].gate^.getInputPositionInGridSize(wires[i].sink[j].gateInputIndex)+wires[i].sink[j].gate^.gridPos;
+        wireNeedsUpdate:=forced;
+        if not(forced) then for j:=0 to length(wires[i].sink)-1 do
+          wireNeedsUpdate:=wireNeedsUpdate
+            or (length(wires[i].sink[j].path)<1)
+            or (wires[i].sink[j].path[0]<>startPoint)
+            or (wires[i].sink[j].path[length(wires[i].sink[j].path)-1]<>endPoints[j]);
+
+        if wireNeedsUpdate then begin
+          paths:=graph^.findPaths(startPoint,endPoints,true);
+          for j:=0 to length(paths)-1 do begin
+            wires[i].sink[j].path:=paths[j];
+            graph^.dropWire(paths[j]);
+          end;
+        end else for j:=0 to length(wires[i].sink)-1 do graph^.dropWire(wires[i].sink[j].path);
+      end;
+      dispose(graph,destroy);
+    end;
+
+  VAR
+    startTicks: qword;
   begin
     startTicks:=GetTickCount64;
-
-    //Drop wires referrring to nonexistent ports
-    io:=0;
-    for i:=0 to length(wires)-1 do begin
-      with wires[i] do begin
-        if sourceOutputIndex>=source^.behavior^.numberOfOutputs then setLength(sink,0);
-        jo:=0;
-        for j:=0 to length(sink)-1 do
-        if (sink[j].gateInputIndex<sink[j].gate^.behavior^.numberOfInputs) and
-           (sink[j].gate^.behavior^.inputWidth(sink[j].gateInputIndex)=source^.behavior^.outputWidth(sourceOutputIndex))
-        then begin
-          if j<>jo then sink[jo]:=sink[j];
-          inc(jo);
-        end;
-        setLength(sink,jo);
-      end;
-      if jo>0 then begin
-        if i<>io then wires[io]:=wires[i];
-        inc(io);
-      end;
-    end;
-    setLength(wires,io);
-
-    graph:=getWireGraph(false);
-    for i:=0 to length(wires)-1 do begin
-      startPoint:=wires[i].source^.getOutputPositionInGridSize(wires[i].sourceOutputIndex)+wires[i].source^.gridPos;
-      setLength(endPoints,length(wires[i].sink));
-
-      for j:=0 to length(endPoints)-1 do endPoints[j]:=wires[i].sink[j].gate^.getInputPositionInGridSize(wires[i].sink[j].gateInputIndex)+wires[i].sink[j].gate^.gridPos;
-      wireNeedsUpdate:=forced;
-      if not(forced) then for j:=0 to length(wires[i].sink)-1 do
-        wireNeedsUpdate:=wireNeedsUpdate
-          or (length(wires[i].sink[j].path)<1)
-          or (wires[i].sink[j].path[0]<>startPoint)
-          or (wires[i].sink[j].path[length(wires[i].sink[j].path)-1]<>endPoints[j]);
-
-      if wireNeedsUpdate then begin
-        paths:=graph^.findPaths(startPoint,endPoints,true);
-        for j:=0 to length(paths)-1 do begin
-          wires[i].sink[j].path:=paths[j];
-          graph^.dropWire(paths[j]);
-        end;
-      end else for j:=0 to length(wires[i].sink)-1 do graph^.dropWire(wires[i].sink[j].path);
-    end;
-
+    dropWiresReferringToNonexitentPorts;
+    if forced then sortWires;
+    updateWirePaths;
     writeln(forced,' rewiring took ',GetTickCount64-startTicks,' ticks');
-    startTicks:=GetTickCount64;
     paintWires;
-    dispose(graph,destroy);
   end;
 
 PROCEDURE T_visualBoard.paintWires;
@@ -922,6 +996,7 @@ PROCEDURE T_visualBoard.boardImageMouseDown(Sender: TObject;
       end;
       setLength(wires,j);
       rewire(false);
+      ui.uiAdapter^.boardUiElements.boardModifiedCallback();
       exit;
     end;
 
@@ -1034,7 +1109,7 @@ PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point;
 
   begin
     wireWidth:=ui.uiAdapter^.draggedGate^.behavior^.outputWidth(ui.uiAdapter^.dragData.outputIndex);
-    graph:=getWireGraph(true);
+    graph:=getWireGraph(false);
 
     distToClosest:=MAX_INT64;
     setLength(connectible,length(gates)+length(outputs));
@@ -1096,14 +1171,14 @@ FUNCTION T_visualBoard.getIndexInPalette: longint;
     result:=myIndex;
   end;
 
-PROCEDURE T_visualBoard.afterGatePropertiesEdited(CONST editedGate: P_visualGate
-  );
+PROCEDURE T_visualBoard.afterGatePropertiesEdited(CONST editedGate: P_visualGate);
   VAR g:P_visualGate;
   begin
+    //TODO: gate size may have changed...
     for g in gates do if g^.behavior^.equals(editedGate^.behavior) then g^.propertyEditDone(false,
       ui.wireImage.Left-ui.horizontalScrollBar.position,
       ui.wireImage.top -ui.verticalScrollBar.position);
-    rewire(false);
+    rewire(true);
   end;
 
 FUNCTION T_visualBoard.isInputConnected(CONST gate: P_visualGate;
@@ -1124,9 +1199,7 @@ FUNCTION T_visualBoard.isOutputputConnected(CONST gate: P_visualGate;
     for i:=0 to length(wires)-1 do with wires[i] do if (source=gate) and (sourceOutputIndex=gateOutputIndex) then exit(true);
   end;
 
-PROCEDURE T_visualBoard.addWire(CONST sourceGate: P_visualGate;
-  CONST sourceOutputIndex: longint; CONST sinkGate: P_visualGate;
-  CONST sinkInputIndex: longint);
+PROCEDURE T_visualBoard.addWire(CONST sourceGate: P_visualGate; CONST sourceOutputIndex: longint; CONST sinkGate: P_visualGate; CONST sinkInputIndex: longint);
   VAR i:longint=0;
       j:longint;
   begin
@@ -1140,7 +1213,7 @@ PROCEDURE T_visualBoard.addWire(CONST sourceGate: P_visualGate;
     wires[i].sink[j].gate:=sinkGate;
     wires[i].sink[j].gateInputIndex:=sinkInputIndex;
     rewire(false);
-    if wires[i].simulateStep then sinkGate^.updateVisuals;
+    ui.uiAdapter^.boardUiElements.boardModifiedCallback();
   end;
 
 PROCEDURE T_visualBoard.reset;

@@ -438,8 +438,7 @@ PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard;
     filter:=-1;
   end;
 
-PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard;
-  subPaletteIndex: longint; CONST subPaletteName: string);
+PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string);
   VAR i:longint;
   begin
     if board^.getIndexInPalette<0 then exit;
@@ -457,8 +456,10 @@ PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard;
     then dispose(paletteEntries[i].prototype,destroy);
     paletteEntries[i].prototype:=board^.clone;
     paletteEntries[i].subPaletteIndex:=subPaletteIndex;
+
     reindex;
     filter:=-1;
+    ensureVisualPaletteItems;
   end;
 
 PROCEDURE T_workspacePalette.deleteEntry(CONST prototype: P_captionedAndIndexed);

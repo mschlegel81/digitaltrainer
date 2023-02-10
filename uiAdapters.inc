@@ -24,6 +24,7 @@ T_uiAdapter=object
     showPropertyEditorCallback:F_showPropertyEditorCallback;
 
     boardUiElements:record
+      boardModifiedCallback:F_procedure;
       wireImage:TImage;
       horizontalScrollBar,verticalScrollBar:TScrollBar;
     end;
@@ -50,7 +51,7 @@ T_uiAdapter=object
   public
     BeginFormUpdate,EndFormUpdate:F_procedure;
     CONSTRUCTOR create(CONST mainForm_:TForm; CONST selectionShape_:TShape; CONST showPropertyEditorCallback_:F_showPropertyEditorCallback;
-                       CONST wireImage_:TImage; CONST BoardHorizontalScrollBar,BoardVerticalScrollbar:TScrollBar;
+                       CONST wireImage_:TImage; CONST BoardHorizontalScrollBar,BoardVerticalScrollbar:TScrollBar; CONST boardModifiedCallback:F_procedure;
                        CONST beginFormUpdate_,endFormUpdate_:F_procedure);
     DESTRUCTOR destroy;
 
@@ -85,13 +86,14 @@ CONSTRUCTOR T_uiAdapter.create(CONST mainForm_: TForm;
   CONST selectionShape_: TShape;
   CONST showPropertyEditorCallback_: F_showPropertyEditorCallback;
   CONST wireImage_: TImage; CONST BoardHorizontalScrollBar,
-  BoardVerticalScrollbar: TScrollBar; CONST beginFormUpdate_,
+  BoardVerticalScrollbar: TScrollBar; CONST boardModifiedCallback:F_procedure; CONST beginFormUpdate_,
   endFormUpdate_: F_procedure);
   begin
     mainForm :=mainForm_;
     selectionShape :=selectionShape_;
     BeginFormUpdate:=beginFormUpdate_;
     EndFormUpdate  :=endFormUpdate_;
+    boardUiElements.boardModifiedCallback:=boardModifiedCallback;
     boardUiElements.horizontalScrollBar:=BoardHorizontalScrollBar;
     boardUiElements.verticalScrollBar  :=BoardVerticalScrollbar;
     boardUiElements.wireImage          :=wireImage_;

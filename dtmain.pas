@@ -95,12 +95,14 @@ TYPE
     stepsTotal:longint;
     uiAdapter:T_uiAdapter;
     gateProperties  :T_gatePropertyValues;
+    pauseByUser:boolean;
 
     workspace:T_workspace;
 
     PROCEDURE buttonClicked(Shape:TShape);
     PROCEDURE propertyValueChanged(Sender: TObject);
     PROCEDURE showPropertyEditor(CONST gate:P_visualGate; CONST fromBoard:boolean; CONST mouseX,mouseY:longint);
+    PROCEDURE boardChanged;
   public
 
   end;
@@ -140,13 +142,14 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     addButton(propCancelShape,propCancelLabel);
 
     uiAdapter.create(self,selectionShape,@showPropertyEditor,
-                     BoardImage,BoardHorizontalScrollBar,BoardVerticalScrollbar,
+                     BoardImage,BoardHorizontalScrollBar,BoardVerticalScrollbar,@boardChanged,
                      @BeginFormUpdate,@EndFormUpdate);
 
     workspace.create;
     workspace.activePalette^.attachUI(PaletteBgShape,SubPaletteComboBox,PaletteScrollBar        ,@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
     stepsTotal:=0;
+    pauseByUser:=true;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
@@ -162,7 +165,10 @@ PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
+  VAR timerEnabledBefore:boolean;
   begin
+    timerEnabledBefore:=SimulationTimer.enabled;
+    SimulationTimer.enabled:=false;
     if workspace.EditorMode and AddToPaletteForm.showFor(P_workspacePalette(workspace.activePalette),workspace.activeBoard) then begin
       workspace.activeBoard^.clear;
       workspace.activeBoard^.paintWires;
@@ -170,6 +176,7 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
       workspace.activePalette^.checkSizes;
       uiAdapter.clearUndoList;
     end;
+    SimulationTimer.enabled:=timerEnabledBefore;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miCopyClick(Sender: TObject);
@@ -202,8 +209,8 @@ PROCEDURE TDigitaltrainerMainForm.miNewBoardClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miPasteClick(Sender: TObject);
   begin
     workspace.activeBoard^.pasteFromClipboard(
-      round((mouse.CursorPos.X-BoardImage.Left+BoardHorizontalScrollBar.position)/uiAdapter.getZoom),
-      round((mouse.CursorPos.Y-BoardImage.top +BoardVerticalScrollbar  .position)/uiAdapter.getZoom));
+      round((mouse.CursorPos.X-Left-BoardImage.Left+BoardHorizontalScrollBar.position)/uiAdapter.getZoom),
+      round((mouse.CursorPos.Y-top -BoardImage.top +BoardVerticalScrollbar  .position)/uiAdapter.getZoom));
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miRedoClick(Sender: TObject);
@@ -226,10 +233,14 @@ PROCEDURE TDigitaltrainerMainForm.PlayPauseShapeMouseDown(Sender: TObject;
   begin
     buttonClicked(PlayPauseShape);
     SimulationTimer.enabled:=not(SimulationTimer.enabled);
+    if SimulationTimer.enabled
+    then begin pauseByUser:=false; stepsTotal:=0; end
+    else       pauseByUser:=true;
     PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
   end;
 
-PROCEDURE TDigitaltrainerMainForm.propCancelShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TDigitaltrainerMainForm.propCancelShapeMouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     buttonClicked(propCancelShape);
     ValueListEditor1.OnValidateEntry:=nil;
@@ -238,7 +249,8 @@ PROCEDURE TDigitaltrainerMainForm.propCancelShapeMouseDown(Sender: TObject; butt
     uiAdapter.resetState;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     buttonClicked(propDeleteButton);
     ValueListEditor1.OnValidateEntry:=nil;
@@ -250,7 +262,8 @@ PROCEDURE TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject; but
     uiAdapter.resetState;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
 
   VAR
     forInspection: P_abstractGate;
@@ -298,7 +311,8 @@ begin
   uiAdapter.resetState;
 end;
 
-PROCEDURE TDigitaltrainerMainForm.ResetShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TDigitaltrainerMainForm.ResetShapeMouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     buttonClicked(ResetShape);
     workspace.activeBoard^.reset;
@@ -363,10 +377,9 @@ PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
         SimulationTimer.interval:=SPEED_SETTING[speedTrackBar.position].timerInterval;
       end;
     end else begin
-//      SimulationTimer.enabled:=false;
-//      PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
+      SimulationTimer.enabled:=false;
+      PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
     end;
-
   end;
 
 PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);
@@ -404,7 +417,8 @@ PROCEDURE TDigitaltrainerMainForm.propertyValueChanged(Sender: TObject);
     setEnableButton(propOkShape,propOkLabel,true);
   end;
 
-PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate; CONST fromBoard: boolean; CONST mouseX, mouseY: longint);
+PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate;
+  CONST fromBoard: boolean; CONST mouseX, mouseY: longint);
   begin
     propEditPanel.visible:=true;
     propEditPanel.Left:=mouseX;
@@ -424,6 +438,14 @@ PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate; C
                     (workspace.activeBoard^.getIndexInPalette<0) and
                     (workspace.activePalette^.allowDeletion(gate^.getBehavior))));
     setEnableButton(propOkShape     ,propOkLabel    ,false);
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.boardChanged;
+  begin
+    if not(SimulationTimer.enabled) and not(pauseByUser) then begin
+      SimulationTimer.enabled:=true;
+      PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
+    end;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.AnimationTimerTimer(Sender: TObject);

@@ -88,6 +88,7 @@ PROCEDURE T_visualGate.ioEditEditingDone(Sender: TObject);
     behavior^.setInput(0,parseWire(ioEdit.text,behavior^.inputWidth(0),ioMode));
     ioEdit.text:=getWireString(behavior^.getInput(0),ioMode);
     updateVisuals;
+    uiAdapter^.boardUiElements.boardModifiedCallback();
   end;
 
 CONSTRUCTOR T_visualGate.create(CONST behavior_: P_abstractGate);
@@ -133,6 +134,7 @@ PROCEDURE T_visualGate.ensureGuiElements(CONST container: TWinControl);
     shapes[0].parent:=container;
     shapes[0].Shape :=stRectangle;
     shapes[0].Brush.color:=$00603030;
+    shapes[0].Anchors:=[];
 
     labels[0]:=TLabel.create(nil);
     labels[0].caption:=behavior^.getCaption;
@@ -140,8 +142,7 @@ PROCEDURE T_visualGate.ensureGuiElements(CONST container: TWinControl);
     labels[0].Font.size:=6;
     labels[0].Font.color:=$00FFFFFF;
     labels[0].parent:=container;
-    labels[0].AnchorVerticalCenterTo  (shapes[0]);
-    labels[0].AnchorHorizontalCenterTo(shapes[0]);
+    labels[0].Anchors:=[];
     labels[0].Alignment:=taCenter;
 
     for i:=0 to behavior^.numberOfInputs-1 do begin
@@ -151,6 +152,7 @@ PROCEDURE T_visualGate.ensureGuiElements(CONST container: TWinControl);
       shapes[index].Pen.color:=$00FFFFFF;
       shapes[index].Tag:=i;
       shapes[index].parent:=container;
+      shapes[index].Anchors:=[];
 
       labels[index]:=TLabel.create(nil);
       labels[index].caption:=ioLocations.p[gt_input,i].ioLabel;
@@ -159,8 +161,9 @@ PROCEDURE T_visualGate.ensureGuiElements(CONST container: TWinControl);
       labels[index].Font.size:=6;
       labels[index].Font.color:=$00FFFFFF;
       labels[index].parent:=container;
-      labels[index].AnchorVerticalCenterTo(shapes[index]);
-      labels[index].AnchorHorizontalCenterTo(shapes[index]);
+      labels[index].Anchors:=[];
+//      labels[index].AnchorVerticalCenterTo(shapes[index]);
+//      labels[index].AnchorHorizontalCenterTo(shapes[index]);
       inc(index);
     end;
 
@@ -171,6 +174,7 @@ PROCEDURE T_visualGate.ensureGuiElements(CONST container: TWinControl);
       shapes[index].Brush.color:=$00804040;
       shapes[index].Pen.color:=$00FFFFFF;
       shapes[index].parent:=container;
+      shapes[index].Anchors:=[];
 
       labels[index]:=TLabel.create(nil);
       labels[index].caption:=ioLocations.p[gt_output,i].ioLabel;
@@ -179,14 +183,17 @@ PROCEDURE T_visualGate.ensureGuiElements(CONST container: TWinControl);
       labels[index].Font.size:=6;
       labels[index].Font.color:=$00FFFFFF;
       labels[index].parent:=container;
-      labels[index].AnchorVerticalCenterTo(shapes[index]);
-      labels[index].AnchorHorizontalCenterTo(shapes[index]);
+      labels[index].Anchors:=[];
+//      labels[index].AnchorVerticalCenterTo(shapes[index]);
+//      labels[index].AnchorHorizontalCenterTo(shapes[index]);
       inc(index);
     end;
 
     if behavior^.gateType in [gt_input,gt_output] then begin
-      labels[0].AnchorParallel(akLeft,5,shapes[0]);
-      labels[0].AnchorParallel(akTop ,5,shapes[0]);
+      labels[0].Alignment:=taLeftJustify;
+
+      //labels[0].AnchorParallel(akLeft,5,shapes[0]);
+      //labels[0].AnchorParallel(akTop ,5,shapes[0]);
       ioMode:=wr_binary;
 
       ioEdit:=TEdit.create(nil);
@@ -201,6 +208,7 @@ PROCEDURE T_visualGate.ensureGuiElements(CONST container: TWinControl);
       shapes[index].parent:=container;
       shapes[index].Shape :=stRoundRect;
       shapes[index].Brush.color:=$00A05050;
+      shapes[index].Anchors:=[];
       gridWidth:=4;
       gridHeight:=4;
 
@@ -210,8 +218,9 @@ PROCEDURE T_visualGate.ensureGuiElements(CONST container: TWinControl);
       labels[index].Font.size:=6;
       labels[index].Font.color:=$00FFFFFF;
       labels[index].parent:=container;
-      labels[index].AnchorVerticalCenterTo(shapes[index]);
-      labels[index].AnchorHorizontalCenterTo(shapes[index]);
+      labels[index].Anchors:=[];
+//      labels[index].AnchorVerticalCenterTo(shapes[index]);
+//      labels[index].AnchorHorizontalCenterTo(shapes[index]);
     end;
 
   end;
@@ -316,20 +325,32 @@ PROCEDURE T_visualGate.paintAll(CONST x, y: longint; CONST zoom: longint);
       shapes[2].width :=                               zoom*2;
       shapes[2].top   :=ioEdit.top-ioEdit.height-5;
       shapes[2].height:=ioEdit.height;
+
+      labels[0].Left:=shapes[0].Left+5;
+      labels[0].top :=shapes[0].top +5;
+      for k:=1 to length(shapes)-1 do begin
+        labels[k].Left:=shapes[k].Left+(shapes[k].width-labels[k].width) div 2;
+        labels[k].top :=shapes[k].top +(shapes[k].height-labels[k].height) div 2;
+      end;
+    end else for k:=0 to length(shapes)-1 do begin
+      labels[k].Left:=shapes[k].Left+(shapes[k].width-labels[k].width) div 2;
+      labels[k].top :=shapes[k].top +(shapes[k].height-labels[k].height) div 2;
     end;
 
-    if not(zoomChanged) then exit;
-    if behavior^.gateType in [gt_input,gt_output] then begin
-      labels[0].Font.size:=min(round(labels[0].Font.size*(shapes[2].Left-shapes[0].Left)/labels[0].width),
-                               round(labels[0].Font.size*(shapes[2].top -shapes[0].top)/labels[0].height));
-      for k:=1 to length(shapes)-1 do if labels[k].visible then
-        labels[k].Font.size:=min(round(labels[k].Font.size*shapes[k].width  *0.75/labels[k].width),
-                                 round(labels[k].Font.size*shapes[k].height *0.75/labels[k].height));
-    end else begin
-      for k:=0 to length(shapes)-1 do if labels[k].visible then
-        labels[k].Font.size:=min(round(labels[k].Font.size*shapes[k].width  *0.75/labels[k].width),
-                                 round(labels[k].Font.size*shapes[k].height *0.75/labels[k].height));
+    if zoomChanged then begin
+      if behavior^.gateType in [gt_input,gt_output] then begin
+        labels[0].Font.size:=min(round(labels[0].Font.size*(shapes[2].Left-shapes[0].Left-10)/labels[0].width),
+                                 round(labels[0].Font.size*(shapes[2].top -shapes[0].top -10)/labels[0].height));
+        for k:=1 to length(shapes)-1 do if labels[k].visible then
+          labels[k].Font.size:=min(round(labels[k].Font.size*shapes[k].width  *0.75/labels[k].width),
+                                   round(labels[k].Font.size*shapes[k].height *0.75/labels[k].height));
+      end else begin
+        for k:=0 to length(shapes)-1 do if labels[k].visible then
+          labels[k].Font.size:=min(round(labels[k].Font.size*shapes[k].width  *0.75/labels[k].width),
+                                   round(labels[k].Font.size*shapes[k].height *0.75/labels[k].height));
+      end;
     end;
+
   end;
 
 FUNCTION T_visualGate.clone: P_visualGate;
