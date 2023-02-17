@@ -146,7 +146,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
                      @BeginFormUpdate,@EndFormUpdate);
 
     workspace.create;
-    workspace.activePalette^.attachUI(PaletteBgShape,SubPaletteComboBox,PaletteScrollBar        ,@uiAdapter);
+    workspace.activePalette^.attachUI(BoardImage,PaletteBgShape,SubPaletteComboBox,PaletteScrollBar        ,@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
     stepsTotal:=0;
     pauseByUser:=true;
@@ -170,10 +170,10 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
     if workspace.EditorMode and AddToPaletteForm.showFor(P_workspacePalette(workspace.activePalette),workspace.activeBoard) then begin
+      workspace.activePalette^.attachUI(BoardImage,PaletteBgShape,SubPaletteComboBox,PaletteScrollBar,@uiAdapter);
+      workspace.activePalette^.checkSizes;
       workspace.activeBoard^.clear;
       workspace.activeBoard^.paintWires;
-      workspace.activePalette^.attachUI(PaletteBgShape,SubPaletteComboBox,PaletteScrollBar,@uiAdapter);
-      workspace.activePalette^.checkSizes;
       uiAdapter.clearUndoList;
     end;
     SimulationTimer.enabled:=timerEnabledBefore;

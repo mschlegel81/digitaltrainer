@@ -16,6 +16,7 @@ TYPE
     visualPaletteItems: array of P_visualGate;
 
     ui:record
+      image:TImage;
       bgShape:TShape;
       combobox:TComboBox;
       paletteScroll:TScrollBar;
@@ -28,7 +29,8 @@ TYPE
     PROCEDURE ensureVisualPaletteItems; virtual; abstract;
     PROCEDURE checkSizes;
     PROCEDURE detachUI;
-    PROCEDURE attachUI(CONST bgShape:TShape;
+    PROCEDURE attachUI(CONST image:TImage;
+                       CONST bgShape:TShape;
                        CONST combobox:TComboBox;
                        CONST paletteScroll:TScrollBar;
                        CONST uiAdapter:P_uiAdapter);
@@ -175,7 +177,7 @@ PROCEDURE T_challengePalette.ensureVisualPaletteItems;
       new(visualPaletteItems[k],create(behavior));
       visualPaletteItems[k]^.uiAdapter:=ui.uiAdapter;
       visualPaletteItems[k]^.ensureGuiElements(ui.bgShape.parent);
-      visualPaletteItems[k]^.paintAll(0,0,ui.uiAdapter^.getZoom);
+      visualPaletteItems[k]^.paintAll(ui.image,0,0,ui.uiAdapter^.getZoom) ;
       visualPaletteItems[k]^.setPaletteEntryMouseActions;
       inc(k);
     end;
@@ -363,12 +365,12 @@ PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
       new(visualPaletteItems[k],create(behavior));
       visualPaletteItems[k]^.uiAdapter:=ui.uiAdapter;
       visualPaletteItems[k]^.ensureGuiElements(ui.bgShape.parent);
-      visualPaletteItems[k]^.paintAll(0,0,ui.uiAdapter^.getZoom-1);
+      visualPaletteItems[k]^.paintAll(ui.image,0,0,ui.uiAdapter^.getZoom-1);
       visualPaletteItems[k]^.setPaletteEntryMouseActions;
       inc(k);
     end;
     ui.uiAdapter^.EndFormUpdate();
-    for k:=0 to length(visualPaletteItems)-1 do visualPaletteItems[k]^.paintAll(0,0,ui.uiAdapter^.getZoom);
+    for k:=0 to length(visualPaletteItems)-1 do visualPaletteItems[k]^.paintAll(ui.image,0,0,ui.uiAdapter^.getZoom);
   end;
 
 FUNCTION T_workspacePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
@@ -543,6 +545,7 @@ PROCEDURE T_palette.checkSizes;
         ui.paletteScroll.Left:=0;
         ui.paletteScroll.min:=0;
         ui.paletteScroll.max:=totalPaletteHeightInCurrentZoom-availableHeight;
+        ui.paletteScroll.PageSize:=totalPaletteHeightInCurrentZoom;
         ui.uiAdapter^.BeginFormUpdate();
       end;
     end;
@@ -550,7 +553,7 @@ PROCEDURE T_palette.checkSizes;
     y0-=ui.paletteScroll.position;
 
     for i:=0 to length(visualPaletteItems)-1 do begin
-      visualPaletteItems[i]^.paintAll(ui.uiAdapter^.getZoom*2,y0,ui.uiAdapter^.getZoom);
+      visualPaletteItems[i]^.paintAll(ui.image,ui.uiAdapter^.getZoom*2,y0,ui.uiAdapter^.getZoom);
       y0+=ui.uiAdapter^.getZoom*2+visualPaletteItems[i]^.visualHeight;
     end;
     ui.uiAdapter^.paletteSizeUpdated(ui.bgShape.Left+ui.bgShape.width);
@@ -564,11 +567,12 @@ PROCEDURE T_palette.detachUI;
     for i:=0 to length(visualPaletteItems)-1 do dispose(visualPaletteItems[i],destroy);
   end;
 
-PROCEDURE T_palette.attachUI(CONST bgShape: TShape; CONST combobox: TComboBox;
+PROCEDURE T_palette.attachUI(CONST image:TImage;CONST bgShape: TShape; CONST combobox: TComboBox;
   CONST paletteScroll: TScrollBar; CONST uiAdapter: P_uiAdapter);
   VAR names: T_arrayOfString;
       s:string;
   begin
+    ui.image:=image;
     ui.bgShape:=bgShape;
     ui.combobox:=combobox;
     ui.paletteScroll:=paletteScroll;

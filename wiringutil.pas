@@ -448,7 +448,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point;
 
   PROCEDURE prime;
     VAR path:T_wirePath;
-        k:longint;
+        k,j:longint;
         point:T_point;
         aggregatedCost:longint;
         dir:T_wireDirection;
@@ -471,6 +471,10 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point;
           with map[point[0]+point[1]*width] do if score>(aggregatedCost shr 1) then begin
             if score=UNVISITED then begin
               p[n0]:=point;
+              j:=n0;
+              while (j>0) and (euklideanDistance(p[j-1],endPoint)>euklideanDistance(p[j],endPoint)) do begin
+                point:=p[j]; p[j]:=p[j-1]; p[j-1]:=point; dec(j);
+              end;
               inc(n0);
             end;
             score:=aggregatedCost shr 1;

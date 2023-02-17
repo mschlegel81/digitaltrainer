@@ -114,7 +114,7 @@ PROCEDURE T_uiAdapter.paletteEntryMouseMove(Sender: TObject;
     if state=uas_draggingFromPalette then
     with dragData do begin
       BeginFormUpdate();
-      draggedGate^.paintAll(x+startX-relPosX,y+startY-relPosY,zoom);
+      draggedGate^.paintAll(boardUiElements.wireImage,x+startX-relPosX,y+startY-relPosY,zoom);
       EndFormUpdate();
     end;
   end;
@@ -141,7 +141,7 @@ PROCEDURE T_uiAdapter.boardElementMouseMove(Sender: TObject;
   begin
     if state=uas_draggingFromBoard then with dragData do begin
       BeginFormUpdate();
-      draggedGate^.paintAll(x+startX-relPosX,y+startY-relPosY,zoom);
+      draggedGate^.paintAll(boardUiElements.wireImage,x+startX-relPosX,y+startY-relPosY,zoom);
       startX+=x-relPosX;
       startY+=y-relPosY;
       EndFormUpdate();
@@ -152,10 +152,11 @@ PROCEDURE T_uiAdapter.boardElementMouseMove(Sender: TObject;
       dx:=x+startX-relPosX-g0x;
       dy:=y+startY-relPosY-g0y;
       for i:=length(draggedGates)-1 downto 1 do draggedGates[i]^.paintAll(
+        boardUiElements.wireImage,
         draggedGates[i]^.shapes[0].Left+dx,
         draggedGates[i]^.shapes[0].top+dy,
         zoom);
-      draggedGate^.paintAll(x+startX-relPosX,y+startY-relPosY,zoom);
+      draggedGate^.paintAll(boardUiElements.wireImage,x+startX-relPosX,y+startY-relPosY,zoom);
       startX+=x-relPosX;
       startY+=y-relPosY;
       EndFormUpdate();

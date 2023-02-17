@@ -134,8 +134,8 @@ PROCEDURE T_visualBoard.checkSizes;
 
     if requiredWidth>ui.wireImage.width then begin
       ui.horizontalScrollBar.visible:=true;
-      ui.horizontalScrollBar.max:=requiredWidth-ui.wireImage.width;
-      ui.horizontalScrollBar.visible:=true;
+      ui.horizontalScrollBar.max:=requiredWidth;
+      ui.horizontalScrollBar.PageSize:=ui.wireImage.width;
     end else begin
       ui.horizontalScrollBar.position:=0;
       ui.horizontalScrollBar.visible:=false;
@@ -143,8 +143,8 @@ PROCEDURE T_visualBoard.checkSizes;
 
     if requiredHeight>ui.wireImage.height then begin
       ui.verticalScrollBar.visible:=true;
-      ui.verticalScrollBar.max:=requiredHeight-ui.wireImage.height;
-      ui.verticalScrollBar.visible:=true;
+      ui.verticalScrollBar.max:=requiredHeight;
+      ui.verticalScrollBar.PageSize:=ui.wireImage.height;
     end else begin
       ui.verticalScrollBar.position:=0;
       ui.verticalScrollBar.visible:=false;
@@ -153,16 +153,15 @@ PROCEDURE T_visualBoard.checkSizes;
     x0:=ui.wireImage.Left-ui.horizontalScrollBar.position;
     y0:=ui.wireImage.top -ui.verticalScrollBar.position;
 
-    for e in inputs  do e^.paintAll(x0+e^.gridPos[0]*zoom,y0+e^.gridPos[1]*zoom,zoom);
-    for e in outputs do e^.paintAll(x0+e^.gridPos[0]*zoom,y0+e^.gridPos[1]*zoom,zoom);
-    for e in gates   do e^.paintAll(x0+e^.gridPos[0]*zoom,y0+e^.gridPos[1]*zoom,zoom);
+    for e in inputs  do e^.paintAll(ui.wireImage,x0+e^.gridPos[0]*zoom,y0+e^.gridPos[1]*zoom,zoom);
+    for e in outputs do e^.paintAll(ui.wireImage,x0+e^.gridPos[0]*zoom,y0+e^.gridPos[1]*zoom,zoom);
+    for e in gates   do e^.paintAll(ui.wireImage,x0+e^.gridPos[0]*zoom,y0+e^.gridPos[1]*zoom,zoom);
 
     paintWires;
     ui.uiAdapter^.EndFormUpdate();
   end;
 
-PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft, movingBottom: boolean
-  );
+PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft, movingBottom: boolean);
   PROCEDURE growIfNecessary(CONST gate:P_visualGate);
     VAR corner:T_point;
     begin
@@ -402,7 +401,8 @@ PROCEDURE T_visualBoard.repositionElement(CONST elements: T_visualGateArray;
         else reposition;
       end;
       inc(elementIndex);
-      element^.paintAll(element^.gridPos[0]*ui.uiAdapter^.getZoom+boardOriginX,
+      element^.paintAll(ui.wireImage,
+                        element^.gridPos[0]*ui.uiAdapter^.getZoom+boardOriginX,
                         element^.gridPos[1]*ui.uiAdapter^.getZoom+boardOriginY,
                                        ui.uiAdapter^.getZoom);
     end;
@@ -1052,9 +1052,9 @@ PROCEDURE T_visualBoard.ScrollbarScroll(Sender: TObject;
     x0:=ui.wireImage.Left-ui.horizontalScrollBar.position;
     y0:=ui.wireImage.top -ui.verticalScrollBar.position;
 
-    for e in inputs  do e^.paintAll(x0+e^.gridPos[0]*zoom,y0+e^.gridPos[1]*zoom,zoom);
-    for e in outputs do e^.paintAll(x0+e^.gridPos[0]*zoom,y0+e^.gridPos[1]*zoom,zoom);
-    for e in gates   do e^.paintAll(x0+e^.gridPos[0]*zoom,y0+e^.gridPos[1]*zoom,zoom);
+    for e in inputs  do e^.paintAll(ui.wireImage,x0+e^.gridPos[0]*zoom,y0+e^.gridPos[1]*zoom,zoom);
+    for e in outputs do e^.paintAll(ui.wireImage,x0+e^.gridPos[0]*zoom,y0+e^.gridPos[1]*zoom,zoom);
+    for e in gates   do e^.paintAll(ui.wireImage,x0+e^.gridPos[0]*zoom,y0+e^.gridPos[1]*zoom,zoom);
 
     paintWires;
     ui.uiAdapter^.EndFormUpdate();
@@ -1402,7 +1402,8 @@ PROCEDURE T_visualBoard.pasteFromClipboard(CONST tgtX, tgtY: longint);
     for g in newElements do begin
       g^.ensureGuiElements(ui.wireImage.parent);
       g^.gridPos+=posDelta;
-      g^.paintAll(g^.gridPos[0]*ui.uiAdapter^.getZoom+ui.wireImage.Left-ui.horizontalScrollBar.position,
+      g^.paintAll(ui.wireImage,
+                  g^.gridPos[0]*ui.uiAdapter^.getZoom+ui.wireImage.Left-ui.horizontalScrollBar.position,
                   g^.gridPos[1]*ui.uiAdapter^.getZoom+ui.wireImage.top -ui.verticalScrollBar  .position,
                                 ui.uiAdapter^.getZoom);
       g^.setBoardElementMouseActions;

@@ -14,11 +14,14 @@ TYPE
 
   TCreateTaskForm = class(TForm)
     cbAllowAllGates: TCheckBox;
+    TestCasesStringGrid: TStringGrid;
     TestCaseCountEdit: TEdit;
     Label5: TLabel;
     Label6: TLabel;
     RadioPanel: TPanel;
     TestInputsPanel: TPanel;
+    generateTestCasesLabel: TLabel;
+    generateTestCasesShape: TShape;
     TitleEdit: TEdit;
     Label1: TLabel;
     Label2: TLabel;
@@ -30,6 +33,9 @@ TYPE
     rbIncludeHalfOfGates: TRadioButton;
     rbIncludeNothing: TRadioButton;
     DifficultyTrackBar: TTrackBar;
+    PROCEDURE TestCasesStringGridEditingDone(Sender: TObject);
+    PROCEDURE TestCasesStringGridHeaderClick(Sender: TObject;
+      IsColumn: boolean; index: integer);
   private
 
   public
@@ -50,9 +56,22 @@ FUNCTION CreateTaskForm: TCreateTaskForm;
 
 { TCreateTaskForm }
 
+PROCEDURE TCreateTaskForm.TestCasesStringGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);
+begin
+
+end;
+
+PROCEDURE TCreateTaskForm.TestCasesStringGridEditingDone(Sender: TObject);
+begin
+
+end;
+
 PROCEDURE TCreateTaskForm.showFor(CONST board: P_visualBoard; CONST challenges: P_challengeSet);
   begin
+    TestCasesStringGrid.editor.Font.color:=clWhite;
+    TestCasesStringGrid.editor.color:=clBlack;
     rbIncludeAllGates.Font.color:=clWhite;
+
     //TODO: Add initialization
     if ShowModal=mrOk then begin
       //TODO: Add action on accept...
