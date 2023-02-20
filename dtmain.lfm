@@ -15,15 +15,14 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   OnResize = FormResize
   LCLVersion = '2.2.2.0'
   WindowState = wsMaximized
-  object PaletteBgShape: TShape
+  object OpenGLControl: TOpenGLControl
     Left = 21
     Height = 613
     Top = 99
-    Width = 201
-    Align = alLeft
-    Brush.Color = 7354424
-    Pen.Style = psClear
-    Pen.Width = 0
+    Width = 1256
+    Align = alClient
+    AutoResizeViewport = True
+    OnPaint = OpenGLControlPaint
   end
   object Panel1: TPanel
     Left = 0
@@ -289,9 +288,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     TabOrder = 1
   end
   object SubPaletteComboBox: TComboBox
-    AnchorSideLeft.Control = PaletteBgShape
-    AnchorSideTop.Control = PaletteBgShape
-    AnchorSideRight.Control = PaletteBgShape
     AnchorSideRight.Side = asrBottom
     Left = 27
     Height = 28
@@ -324,7 +320,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     TabOrder = 3
   end
   object BoardHorizontalScrollBar: TScrollBar
-    AnchorSideLeft.Control = PaletteBgShape
     AnchorSideLeft.Side = asrBottom
     AnchorSideRight.Control = BoardVerticalScrollbar
     AnchorSideBottom.Control = Owner
@@ -337,26 +332,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     PageSize = 0
     TabOrder = 4
   end
-  object BoardImage: TImage
-    AnchorSideLeft.Control = PaletteBgShape
-    AnchorSideTop.Control = Panel1
-    AnchorSideRight.Control = Panel1
-    AnchorSideRight.Side = asrBottom
-    AnchorSideBottom.Control = Owner
-    AnchorSideBottom.Side = asrBottom
-    Cursor = crCross
-    Left = 222
-    Height = 613
-    Top = 99
-    Width = 1055
-    AntialiasingMode = amOn
-    Align = alClient
-    AutoSize = True
-    StretchOutEnabled = False
-    StretchInEnabled = False
-  end
   object propEditPanel: TPanel
-    AnchorSideRight.Control = PaletteBgShape
     Left = 270
     Height = 340
     Top = 160

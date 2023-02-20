@@ -6,8 +6,9 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
-  Buttons, StdCtrls, Menus, ValEdit, Grids, visualGates, logicalGates,
-  challenges, paletteHandling, gateProperties, addToPaletteDialog, visuals,workspaces,createTaskUnit;
+  Buttons, StdCtrls, Menus, ValEdit, Grids, OpenGLContext, visualGates,
+  logicalGates, challenges, paletteHandling, gateProperties, addToPaletteDialog,
+  visuals, workspaces, createTaskUnit,BGRAOpenGL, BGRABitmapTypes;
 
 TYPE
 
@@ -15,7 +16,6 @@ TYPE
 
   TDigitaltrainerMainForm = class(TForm)
     BoardHorizontalScrollBar: TScrollBar;
-    BoardImage: TImage;
     infoLabel: TLabel;
     miRedo: TMenuItem;
     miUndo: TMenuItem;
@@ -23,6 +23,7 @@ TYPE
     miCopy: TMenuItem;
     miEdit: TMenuItem;
     miTasks: TMenuItem;
+    OpenGLControl: TOpenGLControl;
     propEditPanel: TPanel;
     propDeleteLabel: TLabel;
     propEditLabel: TLabel;
@@ -46,7 +47,6 @@ TYPE
     miView: TMenuItem;
     PaletteScrollBar: TScrollBar;
     BoardVerticalScrollbar: TScrollBar;
-    PaletteBgShape: TShape;
     SimulationTimer: TTimer;
     speedTrackBar: TTrackBar;
     ValueListEditor1: TValueListEditor;
@@ -75,6 +75,7 @@ TYPE
     PROCEDURE miRedoClick(Sender: TObject);
     PROCEDURE miSaveAsTaskClick(Sender: TObject);
     PROCEDURE miUndoClick(Sender: TObject);
+    procedure OpenGLControlPaint(Sender: TObject);
     PROCEDURE PlayPauseShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE propCancelShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
@@ -142,11 +143,11 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     addButton(propCancelShape,propCancelLabel);
 
     uiAdapter.create(self,selectionShape,@showPropertyEditor,
-                     BoardImage,BoardHorizontalScrollBar,BoardVerticalScrollbar,@boardChanged,
+                     BoardHorizontalScrollBar,BoardVerticalScrollbar,@boardChanged,
                      @BeginFormUpdate,@EndFormUpdate);
 
     workspace.create;
-    workspace.activePalette^.attachUI(BoardImage,PaletteBgShape,SubPaletteComboBox,PaletteScrollBar        ,@uiAdapter);
+    workspace.activePalette^.attachUI(SubPaletteComboBox,PaletteScrollBar        ,@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
     stepsTotal:=0;
     pauseByUser:=true;
@@ -170,7 +171,7 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
     if workspace.EditorMode and AddToPaletteForm.showFor(P_workspacePalette(workspace.activePalette),workspace.activeBoard) then begin
-      workspace.activePalette^.attachUI(BoardImage,PaletteBgShape,SubPaletteComboBox,PaletteScrollBar,@uiAdapter);
+      workspace.activePalette^.attachUI(SubPaletteComboBox,PaletteScrollBar,@uiAdapter);
       workspace.activePalette^.checkSizes;
       workspace.activeBoard^.clear;
       workspace.activeBoard^.paintWires;
@@ -209,8 +210,8 @@ PROCEDURE TDigitaltrainerMainForm.miNewBoardClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miPasteClick(Sender: TObject);
   begin
     workspace.activeBoard^.pasteFromClipboard(
-      round((mouse.CursorPos.X-Left-BoardImage.Left+BoardHorizontalScrollBar.position)/uiAdapter.getZoom),
-      round((mouse.CursorPos.Y-top -BoardImage.top +BoardVerticalScrollbar  .position)/uiAdapter.getZoom));
+      round((mouse.CursorPos.X-Left-OpenGLControl.Left+BoardHorizontalScrollBar.position)/uiAdapter.getZoom),
+      round((mouse.CursorPos.Y-top -OpenGLControl.top +BoardVerticalScrollbar  .position)/uiAdapter.getZoom));
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miRedoClick(Sender: TObject);
@@ -227,6 +228,16 @@ PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
   begin
     uiAdapter.performUndo(@workspace.setActiveBoard);
   end;
+
+procedure TDigitaltrainerMainForm.OpenGLControlPaint(Sender: TObject);
+begin
+    BGLViewPort(OpenGLControl.Width, OpenGLControl.Height, BGRAWhite);
+
+  // do you drawing here
+  BGLCanvas.FillRect(10, 10, 100, 100, CSSRed);
+
+  OpenGLControl.SwapBuffers;
+end;
 
 PROCEDURE TDigitaltrainerMainForm.PlayPauseShapeMouseDown(Sender: TObject;
   button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -298,8 +309,8 @@ begin
   propEditPanel.visible:=false;
   if gateProperties.applyValues then begin
     uiAdapter.draggedGate^.propertyEditDone(not(gateProperties.arePropertiesForBoard),
-      BoardImage.Left-BoardHorizontalScrollBar.position,
-      BoardImage.top -BoardVerticalScrollbar.position);
+      OpenGLControl.Left-BoardHorizontalScrollBar.position,
+      OpenGLControl.top -BoardVerticalScrollbar.position);
     workspace.activeBoard^.afterGatePropertiesEdited(uiAdapter.draggedGate);
     if not(gateProperties.arePropertiesForBoard) then begin
       workspace.activePalette^.ensureVisualPaletteItems;

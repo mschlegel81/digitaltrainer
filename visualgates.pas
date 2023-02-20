@@ -50,7 +50,7 @@ TYPE
       FUNCTION simulateStep:boolean;
       PROCEDURE updateCaption;
       PROCEDURE updateVisuals;
-      PROCEDURE paintAll(CONST tgtImage:TImage; CONST x,y:longint; CONST zoom:longint); virtual;
+      PROCEDURE paintAll(CONST x,y:longint; CONST zoom:longint); virtual;
       FUNCTION  clone:P_visualGate;
       PROCEDURE propertyEditDone(CONST paletteElement:boolean; CONST x0,y0:longint);
       FUNCTION visualHeight:longint;
@@ -285,7 +285,7 @@ PROCEDURE T_visualGate.updateVisuals;
     if (ioEdit<>nil) and not(ioEdit.Focused) then ioEdit.text:=getWireString(behavior^.getInput(0),ioMode);
   end;
 
-PROCEDURE T_visualGate.paintAll(CONST tgtImage:TImage; CONST x, y: longint; CONST zoom: longint);
+PROCEDURE T_visualGate.paintAll(CONST x, y: longint; CONST zoom: longint);
   VAR k: integer;
       p: T_point;
       shapeIndex:longint=1;
@@ -365,8 +365,7 @@ PROCEDURE T_visualGate.propertyEditDone(CONST paletteElement: boolean;
   begin
     disposeGuiElements;
     ensureGuiElements(uiAdapter^.mainForm);
-    paintAll(uiAdapter^.boardUiElements.wireImage,
-             x0+gridPos[0]*uiAdapter^.getZoom,
+    paintAll(x0+gridPos[0]*uiAdapter^.getZoom,
              y0+gridPos[1]*uiAdapter^.getZoom,uiAdapter^.getZoom);
     updateVisuals;
     if paletteElement
@@ -458,7 +457,7 @@ PROCEDURE T_visualGate.paletteEntryMouseDown(Sender: TObject;
     if button=mbLeft then begin
       clonedSelf:=clone;
       clonedSelf^.ensureGuiElements(uiAdapter^.mainForm);
-      clonedSelf^.paintAll(uiAdapter^.boardUiElements.wireImage, shapes[0].Left,shapes[0].top,uiAdapter^.zoom);
+      clonedSelf^.paintAll(shapes[0].Left,shapes[0].top,uiAdapter^.zoom);
       uiAdapter^.startDrag(x,y,TGraphicControl(Sender),
                            clonedSelf,
                            uas_draggingFromPalette);
