@@ -20,15 +20,12 @@ T_uiAdapter=object
   private
     zoom:longint;
     mainForm:TForm;
+    selectionShape:TShape;
     showPropertyEditorCallback:F_showPropertyEditorCallback;
 
-    paletteUiElements:record
-      paletteWidth:longint;
-      combobox:TComboBox;
-      paletteScroll:TScrollBar;
-    end;
     boardUiElements:record
       boardModifiedCallback:F_procedure;
+      wireImage:TImage;
       horizontalScrollBar,verticalScrollBar:TScrollBar;
     end;
 
@@ -54,7 +51,7 @@ T_uiAdapter=object
   public
     BeginFormUpdate,EndFormUpdate:F_procedure;
     CONSTRUCTOR create(CONST mainForm_:TForm; CONST selectionShape_:TShape; CONST showPropertyEditorCallback_:F_showPropertyEditorCallback;
-                       CONST BoardHorizontalScrollBar,BoardVerticalScrollbar:TScrollBar; CONST boardModifiedCallback:F_procedure;
+                       CONST wireImage_:TImage; CONST BoardHorizontalScrollBar,BoardVerticalScrollbar:TScrollBar; CONST boardModifiedCallback:F_procedure;
                        CONST beginFormUpdate_,endFormUpdate_:F_procedure);
     DESTRUCTOR destroy;
 
@@ -88,7 +85,7 @@ end;
 CONSTRUCTOR T_uiAdapter.create(CONST mainForm_: TForm;
   CONST selectionShape_: TShape;
   CONST showPropertyEditorCallback_: F_showPropertyEditorCallback;
-  CONST BoardHorizontalScrollBar,
+  CONST wireImage_: TImage; CONST BoardHorizontalScrollBar,
   BoardVerticalScrollbar: TScrollBar; CONST boardModifiedCallback:F_procedure; CONST beginFormUpdate_,
   endFormUpdate_: F_procedure);
   begin
@@ -99,6 +96,7 @@ CONSTRUCTOR T_uiAdapter.create(CONST mainForm_: TForm;
     boardUiElements.boardModifiedCallback:=boardModifiedCallback;
     boardUiElements.horizontalScrollBar:=BoardHorizontalScrollBar;
     boardUiElements.verticalScrollBar  :=BoardVerticalScrollbar;
+    boardUiElements.wireImage          :=wireImage_;
     zoom:=20;
     state:=uas_initial;
     showPropertyEditorCallback:=showPropertyEditorCallback_;
@@ -116,7 +114,7 @@ PROCEDURE T_uiAdapter.paletteEntryMouseMove(Sender: TObject;
     if state=uas_draggingFromPalette then
     with dragData do begin
       BeginFormUpdate();
-      draggedGate^.paintAll(x+startX-relPosX,y+startY-relPosY,zoom);
+      draggedGate^.paintAll(boardUiElements.wireImage,x+startX-relPosX,y+startY-relPosY,zoom);
       EndFormUpdate();
     end;
   end;
@@ -143,7 +141,7 @@ PROCEDURE T_uiAdapter.boardElementMouseMove(Sender: TObject;
   begin
     if state=uas_draggingFromBoard then with dragData do begin
       BeginFormUpdate();
-      draggedGate^.paintAll(x+startX-relPosX,y+startY-relPosY,zoom);
+      draggedGate^.paintAll(boardUiElements.wireImage,x+startX-relPosX,y+startY-relPosY,zoom);
       startX+=x-relPosX;
       startY+=y-relPosY;
       EndFormUpdate();
@@ -154,10 +152,11 @@ PROCEDURE T_uiAdapter.boardElementMouseMove(Sender: TObject;
       dx:=x+startX-relPosX-g0x;
       dy:=y+startY-relPosY-g0y;
       for i:=length(draggedGates)-1 downto 1 do draggedGates[i]^.paintAll(
+        boardUiElements.wireImage,
         draggedGates[i]^.shapes[0].Left+dx,
         draggedGates[i]^.shapes[0].top+dy,
         zoom);
-      draggedGate^.paintAll(x+startX-relPosX,y+startY-relPosY,zoom);
+      draggedGate^.paintAll(boardUiElements.wireImage,x+startX-relPosX,y+startY-relPosY,zoom);
       startX+=x-relPosX;
       startY+=y-relPosY;
       EndFormUpdate();
@@ -203,6 +202,7 @@ PROCEDURE T_uiAdapter.boardOutputMouseUp(Sender: TObject; button: TMouseButton;
 PROCEDURE T_uiAdapter.paletteSizeUpdated(CONST Right: longint);
   begin
     if activeBoard<>nil then begin
+      activeBoard^.ui.wireImage.Left:=Right;
       activeBoard^.checkSizes;
     end;
   end;
