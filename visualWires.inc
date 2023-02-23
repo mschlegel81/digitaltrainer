@@ -12,14 +12,14 @@ T_visualWire=object
 
   PROCEDURE dropWiresAssociatedWith(CONST gate:P_visualGate);
   FUNCTION simulateStep:boolean;
-  PROCEDURE paint(CONST x0,y0:longint; CONST zoom:longint; CONST image:TImage);
+  PROCEDURE paint(CONST zoom:longint; CONST Canvas:TBGRACanvas);
   FUNCTION isWirePosition(CONST gridX,gridY:longint; OUT horizontalWire:boolean):boolean;
   PROCEDURE dropWiresTouchingPosition(CONST gridX,gridY:longint; CONST horizontalWire:boolean);
 end;
 
 {$endif}
 {$ifdef includeImplementation}
-PROCEDURE paintWire(CONST image:TImage; CONST zoom:longint; CONST bitWidth:byte; CONST path:T_wirePathArray; CONST preview:boolean=false);
+PROCEDURE paintWire(CONST zoom:longint; CONST Canvas:TBGRACanvas; CONST bitWidth:byte; CONST path:T_wirePathArray; CONST preview:boolean=false);
   VAR w:longint=1;
       run:longint;
       i,j:longint;
@@ -34,41 +34,16 @@ PROCEDURE paintWire(CONST image:TImage; CONST zoom:longint; CONST bitWidth:byte;
     end;
     if w<1 then w:=1; w+=surround;
     for run:=0 to 1 do begin
-      image.Canvas.Pen.width:=w;
+      Canvas.Pen.width:=w;
       w-=surround;
-      if run=0         then image.Canvas.Pen.color:=image.Canvas.Brush.color
-      else if preview  then image.Canvas.Pen.color:=$000080ff
-                       else image.Canvas.Pen.color:=$00FFFFFF;
+      if run=0         then Canvas.Pen.color:=BOARD_COLOR
+      else if preview  then Canvas.Pen.color:=MARK_COLOR
+                       else Canvas.Pen.color:=WIRE_COLOR;
       for i:=0 to length(path)-1 do if length(path[i])>1 then begin
-                                         image.Canvas.MoveTo(path[i,0,0],path[i,0,1]);
-        for j:=1 to length(path[i])-1 do image.Canvas.LineTo(path[i,j,0],path[i,j,1]);
+                                         Canvas.MoveTo(path[i,0,0]*zoom,path[i,0,1]*zoom);
+        for j:=1 to length(path[i])-1 do Canvas.LineTo(path[i,j,0]*zoom,path[i,j,1]*zoom);
       end;
     end;
-  end;
-
-FUNCTION wireToScreen(CONST wire:T_wirePathArray; CONST x0, y0: longint; CONST zoom: longint):T_wirePathArray;
-  VAR i,j:longint;
-      p:T_point;
-  begin
-    setLength(result,length(wire));
-    for i:=0 to length(wire)-1 do begin
-      setLength(result[i],length(wire[i]));
-      for j:=0 to length(wire[i])-1 do begin
-        p:=wire[i,j];
-        p[0]:=x0+p[0]*zoom;
-        p[1]:=y0+p[1]*zoom;
-        result[i,j]:=p;
-      end;
-    end;
-  end;
-
-FUNCTION wireToScreen(CONST wire:T_wirePath; CONST x0, y0: longint; CONST zoom: longint):T_wirePathArray;
-  VAR wrap:T_wirePathArray;
-  begin
-    setLength(wrap,1);
-    wrap[0]:=wire;
-    result:=wireToScreen(wrap,x0,y0,zoom);
-    setLength(wrap,0);
   end;
 
 PROCEDURE T_visualWire.dropWiresAssociatedWith(CONST gate: P_visualGate);
@@ -97,16 +72,15 @@ FUNCTION T_visualWire.simulateStep: boolean;
     for i:=0 to length(sink)-1 do if sink[i].gate^.behavior^.setInput(sink[i].gateInputIndex,value) then result:=true;
   end;
 
-PROCEDURE T_visualWire.paint(CONST x0, y0: longint; CONST zoom: longint;
-  CONST image: TImage);
+PROCEDURE T_visualWire.paint(CONST zoom:longint; CONST Canvas:TBGRACanvas);
   VAR wrap:T_wirePathArray;
       i:longint;
   begin
     setLength(wrap,length(sink));
     for i:=0 to length(wrap)-1 do wrap[i]:=sink[i].path;
-    paintWire(image,zoom,
+    paintWire(zoom,Canvas,
               source^.behavior^.outputWidth(sourceOutputIndex),
-              wireToScreen(wrap,x0,y0,zoom));
+              wrap);
     setLength(wrap,0);
   end;
 

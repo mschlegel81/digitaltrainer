@@ -129,13 +129,10 @@ PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard;
   CONST uiAdapter: P_uiAdapter);
   begin
     if activeChallenge<>nil then exit;
-    uiAdapter^.BeginFormUpdate();
     dispose(workspaceBoard,destroy);
     workspacePalette^.setFilter(prototype^.getIndexInPalette);
     workspaceBoard:=prototype^.clone;
     workspaceBoard^.attachUI(uiAdapter);
-    uiAdapter^.EndFormUpdate();
-    workspaceBoard^.checkSizes;
   end;
 
 PROCEDURE T_workspace.clearBoard(CONST uiAdapter: P_uiAdapter);

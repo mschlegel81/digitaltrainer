@@ -70,16 +70,18 @@ TYPE
 
   { T_ioLocations }
 
+  T_ioLocation=record
+    leftOrRight:boolean;
+    positionIndex:longint;
+    ioLabel:string;
+  end;
+
   T_ioLocations=object
     numberOfLeftInputs,
     numberOfTopInputs,
     numberOfRightOutputs,
     numberOfBottomOutputs:longint;
-    p:array[gt_input..gt_output] of array of record
-      leftOrRight:boolean;
-      positionIndex:longint;
-      ioLabel:string;
-    end;
+    p:array[gt_input..gt_output] of array of T_ioLocation;
     PROCEDURE init;
     PROCEDURE add(CONST gt:T_gateType; CONST leftOrRight:boolean; CONST pos:longint; CONST lab:string);
   end;

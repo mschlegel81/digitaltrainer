@@ -14,8 +14,11 @@ TYPE
   { TDigitaltrainerMainForm }
 
   TDigitaltrainerMainForm = class(TForm)
-    BoardHorizontalScrollBar: TScrollBar;
-    BoardImage: TImage;
+    boardHorizontalScrollBar: TScrollBar;
+    boardImage: TImage;
+    ioEdit: TEdit;
+    Image1: TImage;
+    paletteImage: TImage;
     infoLabel: TLabel;
     miRedo: TMenuItem;
     miUndo: TMenuItem;
@@ -44,9 +47,8 @@ TYPE
     miBoard: TMenuItem;
     miFullScreen: TMenuItem;
     miView: TMenuItem;
-    PaletteScrollBar: TScrollBar;
-    BoardVerticalScrollbar: TScrollBar;
-    PaletteBgShape: TShape;
+    paletteScrollBar: TScrollBar;
+    boardVerticalScrollBar: TScrollBar;
     SimulationTimer: TTimer;
     speedTrackBar: TTrackBar;
     ValueListEditor1: TValueListEditor;
@@ -141,12 +143,20 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     addButton(propOkShape,propOkLabel);
     addButton(propCancelShape,propCancelLabel);
 
-    uiAdapter.create(self,selectionShape,@showPropertyEditor,
-                     BoardImage,BoardHorizontalScrollBar,BoardVerticalScrollbar,@boardChanged,
-                     @BeginFormUpdate,@EndFormUpdate);
+    uiAdapter.create(selectionShape,
+                     boardImage,
+                     paletteImage,
+                     SubPaletteComboBox,
+                     boardHorizontalScrollBar,
+                     boardVerticalScrollBar,
+                     paletteScrollBar,
+                     @showPropertyEditor,
+                     @boardChanged,
+                     @BeginFormUpdate,
+                     @EndFormUpdate);
 
     workspace.create;
-    workspace.activePalette^.attachUI(BoardImage,PaletteBgShape,SubPaletteComboBox,PaletteScrollBar        ,@uiAdapter);
+    workspace.activePalette^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
     stepsTotal:=0;
     pauseByUser:=true;
@@ -161,7 +171,7 @@ PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
   begin
     workspace.activePalette^.checkSizes;
-    workspace.activeBoard  ^.checkSizes;
+    workspace.activePalette^.paint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
@@ -170,7 +180,7 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
     if workspace.EditorMode and AddToPaletteForm.showFor(P_workspacePalette(workspace.activePalette),workspace.activeBoard) then begin
-      workspace.activePalette^.attachUI(BoardImage,PaletteBgShape,SubPaletteComboBox,PaletteScrollBar,@uiAdapter);
+      workspace.activePalette^.attachUI(@uiAdapter);
       workspace.activePalette^.checkSizes;
       workspace.activeBoard^.clear;
       workspace.activeBoard^.paintWires;
@@ -209,8 +219,8 @@ PROCEDURE TDigitaltrainerMainForm.miNewBoardClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miPasteClick(Sender: TObject);
   begin
     workspace.activeBoard^.pasteFromClipboard(
-      round((mouse.CursorPos.X-Left-BoardImage.Left+BoardHorizontalScrollBar.position)/uiAdapter.getZoom),
-      round((mouse.CursorPos.Y-top -BoardImage.top +BoardVerticalScrollbar  .position)/uiAdapter.getZoom));
+      round((mouse.CursorPos.X-Left-boardImage.Left+boardHorizontalScrollBar.position)/uiAdapter.getZoom),
+      round((mouse.CursorPos.Y-top -boardImage.top +boardVerticalScrollBar  .position)/uiAdapter.getZoom));
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miRedoClick(Sender: TObject);
@@ -298,8 +308,8 @@ begin
   propEditPanel.visible:=false;
   if gateProperties.applyValues then begin
     uiAdapter.draggedGate^.propertyEditDone(not(gateProperties.arePropertiesForBoard),
-      BoardImage.Left-BoardHorizontalScrollBar.position,
-      BoardImage.top -BoardVerticalScrollbar.position);
+      boardImage.Left-boardHorizontalScrollBar.position,
+      boardImage.top -boardVerticalScrollBar.position);
     workspace.activeBoard^.afterGatePropertiesEdited(uiAdapter.draggedGate);
     if not(gateProperties.arePropertiesForBoard) then begin
       workspace.activePalette^.ensureVisualPaletteItems;
@@ -393,7 +403,6 @@ PROCEDURE TDigitaltrainerMainForm.ZoomInShapeMouseDown(Sender: TObject;
     buttonClicked(ZoomInShape);
     uiAdapter.zoomIn;
     workspace.activePalette^.checkSizes;
-    workspace.activeBoard^.checkSizes;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ZoomOutShapeMouseDown(Sender: TObject;
@@ -402,7 +411,6 @@ PROCEDURE TDigitaltrainerMainForm.ZoomOutShapeMouseDown(Sender: TObject;
     buttonClicked(ZoomOutShape);
     uiAdapter.zoomOut;
     workspace.activePalette^.checkSizes;
-    workspace.activeBoard^.checkSizes;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.buttonClicked(Shape: TShape);

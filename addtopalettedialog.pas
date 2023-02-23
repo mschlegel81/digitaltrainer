@@ -13,8 +13,8 @@ TYPE
   { TAddToPaletteForm }
 
   TAddToPaletteForm = class(TForm)
-    PaletteCombobox: TComboBox;
-    captionEdit: TEdit;
+    paletteComboBox: TComboBox;
+    CaptionEdit: TEdit;
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
@@ -25,7 +25,7 @@ TYPE
     propOkLabel1: TLabel;
     propOkShape: TShape;
     propOkShape1: TShape;
-    PROCEDURE captionEditEditingDone(Sender: TObject);
+    PROCEDURE CaptionEditEditingDone(Sender: TObject);
     PROCEDURE DescriptionMemoEditingDone(Sender: TObject);
     PROCEDURE propCancelShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
@@ -58,9 +58,9 @@ FUNCTION AddToPaletteForm: TAddToPaletteForm;
 
 { TAddToPaletteForm }
 
-PROCEDURE TAddToPaletteForm.captionEditEditingDone(Sender: TObject);
+PROCEDURE TAddToPaletteForm.CaptionEditEditingDone(Sender: TObject);
   begin
-    currentBoard^.setCaption(StringReplace(captionEdit.text,'\n',LineEnding,[rfReplaceAll]));
+    currentBoard^.setCaption(StringReplace(CaptionEdit.text,'\n',LineEnding,[rfReplaceAll]));
   end;
 
 PROCEDURE TAddToPaletteForm.DescriptionMemoEditingDone(Sender: TObject);
@@ -76,13 +76,13 @@ PROCEDURE TAddToPaletteForm.propCancelShapeMouseDown(Sender: TObject; button: TM
 PROCEDURE TAddToPaletteForm.propOkShape1MouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     ModalResult:=mrOk;
-    currentPalette^.updateEntry(currentBoard,PaletteCombobox.ItemIndex,PaletteCombobox.text);
+    currentPalette^.updateEntry(currentBoard,paletteComboBox.ItemIndex,paletteComboBox.text);
   end;
 
 PROCEDURE TAddToPaletteForm.propOkShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     ModalResult:=mrOk;
-    currentPalette^.addBoard(currentBoard,PaletteCombobox.ItemIndex,PaletteCombobox.text);
+    currentPalette^.addBoard(currentBoard,paletteComboBox.ItemIndex,paletteComboBox.text);
   end;
 
 FUNCTION TAddToPaletteForm.showFor(CONST palette: P_workspacePalette; CONST board: P_visualBoard): boolean;
@@ -91,13 +91,13 @@ FUNCTION TAddToPaletteForm.showFor(CONST palette: P_workspacePalette; CONST boar
     currentBoard  :=board;
     currentPalette:=palette;
 
-    captionEdit    .text:=StringReplace(board^.getCaption,LineEnding,'\n',[rfReplaceAll]);
+    CaptionEdit    .text:=StringReplace(board^.getCaption,LineEnding,'\n',[rfReplaceAll]);
     DescriptionMemo.text:=board^.getDescription;
-    PaletteCombobox.items.clear;
+    paletteComboBox.items.clear;
 
     setEnableButton(propOkShape1,propOkLabel1,board^.getIndexInPalette>=0);
 
-    for s in palette^.subPaletteNames do PaletteCombobox.items.add(s);
+    for s in palette^.subPaletteNames do paletteComboBox.items.add(s);
     if ShowModal=mrOk
     then result:=true
     else result:=false;

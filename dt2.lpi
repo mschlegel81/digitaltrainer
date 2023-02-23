@@ -123,6 +123,18 @@
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="createTaskUnit"/>
       </Unit>
+      <Unit>
+        <Filename Value="sprites.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="visualBoards.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="uiAdapters.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

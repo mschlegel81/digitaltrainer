@@ -5,7 +5,7 @@ UNIT paletteHandling;
 INTERFACE
 
 USES
-  Classes, sysutils,StdCtrls, ExtCtrls,logicalGates,visualGates,compoundGates, myGenerics,serializationUtil;
+  Classes, sysutils,StdCtrls, ExtCtrls,logicalGates,visualGates,compoundGates, myGenerics,serializationUtil,wiringUtil;
 
 TYPE
   P_palette=^T_palette;
@@ -13,32 +13,23 @@ TYPE
   { T_palette }
 
   T_palette=object(T_abstractPrototypeSource)
+
     visualPaletteItems: array of P_visualGate;
 
-    ui:record
-      image:TImage;
-      bgShape:TShape;
-      combobox:TComboBox;
-      paletteScroll:TScrollBar;
-      uiAdapter:P_uiAdapter;
-      lastSubPaletteIndex:longint;
-    end;
+    lastSubPaletteIndex:longint;
+    ui:P_uiAdapter;
+
+    PROCEDURE checkSizes;
 
     FUNCTION subPaletteNames:T_arrayOfString; virtual; abstract;
     PROCEDURE selectSubPalette(CONST index:longint); virtual; abstract;
     PROCEDURE ensureVisualPaletteItems; virtual; abstract;
-    PROCEDURE checkSizes;
     PROCEDURE detachUI;
-    PROCEDURE attachUI(CONST image:TImage;
-                       CONST bgShape:TShape;
-                       CONST combobox:TComboBox;
-                       CONST paletteScroll:TScrollBar;
-                       CONST uiAdapter:P_uiAdapter);
+    PROCEDURE attachUI(CONST uiAdapter:P_uiAdapter);
 
     PROCEDURE comboBoxSelect(Sender:TObject);
-    PROCEDURE ScrollbarScroll(Sender: TObject; ScrollCode: TScrollCode; VAR ScrollPos: integer);
     FUNCTION allowDeletion(CONST gate:P_abstractGate):boolean; virtual;
-    PROCEDURE BringToFront; virtual;
+    PROCEDURE paint;
   end;
 
   { T_workspacePalette }
@@ -104,6 +95,7 @@ TYPE
   end;
 
 IMPLEMENTATION
+USES visuals,Graphics;
 
 { T_challengePalette }
 
@@ -155,8 +147,8 @@ FUNCTION T_challengePalette.subPaletteNames: T_arrayOfString;
 
 PROCEDURE T_challengePalette.selectSubPalette(CONST index: longint);
   begin
-    if ui.lastSubPaletteIndex<0 then begin
-      ui.lastSubPaletteIndex:=0;
+    if lastSubPaletteIndex<0 then begin
+      lastSubPaletteIndex:=0;
       ensureVisualPaletteItems;
       checkSizes;
     end;
@@ -175,10 +167,7 @@ PROCEDURE T_challengePalette.ensureVisualPaletteItems;
 
       setLength(visualPaletteItems,k+1);
       new(visualPaletteItems[k],create(behavior));
-      visualPaletteItems[k]^.uiAdapter:=ui.uiAdapter;
-      visualPaletteItems[k]^.ensureGuiElements(ui.bgShape.parent);
-      visualPaletteItems[k]^.paintAll(ui.image,0,0,ui.uiAdapter^.getZoom) ;
-      visualPaletteItems[k]^.setPaletteEntryMouseActions;
+      visualPaletteItems[k]^.uiAdapter:=ui;
       inc(k);
     end;
   end;
@@ -329,10 +318,10 @@ FUNCTION T_workspacePalette.subPaletteNames: T_arrayOfString;
 
 PROCEDURE T_workspacePalette.selectSubPalette(CONST index: longint);
   begin
-    if index=ui.lastSubPaletteIndex then exit;
-    if index<0 then ui.combobox.ItemIndex:=ui.lastSubPaletteIndex
+    if index=lastSubPaletteIndex then exit;
+    if index<0 then ui^.paletteComboBox.ItemIndex:=lastSubPaletteIndex
     else begin
-      ui.lastSubPaletteIndex:=index;
+      lastSubPaletteIndex:=index;
       ensureVisualPaletteItems;
       checkSizes;
     end;
@@ -353,24 +342,18 @@ PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
   VAR i,k:longint;
       behavior: P_abstractGate;
   begin
-    ui.uiAdapter^.BeginFormUpdate();
     for i:=0 to length(visualPaletteItems)-1 do dispose(visualPaletteItems[i],destroy);
     setLength(visualPaletteItems,0);
     k:=0;
-    for i:=0 to length(paletteEntries)-1 do if (paletteEntries[i].subPaletteIndex=ui.lastSubPaletteIndex) and not(excludedByFilter(i)) then begin
+    for i:=0 to length(paletteEntries)-1 do if (paletteEntries[i].subPaletteIndex=lastSubPaletteIndex) and not(excludedByFilter(i)) then begin
       if paletteEntries[i].entryType=gt_compound
       then behavior:=paletteEntries[i].prototype^.extractBehavior
       else behavior:=newBaseGate(paletteEntries[i].entryType);
       setLength(visualPaletteItems,k+1);
       new(visualPaletteItems[k],create(behavior));
-      visualPaletteItems[k]^.uiAdapter:=ui.uiAdapter;
-      visualPaletteItems[k]^.ensureGuiElements(ui.bgShape.parent);
-      visualPaletteItems[k]^.paintAll(ui.image,0,0,ui.uiAdapter^.getZoom-1);
-      visualPaletteItems[k]^.setPaletteEntryMouseActions;
+      visualPaletteItems[k]^.uiAdapter:=ui;
       inc(k);
     end;
-    ui.uiAdapter^.EndFormUpdate();
-    for k:=0 to length(visualPaletteItems)-1 do visualPaletteItems[k]^.paintAll(ui.image,0,0,ui.uiAdapter^.getZoom);
   end;
 
 FUNCTION T_workspacePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
@@ -512,53 +495,20 @@ PROCEDURE T_workspacePalette.setFilter(CONST newValue: longint);
 
 PROCEDURE T_palette.checkSizes;
   VAR i:longint;
-      totalPaletteHeightInCurrentZoom:longint=0;
-      availableHeight:longint;
+      requiredHeight:longint=1;
       width:longint;
       requiredWidth:longint=0;
-      y0:longint;
   begin
-    ui.uiAdapter^.BeginFormUpdate();
     for i:=0 to length(visualPaletteItems)-1 do begin
-      totalPaletteHeightInCurrentZoom+=visualPaletteItems[i]^.visualHeight;
-      width:=visualPaletteItems[i]^.visualWidth;
+      visualPaletteItems[i]^.gridPos[0]:=1;
+      visualPaletteItems[i]^.gridPos[1]:=requiredHeight;
+      requiredHeight+=visualPaletteItems[i]^.getGridHeight+2;
+      width:=visualPaletteItems[i]^.getGridWidth;
       if width>requiredWidth then requiredWidth:=width;
     end;
-    totalPaletteHeightInCurrentZoom+=length(visualPaletteItems)*ui.uiAdapter^.getZoom*2;
-    requiredWidth                  +=                           ui.uiAdapter^.getZoom*4;
-    if requiredWidth<120 then requiredWidth:=120;
-    ui.bgShape.width:=requiredWidth;
-
-    if ui.combobox.visible
-    then y0:=ui.combobox.top+ui.combobox.height+ui.uiAdapter^.getZoom
-    else y0:=                                   ui.uiAdapter^.getZoom;
-    availableHeight:=ui.bgShape.height-y0;
-
-    if availableHeight>totalPaletteHeightInCurrentZoom then begin
-      ui.paletteScroll.position:=0;
-      ui.paletteScroll.Left:=0;
-      ui.paletteScroll.visible:=false;
-    end else begin
-      if not(ui.paletteScroll.visible) then begin
-        ui.uiAdapter^.EndFormUpdate();
-        ui.paletteScroll.visible:=true;
-        ui.paletteScroll.Left:=0;
-        ui.paletteScroll.min:=0;
-        ui.paletteScroll.max:=totalPaletteHeightInCurrentZoom-availableHeight;
-        ui.paletteScroll.PageSize:=totalPaletteHeightInCurrentZoom;
-        ui.uiAdapter^.BeginFormUpdate();
-      end;
-    end;
-
-    y0-=ui.paletteScroll.position;
-
-    for i:=0 to length(visualPaletteItems)-1 do begin
-      visualPaletteItems[i]^.paintAll(ui.image,ui.uiAdapter^.getZoom*2,y0,ui.uiAdapter^.getZoom);
-      y0+=ui.uiAdapter^.getZoom*2+visualPaletteItems[i]^.visualHeight;
-    end;
-    ui.uiAdapter^.paletteSizeUpdated(ui.bgShape.Left+ui.bgShape.width);
-
-    ui.uiAdapter^.EndFormUpdate();
+    requiredHeight+=1;
+    requiredWidth     +=4;
+    ui^.setPaletteSize(requiredWidth,requiredHeight);
   end;
 
 PROCEDURE T_palette.detachUI;
@@ -567,42 +517,30 @@ PROCEDURE T_palette.detachUI;
     for i:=0 to length(visualPaletteItems)-1 do dispose(visualPaletteItems[i],destroy);
   end;
 
-PROCEDURE T_palette.attachUI(CONST image:TImage;CONST bgShape: TShape; CONST combobox: TComboBox;
-  CONST paletteScroll: TScrollBar; CONST uiAdapter: P_uiAdapter);
+PROCEDURE T_palette.attachUI(CONST uiAdapter: P_uiAdapter);
   VAR names: T_arrayOfString;
       s:string;
   begin
-    ui.image:=image;
-    ui.bgShape:=bgShape;
-    ui.combobox:=combobox;
-    ui.paletteScroll:=paletteScroll;
-    ui.uiAdapter:=uiAdapter;
+    ui:=uiAdapter;
     names:=subPaletteNames;
     if length(names)=0 then begin
-      combobox.visible:=false;
-      ui.lastSubPaletteIndex:=-1;
+      ui^.paletteComboBox.visible:=false;
+      lastSubPaletteIndex:=-1;
     end else begin
-      combobox.visible:=true;
-      combobox.items.clear;
-      for s in names do combobox.items.add(s);
-      combobox.ItemIndex:=0;
-      ui.lastSubPaletteIndex:=-1;
+      ui^.paletteComboBox.visible:=true;
+      ui^.paletteComboBox.items.clear;
+      for s in names do ui^.paletteComboBox.items.add(s);
+      ui^.paletteComboBox.ItemIndex:=0;
+      lastSubPaletteIndex:=-1;
     end;
     selectSubPalette(0);
 
-    ui.combobox.OnSelect:=@comboBoxSelect;
-    ui.paletteScroll.OnScroll:=@ScrollbarScroll;
+    ui^.paletteComboBox.OnSelect:=@comboBoxSelect;
   end;
 
 PROCEDURE T_palette.comboBoxSelect(Sender: TObject);
   begin
-    selectSubPalette(ui.combobox.ItemIndex);
-  end;
-
-PROCEDURE T_palette.ScrollbarScroll(Sender: TObject; ScrollCode: TScrollCode;
-  VAR ScrollPos: integer);
-  begin
-    checkSizes;
+    selectSubPalette(ui^.paletteComboBox.ItemIndex);
   end;
 
 FUNCTION T_palette.allowDeletion(CONST gate: P_abstractGate): boolean;
@@ -610,11 +548,20 @@ FUNCTION T_palette.allowDeletion(CONST gate: P_abstractGate): boolean;
     result:=false;
   end;
 
-PROCEDURE T_palette.BringToFront;
+PROCEDURE T_palette.paint;
   VAR g:P_visualGate;
+      yOffset:longint;
   begin
-    ui.bgShape.BringToFront;
-    for g in visualPaletteItems do g^.BringToFront;
+    ui^.paletteCanvas.Brush.color:=BOARD_COLOR;
+    ui^.paletteCanvas.Brush.style:=bsSolid;
+    ui^.paletteCanvas.Rectangle(0,0,2000,2000);
+
+    yOffset:=ui^.paletteYOffset;
+    for g in visualPaletteItems do begin
+      g^.canvasPos:=pointOf(g^.gridPos[0]*ui^.getZoom,
+                            g^.gridPos[1]*ui^.getZoom-yOffset);
+      g^.paintAll(ui^.paletteCanvas,g^.canvasPos[0],g^.canvasPos[1],ui^.getZoom);
+    end;
   end;
 
 end.
