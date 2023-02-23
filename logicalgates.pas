@@ -1155,8 +1155,7 @@ FUNCTION T_inputGate.simulateStep: boolean;
 FUNCTION T_inputGate.getOutput(CONST index: longint): T_wireValue;
   begin result:=io; end;
 
-FUNCTION T_inputGate.setInput(CONST index: longint; CONST value: T_wireValue
-  ): boolean;
+FUNCTION T_inputGate.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
   begin
     result:=io<>value;
     io:=value;

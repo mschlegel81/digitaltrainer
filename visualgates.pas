@@ -13,6 +13,12 @@ TYPE
   P_visualGate=^T_visualGate;
   P_visualBoard=^T_visualBoard;
   T_visualGateArray=array of P_visualGate;
+
+  T_hoverInfo=record
+    subElement:(noHit,block,inputConnector,outputConnector);
+    ioIndex:longint;
+  end;
+
   {$define includeInterface}
   {$i visualWires.inc}
   {$i uiAdapters.inc}
@@ -44,7 +50,8 @@ TYPE
       PROCEDURE setupVisuals;
 
       FUNCTION simulateStep:boolean;
-      PROCEDURE paintAll(CONST Canvas:TCanvas; CONST x,y:longint; CONST zoom:longint); virtual;
+      PROCEDURE paintAll(CONST Canvas:TCanvas; CONST ioOnly:boolean=false);
+      PROCEDURE paintAll(CONST Canvas:TCanvas; CONST zoom:longint; CONST ioOnly:boolean=false);
       FUNCTION  clone:P_visualGate;
       PROCEDURE propertyEditDone(CONST paletteElement:boolean; CONST x0,y0:longint);
 
@@ -59,6 +66,7 @@ TYPE
 
       PROPERTY getGridWidth:longint read gridWidth;
       PROPERTY getGridHeight:longint read gridHeight;
+      FUNCTION isAtGridPos(CONST p:T_point; OUT info:T_hoverInfo):boolean;
   end;
 {$undef includeInterface}
 IMPLEMENTATION
@@ -123,213 +131,51 @@ PROCEDURE T_visualGate.setupVisuals;
     end;
   end;
 
-//PROCEDURE T_visualGate.ensureGuiElements(CONST container: TWinControl);
-//  VAR i:longint;
-//      index:longint=1;
-//  begin
-//    if mainShape<>nil then exit;
-//    ioLocations:=behavior^.getIoLocations;
-//
-//    gridHeight:=1;
-//    if (length(ioLocations.p[gt_input])>0) and (length(ioLocations.p[gt_output])>0)
-//    then gridWidth:=2
-//    else gridWidth:=1;
-//
-//    gridHeight:=max(gridHeight,max(ioLocations.numberOfLeftInputs,ioLocations.numberOfRightOutputs));
-//    gridWidth :=max(gridWidth,max(ioLocations.numberOfTopInputs,ioLocations.numberOfBottomOutputs));
-//
-//    gridWidth*=2;
-//    gridHeight*=2;
-//
-//    setLength(shapes,1+behavior^.numberOfInputs+behavior^.numberOfOutputs);
-//    setLength(labels,1+behavior^.numberOfInputs+behavior^.numberOfOutputs);
-//    shapes[0]:=TShape.create(nil);
-//    shapes[0].parent:=container;
-//    shapes[0].Shape :=stRectangle;
-//    shapes[0].Brush.color:=$00603030;
-//    shapes[0].Anchors:=[];
-//
-//    labels[0]:=TLabel.create(nil);
-//    labels[0].caption:=behavior^.getCaption;
-//    labels[0].AutoSize:=true;
-//    labels[0].Font.size:=6;
-//    labels[0].Font.color:=$00FFFFFF;
-//    labels[0].parent:=container;
-//    labels[0].Anchors:=[];
-//    labels[0].Alignment:=taCenter;
-//
-//    for i:=0 to behavior^.numberOfInputs-1 do begin
-//      shapes[index]:=TShape.create(nil);
-//      shapes[index].Shape:=stCircle;
-//      shapes[index].Brush.color:=$00804040;
-//      shapes[index].Pen.color:=$00FFFFFF;
-//      shapes[index].Tag:=i;
-//      shapes[index].parent:=container;
-//      shapes[index].Anchors:=[];
-//
-//      labels[index]:=TLabel.create(nil);
-//      labels[index].caption:=ioLocations.p[gt_input,i].ioLabel;
-//      if labels[index].caption='' then labels[index].visible:=false;
-//      labels[index].AutoSize:=true;
-//      labels[index].Font.size:=6;
-//      labels[index].Font.color:=$00FFFFFF;
-//      labels[index].parent:=container;
-//      labels[index].Anchors:=[];
-////      labels[index].AnchorVerticalCenterTo(shapes[index]);
-////      labels[index].AnchorHorizontalCenterTo(shapes[index]);
-//      inc(index);
-//    end;
-//
-//    for i:=0 to behavior^.numberOfOutputs-1 do begin
-//      shapes[index]:=TShape.create(nil);
-//      shapes[index].Shape:=stCircle;
-//      shapes[index].Tag:=i;
-//      shapes[index].Brush.color:=$00804040;
-//      shapes[index].Pen.color:=$00FFFFFF;
-//      shapes[index].parent:=container;
-//      shapes[index].Anchors:=[];
-//
-//      labels[index]:=TLabel.create(nil);
-//      labels[index].caption:=ioLocations.p[gt_output,i].ioLabel;
-//      if labels[index].caption='' then labels[index].visible:=false;
-//      labels[index].AutoSize:=true;
-//      labels[index].Font.size:=6;
-//      labels[index].Font.color:=$00FFFFFF;
-//      labels[index].parent:=container;
-//      labels[index].Anchors:=[];
-////      labels[index].AnchorVerticalCenterTo(shapes[index]);
-////      labels[index].AnchorHorizontalCenterTo(shapes[index]);
-//      inc(index);
-//    end;
-//
-//    if behavior^.gateType in [gt_input,gt_output] then begin
-//      labels[0].Alignment:=taLeftJustify;
-//
-//      //labels[0].AnchorParallel(akLeft,5,shapes[0]);
-//      //labels[0].AnchorParallel(akTop ,5,shapes[0]);
-//      ioMode:=wr_binary;
-//
-//      ioEdit:=TEdit.create(nil);
-//      ioEdit.parent:=container;
-//      ioEdit.Font.color:=$00FFFFFF;
-//      ioEdit.color:=$00A05050;
-//      ioEdit.readonly:=behavior^.gateType=gt_output;
-//
-//      setLength(shapes,index+1);
-//      setLength(labels,index+1);
-//      shapes[index]:=TShape.create(nil);
-//      shapes[index].parent:=container;
-//      shapes[index].Shape :=stRoundRect;
-//      shapes[index].Brush.color:=$00A05050;
-//      shapes[index].Anchors:=[];
-//      gridWidth:=4;
-//      gridHeight:=4;
-//
-//      labels[index]:=TLabel.create(nil);
-//      labels[index].caption:=C_multibitWireRepresentationName[wr_binary];
-//      labels[index].AutoSize:=true;
-//      labels[index].Font.size:=6;
-//      labels[index].Font.color:=$00FFFFFF;
-//      labels[index].parent:=container;
-//      labels[index].Anchors:=[];
-////      labels[index].AnchorVerticalCenterTo(shapes[index]);
-////      labels[index].AnchorHorizontalCenterTo(shapes[index]);
-//    end;
-//
-//  end;
-//
-//PROCEDURE T_visualGate.disposeGuiElements;
-//  VAR i:longint;
-//  begin
-//    for i:=0 to length(labels)-1 do begin
-//      labels[i].Anchors:=[];
-//      FreeAndNil(labels[i]);
-//    end;
-//    setLength(labels,0);
-//    if ioEdit<>nil then FreeAndNil(ioEdit);
-//    for i:=length(shapes)-1 downto 0 do begin
-//      shapes[i].Anchors:=[];
-//      FreeAndNil(shapes[i]);
-//    end;
-//    setLength(shapes,0);
-//  end;
-
 FUNCTION T_visualGate.simulateStep: boolean;
   begin
     result:=behavior^.simulateStep;
   end;
 
-//PROCEDURE T_visualGate.updateVisuals;
-//  FUNCTION colorOf(CONST w:T_wireValue):longint;
-//    begin
-//      if w.width>1 then begin
-//        if isFullyDefined(w)
-//        then result:=$00606060
-//        else result:=$00804040;
-//      end else case w.bit[0] of
-//        tsv_true        : result:=$0000AAFF;
-//        tsv_false       : result:=$00000000;
-//        tsv_undetermined: result:=$00804040;
-//      end;
-//    end;
-//
-//  VAR shapeIndex:longint=1;
-//      i:longint;
-//  begin
-//    if length(shapes)=0 then exit;
-//    if marked
-//    then shapes[0].Pen.color:=$0000AAFF
-//    else shapes[0].Pen.color:=$00000000;
-//
-//    for i:=0 to behavior^.numberOfInputs-1 do begin
-//      shapes[shapeIndex].Brush.color:=colorOf(behavior^.getInput(i));
-//      inc(shapeIndex);
-//    end;
-//    for i:=0 to behavior^.numberOfOutputs-1 do begin
-//      shapes[shapeIndex].Brush.color:=colorOf(behavior^.getOutput(i));
-//      inc(shapeIndex);
-//    end;
-//
-//    if (ioEdit<>nil) and not(ioEdit.Focused) then ioEdit.text:=getWireString(behavior^.getInput(0),ioMode);
-//  end;
+PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST ioOnly: boolean);
+  begin
+    canvasPos:=uiAdapter^.gridToCanvas(gridPos);
+    paintAll(Canvas,uiAdapter^.zoom,ioOnly);
+  end;
 
-PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST x, y: longint;
-  CONST zoom: longint);
+PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST zoom: longint; CONST ioOnly: boolean);
   VAR k: integer;
       p: T_point;
   begin
-    canvasPos:=uiAdapter^.gridToCanvas(gridPos);
-
     if behavior^.gateType in [gt_input,gt_output]
     then begin
-      getIoBlockSprite(behavior^.getCaption,marked)^.renderAt(Canvas,uiAdapter^.getZoom,canvasPos);
-      getIoTextSprite(behavior^.getInput(0),ioMode)^.renderAt(Canvas,uiAdapter^.getZoom,canvasPos);
-    end
-    else getBlockSprite  (behavior^.getCaption,gridWidth,gridHeight,marked)^.renderAt(Canvas,uiAdapter^.getZoom,canvasPos);
+      if not(ioOnly) then
+      getIoBlockSprite(behavior^.getCaption,marked)^.renderAt(Canvas,zoom,canvasPos);
+      getIoTextSprite(behavior^.getInput(0),ioMode)^.renderAt(Canvas,zoom,canvasPos);
+    end else begin
+      if not(ioOnly) then
+      getBlockSprite  (behavior^.getCaption,gridWidth,gridHeight,marked)^.renderAt(Canvas,zoom,canvasPos);
+    end;
 
     for k:=0 to length(ioLocations.p[gt_input])-1 do with ioLocations.p[gt_input,k] do
       if leftOrRight then begin
-        p:=uiAdapter^.
-           gridToCanvas(gridPos[0],
-                        gridPos[1]+(positionIndex*2-(ioLocations.numberOfLeftInputs-1))+gridHeight div 2);
-        getIoSprite(io_right,behavior^.getInput(k))^.renderAt(Canvas,uiAdapter^.getZoom,p);
+        p:=pointOf(canvasPos[0],
+                   canvasPos[1]+zoom*((positionIndex*2-(ioLocations.numberOfLeftInputs-1))+gridHeight div 2));
+        getIoSprite(io_right,behavior^.getInput(k),ioLabel)^.renderAt(Canvas,zoom,p);
       end else begin
-        p:=uiAdapter^.
-           gridToCanvas(gridPos[0]+(positionIndex*2-(ioLocations.numberOfTopInputs-1))+gridWidth div 2,
-                        gridPos[1]);
-        getIoSprite(io_bottom,behavior^.getInput(k))^.renderAt(Canvas,uiAdapter^.getZoom,p);
+        p:=pointOf(canvasPos[0]+zoom*((positionIndex*2-(ioLocations.numberOfTopInputs-1))+gridWidth div 2),
+                   canvasPos[1]);
+        getIoSprite(io_bottom,behavior^.getInput(k),ioLabel)^.renderAt(Canvas,zoom,p);
       end;
+
     for k:=0 to length(ioLocations.p[gt_output])-1 do with ioLocations.p[gt_output,k] do
       if leftOrRight then begin
-        p:=uiAdapter^.
-           gridToCanvas(gridPos[0]+gridWidth,
-                        gridPos[1]+(positionIndex*2-(ioLocations.numberOfRightOutputs-1))+gridHeight div 2);
-        getIoSprite(io_left,behavior^.getOutput(k))^.renderAt(Canvas,uiAdapter^.getZoom,p);
+        p:=pointOf(canvasPos[0]+gridWidth*zoom,
+                   canvasPos[1]+zoom*((positionIndex*2-(ioLocations.numberOfRightOutputs-1))+gridHeight div 2));
+        getIoSprite(io_left,behavior^.getOutput(k),ioLabel)^.renderAt(Canvas,zoom,p);
       end else begin
-        p:=uiAdapter^.
-           gridToCanvas(gridPos[0]+(positionIndex*2-(ioLocations.numberOfBottomOutputs-1))+gridWidth div 2,
-                        gridPos[1]);
-        getIoSprite(io_top,behavior^.getOutput(k))^.renderAt(Canvas,uiAdapter^.getZoom,p);
+        p:=pointOf(canvasPos[0]+zoom*((positionIndex*2-(ioLocations.numberOfBottomOutputs-1))+gridWidth div 2),
+                   canvasPos[1]+zoom*gridHeight);
+        getIoSprite(io_top,behavior^.getOutput(k),ioLabel)^.renderAt(Canvas,uiAdapter^.getZoom,p);
       end;
   end;
 
@@ -342,7 +188,8 @@ FUNCTION T_visualGate.clone: P_visualGate;
     result^.ioMode   :=ioMode;
   end;
 
-PROCEDURE T_visualGate.propertyEditDone(CONST paletteElement: boolean; CONST x0, y0: longint);
+PROCEDURE T_visualGate.propertyEditDone(CONST paletteElement: boolean;
+  CONST x0, y0: longint);
   begin
     setupVisuals;
   end;
@@ -376,6 +223,35 @@ FUNCTION T_visualGate.overlaps(CONST other: P_visualGate): boolean;
   begin
     result:=(max(gridPos[0],other^.gridPos[0])<min(gridPos[0]+gridWidth ,other^.gridPos[0]+other^.gridWidth ))
         and (max(gridPos[1],other^.gridPos[1])<min(gridPos[1]+gridHeight,other^.gridPos[1]+other^.gridHeight));
+  end;
+
+FUNCTION T_visualGate.isAtGridPos(CONST p: T_point; OUT info: T_hoverInfo): boolean;
+  VAR i:longint;
+      d: T_point;
+  begin
+    if (p[0]<gridPos[0]) or (p[1]<gridPos[1]) or (p[0]>gridPos[0]+gridWidth) or (p[1]>gridPos[1]+gridHeight) then exit(false);
+
+    for i:=0 to length(ioLocations.p[gt_input])-1 do begin
+      d:=gridPos+getInputPositionInGridSize(i);
+      if (d=p) then begin
+        info.subElement:=inputConnector;
+        info.ioIndex:=i;
+        exit(true);
+      end;
+    end;
+
+    for i:=0 to length(ioLocations.p[gt_output])-1 do begin
+      d:=gridPos+getOutputPositionInGridSize(i);
+      if (d=p) then begin
+        info.subElement:=outputConnector;
+        info.ioIndex:=i;
+        exit(true);
+      end;
+    end;
+
+    if p[1]-gridPos[1]>=gridHeight div 2 then info.ioIndex:=1 else info.ioIndex:=0;
+    info.subElement:=block;
+    result:=true;
   end;
 
 //PROCEDURE T_visualGate.setPaletteEntryMouseActions;

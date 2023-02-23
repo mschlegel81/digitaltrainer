@@ -13,9 +13,12 @@ TYPE
 
   T_sprite=object
     private
+      lastUsed:double;
       bitmap:TBGRABitmap;
       preparedForZoom:longint;
       screenOffset:T_point;
+    protected
+      PROCEDURE textOut(CONST s:string; CONST x0,y0,x1,y1:longint; CONST textColor:longint=$00FFFFFF);
     public
       CONSTRUCTOR create;
       DESTRUCTOR destroy;
@@ -33,7 +36,6 @@ TYPE
       width,height:longint;
       marked:boolean;
     protected
-      PROCEDURE textOut(CONST s:string; CONST x0,y0,x1,y1:longint; CONST textColor:longint=$00FFFFFF);
       PROCEDURE initBaseShape(CONST zoom:longint);
     public
       CONSTRUCTOR create(CONST caption_:string; CONST gridWidth,gridHeight:longint; CONST marked_:boolean);
@@ -68,23 +70,43 @@ TYPE
     private
       position:T_ioDirection; //no diagonals, only main axes
       state:T_ioState;
+      cap:string;
     public
-      CONSTRUCTOR create(CONST pos:T_ioDirection; CONST s:T_ioState);
+      CONSTRUCTOR create(CONST pos:T_ioDirection; CONST s:T_ioState; CONST caption:string);
       PROCEDURE setZoom(CONST zoom:longint); virtual;
   end;
 
   T_spriteMap=specialize G_stringKeyMap<P_sprite>;
 
-FUNCTION getIoSprite(CONST pos:T_ioDirection; CONST wireValue:T_wireValue):P_sprite;
+FUNCTION getIoSprite(CONST pos:T_ioDirection; CONST wireValue:T_wireValue; CONST caption:string):P_sprite;
 FUNCTION getBlockSprite(CONST caption:string; CONST gridWidth,gridHeight:longint; CONST marked:boolean):P_sprite;
 FUNCTION getIoBlockSprite(CONST caption:string; CONST marked:boolean):P_sprite;
 FUNCTION getIoTextSprite(CONST wireValue:T_wireValue; mode:T_multibitWireRepresentation):P_sprite;
 IMPLEMENTATION
 USES sysutils,myStringUtil,types,Classes,math;
-VAR ioSprites:array[T_ioDirection,T_ioState] of P_ioSprite;
+VAR ioSpriteMap,
     blockSpriteMap,
-    ioSpriteMap,
+    ioBlockSpriteMap,
     ioTextSpriteMap:T_spriteMap;
+
+PROCEDURE dropOldSprites(CONST timeoutInDays:double);
+  VAR threshold:double;
+  PROCEDURE dropFromMap(VAR map:T_spriteMap);
+    VAR entries: T_spriteMap.KEY_VALUE_LIST;
+        i:longint;
+    begin
+      entries:=map.entrySet;
+      for i:=0 to length(entries)-1 do if P_sprite(entries[i].value)^.lastUsed<threshold then map.dropKey(entries[i].key);
+      setLength(entries,0);
+    end;
+
+  begin
+    threshold:=now-timeoutInDays;
+    dropFromMap(ioSpriteMap     );
+    dropFromMap(blockSpriteMap  );
+    dropFromMap(ioBlockSpriteMap);
+    dropFromMap(ioTextSpriteMap );
+  end;
 
 PROCEDURE disposeSprite(VAR s:P_sprite);
   begin
@@ -93,27 +115,26 @@ PROCEDURE disposeSprite(VAR s:P_sprite);
   end;
 
 PROCEDURE init;
-  VAR ioState:T_ioState;
-      ioDir  :T_ioDirection;
   begin
-    for ioState in T_ioState do for ioDir in T_ioDirection do ioSprites[ioDir,ioState]:=nil;
-    blockSpriteMap .create(@disposeSprite);
-    ioSpriteMap    .create(@disposeSprite);
-    ioTextSpriteMap.create(@disposeSprite);
+    ioSpriteMap     .create(@disposeSprite);
+    blockSpriteMap  .create(@disposeSprite);
+    ioBlockSpriteMap.create(@disposeSprite);
+    ioTextSpriteMap .create(@disposeSprite);
   end;
 
 PROCEDURE finalize;
-  VAR ioState:T_ioState;
-      ioDir  :T_ioDirection;
   begin
-    for ioState in T_ioState do for ioDir in T_ioDirection do if ioSprites[ioDir,ioState]<>nil then dispose(ioSprites[ioDir,ioState],destroy);
-    blockSpriteMap .destroy;
-    ioSpriteMap    .destroy;
-    ioTextSpriteMap.destroy;
+    ioSpriteMap     .destroy;
+    blockSpriteMap  .destroy;
+    ioBlockSpriteMap.destroy;
+    ioTextSpriteMap .destroy;
   end;
 
-FUNCTION getIoSprite(CONST pos: T_ioDirection; CONST wireValue:T_wireValue): P_sprite;
+FUNCTION getIoSprite(CONST pos: T_ioDirection; CONST wireValue:T_wireValue; CONST caption:string): P_sprite;
+  CONST posKey  :array[T_ioDirection] of char=('l','r','t','b');
+        stateKey:array[T_ioState] of char=('?','1','0','M');
   VAR state:T_ioState;
+      key:string;
   begin
     if isFullyDefined(wireValue) then begin
       if wireValue.width>1
@@ -123,8 +144,12 @@ FUNCTION getIoSprite(CONST pos: T_ioDirection; CONST wireValue:T_wireValue): P_s
            else state:=io_low;
     end else state:=io_undetermined;
 
-    if ioSprites[pos,state]=nil then new(ioSprites[pos,state],create(pos,state));
-    result:=ioSprites[pos,state];
+    key:=posKey[pos]+stateKey[state]+caption;
+    if not ioSpriteMap.containsKey(key,result) then begin
+      new(P_ioSprite(result),create(pos,state,caption));
+      ioSpriteMap.put(key,result);
+    end;
+    result^.lastUsed:=now;
   end;
 
 FUNCTION getBlockSprite(CONST caption: string; CONST gridWidth, gridHeight: longint; CONST marked: boolean): P_sprite;
@@ -135,16 +160,18 @@ FUNCTION getBlockSprite(CONST caption: string; CONST gridWidth, gridHeight: long
       new(P_blockSprite(result),create(caption,gridWidth,gridHeight,marked));
       blockSpriteMap.put(key,result);
     end;
+    result^.lastUsed:=now;
   end;
 
 FUNCTION getIoBlockSprite(CONST caption: string; CONST marked: boolean): P_sprite;
   VAR key:string;
   begin
     key:=caption+' '+BoolToStr(marked,'M','');
-    if not ioSpriteMap.containsKey(key,result) then begin
+    if not ioBlockSpriteMap.containsKey(key,result) then begin
       new(P_ioBlockSprite(result),create(caption,marked));
-      ioSpriteMap.put(key,result);
+      ioBlockSpriteMap.put(key,result);
     end;
+    result^.lastUsed:=now;
   end;
 
 FUNCTION getIoTextSprite(CONST wireValue: T_wireValue; mode: T_multibitWireRepresentation): P_sprite;
@@ -159,6 +186,7 @@ FUNCTION getIoTextSprite(CONST wireValue: T_wireValue; mode: T_multibitWireRepre
       new(P_ioTextSprite(result),create(mode,cap));
       ioTextSpriteMap.put(key,result);
     end;
+    result^.lastUsed:=now;
   end;
 
 { T_ioTextSprite }
@@ -173,9 +201,9 @@ PROCEDURE T_ioTextSprite.setZoom(CONST zoom: longint);
   VAR
     newWidth, newHeight: longint;
   begin
-    screenOffset:=pointOf(-1,-1-2*zoom);
+    screenOffset:=pointOf(-1,-2-2*zoom);
     newWidth :=4*zoom-3;
-    newHeight:=2*zoom-2;
+    newHeight:=2*zoom-3;
     if bitmap=nil
     then bitmap:=TBGRABitmap.create(newWidth,newHeight,GATE_COLOR)
     else bitmap.setSize(newWidth,newHeight);
@@ -183,9 +211,12 @@ PROCEDURE T_ioTextSprite.setZoom(CONST zoom: longint);
     bitmap.CanvasBGRA.Brush.color:=GATE_COLOR;
     bitmap.CanvasBGRA.Brush.style:=bsSolid;
     bitmap.CanvasBGRA.Pen.style:=psClear;
+    bitmap.CanvasBGRA.Rectangle(0,0,newWidth,newHeight);
+    bitmap.CanvasBGRA.DrawFontBackground:=true;
     textOut(wireModeText,0,0,newWidth,newHeight,SHADOW_COLOR);
 
     bitmap.CanvasBGRA.Brush.style:=bsClear;
+    bitmap.CanvasBGRA.DrawFontBackground:=false;
     textOut(caption     ,0,0,newWidth,newHeight);
     preparedForZoom:=zoom;
   end;
@@ -199,19 +230,20 @@ CONSTRUCTOR T_ioBlockSprite.create(CONST caption_: string; CONST marked_: boolea
 
 { T_ioSprite }
 
-CONSTRUCTOR T_ioSprite.create(CONST pos: T_ioDirection; CONST s: T_ioState);
+CONSTRUCTOR T_ioSprite.create(CONST pos: T_ioDirection; CONST s: T_ioState; CONST caption:string);
   begin
     inherited create;
     position:=pos;
     state:=s;
+    cap:=caption;
   end;
 
 PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
   VAR radius:longint;
       c:longint;
       r,g,b:word;
-
       baseR,baseG,baseB:word;
+      transparentCol:TBGRAPixel;
 
   PROCEDURE addCol(CONST color:longint);
     begin
@@ -263,7 +295,8 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
   VAR x,y:longint;
       subX,subY:double;
       px: PCardinal;
-
+      captioned:boolean=false;
+      ll:longint;
   begin
     case state of
       io_undetermined: begin baseR:=BOARD_COLOR and 255; baseG:=(BOARD_COLOR shr 8) and 255; baseB:=(BOARD_COLOR shr 16) and 255; end;
@@ -278,24 +311,53 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
     then bitmap:=TBGRABitmap.create(radius*2+1,radius*2+1,BOARD_COLOR)
     else bitmap            .setSize(radius*2+1,radius*2+1);
 
+    bitmap.CanvasBGRA.Brush.color:=0;
+    bitmap.CanvasBGRA.Rectangle(0,0,radius*2+1,radius*2+1,true);
+    if cap<>'' then begin
+      captioned:=true;
+      x:=round(radius*0.2);
+      bitmap.CanvasBGRA.AntialiasingMode:=amOn;
+
+      transparentCol.alpha:=255;
+      transparentCol.RED:=0;
+      transparentCol.GREEN:=0;
+      transparentCol.BLUE:=0;
+      bitmap.CanvasBGRA.Brush.BGRAColor:=transparentCol;
+      bitmap.CanvasBGRA.Brush.style:=bsSolid;
+
+      bitmap.CanvasBGRA.DrawFontBackground:=true;
+      textOut(cap,x,x,radius*2-x,radius*2-x);
+    end;
+
     for y:=0 to radius*2 do begin
       px:=PCardinal(bitmap.ScanLine[y]);
       for x:=0 to radius*2 do begin
         r:=0; g:=0; b:=0;
         for subX in sub do for subY in sub do getColorAt(x+subX-c,y+subY-c);
-
-        px^:=(longint(b shr 6)       ) or
-             (longint(g shr 6) shl  8) or
-             (longint(r shr 6) shl 16);
+        b:=b shr 6;
+        g:=g shr 6;
+        r:=r shr 6;
+        if captioned then begin
+          ll:=px^ and 255;
+          if ll>0 then begin
+            r:=ll+((256-ll)*r) shr 8;
+            g:=ll+((256-ll)*g) shr 8;
+            b:=ll+((256-ll)*b) shr 8;
+          end;
+        end;
+        px^:=(b       ) or
+             (g shl  8) or
+             (r shl 16);
         inc(px);
       end;
     end;
+
     preparedForZoom:=zoom;
   end;
 
 { T_blockSprite }
 
-PROCEDURE T_blockSprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; CONST textColor:longint=$00FFFFFF);
+PROCEDURE T_sprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; CONST textColor:longint=$00FFFFFF);
   VAR
     lines       :T_arrayOfString;
     line:string;
@@ -304,8 +366,8 @@ PROCEDURE T_blockSprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; 
     yTally:longint=0;
     extend: TSize;
     rotate:boolean=false;
-
     fontSizeFactor:double;
+
   PROCEDURE updateTextExtend;
     VAR s:string;
     begin
@@ -322,10 +384,12 @@ PROCEDURE T_blockSprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; 
     lines:=split(s,LineEnding);
 
     bitmap.CanvasBGRA.Font.orientation:=0;
+    bitmap.CanvasBGRA.Font.quality:=fqFineAntialiasing;
+    bitmap.CanvasBGRA.Font.Antialiasing:=true;
     updateTextExtend;
 
     //fit for aspect ratio:
-    if ((y1-y0)>(x1-x0)) and (textHeight>maxTextWidth) then begin
+    if ((y1-y0)>(x1-x0)) and (maxTextWidth>textHeight) then begin
       fontSizeFactor:=min((x1-x0)/textHeight,(y1-y0)/maxTextWidth);
       rotate:=true;
     end else begin
@@ -411,7 +475,7 @@ PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint);
 
     bitmap.CanvasBGRA.Brush.color:=BOARD_COLOR;
     bitmap.CanvasBGRA.Pen.style:=psClear;
-    bitmap.CanvasBGRA.Rectangle(0,0,newWidth-1,newHeight-1);
+    bitmap.CanvasBGRA.Rectangle(0,0,newWidth+1,newHeight+1);
 
     bitmap.CanvasBGRA.Brush.color:=GATE_COLOR;
     bitmap.CanvasBGRA.Pen.style:=psSolid;
@@ -439,6 +503,7 @@ CONSTRUCTOR T_blockSprite.create(CONST caption_: string; CONST gridWidth, gridHe
 PROCEDURE T_blockSprite.setZoom(CONST zoom: longint);
   begin
     initBaseShape(zoom);
+    bitmap.CanvasBGRA.DrawFontBackground:=true;
     textOut(caption,
             screenOffset[0]            +zoom shr 1,
             screenOffset[1]            +zoom shr 1,
@@ -450,6 +515,7 @@ PROCEDURE T_blockSprite.setZoom(CONST zoom: longint);
 PROCEDURE T_ioBlockSprite.setZoom(CONST zoom: longint);
   begin
     initBaseShape(zoom);
+    bitmap.CanvasBGRA.DrawFontBackground:=true;
     textOut(caption,
             screenOffset[0]            +zoom shr 1,
             screenOffset[1]            +zoom shr 1,
@@ -466,6 +532,7 @@ PROCEDURE T_ioBlockSprite.setZoom(CONST zoom: longint);
 
 CONSTRUCTOR T_sprite.create;
   begin
+    lastUsed:=now;
     bitmap:=nil;
     preparedForZoom:=-1;
   end;

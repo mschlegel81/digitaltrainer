@@ -507,7 +507,7 @@ PROCEDURE T_palette.checkSizes;
       if width>requiredWidth then requiredWidth:=width;
     end;
     requiredHeight+=1;
-    requiredWidth     +=4;
+    requiredWidth +=4;
     ui^.setPaletteSize(requiredWidth,requiredHeight);
   end;
 
@@ -541,6 +541,8 @@ PROCEDURE T_palette.attachUI(CONST uiAdapter: P_uiAdapter);
 PROCEDURE T_palette.comboBoxSelect(Sender: TObject);
   begin
     selectSubPalette(ui^.paletteComboBox.ItemIndex);
+    checkSizes;
+    paint;
   end;
 
 FUNCTION T_palette.allowDeletion(CONST gate: P_abstractGate): boolean;
@@ -554,13 +556,15 @@ PROCEDURE T_palette.paint;
   begin
     ui^.paletteCanvas.Brush.color:=BOARD_COLOR;
     ui^.paletteCanvas.Brush.style:=bsSolid;
-    ui^.paletteCanvas.Rectangle(0,0,2000,2000);
+    ui^.paletteCanvas.Pen.color:=clBlack;
+    ui^.paletteCanvas.Pen.style:=psSolid;
+    ui^.paletteCanvas.Rectangle(-1,-1,ui^.paletteWidth,2000);
 
     yOffset:=ui^.paletteYOffset;
     for g in visualPaletteItems do begin
       g^.canvasPos:=pointOf(g^.gridPos[0]*ui^.getZoom,
-                            g^.gridPos[1]*ui^.getZoom-yOffset);
-      g^.paintAll(ui^.paletteCanvas,g^.canvasPos[0],g^.canvasPos[1],ui^.getZoom);
+                            g^.gridPos[1]*ui^.getZoom+yOffset);
+      g^.paintAll(ui^.paletteCanvas,ui^.getZoom);
     end;
   end;
 

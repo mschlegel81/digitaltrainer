@@ -77,6 +77,8 @@ TYPE
     PROCEDURE miRedoClick(Sender: TObject);
     PROCEDURE miSaveAsTaskClick(Sender: TObject);
     PROCEDURE miUndoClick(Sender: TObject);
+    PROCEDURE PaletteScrollBarScroll(Sender: TObject; ScrollCode: TScrollCode;
+      VAR ScrollPos: integer);
     PROCEDURE PlayPauseShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE propCancelShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
@@ -172,6 +174,7 @@ PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
   begin
     workspace.activePalette^.checkSizes;
     workspace.activePalette^.paint;
+    workspace.activeBoard^.paint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
@@ -236,6 +239,11 @@ end;
 PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
   begin
     uiAdapter.performUndo(@workspace.setActiveBoard);
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.PaletteScrollBarScroll(Sender: TObject; ScrollCode: TScrollCode; VAR ScrollPos: integer);
+  begin
+    workspace.activePalette^.paint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.PlayPauseShapeMouseDown(Sender: TObject;
@@ -326,6 +334,7 @@ PROCEDURE TDigitaltrainerMainForm.ResetShapeMouseDown(Sender: TObject;
   begin
     buttonClicked(ResetShape);
     workspace.activeBoard^.reset;
+    workspace.activeBoard^.paint;
     stepsTotal:=0;
   end;
 
@@ -397,20 +406,41 @@ PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);
     SimulationTimer.interval:=SPEED_SETTING[speedTrackBar.position].timerInterval;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.ZoomInShapeMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TDigitaltrainerMainForm.ZoomInShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+
+  VAR
+    tick: qword;
   begin
+    tick:=GetTickCount64;
     buttonClicked(ZoomInShape);
     uiAdapter.zoomIn;
+    writeln('clicked done in ',GetTickCount64-tick); tick:=GetTickCount64;
+
     workspace.activePalette^.checkSizes;
+    writeln('checkSizes done in ',GetTickCount64-tick); tick:=GetTickCount64;
+
+    workspace.activePalette^.paint;
+    writeln('palette painted in ',GetTickCount64-tick); tick:=GetTickCount64;
+
+    workspace.activeBoard^.paint;
+    writeln('board painted in ',GetTickCount64-tick); tick:=GetTickCount64;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.ZoomOutShapeMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TDigitaltrainerMainForm.ZoomOutShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  VAR
+    tick: qword;
   begin
+    tick:=GetTickCount64;
     buttonClicked(ZoomOutShape);
     uiAdapter.zoomOut;
+    writeln('clicked done in ',GetTickCount64-tick); tick:=GetTickCount64;
+
     workspace.activePalette^.checkSizes;
+    writeln('checkSizes done in ',GetTickCount64-tick); tick:=GetTickCount64;
+    workspace.activePalette^.paint;
+    writeln('palette painted in ',GetTickCount64-tick); tick:=GetTickCount64;
+    workspace.activeBoard^.paint;
+    writeln('board painted in ',GetTickCount64-tick); tick:=GetTickCount64;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.buttonClicked(Shape: TShape);
