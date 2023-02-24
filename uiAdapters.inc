@@ -13,6 +13,7 @@ T_uiState=(uas_initial,
 F_showPropertyEditorCallback=PROCEDURE (CONST gate:P_visualGate; CONST fromBoard:boolean; CONST mouseX,mouseY:longint) of object;
 F_procedure=PROCEDURE() of object;
 F_setBoardCallback=PROCEDURE (CONST board:P_visualBoard) of object;
+F_gateHitInfo=FUNCTION (CONST gridPos:T_point; OUT gate:P_visualGate):boolean of object;
 
 { T_uiAdapter }
 
@@ -20,19 +21,22 @@ T_uiAdapter=object
   private
     uiElement:record
       selectionShape:TShape;
-      boardImage,
-      paletteImage:TImage;
+      paletteWidth:longint;
+      boardImage:TImage;
       paletteComboBox:TComboBox;
       wireLayer:TBGRABitmap;
       boardHorizontalScrollBar,
       boardVerticalScrollBar,
       paletteScrollBar:TScrollBar;
+      ioEdit:TEdit;
     end;
 
     callback:record
       showPropertyEditorCallback:F_showPropertyEditorCallback;
       boardModifiedCallback:F_procedure;
       BeginFormUpdate,EndFormUpdate:F_procedure;
+      paletteItemAt:F_gateHitInfo;
+      paintPalette:F_procedure;
     end;
 
     zoom:longint;
@@ -57,11 +61,12 @@ T_uiAdapter=object
     end;
   public
     CONSTRUCTOR create(CONST selectionShape:TShape;
-                       CONST boardImage,paletteImage:TImage;
+                       CONST boardImage:TImage;
                        CONST paletteComboBox:TComboBox;
                        CONST boardHorizontalScrollBar,
                              boardVerticalScrollBar,
                              paletteScrollBar:TScrollBar;
+                       CONST ioEdit:TEdit;
                        CONST showPropertyEditorCallback:F_showPropertyEditorCallback;
                        CONST boardModifiedCallback:F_procedure;
                        CONST BeginFormUpdate,EndFormUpdate:F_procedure);
@@ -97,32 +102,36 @@ T_uiAdapter=object
     FUNCTION canvasToGrid(CONST p:T_point):T_point;
     FUNCTION canvasToGrid(CONST x,y:longint):T_point;
 
+    PROCEDURE palletteConnected(CONST paintEvent:F_procedure; CONST gateHitInfo:F_gateHitInfo);
     PROPERTY paletteComboBox:TComboBox read uiElement.paletteComboBox;
     FUNCTION paletteCanvas:TCanvas;
     PROCEDURE setPaletteSize(CONST paletteWidthInGridSize,paletteHeightInGridSize:longint);
     FUNCTION paletteYOffset:longint;
     FUNCTION paletteWidth:longint;
 
+    PROCEDURE showIoEdit(CONST gate:P_visualGate);
+    PROCEDURE hideIoEdit;
+
+    PROCEDURE paintAll;
   end;
 {$endif}
 {$ifdef includeImplementation}
 
-CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape; CONST boardImage,
-  paletteImage: TImage; CONST paletteComboBox: TComboBox;
+CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape; CONST boardImage:TImage; CONST paletteComboBox: TComboBox;
   CONST boardHorizontalScrollBar, boardVerticalScrollBar,
-  paletteScrollBar: TScrollBar;
+  paletteScrollBar: TScrollBar; CONST ioEdit: TEdit;
   CONST showPropertyEditorCallback: F_showPropertyEditorCallback;
   CONST boardModifiedCallback: F_procedure; CONST BeginFormUpdate,
   EndFormUpdate: F_procedure);
   begin
     uiElement.selectionShape          :=selectionShape;
     uiElement.boardImage              :=boardImage;
-    uiElement.paletteImage            :=paletteImage;
     uiElement.wireLayer               :=TBGRABitmap.create(boardImage.width,boardImage.height);
     uiElement.paletteComboBox         :=paletteComboBox;
     uiElement.boardHorizontalScrollBar:=boardHorizontalScrollBar;
     uiElement.boardVerticalScrollBar  :=boardVerticalScrollBar  ;
     uiElement.paletteScrollBar        :=paletteScrollBar        ;
+    uiElement.ioEdit                  :=ioEdit;
     callback.showPropertyEditorCallback:=showPropertyEditorCallback;
     callback.boardModifiedCallback:=boardModifiedCallback;
     callback.BeginFormUpdate:=BeginFormUpdate;
@@ -258,8 +267,8 @@ FUNCTION T_uiAdapter.draggedGate: P_visualGate;
   end;
 
 PROCEDURE T_uiAdapter.startDrag(CONST evtX, evtY: longint;
-  CONST gateToDrag: P_visualGate;
-  CONST newState: T_uiState; CONST outputIndex: longint);
+  CONST gateToDrag: P_visualGate; CONST newState: T_uiState;
+  CONST outputIndex: longint);
   begin
     state:=newState;
     dragData.startX:=evtX;
@@ -306,11 +315,15 @@ PROCEDURE T_uiAdapter.endSelectionDrag;
 PROCEDURE T_uiAdapter.zoomIn;
   begin
     zoom:=round(zoom*1.1);
+    activeBoard^.wiresUpToDate:=false;
+    hideIoEdit;
   end;
 
 PROCEDURE T_uiAdapter.zoomOut;
   begin
     zoom:=round(zoom/1.1);
+    activeBoard^.wiresUpToDate:=false;
+    hideIoEdit;
   end;
 
 PROCEDURE T_uiAdapter.resetState;
@@ -347,6 +360,8 @@ FUNCTION T_uiAdapter.performUndo(CONST setBoard: F_setBoardCallback): boolean;
       setLength(undoList,length(undoList)-1);
       setBoard(activeBoard);
       activeBoard^.attachUI(@self);
+      activeBoard^.paint;
+      hideIoEdit;
       result:=true;
     end else result:=false;
   end;
@@ -361,6 +376,8 @@ FUNCTION T_uiAdapter.performRedo(CONST setBoard: F_setBoardCallback): boolean;
       setLength(redoList,length(redoList)-1);
       setBoard(activeBoard);
       activeBoard^.attachUI(@self);
+      activeBoard^.paint;
+      hideIoEdit;
       result:=true;
     end else result:=false;
   end;
@@ -373,7 +390,7 @@ FUNCTION T_uiAdapter.boardOrigin: T_point;
 
 FUNCTION T_uiAdapter.gridToCanvas(CONST p: T_point): T_point;
   begin
-    result:=pointOf(p[0]*zoom-uiElement.boardHorizontalScrollBar.position,
+    result:=pointOf(p[0]*zoom-uiElement.boardHorizontalScrollBar.position+uiElement.paletteWidth,
                     p[1]*zoom-uiElement.boardVerticalScrollBar  .position);
   end;
 
@@ -384,7 +401,7 @@ FUNCTION T_uiAdapter.gridToCanvas(CONST x, y: longint): T_point;
 
 FUNCTION T_uiAdapter.canvasToGrid(CONST p: T_point): T_point;
   begin
-    result:=pointOf(round((p[0]+uiElement.boardHorizontalScrollBar.position)/zoom),
+    result:=pointOf(round((p[0]+uiElement.boardHorizontalScrollBar.position-uiElement.paletteWidth)/zoom),
                     round((p[1]+uiElement.boardVerticalScrollBar  .position)/zoom));
   end;
 
@@ -393,12 +410,19 @@ FUNCTION T_uiAdapter.canvasToGrid(CONST x, y: longint): T_point;
     result:=canvasToGrid(pointOf(x,y));
   end;
 
-FUNCTION T_uiAdapter.paletteCanvas: TCanvas;
+PROCEDURE T_uiAdapter.palletteConnected(CONST paintEvent: F_procedure; CONST gateHitInfo:F_gateHitInfo);
   begin
-    result:=uiElement.paletteImage.picture.bitmap.Canvas;
+    callback.paintPalette:=paintEvent;
+    callback.paletteItemAt:=gateHitInfo;
   end;
 
-PROCEDURE T_uiAdapter.setPaletteSize(CONST paletteWidthInGridSize,paletteHeightInGridSize: longint);
+FUNCTION T_uiAdapter.paletteCanvas: TCanvas;
+  begin
+    result:=uiElement.boardImage.picture.Bitmap.Canvas;
+  end;
+
+PROCEDURE T_uiAdapter.setPaletteSize(CONST paletteWidthInGridSize,
+  paletteHeightInGridSize: longint);
   VAR paletteWidthInPixels,
       paletteHeightInPixels:longint;
       boardWidthInPixels,
@@ -406,33 +430,35 @@ PROCEDURE T_uiAdapter.setPaletteSize(CONST paletteWidthInGridSize,paletteHeightI
       effBoardImageHeight,
       effBoardImageWidth:longint;
   begin
+    if (uiElement.boardImage.picture.Bitmap.width <>uiElement.boardImage.width) or
+       (uiElement.boardImage.picture.Bitmap.height<>uiElement.boardImage.height)
+    then uiElement.boardImage.picture.Bitmap.setSize(uiElement.boardImage.width,uiElement.boardImage.height);
+
     //Palette:
     paletteWidthInPixels :=paletteWidthInGridSize *zoom;
     paletteHeightInPixels:=paletteHeightInGridSize*zoom;
 
-    if uiElement.paletteImage.height>paletteHeightInPixels then begin
+    if uiElement.boardImage.height>paletteHeightInPixels then begin
       uiElement.paletteScrollBar.visible:=false;
-      uiElement.paletteScrollBar.max     :=uiElement.paletteImage.height;
-      uiElement.paletteScrollBar.PageSize:=uiElement.paletteImage.height;
+      uiElement.paletteScrollBar.max     :=uiElement.boardImage.height;
+      uiElement.paletteScrollBar.PageSize:=uiElement.boardImage.height;
       uiElement.paletteScrollBar.position:=0;
     end else begin
       uiElement.paletteScrollBar.visible:=true;
       uiElement.paletteScrollBar.Left:=0;
       uiElement.paletteScrollBar.max     :=paletteHeightInPixels;
-      uiElement.paletteScrollBar.PageSize:=uiElement.paletteImage.height;
+      uiElement.paletteScrollBar.PageSize:=uiElement.boardImage.height;
     end;
 
-    uiElement.paletteImage.width:=paletteWidthInPixels;
-    if (uiElement.paletteImage.picture.bitmap.width <>uiElement.paletteImage.width) or
-       (uiElement.paletteImage.picture.bitmap.height<>uiElement.paletteImage.height)
-    then uiElement.paletteImage.picture.bitmap.setSize(uiElement.paletteImage.width,uiElement.paletteImage.height);
+    uiElement.paletteWidth         :=paletteWidthInPixels;
+    uiElement.paletteComboBox.width:=paletteWidthInPixels-10;
 
     if activeBoard=nil then exit;
     //Board:
     boardWidthInPixels :=(activeBoard^.gridX1+4)*zoom;
     boardHeightInPixels:=(activeBoard^.gridY1+4)*zoom;
-    effBoardImageHeight:=uiElement.boardImage.height-uiElement.boardHorizontalScrollBar.height;
-    effBoardImageWidth :=uiElement.boardImage.width -uiElement.boardVerticalScrollBar.width;
+    effBoardImageHeight:=uiElement.boardImage.height-uiElement.boardHorizontalScrollBar.height-uiElement.paletteWidth;
+    effBoardImageWidth :=uiElement.boardImage.width -uiElement.boardVerticalScrollBar  .width;
 
     if effBoardImageHeight>boardHeightInPixels then begin
       uiElement.boardVerticalScrollBar.visible:=false;
@@ -457,9 +483,6 @@ PROCEDURE T_uiAdapter.setPaletteSize(CONST paletteWidthInGridSize,paletteHeightI
       uiElement.boardHorizontalScrollBar.position:=0;
     end;
 
-    if (uiElement.boardImage.picture.bitmap.width <>uiElement.boardImage.width) or
-       (uiElement.boardImage.picture.bitmap.height<>uiElement.boardImage.height)
-    then uiElement.boardImage.picture.bitmap.setSize(uiElement.boardImage.width,uiElement.boardImage.height);
   end;
 
 FUNCTION T_uiAdapter.paletteYOffset: longint;
@@ -471,7 +494,39 @@ FUNCTION T_uiAdapter.paletteYOffset: longint;
 
 FUNCTION T_uiAdapter.paletteWidth: longint;
   begin
-    result:=uiElement.paletteImage.width;
+    result:=uiElement.paletteWidth;
+  end;
+
+PROCEDURE T_uiAdapter.showIoEdit(CONST gate: P_visualGate);
+  begin
+    uiElement.ioEdit.visible:=true;
+    uiElement.ioEdit.OnKeyPress:=@gate^.ioEditKeyPress;
+    uiElement.ioEdit.OnEditingDone:=@gate^.ioEditEditingDone;
+    uiElement.ioEdit.Left:=gate^.canvasPos[0]+uiElement.boardImage.Left;
+    uiElement.ioEdit.width:=max(gate^.gridWidth*zoom,64);
+    uiElement.ioEdit.top:=gate^.canvasPos[1]+gate^.getGridHeight*zoom+uiElement.boardImage.top-uiElement.ioEdit.height;
+    uiElement.ioEdit.text:=getWireString(gate^.behavior^.getInput(0),gate^.ioMode);
+    uiElement.ioEdit.SetFocus;
+  end;
+
+PROCEDURE T_uiAdapter.hideIoEdit;
+  begin
+    uiElement.ioEdit.OnKeyPress:=nil;
+    uiElement.ioEdit.OnEditingDone:=nil;
+    uiElement.ioEdit.visible:=false;
+  end;
+
+PROCEDURE T_uiAdapter.paintAll;
+  begin
+    with uiElement.boardImage do begin
+      Canvas.Brush.color:=BOARD_COLOR;
+      Canvas.Brush.style:=bsSolid;
+      Canvas.Pen.style:=psClear;
+      Canvas.FillRect(0,0,width,height);
+    end;
+    activeBoard^.paint(state in [uas_draggingFromBoard,uas_multiDragFromBoard,uas_draggingFromPalette]);
+    callback.paintPalette();
+    uiElement.boardImage.Invalidate;
   end;
 
 {$endif}

@@ -438,7 +438,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point;
                                                          2,3,
                                                          2,3,
                                                          2,3);
-        ChangeDirectionPenalty=2;
+        ChangeDirectionPenalty=4;
 
   VAR map:array of record comeFrom:T_point; score:longint; end;
       p:array of T_point;
@@ -803,7 +803,7 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint: T_point; CONST endPoints: T_wir
     for i:=0 to length(endPoints)-1 do begin
       initialRun[i].idx:=i;
       initialRun[i].dist:=euklideanDistance(startPoint,endPoints[i]);
-      for j:=0 to i-1 do if initialRun[i].dist<initialRun[j].dist then begin
+      for j:=0 to i-1 do if initialRun[i].dist>initialRun[j].dist then begin
         swapTemp     :=initialRun[i];
         initialRun[i]:=initialRun[j];
         initialRun[j]:=swapTemp;

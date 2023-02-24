@@ -26,7 +26,7 @@ TYPE
     PROCEDURE ensureVisualPaletteItems; virtual; abstract;
     PROCEDURE detachUI;
     PROCEDURE attachUI(CONST uiAdapter:P_uiAdapter);
-
+    FUNCTION isGateHit(CONST gridPos:T_point; OUT gate:P_visualGate):boolean;
     PROCEDURE comboBoxSelect(Sender:TObject);
     FUNCTION allowDeletion(CONST gate:P_abstractGate):boolean; virtual;
     PROCEDURE paint;
@@ -515,6 +515,7 @@ PROCEDURE T_palette.detachUI;
   VAR i:longint;
   begin
     for i:=0 to length(visualPaletteItems)-1 do dispose(visualPaletteItems[i],destroy);
+    setLength(visualPaletteItems,0);
   end;
 
 PROCEDURE T_palette.attachUI(CONST uiAdapter: P_uiAdapter);
@@ -536,13 +537,22 @@ PROCEDURE T_palette.attachUI(CONST uiAdapter: P_uiAdapter);
     selectSubPalette(0);
 
     ui^.paletteComboBox.OnSelect:=@comboBoxSelect;
+    ui^.palletteConnected(@paint,@isGateHit);
+  end;
+
+FUNCTION T_palette.isGateHit(CONST gridPos: T_point; OUT gate: P_visualGate): boolean;
+  VAR g:P_visualGate;
+     hoverInfo: T_hoverInfo;
+  begin
+    for g in visualPaletteItems do if g^.isAtGridPos(gridPos,hoverInfo) then begin gate:=g; exit(true); end;
+    gate:=nil;
+    result:=false;
   end;
 
 PROCEDURE T_palette.comboBoxSelect(Sender: TObject);
   begin
     selectSubPalette(ui^.paletteComboBox.ItemIndex);
-    checkSizes;
-    paint;
+    ui^.paintAll;
   end;
 
 FUNCTION T_palette.allowDeletion(CONST gate: P_abstractGate): boolean;

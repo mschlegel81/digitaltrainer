@@ -34,8 +34,8 @@ TYPE
       ioMode:T_multibitWireRepresentation;
 
       marked:boolean;
-      //PROCEDURE ioEditEditingDone(Sender: TObject);
-      //PROCEDURE ioEditKeyPress(Sender: TObject; VAR key: char);
+      PROCEDURE ioEditEditingDone(Sender: TObject);
+      PROCEDURE ioEditKeyPress(Sender: TObject; VAR key: char);
       //PROCEDURE paletteEntryMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
       //PROCEDURE boardElementMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
       //PROCEDURE boardElementOutputMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -76,23 +76,24 @@ USES visuals;
 {$i uiAdapters.inc}
 {$i visualBoards.inc}
 {$undef includeImplementation}
-//PROCEDURE T_visualGate.ioEditKeyPress(Sender: TObject; VAR key: char);
-//  VAR AllowedKeys:array[T_multibitWireRepresentation] of set of char=
-//      (['0','1'     ,#8], //wr_binary,
-//       ['0'..'9'    ,#8], //wr_decimal,
-//       ['0'..'9','-',#8]);//wr_2complement
-//  begin
-//    if key=#13 then ioEditEditingDone(Sender)
-//    else if not(key in AllowedKeys[ioMode]) then key:=#0;
-//  end;
-//
-//PROCEDURE T_visualGate.ioEditEditingDone(Sender: TObject);
-//  begin
-//    behavior^.setInput(0,parseWire(ioEdit.text,behavior^.inputWidth(0),ioMode));
-//    ioEdit.text:=getWireString(behavior^.getInput(0),ioMode);
-//    updateVisuals;
-//    uiAdapter^.boardUiElements.boardModifiedCallback();
-//  end;
+PROCEDURE T_visualGate.ioEditKeyPress(Sender: TObject; VAR key: char);
+  VAR AllowedKeys:array[T_multibitWireRepresentation] of set of char=
+      (['0','1'     ,#8], //wr_binary,
+       ['0'..'9'    ,#8], //wr_decimal,
+       ['0'..'9','-',#8]);//wr_2complement
+  begin
+    if key=#13 then ioEditEditingDone(Sender)
+    else if not(key in AllowedKeys[ioMode]) then key:=#0;
+  end;
+
+PROCEDURE T_visualGate.ioEditEditingDone(Sender: TObject);
+  begin
+    behavior^.setInput(0,parseWire(uiAdapter^.uiElement.ioEdit.text,behavior^.inputWidth(0),ioMode));
+    uiAdapter^.uiElement.ioEdit.text:=getWireString(behavior^.getInput(0),ioMode);
+    paintAll(uiAdapter^.uiElement.boardImage.Canvas,true);
+    uiAdapter^.uiElement.boardImage.Invalidate;
+    uiAdapter^.callback.boardModifiedCallback();
+  end;
 
 CONSTRUCTOR T_visualGate.create(CONST behavior_: P_abstractGate);
   begin

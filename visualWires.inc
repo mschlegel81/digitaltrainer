@@ -7,7 +7,6 @@ T_visualWire=object
     gate:P_visualGate;
     gateInputIndex:longint;
     path:T_wirePath;
-    Selected:boolean;
   end;
 
   PROCEDURE dropWiresAssociatedWith(CONST gate:P_visualGate);

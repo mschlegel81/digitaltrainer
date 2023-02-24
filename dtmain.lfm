@@ -279,13 +279,15 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     OnScroll = PaletteScrollBarScroll
   end
   object SubPaletteComboBox: TComboBox
+    AnchorSideLeft.Control = BoardImage
+    AnchorSideTop.Control = BoardImage
     AnchorSideRight.Side = asrBottom
-    Left = 22
+    Left = 19
     Height = 23
-    Top = 85
+    Top = 82
     Width = 151
-    BorderSpacing.Left = 5
-    BorderSpacing.Top = 5
+    BorderSpacing.Left = 2
+    BorderSpacing.Top = 2
     BorderSpacing.Right = 5
     Color = 6303792
     Font.Color = clWhite
@@ -310,7 +312,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     TabOrder = 3
   end
   object BoardHorizontalScrollBar: TScrollBar
-    AnchorSideLeft.Control = paletteImage
     AnchorSideLeft.Side = asrBottom
     AnchorSideRight.Control = BoardVerticalScrollbar
     AnchorSideBottom.Control = Owner
@@ -324,7 +325,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     TabOrder = 4
   end
   object BoardImage: TImage
-    AnchorSideLeft.Control = paletteImage
     AnchorSideLeft.Side = asrBottom
     AnchorSideTop.Control = Panel1
     AnchorSideRight.Control = Panel1
@@ -332,10 +332,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
     Cursor = crCross
-    Left = 184
+    Left = 17
     Height = 637
     Top = 80
-    Width = 1093
+    Width = 1260
     AntialiasingMode = amOn
     Align = alClient
     StretchOutEnabled = False
@@ -524,13 +524,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Pen.Color = 43775
     Visible = False
   end
-  object paletteImage: TImage
-    Left = 17
-    Height = 637
-    Top = 80
-    Width = 167
-    Align = alLeft
-  end
   object Image1: TImage
     Left = 528
     Height = 90
@@ -542,6 +535,9 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Height = 23
     Top = 257
     Width = 80
+    Color = 6303792
+    Font.Color = clWhite
+    ParentFont = False
     TabOrder = 6
     Visible = False
   end

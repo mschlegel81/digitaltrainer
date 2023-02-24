@@ -14,7 +14,7 @@ TYPE
   T_sprite=object
     private
       lastUsed:double;
-      bitmap:TBGRABitmap;
+      Bitmap:TBGRABitmap;
       preparedForZoom:longint;
       screenOffset:T_point;
     protected
@@ -88,6 +88,9 @@ VAR ioSpriteMap,
     blockSpriteMap,
     ioBlockSpriteMap,
     ioTextSpriteMap:T_spriteMap;
+    allocationCounter:longint=0;
+    lastCleanupTime:double=0;
+CONST oneMinute=1/(24*60);
 
 PROCEDURE dropOldSprites(CONST timeoutInDays:double);
   VAR threshold:double;
@@ -130,6 +133,18 @@ PROCEDURE finalize;
     ioTextSpriteMap .destroy;
   end;
 
+PROCEDURE spriteAllocated;
+  begin
+    inc(allocationCounter);
+    if (allocationCounter mod 1000=0) or (now>lastCleanupTime+oneMinute) then begin
+      writeln('Sprites allocated total: ',allocationCounter);
+      writeln('         before cleanup: ',ioSpriteMap.size+blockSpriteMap.size+ioBlockSpriteMap.size+ioTextSpriteMap.size);
+      dropOldSprites(oneMinute);
+      writeln('          after cleanup: ',ioSpriteMap.size+blockSpriteMap.size+ioBlockSpriteMap.size+ioTextSpriteMap.size);
+      lastCleanupTime:=now;
+    end;
+  end;
+
 FUNCTION getIoSprite(CONST pos: T_ioDirection; CONST wireValue:T_wireValue; CONST caption:string): P_sprite;
   CONST posKey  :array[T_ioDirection] of char=('l','r','t','b');
         stateKey:array[T_ioState] of char=('?','1','0','M');
@@ -148,6 +163,7 @@ FUNCTION getIoSprite(CONST pos: T_ioDirection; CONST wireValue:T_wireValue; CONS
     if not ioSpriteMap.containsKey(key,result) then begin
       new(P_ioSprite(result),create(pos,state,caption));
       ioSpriteMap.put(key,result);
+      spriteAllocated;
     end;
     result^.lastUsed:=now;
   end;
@@ -159,6 +175,7 @@ FUNCTION getBlockSprite(CONST caption: string; CONST gridWidth, gridHeight: long
     if not blockSpriteMap.containsKey(key,result) then begin
       new(P_blockSprite(result),create(caption,gridWidth,gridHeight,marked));
       blockSpriteMap.put(key,result);
+      spriteAllocated;
     end;
     result^.lastUsed:=now;
   end;
@@ -170,6 +187,7 @@ FUNCTION getIoBlockSprite(CONST caption: string; CONST marked: boolean): P_sprit
     if not ioBlockSpriteMap.containsKey(key,result) then begin
       new(P_ioBlockSprite(result),create(caption,marked));
       ioBlockSpriteMap.put(key,result);
+      spriteAllocated;
     end;
     result^.lastUsed:=now;
   end;
@@ -185,6 +203,7 @@ FUNCTION getIoTextSprite(CONST wireValue: T_wireValue; mode: T_multibitWireRepre
     if not ioTextSpriteMap.containsKey(key,result) then begin
       new(P_ioTextSprite(result),create(mode,cap));
       ioTextSpriteMap.put(key,result);
+      spriteAllocated;
     end;
     result^.lastUsed:=now;
   end;
@@ -201,23 +220,23 @@ PROCEDURE T_ioTextSprite.setZoom(CONST zoom: longint);
   VAR
     newWidth, newHeight: longint;
   begin
-    screenOffset:=pointOf(-1,-2-2*zoom);
-    newWidth :=4*zoom-3;
-    newHeight:=2*zoom-3;
-    if bitmap=nil
-    then bitmap:=TBGRABitmap.create(newWidth,newHeight,GATE_COLOR)
-    else bitmap.setSize(newWidth,newHeight);
+    screenOffset:=pointOf(-4,-2-2*zoom);
+    newWidth :=4*zoom-8;
+    newHeight:=2*zoom-6;
+    if Bitmap=nil
+    then Bitmap:=TBGRABitmap.create(newWidth,newHeight,GATE_COLOR)
+    else Bitmap.setSize(newWidth,newHeight);
 
-    bitmap.CanvasBGRA.Brush.color:=GATE_COLOR;
-    bitmap.CanvasBGRA.Brush.style:=bsSolid;
-    bitmap.CanvasBGRA.Pen.style:=psClear;
-    bitmap.CanvasBGRA.Rectangle(0,0,newWidth,newHeight);
-    bitmap.CanvasBGRA.DrawFontBackground:=true;
-    textOut(wireModeText,0,0,newWidth,newHeight,SHADOW_COLOR);
+    Bitmap.CanvasBGRA.Brush.color:=GATE_COLOR;
+    Bitmap.CanvasBGRA.Brush.style:=bsSolid;
+    Bitmap.CanvasBGRA.Pen.style:=psClear;
+    Bitmap.CanvasBGRA.Rectangle(0,0,newWidth,newHeight);
+    Bitmap.CanvasBGRA.DrawFontBackground:=true;
+    textOut(wireModeText,0,0,newWidth shr 1,newHeight,SHADOW_COLOR);
 
-    bitmap.CanvasBGRA.Brush.style:=bsClear;
-    bitmap.CanvasBGRA.DrawFontBackground:=false;
-    textOut(caption     ,0,0,newWidth,newHeight);
+    Bitmap.CanvasBGRA.Brush.style:=bsClear;
+    Bitmap.CanvasBGRA.DrawFontBackground:=false;
+    textOut(caption     ,newWidth shr 3,0,newWidth,newHeight);
     preparedForZoom:=zoom;
   end;
 
@@ -307,30 +326,30 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
     radius:=zoom shr 1;
     screenOffset:=pointOf(radius,radius);
     c:=radius;
-    if bitmap=nil
-    then bitmap:=TBGRABitmap.create(radius*2+1,radius*2+1,BOARD_COLOR)
-    else bitmap            .setSize(radius*2+1,radius*2+1);
+    if Bitmap=nil
+    then Bitmap:=TBGRABitmap.create(radius*2+1,radius*2+1,BOARD_COLOR)
+    else Bitmap            .setSize(radius*2+1,radius*2+1);
 
-    bitmap.CanvasBGRA.Brush.color:=0;
-    bitmap.CanvasBGRA.Rectangle(0,0,radius*2+1,radius*2+1,true);
+    Bitmap.CanvasBGRA.Brush.color:=0;
+    Bitmap.CanvasBGRA.Rectangle(0,0,radius*2+1,radius*2+1,true);
     if cap<>'' then begin
       captioned:=true;
       x:=round(radius*0.2);
-      bitmap.CanvasBGRA.AntialiasingMode:=amOn;
+      Bitmap.CanvasBGRA.AntialiasingMode:=amOn;
 
       transparentCol.alpha:=255;
       transparentCol.RED:=0;
       transparentCol.GREEN:=0;
       transparentCol.BLUE:=0;
-      bitmap.CanvasBGRA.Brush.BGRAColor:=transparentCol;
-      bitmap.CanvasBGRA.Brush.style:=bsSolid;
+      Bitmap.CanvasBGRA.Brush.BGRAColor:=transparentCol;
+      Bitmap.CanvasBGRA.Brush.style:=bsSolid;
 
-      bitmap.CanvasBGRA.DrawFontBackground:=true;
+      Bitmap.CanvasBGRA.DrawFontBackground:=true;
       textOut(cap,x,x,radius*2-x,radius*2-x);
     end;
 
     for y:=0 to radius*2 do begin
-      px:=PCardinal(bitmap.ScanLine[y]);
+      px:=PCardinal(Bitmap.ScanLine[y]);
       for x:=0 to radius*2 do begin
         r:=0; g:=0; b:=0;
         for subX in sub do for subY in sub do getColorAt(x+subX-c,y+subY-c);
@@ -374,7 +393,7 @@ PROCEDURE T_sprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; CONST
       maxTextWidth:=0;
       textHeight  :=0;
       for s in lines do begin
-        extend:=bitmap.CanvasBGRA.TextExtent(s);
+        extend:=Bitmap.CanvasBGRA.TextExtent(s);
         textHeight+=extend.cy;
         if extend.cx>maxTextWidth then maxTextWidth:=extend.cx;
       end;
@@ -383,9 +402,9 @@ PROCEDURE T_sprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; CONST
   begin
     lines:=split(s,LineEnding);
 
-    bitmap.CanvasBGRA.Font.orientation:=0;
-    bitmap.CanvasBGRA.Font.quality:=fqFineAntialiasing;
-    bitmap.CanvasBGRA.Font.Antialiasing:=true;
+    Bitmap.CanvasBGRA.Font.orientation:=0;
+    Bitmap.CanvasBGRA.Font.quality:=fqFineAntialiasing;
+    Bitmap.CanvasBGRA.Font.Antialiasing:=true;
     updateTextExtend;
 
     //fit for aspect ratio:
@@ -396,47 +415,48 @@ PROCEDURE T_sprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; CONST
       fontSizeFactor:=min((y1-y0)/textHeight,(x1-x0)/maxTextWidth);
     end;
 
-    bitmap.CanvasBGRA.Font.height:=round(bitmap.CanvasBGRA.Font.height*fontSizeFactor);
-    bitmap.CanvasBGRA.Font.color:=textColor;
+    Bitmap.CanvasBGRA.Font.height:=round(Bitmap.CanvasBGRA.Font.height*fontSizeFactor);
+    Bitmap.CanvasBGRA.Font.color:=textColor;
 
     updateTextExtend;
 
     if rotate then begin
-      bitmap.CanvasBGRA.Font.orientation:=2700;
+      Bitmap.CanvasBGRA.Font.orientation:=2700;
       yTally:=(x0+x1) shr 1 + textHeight shr 1;
       for line in lines do begin
-        bitmap.CanvasBGRA.textOut(yTally,(y0+y1) shr 1 - bitmap.CanvasBGRA.textWidth (line) shr 1,line);
-        yTally-=                                         bitmap.CanvasBGRA.textHeight(line);
+        Bitmap.CanvasBGRA.textOut(yTally,(y0+y1) shr 1 - Bitmap.CanvasBGRA.textWidth (line) shr 1,line);
+        yTally-=                                         Bitmap.CanvasBGRA.textHeight(line);
       end;
     end else begin
-      bitmap.CanvasBGRA.Font.orientation:=0;
+      Bitmap.CanvasBGRA.Font.orientation:=0;
       yTally:=(y0+y1) shr 1 - textHeight shr 1;
       for line in lines do begin
-        bitmap.CanvasBGRA.textOut((x0+x1) shr 1 - bitmap.CanvasBGRA.textWidth (line) shr 1,yTally,line);
-        yTally+=                                  bitmap.CanvasBGRA.textHeight(line);
+        Bitmap.CanvasBGRA.textOut((x0+x1) shr 1 - Bitmap.CanvasBGRA.textWidth (line) shr 1,yTally,line);
+        yTally+=                                  Bitmap.CanvasBGRA.textHeight(line);
       end;
     end;
 
   end;
 
 PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint);
+  VAR newWidth,newHeight:longint;
   PROCEDURE drawGlowingFrame;
     VAR i:longint;
         bw,mw:longint;
     begin
-      for i:=1 to screenOffset[0] do begin
-        bw:=(i-1)*256 div screenOffset[0];
+      for i:=1 to 3 do begin
+        bw:=(i-1)*256 div 3;
         mw:=256-bw;
 
-        bitmap.CanvasBGRA.Pen.color:=
+        Bitmap.CanvasBGRA.Pen.color:=
         (((( BOARD_COLOR         and 255)*bw+( MARK_COLOR         and 255)*mw) shr 8) and 255) or
         (((((BOARD_COLOR shr  8) and 255)*bw+((MARK_COLOR shr  8) and 255)*mw) shr 8) and 255) shl 8 or
         (((((BOARD_COLOR shr 16) and 255)*bw+((MARK_COLOR shr 16) and 255)*mw) shr 8) and 255) shl 16;
 
-        bitmap.CanvasBGRA.Rectangle(screenOffset[0]              -i,
-                                    screenOffset[1]              -i,
-                                    screenOffset[0]+zoom*width -1+i,
-                                    screenOffset[1]+zoom*height-1+i,false);
+        Bitmap.CanvasBGRA.Rectangle(3          -i,
+                                    3          -i,
+                                    newWidth -3+i,
+                                    newHeight-3+i,false);
       end;
     end;
 
@@ -444,48 +464,41 @@ PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint);
     VAR i:longint;
         bw:longint;
     begin
-      for i:=0 to zoom shr 2 do begin
-        bw:=i*256 div (zoom shr 2);
+      for i:=1 to 4 do begin
+        bw:=i*256 div 4;
 
-        bitmap.CanvasBGRA.Pen.color:=
+        Bitmap.CanvasBGRA.Pen.color:=
         ((( BOARD_COLOR         and 255)*bw shr 8) and 255) or
         ((((BOARD_COLOR shr  8) and 255)*bw shr 8) and 255) shl 8 or
         ((((BOARD_COLOR shr 16) and 255)*bw shr 8) and 255) shl 16;
 
-        bitmap.CanvasBGRA.MoveTo(screenOffset[0]+i              ,screenOffset[1]+zoom*height-1+i);
-        bitmap.CanvasBGRA.LineTo(screenOffset[0]+zoom*width -1+i,screenOffset[1]+zoom*height-1+i);
-        bitmap.CanvasBGRA.LineTo(screenOffset[0]+zoom*width -1+i,screenOffset[1]              +i);
+        Bitmap.CanvasBGRA.MoveTo(3+i         ,newHeight-4+i);
+        Bitmap.CanvasBGRA.LineTo(newWidth-4+i,newHeight-4+i);
+        Bitmap.CanvasBGRA.LineTo(newWidth-4+i,3+i);
       end;
     end;
 
-  VAR newWidth,newHeight:longint;
   begin
-    if marked then begin
-      screenOffset:=pointOf(zoom shr 1,zoom shr 1);
-      newWidth :=width *zoom+zoom;
-      newHeight:=height*zoom+zoom;
-    end else begin
-      screenOffset:=pointOf(0,0);
-      newWidth :=width *zoom+zoom shr 1;
-      newHeight:=height*zoom+zoom shr 1;
-    end;
-    if bitmap=nil
-    then bitmap:=TBGRABitmap.create(newWidth,newHeight,BOARD_COLOR)
-    else bitmap.setSize(newWidth,newHeight);
+    screenOffset:=pointOf(0,0);
+    newWidth :=width *zoom;
+    newHeight:=height*zoom;
+    if Bitmap=nil
+    then Bitmap:=TBGRABitmap.create(newWidth,newHeight,BOARD_COLOR)
+    else Bitmap.setSize(newWidth,newHeight);
 
-    bitmap.CanvasBGRA.Brush.color:=BOARD_COLOR;
-    bitmap.CanvasBGRA.Pen.style:=psClear;
-    bitmap.CanvasBGRA.Rectangle(0,0,newWidth+1,newHeight+1);
+    Bitmap.CanvasBGRA.Brush.color:=BOARD_COLOR;
+    Bitmap.CanvasBGRA.Pen.style:=psClear;
+    Bitmap.CanvasBGRA.Rectangle(0,0,newWidth+1,newHeight+1);
 
-    bitmap.CanvasBGRA.Brush.color:=GATE_COLOR;
-    bitmap.CanvasBGRA.Pen.style:=psSolid;
+    Bitmap.CanvasBGRA.Brush.color:=GATE_COLOR;
+    Bitmap.CanvasBGRA.Pen.style:=psSolid;
 
-    bitmap.CanvasBGRA.Pen.color:=0;
+    Bitmap.CanvasBGRA.Pen.color:=0;
 
-    bitmap.CanvasBGRA.Rectangle(screenOffset[0],
-                                screenOffset[1],
-                                screenOffset[0]+zoom*width-1,
-                                screenOffset[1]+zoom*height-1);
+    Bitmap.CanvasBGRA.Rectangle(3,
+                                3,
+                                newWidth -3,
+                                newHeight-3);
     if marked
     then drawGlowingFrame
     else drawShadow;
@@ -503,7 +516,7 @@ CONSTRUCTOR T_blockSprite.create(CONST caption_: string; CONST gridWidth, gridHe
 PROCEDURE T_blockSprite.setZoom(CONST zoom: longint);
   begin
     initBaseShape(zoom);
-    bitmap.CanvasBGRA.DrawFontBackground:=true;
+    Bitmap.CanvasBGRA.DrawFontBackground:=true;
     textOut(caption,
             screenOffset[0]            +zoom shr 1,
             screenOffset[1]            +zoom shr 1,
@@ -515,15 +528,15 @@ PROCEDURE T_blockSprite.setZoom(CONST zoom: longint);
 PROCEDURE T_ioBlockSprite.setZoom(CONST zoom: longint);
   begin
     initBaseShape(zoom);
-    bitmap.CanvasBGRA.DrawFontBackground:=true;
+    Bitmap.CanvasBGRA.DrawFontBackground:=true;
     textOut(caption,
             screenOffset[0]            +zoom shr 1,
             screenOffset[1]            +zoom shr 1,
             screenOffset[0]+ zoom*width-zoom shr 1,
             screenOffset[1]+(zoom*height div 2));
-    bitmap.CanvasBGRA.Pen.color:=0;
-    bitmap.CanvasBGRA.MoveTo(screenOffset[0]           ,screenOffset[1]+(zoom*height   shr 1));
-    bitmap.CanvasBGRA.LineTo(screenOffset[0]+zoom*width,screenOffset[1]+(zoom*height   shr 1));
+    Bitmap.CanvasBGRA.Pen.color:=0;
+    Bitmap.CanvasBGRA.MoveTo(screenOffset[0]           ,screenOffset[1]+(zoom*height   shr 1));
+    Bitmap.CanvasBGRA.LineTo(screenOffset[0]+zoom*width,screenOffset[1]+(zoom*height   shr 1));
 
     preparedForZoom:=zoom;
   end;
@@ -533,29 +546,29 @@ PROCEDURE T_ioBlockSprite.setZoom(CONST zoom: longint);
 CONSTRUCTOR T_sprite.create;
   begin
     lastUsed:=now;
-    bitmap:=nil;
+    Bitmap:=nil;
     preparedForZoom:=-1;
   end;
 
 DESTRUCTOR T_sprite.destroy;
   begin
-    if bitmap<>nil then bitmap.free;
+    if Bitmap<>nil then Bitmap.free;
   end;
 
 FUNCTION T_sprite.screenWidth: longint;
   begin
-    result:=bitmap.width;
+    result:=Bitmap.width;
   end;
 
 FUNCTION T_sprite.screenHeight: longint;
   begin
-    result:=bitmap.height;
+    result:=Bitmap.height;
   end;
 
 PROCEDURE T_sprite.renderAt(CONST Canvas:TCanvas; CONST zoom:longint; CONST screenPosition: T_point);
   begin
     if zoom<>preparedForZoom then setZoom(zoom);
-    bitmap.draw(Canvas,
+    Bitmap.draw(Canvas,
                 screenPosition[0]-screenOffset[0],
                 screenPosition[1]-screenOffset[1],true);
   end;
