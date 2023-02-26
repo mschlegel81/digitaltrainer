@@ -244,6 +244,7 @@ TYPE
     PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
     PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
     FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
+    FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
   end;
 
   P_adapter=^T_adapter;
@@ -439,7 +440,7 @@ TYPE
      writeAdr,
      dataIn,
      clockIn:T_wireValue;
-     clockWasHigh:DWord;
+     clockWasHigh:dword;
 
      CONSTRUCTOR create;
      PROCEDURE reset;                   virtual;
@@ -520,11 +521,8 @@ FUNCTION getDecimalValue(CONST wire: T_wireValue; OUT valid: boolean): longint;
       k:=k shl 1;
       case wire.bit[i] of
         tsv_true        : inc(k);
-        tsv_false       : begin end;
-        tsv_undetermined: begin
-          valid:=false;
-          exit(1 shl (wire.width-1));
-        end;
+        //tsv_false       : begin end;
+        tsv_undetermined: valid:=false;
       end;
     end;
     result:=k;
@@ -690,35 +688,41 @@ FUNCTION newBaseGate(CONST gateType: T_gateType): P_abstractGate;
       gt_undeterminedToTrue : new(P_tendToTrue (result),create);
       gt_ram: new(P_RamGate(result),create);
       gt_rom: new(P_RomGate(result),create);
+      gt_7segmentDummy: new(P_7segmentGate(result),create);
       else result:=nil;
     end;
   end;
 
 { T_7segmentGate }
 
-constructor T_7segmentGate.create;
+CONSTRUCTOR T_7segmentGate.create;
   begin
     inherited;
     io:=tsv_false; ioLabel:=''; width:=8; onLeftOrRightSide:=false; positionIndex:=0;
   end;
 
-function T_7segmentGate.gateType: T_gateType;
+FUNCTION T_7segmentGate.gateType: T_gateType;
   begin
     result:=gt_7segmentDummy;
   end;
 
-procedure T_7segmentGate.writeToStream(var stream: T_bufferedOutputStreamWrapper; const metaDataOnly: boolean);
+PROCEDURE T_7segmentGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly: boolean);
   begin
     if not(metaDataOnly) then stream.writeByte(byte(gateType));
   end;
 
-procedure T_7segmentGate.readMetaDataFromStream(var stream: T_bufferedInputStreamWrapper);
+PROCEDURE T_7segmentGate.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
   begin
   end;
 
-function T_7segmentGate.equals(const other: P_abstractGate): boolean;
+FUNCTION T_7segmentGate.equals(CONST other: P_abstractGate): boolean;
   begin
     result:=other^.gateType=gateType;
+  end;
+
+FUNCTION T_7segmentGate.clone(CONST includeState: boolean): P_abstractGate;
+  begin
+    new(P_7segmentGate(result),create);
   end;
 
 { T_ramGate }

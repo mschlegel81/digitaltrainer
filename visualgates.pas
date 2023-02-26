@@ -157,14 +157,18 @@ PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST zoom: longint;
   VAR k: integer;
       p: T_point;
   begin
-    if behavior^.gateType in [gt_input,gt_output]
-    then begin
-      if not(ioOnly) then
-      getIoBlockSprite(behavior^.getCaption,myInputIndex,marked)^.renderAt(Canvas,zoom,canvasPos);
-      getIoTextSprite(behavior^.getInput(0),ioMode)^.renderAt(Canvas,zoom,canvasPos);
-    end else begin
-      if not(ioOnly) then
-      getBlockSprite  (behavior^.getCaption,gridWidth,gridHeight,marked)^.renderAt(Canvas,zoom,canvasPos);
+    case behavior^.gateType of
+      gt_input,gt_output: begin
+        if not(ioOnly) then
+        getIoBlockSprite(behavior^.getCaption,myInputIndex,marked)^.renderAt(Canvas,zoom,canvasPos);
+        getIoTextSprite(behavior^.getInput(0),ioMode)^.renderAt(Canvas,zoom,canvasPos);
+      end;
+      gt_7segmentDummy:
+        get7SegmentSprite(behavior^.getInput(0),marked)^.renderAt(Canvas,zoom,canvasPos);
+      else begin
+        if not(ioOnly) then
+        getBlockSprite  (behavior^.getCaption,gridWidth,gridHeight,marked)^.renderAt(Canvas,zoom,canvasPos);
+      end;
     end;
 
     for k:=0 to length(ioLocations.p[gt_input])-1 do with ioLocations.p[gt_input,k] do

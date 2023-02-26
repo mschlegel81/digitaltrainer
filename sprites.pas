@@ -96,12 +96,14 @@ FUNCTION getIoSprite(CONST pos:T_ioDirection; CONST wireValue:T_wireValue; CONST
 FUNCTION getBlockSprite(CONST caption:string; CONST gridWidth,gridHeight:longint; CONST marked:boolean):P_sprite;
 FUNCTION getIoBlockSprite(CONST caption:string; CONST inputIndex:longint; CONST marked:boolean):P_sprite;
 FUNCTION getIoTextSprite(CONST wireValue:T_wireValue; mode:T_multibitWireRepresentation):P_sprite;
+FUNCTION get7SegmentSprite(CONST wireValue: T_wireValue; CONST marked:boolean):P_sprite;
 IMPLEMENTATION
 USES sysutils,myStringUtil,types,Classes,math;
 VAR ioSpriteMap,
     blockSpriteMap,
     ioBlockSpriteMap,
-    ioTextSpriteMap:T_spriteMap;
+    ioTextSpriteMap,
+    sevSegSpriteMap:T_spriteMap;
     allocationCounter:longint=0;
     lastCleanupTime:double=0;
 CONST oneMinute=1/(24*60);
@@ -123,6 +125,7 @@ PROCEDURE dropOldSprites(CONST timeoutInDays:double);
     dropFromMap(blockSpriteMap  );
     dropFromMap(ioBlockSpriteMap);
     dropFromMap(ioTextSpriteMap );
+    dropFromMap(sevSegSpriteMap );
   end;
 
 PROCEDURE disposeSprite(VAR s:P_sprite);
@@ -138,6 +141,7 @@ PROCEDURE init;
     blockSpriteMap  .create(@disposeSprite);
     ioBlockSpriteMap.create(@disposeSprite);
     ioTextSpriteMap .create(@disposeSprite);
+    sevSegSpriteMap .create(@disposeSprite);
   end;
 
 PROCEDURE finalize;
@@ -146,6 +150,7 @@ PROCEDURE finalize;
     blockSpriteMap  .destroy;
     ioBlockSpriteMap.destroy;
     ioTextSpriteMap .destroy;
+    sevSegSpriteMap .destroy;
   end;
 
 PROCEDURE spriteAllocated;
@@ -223,24 +228,120 @@ FUNCTION getIoTextSprite(CONST wireValue: T_wireValue; mode: T_multibitWireRepre
     result^.lastUsed:=now;
   end;
 
+FUNCTION get7SegmentSprite(CONST wireValue: T_wireValue; CONST marked: boolean): P_sprite;
+  VAR key:string;
+      valid: boolean;
+      active: byte;
+  begin
+    active:=getDecimalValue(wireValue,valid) and 127;
+    key:=BoolToStr(marked,'M','')+intToStr(active);
+
+    if not sevSegSpriteMap.containsKey(key,result) then begin
+      new(P_7SegmentSprite(result),create(active,marked));
+      sevSegSpriteMap.put(key,result);
+      spriteAllocated;
+    end;
+    result^.lastUsed:=now;
+  end;
+
 { T_7SegmentSprite }
 
-constructor T_7SegmentSprite.create(const a: byte; const marked_: boolean);
+CONSTRUCTOR T_7SegmentSprite.create(CONST a: byte; CONST marked_: boolean);
   begin
     inherited create('',4,6,marked_);
     active:=a;
   end;
 
-procedure T_7SegmentSprite.setZoom(const zoom: longint);
+PROCEDURE T_7SegmentSprite.setZoom(CONST zoom: longint);
+  VAR poly: array of TPoint;
   begin
     initBaseShape(zoom);
-    Bitmap.CanvasBGRA.DrawFontBackground:=true;
+    Bitmap.CanvasBGRA.Pen.style:=psClear;
+    setLength(poly,7);
+    poly[0]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*0.90));
+    poly[1]:=point(round(screenOffset[0]+zoom*2.90),round(screenOffset[1]+zoom*0.90));
+    poly[2]:=point(round(screenOffset[0]+zoom*3.10),round(screenOffset[1]+zoom*0.70));
+    poly[3]:=point(round(screenOffset[0]+zoom*2.90),round(screenOffset[1]+zoom*0.50));
+    poly[4]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*0.50));
+    poly[5]:=point(round(screenOffset[0]+zoom*0.90),round(screenOffset[1]+zoom*0.70));
+    poly[6]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*0.90));
+    if (active and 1)>0
+    then Bitmap.CanvasBGRA.Brush.color:=MARK_COLOR
+    else Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+    Bitmap.CanvasBGRA.Polygon(poly);
 
+    poly[0]:=point(round(screenOffset[0]+zoom*1.00),round(screenOffset[1]+zoom*1.00));
+    poly[1]:=point(round(screenOffset[0]+zoom*1.00),round(screenOffset[1]+zoom*2.80));
+    poly[2]:=point(round(screenOffset[0]+zoom*0.80),round(screenOffset[1]+zoom*3.00));
+    poly[3]:=point(round(screenOffset[0]+zoom*0.60),round(screenOffset[1]+zoom*2.80));
+    poly[4]:=point(round(screenOffset[0]+zoom*0.60),round(screenOffset[1]+zoom*1.00));
+    poly[5]:=point(round(screenOffset[0]+zoom*0.80),round(screenOffset[1]+zoom*0.80));
+    poly[6]:=point(round(screenOffset[0]+zoom*1.00),round(screenOffset[1]+zoom*1.00));
+    if (active and 2)>0
+    then Bitmap.CanvasBGRA.Brush.color:=MARK_COLOR
+    else Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+    Bitmap.CanvasBGRA.Polygon(poly);
 
+    poly[0]:=point(round(screenOffset[0]+zoom*3.40),round(screenOffset[1]+zoom*1.00));
+    poly[1]:=point(round(screenOffset[0]+zoom*3.40),round(screenOffset[1]+zoom*2.80));
+    poly[2]:=point(round(screenOffset[0]+zoom*3.20),round(screenOffset[1]+zoom*3.00));
+    poly[3]:=point(round(screenOffset[0]+zoom*3.00),round(screenOffset[1]+zoom*2.80));
+    poly[4]:=point(round(screenOffset[0]+zoom*3.00),round(screenOffset[1]+zoom*1.00));
+    poly[5]:=point(round(screenOffset[0]+zoom*3.20),round(screenOffset[1]+zoom*0.80));
+    poly[6]:=point(round(screenOffset[0]+zoom*3.40),round(screenOffset[1]+zoom*1.00));
+    if (active and 4)>0
+    then Bitmap.CanvasBGRA.Brush.color:=MARK_COLOR
+    else Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+    Bitmap.CanvasBGRA.Polygon(poly);
 
+    poly[0]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*3.30));
+    poly[1]:=point(round(screenOffset[0]+zoom*2.90),round(screenOffset[1]+zoom*3.30));
+    poly[2]:=point(round(screenOffset[0]+zoom*3.10),round(screenOffset[1]+zoom*3.00));
+    poly[3]:=point(round(screenOffset[0]+zoom*2.90),round(screenOffset[1]+zoom*2.90));
+    poly[4]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*2.90));
+    poly[5]:=point(round(screenOffset[0]+zoom*0.90),round(screenOffset[1]+zoom*3.10));
+    poly[6]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*3.30));
+    if (active and 8)>0
+    then Bitmap.CanvasBGRA.Brush.color:=MARK_COLOR
+    else Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+    Bitmap.CanvasBGRA.Polygon(poly);
 
+    poly[0]:=point(round(screenOffset[0]+zoom*1.00),round(screenOffset[1]+zoom*3.40));
+    poly[1]:=point(round(screenOffset[0]+zoom*1.00),round(screenOffset[1]+zoom*5.20));
+    poly[2]:=point(round(screenOffset[0]+zoom*0.80),round(screenOffset[1]+zoom*5.40));
+    poly[3]:=point(round(screenOffset[0]+zoom*0.60),round(screenOffset[1]+zoom*5.20));
+    poly[4]:=point(round(screenOffset[0]+zoom*0.60),round(screenOffset[1]+zoom*3.40));
+    poly[5]:=point(round(screenOffset[0]+zoom*0.80),round(screenOffset[1]+zoom*3.20));
+    poly[6]:=point(round(screenOffset[0]+zoom*1.00),round(screenOffset[1]+zoom*3.40));
+    if (active and 16)>0
+    then Bitmap.CanvasBGRA.Brush.color:=MARK_COLOR
+    else Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+    Bitmap.CanvasBGRA.Polygon(poly);
+
+    poly[0]:=point(round(screenOffset[0]+zoom*3.40),round(screenOffset[1]+zoom*3.40));
+    poly[1]:=point(round(screenOffset[0]+zoom*3.40),round(screenOffset[1]+zoom*5.20));
+    poly[2]:=point(round(screenOffset[0]+zoom*3.20),round(screenOffset[1]+zoom*5.40));
+    poly[3]:=point(round(screenOffset[0]+zoom*3.00),round(screenOffset[1]+zoom*5.20));
+    poly[4]:=point(round(screenOffset[0]+zoom*3.00),round(screenOffset[1]+zoom*3.40));
+    poly[5]:=point(round(screenOffset[0]+zoom*3.20),round(screenOffset[1]+zoom*3.20));
+    poly[6]:=point(round(screenOffset[0]+zoom*3.40),round(screenOffset[1]+zoom*3.40));
+    if (active and 32)>0
+    then Bitmap.CanvasBGRA.Brush.color:=MARK_COLOR
+    else Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+    Bitmap.CanvasBGRA.Polygon(poly);
+
+    poly[0]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*5.70));
+    poly[1]:=point(round(screenOffset[0]+zoom*2.90),round(screenOffset[1]+zoom*5.70));
+    poly[2]:=point(round(screenOffset[0]+zoom*3.10),round(screenOffset[1]+zoom*5.50));
+    poly[3]:=point(round(screenOffset[0]+zoom*2.90),round(screenOffset[1]+zoom*5.30));
+    poly[4]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*5.30));
+    poly[5]:=point(round(screenOffset[0]+zoom*0.90),round(screenOffset[1]+zoom*5.50));
+    poly[6]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*5.70));
+    if (active and 64)>0
+    then Bitmap.CanvasBGRA.Brush.color:=MARK_COLOR
+    else Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+    Bitmap.CanvasBGRA.Polygon(poly);
     preparedForZoom:=zoom;
-
   end;
 
 { T_ioTextSprite }

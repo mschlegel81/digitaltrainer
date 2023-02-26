@@ -292,7 +292,7 @@ PROCEDURE T_workspacePalette.initDefaults;
     paletteNames[2]:='Spezial';
     filter:=maxLongint;
 
-    setLength(paletteEntries,16);
+    setLength(paletteEntries,19);
     with paletteEntries[ 0] do begin prototype:=nil; entryType:=gt_notGate;             subPaletteIndex:=1; end;
     with paletteEntries[ 1] do begin prototype:=nil; entryType:=gt_andGate;             subPaletteIndex:=1; end;
     with paletteEntries[ 2] do begin prototype:=nil; entryType:=gt_orGate;              subPaletteIndex:=1; end;
@@ -309,6 +309,9 @@ PROCEDURE T_workspacePalette.initDefaults;
     with paletteEntries[13] do begin prototype:=nil; entryType:=gt_false;               subPaletteIndex:=0; end;
     with paletteEntries[14] do begin prototype:=nil; entryType:=gt_undeterminedToTrue;  subPaletteIndex:=2; end;
     with paletteEntries[15] do begin prototype:=nil; entryType:=gt_undeterminedToFalse; subPaletteIndex:=2; end;
+    with paletteEntries[16] do begin prototype:=nil; entryType:=gt_rom;                 subPaletteIndex:=2; end;
+    with paletteEntries[17] do begin prototype:=nil; entryType:=gt_ram;                 subPaletteIndex:=2; end;
+    with paletteEntries[18] do begin prototype:=nil; entryType:=gt_7segmentDummy;       subPaletteIndex:=2; end;
   end;
 
 FUNCTION T_workspacePalette.subPaletteNames: T_arrayOfString;
