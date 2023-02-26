@@ -22,7 +22,8 @@ TYPE
               gt_undeterminedToTrue,
               gt_undeterminedToFalse,
               gt_ram,
-              gt_rom);
+              gt_rom,
+              gt_7segmentDummy);
   T_gateTypeSet=array of T_gateType;
   T_gateCount=array[T_gateType] of longint;
   T_multibitWireRepresentation=(wr_binary,wr_decimal,wr_2complement);
@@ -48,7 +49,8 @@ CONST
   {gt_un....true} 'Gibt für unbestimmten Eingang 1 aus',
   {gt_un...false} 'Gibt für unbestimmten Eingang 0 aus',
                   'Speicher'+LineEnding+'Schreibt auf fallender Flanke von clk',
-                  'Nur-Lese-Speicher');
+                  'Nur-Lese-Speicher',
+                  '7-Segment-Anzeige');
 
   C_gateTypeName:array[T_gateType] of string=
     {gt_notGate}   ('not',
@@ -68,7 +70,9 @@ CONST
     {gt_gatedClock} 'gated clock',
     {gt_un....true} 'tend to true',
     {gt_un...false} 'tend to false',
-                    'ram','rom');
+                    'ram',
+                    'rom',
+                    '7seg');
 
 TYPE
   T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
@@ -228,6 +232,18 @@ TYPE
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
+  end;
+
+  P_7segmentGate=^T_7segmentGate;
+
+  { T_7segmentGate }
+
+  T_7segmentGate=object(T_outputGate)
+    CONSTRUCTOR create;
+    FUNCTION  gateType:T_gateType; virtual;
+    PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
+    PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
+    FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
   end;
 
   P_adapter=^T_adapter;
@@ -423,7 +439,7 @@ TYPE
      writeAdr,
      dataIn,
      clockIn:T_wireValue;
-     clockWasHigh:boolean;
+     clockWasHigh:DWord;
 
      CONSTRUCTOR create;
      PROCEDURE reset;                   virtual;
@@ -636,8 +652,7 @@ FUNCTION parseWire2Complement(CONST s: string; CONST width: byte): T_wireValue;
     end;
   end;
 
-FUNCTION parseWire(CONST s: string; CONST width: byte;
-  CONST mode: T_multibitWireRepresentation): T_wireValue;
+FUNCTION parseWire(CONST s: string; CONST width: byte; CONST mode: T_multibitWireRepresentation): T_wireValue;
   begin
     case mode of
       wr_binary     : result:=parseWireBin(s,width);
@@ -679,6 +694,33 @@ FUNCTION newBaseGate(CONST gateType: T_gateType): P_abstractGate;
     end;
   end;
 
+{ T_7segmentGate }
+
+constructor T_7segmentGate.create;
+  begin
+    inherited;
+    io:=tsv_false; ioLabel:=''; width:=8; onLeftOrRightSide:=false; positionIndex:=0;
+  end;
+
+function T_7segmentGate.gateType: T_gateType;
+  begin
+    result:=gt_7segmentDummy;
+  end;
+
+procedure T_7segmentGate.writeToStream(var stream: T_bufferedOutputStreamWrapper; const metaDataOnly: boolean);
+  begin
+    if not(metaDataOnly) then stream.writeByte(byte(gateType));
+  end;
+
+procedure T_7segmentGate.readMetaDataFromStream(var stream: T_bufferedInputStreamWrapper);
+  begin
+  end;
+
+function T_7segmentGate.equals(const other: P_abstractGate): boolean;
+  begin
+    result:=other^.gateType=gateType;
+  end;
+
 { T_ramGate }
 
 CONSTRUCTOR T_ramGate.create;
@@ -695,7 +737,7 @@ PROCEDURE T_ramGate.reset;
     clockIn.width:=1;
     clockIn.bit[i]:=tsv_undetermined;
     setLength(data,0);
-    clockWasHigh:=false;
+    clockWasHigh:=1431655765;
   end;
 
 FUNCTION T_ramGate.clone(CONST includeState: boolean): P_abstractGate;
@@ -752,7 +794,7 @@ FUNCTION T_ramGate.simulateStep: boolean;
   VAR writeIndex:longint;
       i0,i:longint;
   begin
-    if clockWasHigh and (clockIn.bit[0]=tsv_false) and isFullyDefined(dataIn) then begin
+    if (clockWasHigh=4294967295) and (clockIn.bit[0]=tsv_false) and isFullyDefined(dataIn) then begin
       writeIndex:=getDecimalValue(writeAdr,result);
       result:=result and (writeIndex>=0) and (writeIndex<=65535);
       if result then begin
@@ -764,7 +806,8 @@ FUNCTION T_ramGate.simulateStep: boolean;
         data[writeIndex]:=dataIn;
       end;
     end;
-    clockWasHigh:=clockIn.bit[0]=tsv_true;
+    clockWasHigh:=clockWasHigh shl 1;
+    if clockIn.bit[0]=tsv_true then clockWasHigh:=clockWasHigh or 1;
   end;
 
 FUNCTION T_ramGate.getOutput(CONST index: longint): T_wireValue;

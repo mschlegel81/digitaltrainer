@@ -81,6 +81,15 @@ TYPE
       PROCEDURE setZoom(CONST zoom:longint); virtual;
   end;
 
+  P_7SegmentSprite=^T_7SegmentSprite;
+  T_7SegmentSprite=object(T_blockSprite)
+    private
+      active:byte;
+    public
+      CONSTRUCTOR create(CONST a:byte; CONST marked_:boolean);
+      PROCEDURE setZoom(CONST zoom:longint); virtual;
+  end;
+
   T_spriteMap=specialize G_stringKeyMap<P_sprite>;
 
 FUNCTION getIoSprite(CONST pos:T_ioDirection; CONST wireValue:T_wireValue; CONST caption:string):P_sprite;
@@ -212,6 +221,26 @@ FUNCTION getIoTextSprite(CONST wireValue: T_wireValue; mode: T_multibitWireRepre
       spriteAllocated;
     end;
     result^.lastUsed:=now;
+  end;
+
+{ T_7SegmentSprite }
+
+constructor T_7SegmentSprite.create(const a: byte; const marked_: boolean);
+  begin
+    inherited create('',4,6,marked_);
+    active:=a;
+  end;
+
+procedure T_7SegmentSprite.setZoom(const zoom: longint);
+  begin
+    initBaseShape(zoom);
+    Bitmap.CanvasBGRA.DrawFontBackground:=true;
+
+
+
+
+    preparedForZoom:=zoom;
+
   end;
 
 { T_ioTextSprite }

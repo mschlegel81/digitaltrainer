@@ -115,20 +115,23 @@ DESTRUCTOR T_visualGate.destroy;
 PROCEDURE T_visualGate.setupVisuals;
   begin
     ioLocations:=behavior^.getIoLocations;
-    if behavior^.gateType in [gt_input,gt_output] then begin
-      gridWidth :=4;
-      gridHeight:=4;
-    end else begin
-      gridHeight:=1;
-      if (length(ioLocations.p[gt_input])>0) and (length(ioLocations.p[gt_output])>0)
-      then gridWidth:=2
-      else gridWidth:=1;
-
-      gridHeight:=max(gridHeight,max(ioLocations.numberOfLeftInputs,ioLocations.numberOfRightOutputs));
-      gridWidth :=max(gridWidth,max(ioLocations.numberOfTopInputs,ioLocations.numberOfBottomOutputs));
-
-      gridWidth*=2;
-      gridHeight*=2;
+    case behavior^.gateType of
+      gt_input,gt_output: begin
+        gridWidth :=4;
+        gridHeight:=4;
+      end;
+      gt_7segmentDummy: begin
+        gridWidth:=4;
+        gridHeight:=6;
+      end;
+      else begin
+        gridHeight:=1;
+        if (length(ioLocations.p[gt_input])>0) and (length(ioLocations.p[gt_output])>0)
+        then gridWidth:=2
+        else gridWidth:=1;
+        gridHeight:=2*max(gridHeight,max(ioLocations.numberOfLeftInputs,ioLocations.numberOfRightOutputs ));
+        gridWidth :=2*max(gridWidth ,max(ioLocations.numberOfTopInputs ,ioLocations.numberOfBottomOutputs));
+      end;
     end;
   end;
 
