@@ -36,10 +36,6 @@ TYPE
       marked:boolean;
       PROCEDURE ioEditEditingDone(Sender: TObject);
       PROCEDURE ioEditKeyPress(Sender: TObject; VAR key: char);
-      //PROCEDURE paletteEntryMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
-      //PROCEDURE boardElementMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
-      //PROCEDURE boardElementOutputMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
-      //PROCEDURE ioModeShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     public
       canvasPos,
       gridPos:T_point;
@@ -67,6 +63,7 @@ TYPE
       PROPERTY getGridWidth:longint read gridWidth;
       PROPERTY getGridHeight:longint read gridHeight;
       FUNCTION isAtGridPos(CONST p:T_point; OUT info:T_hoverInfo):boolean;
+      PROCEDURE flipInputBits;
   end;
 {$undef includeInterface}
 IMPLEMENTATION
@@ -82,7 +79,10 @@ PROCEDURE T_visualGate.ioEditKeyPress(Sender: TObject; VAR key: char);
        ['0'..'9'    ,#8], //wr_decimal,
        ['0'..'9','-',#8]);//wr_2complement
   begin
-    if key=#13 then ioEditEditingDone(Sender)
+    if key=#13 then begin
+      ioEditEditingDone(Sender);
+      uiAdapter^.hideIoEdit;
+    end
     else if not(key in AllowedKeys[ioMode]) then key:=#0;
   end;
 
@@ -143,14 +143,21 @@ PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST ioOnly: boolean);
     paintAll(Canvas,uiAdapter^.zoom,ioOnly);
   end;
 
-PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST zoom: longint; CONST ioOnly: boolean);
+PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST zoom: longint;
+  CONST ioOnly: boolean);
+  FUNCTION myInputIndex:longint;
+    begin
+      if behavior^.gateType<>gt_input then exit(-1);
+      result:=P_inputGate(behavior)^.ioIndex;
+    end;
+
   VAR k: integer;
       p: T_point;
   begin
     if behavior^.gateType in [gt_input,gt_output]
     then begin
       if not(ioOnly) then
-      getIoBlockSprite(behavior^.getCaption,marked)^.renderAt(Canvas,zoom,canvasPos);
+      getIoBlockSprite(behavior^.getCaption,myInputIndex,marked)^.renderAt(Canvas,zoom,canvasPos);
       getIoTextSprite(behavior^.getInput(0),ioMode)^.renderAt(Canvas,zoom,canvasPos);
     end else begin
       if not(ioOnly) then
@@ -226,7 +233,8 @@ FUNCTION T_visualGate.overlaps(CONST other: P_visualGate): boolean;
         and (max(gridPos[1],other^.gridPos[1])<min(gridPos[1]+gridHeight,other^.gridPos[1]+other^.gridHeight));
   end;
 
-FUNCTION T_visualGate.isAtGridPos(CONST p: T_point; OUT info: T_hoverInfo): boolean;
+FUNCTION T_visualGate.isAtGridPos(CONST p: T_point; OUT info: T_hoverInfo
+  ): boolean;
   VAR i:longint;
       d: T_point;
   begin
@@ -253,6 +261,21 @@ FUNCTION T_visualGate.isAtGridPos(CONST p: T_point; OUT info: T_hoverInfo): bool
     if p[1]-gridPos[1]>=gridHeight div 2 then info.ioIndex:=1 else info.ioIndex:=0;
     info.subElement:=block;
     result:=true;
+  end;
+
+PROCEDURE T_visualGate.flipInputBits;
+  CONST flipped:array[T_triStateValue] of T_triStateValue=//tsv_false,tsv_undetermined,tsv_true
+                                                          (tsv_true,tsv_false,tsv_false);
+  VAR wireValue: T_wireValue;
+      b:byte;
+  begin
+    wireValue:=behavior^.getInput(0);
+    for b:=0 to wireValue.width-1 do wireValue.bit[b]:=flipped[wireValue.bit[b]];
+    behavior^.setInput(0,wireValue);
+    paintAll(uiAdapter^.uiElement.boardImage.Canvas);
+    uiAdapter^.uiElement.boardImage.Invalidate;
+    uiAdapter^.callback.boardModifiedCallback();
+    uiAdapter^.hideIoEdit;
   end;
 
 //PROCEDURE T_visualGate.setPaletteEntryMouseActions;

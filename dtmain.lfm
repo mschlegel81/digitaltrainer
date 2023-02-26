@@ -11,6 +11,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   Menu = MainMenu1
   OnCreate = FormCreate
   OnDestroy = FormDestroy
+  OnKeyDown = FormKeyDown
   OnResize = FormResize
   LCLVersion = '2.2.2.0'
   WindowState = wsMaximized
@@ -276,6 +277,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Kind = sbVertical
     PageSize = 0
     TabOrder = 1
+    OnKeyDown = FormKeyDown
     OnScroll = PaletteScrollBarScroll
   end
   object SubPaletteComboBox: TComboBox
@@ -338,6 +340,8 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Width = 1260
     AntialiasingMode = amOn
     Align = alClient
+    ParentShowHint = False
+    ShowHint = True
     StretchOutEnabled = False
     StretchInEnabled = False
   end
@@ -523,12 +527,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Brush.Style = bsClear
     Pen.Color = 43775
     Visible = False
-  end
-  object Image1: TImage
-    Left = 528
-    Height = 90
-    Top = 446
-    Width = 90
   end
   object ioEdit: TEdit
     Left = 946

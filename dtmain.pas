@@ -17,7 +17,6 @@ TYPE
     boardHorizontalScrollBar: TScrollBar;
     boardImage: TImage;
     ioEdit: TEdit;
-    Image1: TImage;
     infoLabel: TLabel;
     miRedo: TMenuItem;
     miUndo: TMenuItem;
@@ -66,6 +65,7 @@ TYPE
     PROCEDURE AnimationTimerTimer(Sender: TObject);
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE FormDestroy(Sender: TObject);
+    PROCEDURE FormKeyDown(Sender: TObject; VAR key: word; Shift: TShiftState);
     PROCEDURE FormResize(Sender: TObject);
     PROCEDURE miAddToPaletteClick(Sender: TObject);
     PROCEDURE miCopyClick(Sender: TObject);
@@ -161,12 +161,19 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
     stepsTotal:=0;
     pauseByUser:=true;
+    Application.AddOnKeyDownHandler(@FormKeyDown,false);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
   begin
     workspace.destroy;
     uiAdapter.destroy;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.FormKeyDown(Sender: TObject; VAR key: word; Shift: TShiftState);
+  begin
+    if Sender.ClassNameIs('TComboBox') or Sender.ClassNameIs('TEdit') then exit;
+    workspace.activeBoard^.handleInputKey(key,ssShift in Shift);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
@@ -279,21 +286,8 @@ PROCEDURE TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject;
     uiAdapter.resetState;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
-
-  VAR
-    forInspection: P_abstractGate;
-    forInspectionTyp: T_gateType;
-    forInspectionProto: P_captionedAndIndexed;
-    vb: boolean;
-    board:P_visualBoard;
+PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject;button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
-    forInspection:=uiAdapter.draggedGate^.getBehavior;
-    forInspectionTyp:=forInspection^.gateType;
-    forInspectionProto:=P_compoundGate(forInspection)^.prototype;
-    vb:=forInspectionProto^.isVisualBoard;
-    board:=P_visualBoard(forInspectionProto);
 
     buttonClicked(propEditShape);
     ValueListEditor1.OnValidateEntry:=nil;
@@ -315,7 +309,7 @@ begin
     uiAdapter.draggedGate^.propertyEditDone(not(gateProperties.arePropertiesForBoard),
       boardImage.Left-boardHorizontalScrollBar.position,
       boardImage.top -boardVerticalScrollBar.position);
-    workspace.activeBoard^.afterGatePropertiesEdited(uiAdapter.draggedGate);
+    workspace.activeBoard^.afterGatePropertiesEdited(uiAdapter.draggedGate,gateProperties.arePropertiesForBoard);
     if not(gateProperties.arePropertiesForBoard) then begin
       workspace.activePalette^.ensureVisualPaletteItems;
       workspace.activePalette^.checkSizes;
@@ -381,6 +375,7 @@ PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
       stepsSimulated: longint;
       stepsToSimulate:longint;
   begin
+    if uiAdapter.getState<>uas_initial then exit;
     startTicks:=GetTickCount64;
     stepsToSimulate:=SPEED_SETTING[speedTrackBar.position].simSteps;
     stepsSimulated:=workspace.activeBoard^.simulateSteps(stepsToSimulate);

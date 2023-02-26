@@ -3,7 +3,7 @@ UNIT gateProperties;
 INTERFACE
 USES logicalGates,compoundGates, myGenerics,paletteHandling,ValEdit,Classes;
 TYPE
-  T_gatePropertyType=(pt_number,pt_string,pt_wireWidth,pt_connectionCount,pt_enumWithOptionForNewEntry);
+  T_gatePropertyType=(pt_number,pt_string,pt_wireWidth,pt_connectionCount,pt_enumWithOptionForNewEntry,pt_data);
   T_gatePropertyEnum=(gpe_captionReadOnly,
                       gpe_caption,
                       gpe_subPalette,
@@ -13,7 +13,8 @@ TYPE
                       gpe_intervalGreaterZero,
                       gpe_inputWidth,
                       gpe_outputWidth,
-                      gpe_inputCount);
+                      gpe_inputCount,
+                      gpe_romData);
   T_gatePropertyEnums=set of T_gatePropertyEnum;
   T_gateProperty=record
     name:string;
@@ -33,7 +34,9 @@ CONST
    (name:'Intervall';               typ:pt_number; minValue:1; maxValue:1024; readonly:false),
    (name:'Breite Eingang (bits)';   typ:pt_wireWidth; minValue:1; maxValue:WIRE_MAX_WIDTH; readonly:false),
    (name:'Breite Ausgang (bits)';   typ:pt_wireWidth; minValue:1; maxValue:WIRE_MAX_WIDTH; readonly:false),
-   (name:'Anzahl Eingänge';         typ:pt_connectionCount; minValue:2; maxValue:WIRE_MAX_WIDTH; readonly:false));
+   (name:'Anzahl Eingänge';         typ:pt_connectionCount; minValue:2; maxValue:WIRE_MAX_WIDTH; readonly:false),
+   (name:'Speicherinhalt';          typ:pt_data; minValue:0; maxValue:         0; readonly:false));
+
   C_availableProperies:array[T_gateType,false..true] of T_gatePropertyEnums=
   {gt_notGate} (([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly]),
   {gt_andGate}  ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputCount]),
@@ -51,7 +54,9 @@ CONST
                 ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly]),
   {gt_gatedCl..}([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_intervalGreaterZero]),
   {1/2->1}      ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputWidth]),
-  {1/2->0}      ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputWidth]));
+  {1/2->0}      ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputWidth]),
+                ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly]),
+                ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_romData]));
 
 TYPE
   T_gatePropertyValue=record

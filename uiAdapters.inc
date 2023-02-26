@@ -90,6 +90,7 @@ T_uiAdapter=object
     PROCEDURE zoomOut;
     PROPERTY getZoom:longint read zoom;
     PROCEDURE resetState;
+    PROPERTY getState:T_uiState read state;
 
     PROCEDURE clearUndoList;
     PROCEDURE saveStateToUndoList;
@@ -146,108 +147,6 @@ DESTRUCTOR T_uiAdapter.destroy;
     clearUndoList;
     if helperState.Clipboard<>nil then dispose(helperState.Clipboard,destroy);
   end;
-
-//PROCEDURE T_uiAdapter.paletteEntryMouseMove(Sender: TObject;
-//  Shift: TShiftState; X, Y: integer);
-//  begin
-//    if state=uas_draggingFromPalette then
-//    with dragData do begin
-//      BeginFormUpdate();
-//      draggedGate^.paintAll(boardUiElements.wireImage,x+startX-relPosX,y+startY-relPosY,zoom);
-//      EndFormUpdate();
-//    end;
-//  end;
-//
-//PROCEDURE T_uiAdapter.paletteEntryMouseUp(Sender: TObject;
-//  button: TMouseButton; Shift: TShiftState; X, Y: integer);
-//  VAR screenX,screenY:longint;
-//  begin
-//    if state<>uas_draggingFromPalette then exit;
-//    state:=uas_initial;
-//    with dragData do begin
-//      screenX:=x+startX-relPosX;
-//      screenY:=y+startY-relPosY;
-//      if activeBoard=nil
-//      then dispose(draggedGate,destroy)
-//      else activeBoard^.elementAdded(draggedGate,screenX,screenY);
-//      setLength(draggedGates,0);
-//    end;
-//  end;
-
-//PROCEDURE T_uiAdapter.boardElementMouseMove(Sender: TObject;
-//  Shift: TShiftState; X, Y: integer);
-//  VAR i,g0x,g0y,dx,dy:longint;
-//  begin
-//    //TODO: Reimplement boardElementMouseMove - we need an additional, transparent canvas
-//
-//
-//    //if state=uas_draggingFromBoard then with dragData do begin
-//    //  BeginFormUpdate();
-//    //  draggedGate^.paintAll(boardUiElements.wireImage,x+startX-relPosX,y+startY-relPosY,zoom);
-//    //  startX+=x-relPosX;
-//    //  startY+=y-relPosY;
-//    //  EndFormUpdate();
-//    //end else if state=uas_multiDragFromBoard then with dragData do begin
-//    //  BeginFormUpdate();
-//    //  g0x:=draggedGates[0]^.shapes[0].Left;
-//    //  g0y:=draggedGates[0]^.shapes[0].top;
-//    //  dx:=x+startX-relPosX-g0x;
-//    //  dy:=y+startY-relPosY-g0y;
-//    //  for i:=length(draggedGates)-1 downto 1 do draggedGates[i]^.paintAll(
-//    //    boardUiElements.wireImage,
-//    //    draggedGates[i]^.shapes[0].Left+dx,
-//    //    draggedGates[i]^.shapes[0].top+dy,
-//    //    zoom);
-//    //  draggedGate^.paintAll(boardUiElements.wireImage,x+startX-relPosX,y+startY-relPosY,zoom);
-//    //  startX+=x-relPosX;
-//    //  startY+=y-relPosY;
-//    //  EndFormUpdate();
-//    //end;
-//  end;
-//
-//PROCEDURE T_uiAdapter.boardElementMouseUp(Sender: TObject;
-//  button: TMouseButton; Shift: TShiftState; X, Y: integer);
-//  VAR screenX,screenY:longint;
-//  begin
-//    if state=uas_draggingFromBoard then with dragData do begin
-//      screenX:=x+startX-relPosX;
-//      screenY:=y+startY-relPosY;
-//      activeBoard^.repositionElement(draggedGate,false);
-//      setLength(draggedGates,0);
-//    end else if state=uas_multiDragFromBoard then with dragData do begin
-//      activeBoard^.repositionElement(draggedGates,false);
-//      setLength(draggedGates,0);
-//    end;
-//    state:=uas_initial;
-//  end;
-//
-//PROCEDURE T_uiAdapter.boardOutputMouseMove(Sender: TObject; Shift: TShiftState;
-//  X, Y: integer);
-//  begin
-//    if state=uas_draggingWire then begin
-//      activeBoard^.paintWirePreview(draggedGate^.getOutputPositionInGridSize(dragData.outputIndex)
-//                                   +draggedGate^.gridPos,
-//                                   x+dragData.startX,
-//                                   y+dragData.startY);
-//    end;
-//  end;
-//
-//PROCEDURE T_uiAdapter.boardOutputMouseUp(Sender: TObject; button: TMouseButton;
-//  Shift: TShiftState; X, Y: integer);
-//  begin
-//    if state=uas_draggingWire then with dragData do
-//    if (activeBoard<>nil) and (dragTarget<>nil) then
-//      activeBoard^.addWire(draggedGate,outputIndex,dragTarget,inputIndex);
-//    state:=uas_initial;
-//  end;
-
-//PROCEDURE T_uiAdapter.paletteSizeUpdated(CONST Right: longint);
-//  begin
-//    if activeBoard<>nil then begin
-//      activeBoard^.ui.wireImage.Left:=Right;
-//      activeBoard^.checkSizes;
-//    end;
-//  end;
 
 PROCEDURE T_uiAdapter.propertyEditorShown(CONST gate: P_visualGate;
   CONST fromBoard: boolean);
@@ -469,7 +368,6 @@ PROCEDURE T_uiAdapter.setPaletteSize(CONST paletteWidthInGridSize,
       uiElement.boardVerticalScrollBar.visible:=true;
       uiElement.boardVerticalScrollBar.max     :=boardHeightInPixels;
       uiElement.boardVerticalScrollBar.PageSize:=effBoardImageHeight;
-      uiElement.boardVerticalScrollBar.position:=0;
     end;
     if effBoardImageWidth>boardWidthInPixels then begin
       uiElement.boardHorizontalScrollBar.visible:=false;
@@ -480,7 +378,6 @@ PROCEDURE T_uiAdapter.setPaletteSize(CONST paletteWidthInGridSize,
       uiElement.boardHorizontalScrollBar.visible:=true;
       uiElement.boardHorizontalScrollBar.max     :=boardWidthInPixels;
       uiElement.boardHorizontalScrollBar.PageSize:=effBoardImageWidth;
-      uiElement.boardHorizontalScrollBar.position:=0;
     end;
 
   end;

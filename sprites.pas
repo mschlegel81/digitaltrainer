@@ -6,6 +6,9 @@ INTERFACE
 USES Graphics, BGRABitmap, wiringUtil, visuals, BGRABitmapTypes, BGRAGraphics,
   logicalGates, myGenerics;
 
+CONST
+  C_inputKey:array[0..35] of char=('1','2','3','4','5','6','7','8','9','0','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z');
+
 TYPE
   P_sprite=^T_sprite;
 
@@ -45,8 +48,10 @@ TYPE
   { T_blockSprite }
   P_ioBlockSprite=^T_ioBlockSprite;
   T_ioBlockSprite=object(T_blockSprite)
+    private
+      inIdx:longint;
     public
-      CONSTRUCTOR create(CONST caption_:string; CONST marked_:boolean);
+      CONSTRUCTOR create(CONST caption_:string; CONST inputIndex:longint; CONST marked_:boolean);
       PROCEDURE setZoom(CONST zoom:longint); virtual;
   end;
 
@@ -80,7 +85,7 @@ TYPE
 
 FUNCTION getIoSprite(CONST pos:T_ioDirection; CONST wireValue:T_wireValue; CONST caption:string):P_sprite;
 FUNCTION getBlockSprite(CONST caption:string; CONST gridWidth,gridHeight:longint; CONST marked:boolean):P_sprite;
-FUNCTION getIoBlockSprite(CONST caption:string; CONST marked:boolean):P_sprite;
+FUNCTION getIoBlockSprite(CONST caption:string; CONST inputIndex:longint; CONST marked:boolean):P_sprite;
 FUNCTION getIoTextSprite(CONST wireValue:T_wireValue; mode:T_multibitWireRepresentation):P_sprite;
 IMPLEMENTATION
 USES sysutils,myStringUtil,types,Classes,math;
@@ -119,6 +124,7 @@ PROCEDURE disposeSprite(VAR s:P_sprite);
 
 PROCEDURE init;
   begin
+    lastCleanupTime:=now;
     ioSpriteMap     .create(@disposeSprite);
     blockSpriteMap  .create(@disposeSprite);
     ioBlockSpriteMap.create(@disposeSprite);
@@ -180,12 +186,12 @@ FUNCTION getBlockSprite(CONST caption: string; CONST gridWidth, gridHeight: long
     result^.lastUsed:=now;
   end;
 
-FUNCTION getIoBlockSprite(CONST caption: string; CONST marked: boolean): P_sprite;
+FUNCTION getIoBlockSprite(CONST caption: string; CONST inputIndex:longint; CONST marked: boolean): P_sprite;
   VAR key:string;
   begin
-    key:=caption+' '+BoolToStr(marked,'M','');
+    key:=caption+' '+BoolToStr(marked,'M','')+intToStr(inputIndex);
     if not ioBlockSpriteMap.containsKey(key,result) then begin
-      new(P_ioBlockSprite(result),create(caption,marked));
+      new(P_ioBlockSprite(result),create(caption,inputIndex,marked));
       ioBlockSpriteMap.put(key,result);
       spriteAllocated;
     end;
@@ -242,9 +248,10 @@ PROCEDURE T_ioTextSprite.setZoom(CONST zoom: longint);
 
 { T_ioBlockSprite }
 
-CONSTRUCTOR T_ioBlockSprite.create(CONST caption_: string; CONST marked_: boolean);
+CONSTRUCTOR T_ioBlockSprite.create(CONST caption_: string; CONST inputIndex:longint; CONST marked_: boolean);
   begin
     inherited create(caption_,4,4,marked_);
+    inIdx:=inputIndex;
   end;
 
 { T_ioSprite }
@@ -528,16 +535,26 @@ PROCEDURE T_blockSprite.setZoom(CONST zoom: longint);
 PROCEDURE T_ioBlockSprite.setZoom(CONST zoom: longint);
   begin
     initBaseShape(zoom);
-    Bitmap.CanvasBGRA.DrawFontBackground:=true;
+    Bitmap.CanvasBGRA.Pen.color:=0;
+    Bitmap.CanvasBGRA.MoveTo(screenOffset[0]           ,screenOffset[1]+(zoom*height   shr 1));
+    Bitmap.CanvasBGRA.LineTo(screenOffset[0]+zoom*width,screenOffset[1]+(zoom*height   shr 1));
+    if (inIdx>=0) and (inIdx<length(C_inputKey)) then begin
+      Bitmap.CanvasBGRA.DrawFontBackground:=true;
+      textOut(C_inputKey[inIdx],
+              screenOffset[0]+(width-1)*zoom,
+              screenOffset[1]               +4,
+              screenOffset[0]+(width  )*zoom-3,
+              screenOffset[1]+zoom,0);
+      Bitmap.CanvasBGRA.MoveTo(screenOffset[0]+(width-1)*zoom,screenOffset[1]+3);
+      Bitmap.CanvasBGRA.LineTo(screenOffset[0]+(width-1)*zoom,screenOffset[1]+zoom);
+      Bitmap.CanvasBGRA.LineTo(screenOffset[0]+(width  )*zoom-3,screenOffset[1]+zoom);
+    end;
+    Bitmap.CanvasBGRA.DrawFontBackground:=false;
     textOut(caption,
             screenOffset[0]            +zoom shr 1,
             screenOffset[1]            +zoom shr 1,
             screenOffset[0]+ zoom*width-zoom shr 1,
             screenOffset[1]+(zoom*height div 2));
-    Bitmap.CanvasBGRA.Pen.color:=0;
-    Bitmap.CanvasBGRA.MoveTo(screenOffset[0]           ,screenOffset[1]+(zoom*height   shr 1));
-    Bitmap.CanvasBGRA.LineTo(screenOffset[0]+zoom*width,screenOffset[1]+(zoom*height   shr 1));
-
     preparedForZoom:=zoom;
   end;
 
@@ -568,6 +585,11 @@ FUNCTION T_sprite.screenHeight: longint;
 PROCEDURE T_sprite.renderAt(CONST Canvas:TCanvas; CONST zoom:longint; CONST screenPosition: T_point);
   begin
     if zoom<>preparedForZoom then setZoom(zoom);
+    if (screenPosition[0]-screenOffset[0]>Canvas.width) or
+       (screenPosition[0]-screenOffset[0]+Bitmap.width<0) or
+       (screenPosition[1]-screenOffset[1]>Canvas.height) or
+       (screenPosition[1]-screenOffset[1]+Bitmap.height<0) then exit;
+
     Bitmap.draw(Canvas,
                 screenPosition[0]-screenOffset[0],
                 screenPosition[1]-screenOffset[1],true);
