@@ -1,7 +1,7 @@
 object DigitaltrainerMainForm: TDigitaltrainerMainForm
-  Left = 1565
+  Left = 1809
   Height = 737
-  Top = 171
+  Top = 210
   Width = 1277
   Align = alTop
   Caption = 'Digitaltrainer'

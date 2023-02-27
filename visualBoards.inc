@@ -8,7 +8,7 @@ T_visualBoard=object(T_captionedAndIndexed)
     myIndex:longint;
 
     wiresUpToDate:boolean;
-    captionString:string;
+    captionString:shortstring;
     descriptionString:string;
     inputs : T_visualGateArray;
     outputs: T_visualGateArray;
@@ -56,7 +56,7 @@ T_visualBoard=object(T_captionedAndIndexed)
     PROCEDURE paintWires(CONST init:boolean=true; CONST draw:boolean=true);
     PROCEDURE paintWirePreview(CONST wireStart:T_point; CONST screenX,screenY:longint);
 
-    FUNCTION getCaption: string; virtual;
+    FUNCTION getCaption: shortstring; virtual;
     PROCEDURE setCaption(CONST s: string); virtual;
     FUNCTION getDescription: string; virtual;
     PROCEDURE setDescription(CONST s: string); virtual;
@@ -191,10 +191,11 @@ PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft, movingBottom: boolean
 PROCEDURE T_visualBoard.detachUI;
   VAR e:P_visualGate;
   begin
+    if ui<>nil then ui^.activeBoard:=nil;
     for e in inputs  do begin e^.uiAdapter:=nil; end;
     for e in outputs do begin e^.uiAdapter:=nil; end;
     for e in gates   do begin e^.uiAdapter:=nil; end;
-    if ui=nil then exit;
+    ui:=nil;
   end;
 
 PROCEDURE T_visualBoard.attachUI(CONST uiAdapter: P_uiAdapter);
@@ -204,8 +205,8 @@ PROCEDURE T_visualBoard.attachUI(CONST uiAdapter: P_uiAdapter);
     ui:=uiAdapter;
     uiAdapter^.activeBoard:=@self;
     for e in inputs  do begin e^.uiAdapter:=uiAdapter; e^.behavior^.reset; end;
-    for e in outputs do begin e^.uiAdapter:=uiAdapter; end;
-    for e in gates   do begin e^.uiAdapter:=uiAdapter; end;
+    for e in outputs do begin e^.uiAdapter:=uiAdapter; e^.behavior^.reset; end;
+    for e in gates   do begin e^.uiAdapter:=uiAdapter; e^.behavior^.reset; end;
     checkBoardExtend(false,false);
     rewire(true);
 
@@ -1348,7 +1349,7 @@ PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point;
 
   end;
 
-FUNCTION T_visualBoard.getCaption: string;
+FUNCTION T_visualBoard.getCaption: shortstring;
 begin
   result:=captionString;
 end;

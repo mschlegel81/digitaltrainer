@@ -105,7 +105,7 @@ TYPE
   P_captionedAndIndexed=^T_captionedAndIndexed;
   T_captionedAndIndexed=object
 
-    FUNCTION  getCaption:string;       virtual; abstract;
+    FUNCTION  getCaption:shortstring;       virtual; abstract;
     FUNCTION  getDescription:string;   virtual; abstract;
     PROCEDURE setCaption(CONST s:string);       virtual;
     PROCEDURE setDescription(CONST s:string);   virtual;
@@ -123,7 +123,7 @@ TYPE
       DESTRUCTOR destroy; virtual;
       PROCEDURE reset;                   virtual; abstract;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual; abstract;
-      FUNCTION  getCaption:string;       virtual;
+      FUNCTION  getCaption:shortstring;       virtual;
       FUNCTION  getDescription:string;   virtual;
       FUNCTION  numberOfInputs :longint; virtual; abstract;
       FUNCTION  numberOfOutputs:longint; virtual; abstract;
@@ -153,7 +153,7 @@ TYPE
       CONSTRUCTOR create(CONST constantTrue:boolean);
       PROCEDURE reset;                   virtual;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual;
-      FUNCTION  getCaption:string; virtual;
+      FUNCTION  getCaption:shortstring; virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
@@ -206,7 +206,7 @@ TYPE
       CONSTRUCTOR create;
       PROCEDURE reset;                   virtual;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
-      FUNCTION  getCaption:string; virtual;
+      FUNCTION  getCaption:shortstring; virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  getIoLocations:T_ioLocations; virtual;
@@ -228,7 +228,7 @@ TYPE
     public
       CONSTRUCTOR create;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
-      FUNCTION  getCaption:string; virtual;
+      FUNCTION  getCaption:shortstring; virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
@@ -256,7 +256,7 @@ TYPE
       CONSTRUCTOR create(CONST inW,outW:byte);
       PROCEDURE reset;                   virtual;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
-      FUNCTION  getCaption:string; virtual;
+      FUNCTION  getCaption:shortstring; virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  inputWidth (CONST index:longint):byte; virtual;
@@ -344,7 +344,7 @@ TYPE
       CONSTRUCTOR create;
       PROCEDURE reset;                   virtual;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
-      FUNCTION  getCaption:string; virtual;
+      FUNCTION  getCaption:shortstring; virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
@@ -364,7 +364,7 @@ TYPE
       CONSTRUCTOR create;
       PROCEDURE reset;                   virtual;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
-      FUNCTION  getCaption:string; virtual;
+      FUNCTION  getCaption:shortstring; virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
       FUNCTION  simulateStep:boolean;    virtual;
@@ -378,7 +378,7 @@ TYPE
        input,output:T_wireValue;
        CONSTRUCTOR create;
        PROCEDURE reset;                   virtual;
-       FUNCTION  getCaption:string; virtual;
+       FUNCTION  getCaption:shortstring; virtual;
        FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
        FUNCTION  numberOfInputs :longint; virtual;
        FUNCTION  numberOfOutputs:longint; virtual;
@@ -397,7 +397,7 @@ TYPE
      public
        CONSTRUCTOR create;
        PROCEDURE reset;                   virtual;
-       FUNCTION  getCaption:string; virtual;
+       FUNCTION  getCaption:shortstring; virtual;
        FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
        FUNCTION  numberOfInputs :longint; virtual;
        FUNCTION  numberOfOutputs:longint; virtual;
@@ -415,7 +415,7 @@ TYPE
      DESTRUCTOR destroy; virtual;
      PROCEDURE reset;                   virtual;
      FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual;
-     FUNCTION  getCaption:string;       virtual;
+     FUNCTION  getCaption:shortstring;       virtual;
      FUNCTION  numberOfInputs :longint; virtual;
      FUNCTION  numberOfOutputs:longint; virtual;
      FUNCTION  getIoLocations:T_ioLocations; virtual;
@@ -445,7 +445,7 @@ TYPE
      CONSTRUCTOR create;
      PROCEDURE reset;                   virtual;
      FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual;
-     FUNCTION  getCaption:string;       virtual;
+     FUNCTION  getCaption:shortstring;       virtual;
      FUNCTION  numberOfInputs :longint; virtual;
      FUNCTION  getIoLocations:T_ioLocations; virtual;
      FUNCTION  inputWidth (CONST index:longint):byte; virtual;
@@ -467,10 +467,10 @@ OPERATOR :=(CONST x:T_triStateValue):T_wireValue;
 FUNCTION isFullyDefined(CONST w:T_wireValue):boolean;
 OPERATOR =(CONST x,y:T_wireValue):boolean;
 
-FUNCTION getBinaryString     (CONST wire:T_wireValue):string;
-FUNCTION getDecimalString    (CONST wire:T_wireValue):string;
-FUNCTION get2ComplementString(CONST wire:T_wireValue):string;
-FUNCTION getWireString       (CONST wire:T_wireValue; CONST mode:T_multibitWireRepresentation):string;
+FUNCTION getBinaryString     (CONST wire:T_wireValue):shortstring;
+FUNCTION getDecimalString    (CONST wire:T_wireValue):shortstring;
+FUNCTION get2ComplementString(CONST wire:T_wireValue):shortstring;
+FUNCTION getWireString       (CONST wire:T_wireValue; CONST mode:T_multibitWireRepresentation):shortstring;
 
 FUNCTION parseWireBin        (CONST s:string; CONST width:byte):T_wireValue;
 FUNCTION parseWireDecimal    (CONST s:string; CONST width:byte):T_wireValue;
@@ -485,7 +485,7 @@ FUNCTION deserialize(n:qword):T_wireValue;
 
 IMPLEMENTATION
 USES sysutils;
-FUNCTION getBinaryString(CONST wire: T_wireValue): string;
+FUNCTION getBinaryString(CONST wire: T_wireValue): shortstring;
   VAR i:longint;
   begin
     result:='';
@@ -497,7 +497,7 @@ FUNCTION getBinaryString(CONST wire: T_wireValue): string;
     end;
   end;
 
-FUNCTION getDecimalString(CONST wire: T_wireValue): string;
+FUNCTION getDecimalString(CONST wire: T_wireValue): shortstring;
   VAR i:longint;
       k:int64=0;
   begin
@@ -528,7 +528,7 @@ FUNCTION getDecimalValue(CONST wire: T_wireValue; OUT valid: boolean): longint;
     result:=k;
   end;
 
-FUNCTION get2ComplementString(CONST wire: T_wireValue): string;
+FUNCTION get2ComplementString(CONST wire: T_wireValue): shortstring;
   VAR i:longint;
       k:int64=0;
       maxVal:int64;
@@ -548,8 +548,7 @@ FUNCTION get2ComplementString(CONST wire: T_wireValue): string;
     result:=intToStr(k);
   end;
 
-FUNCTION getWireString(CONST wire: T_wireValue;
-  CONST mode: T_multibitWireRepresentation): string;
+FUNCTION getWireString(CONST wire: T_wireValue; CONST mode: T_multibitWireRepresentation): shortstring;
   begin
     case mode of
       wr_binary     : result:=getBinaryString(wire);
@@ -737,6 +736,7 @@ PROCEDURE T_ramGate.reset;
   begin
     inherited;
     writeAdr.width:=16;
+    dataIn  .width:=16;
     for i:=0 to WIRE_MAX_WIDTH-1 do writeAdr.bit[i]:=tsv_undetermined;
     clockIn.width:=1;
     clockIn.bit[i]:=tsv_undetermined;
@@ -754,7 +754,7 @@ FUNCTION T_ramGate.clone(CONST includeState: boolean): P_abstractGate;
     P_RomGate(result)^.readAdr:=readAdr;
   end;
 
-FUNCTION T_ramGate.getCaption: string;
+FUNCTION T_ramGate.getCaption: shortstring;
   begin
     result:='RAM';
   end;
@@ -803,20 +803,21 @@ FUNCTION T_ramGate.simulateStep: boolean;
       result:=result and (writeIndex>=0) and (writeIndex<=65535);
       if result then begin
         i0:=length(data);
-        if writeIndex>i0 then begin
+        if writeIndex>=i0 then begin
           setLength(data,writeIndex+1);
           for i:=i0 to writeIndex-1 do data[i]:=zero;
         end;
         data[writeIndex]:=dataIn;
       end;
-    end;
+    end else result:=(clockWasHigh<>4294967295) and (clockWasHigh<>0);
     clockWasHigh:=clockWasHigh shl 1;
     if clockIn.bit[0]=tsv_true then clockWasHigh:=clockWasHigh or 1;
+    if inherited then result:=true;
   end;
 
 FUNCTION T_ramGate.getOutput(CONST index: longint): T_wireValue;
   begin
-    inherited;
+    result:=inherited;
   end;
 
 FUNCTION T_ramGate.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
@@ -902,7 +903,7 @@ FUNCTION T_romGate.clone(CONST includeState: boolean): P_abstractGate;
     P_RomGate(result)^.readAdr:=readAdr;
   end;
 
-FUNCTION T_romGate.getCaption: string;
+FUNCTION T_romGate.getCaption: shortstring;
   begin
     result:='ROM';
   end;
@@ -949,7 +950,9 @@ FUNCTION T_romGate.simulateStep: boolean;
 
 FUNCTION T_romGate.getOutput(CONST index: longint): T_wireValue;
   begin
-    if (decodedAdress>=0) and (decodedAdress<length(data)) then result:=data[index] else result:=zero;
+    if (decodedAdress>=0) and (decodedAdress<length(data))
+    then result:=data[decodedAdress]
+    else result:=zero;
   end;
 
 FUNCTION T_romGate.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
@@ -1061,7 +1064,7 @@ PROCEDURE T_tendToFalse.reset;
     for i:=0 to input.width-1 do output.bit[i]:=tsv_false;
   end;
 
-FUNCTION T_tendToFalse.getCaption: string;
+FUNCTION T_tendToFalse.getCaption: shortstring;
   begin
     result:='½→0';
   end;
@@ -1109,7 +1112,7 @@ PROCEDURE T_tendToTrue.reset;
     for i:=0 to input.width-1 do output.bit[i]:=tsv_true;
   end;
 
-FUNCTION T_tendToTrue.getCaption: string;
+FUNCTION T_tendToTrue.getCaption: shortstring;
   begin
     result:='½→1';
   end;
@@ -1190,7 +1193,7 @@ PROCEDURE T_gatedClock.reset;
     enable:=tsv_undetermined;
   end;
 
-FUNCTION T_gatedClock.getCaption: string;
+FUNCTION T_gatedClock.getCaption: shortstring;
   begin
     result:='G'+inherited;
   end;
@@ -1236,7 +1239,7 @@ CONSTRUCTOR T_constantGate.create(CONST constantTrue: boolean);
 PROCEDURE T_constantGate.reset;
   begin end;
 
-FUNCTION T_constantGate.getCaption: string;
+FUNCTION T_constantGate.getCaption: shortstring;
   begin
     case c of
       tsv_true : result:='1';
@@ -1285,7 +1288,7 @@ PROCEDURE T_adapter.reset;
     for i:=0 to WIRE_MAX_WIDTH-1 do io.bit[i]:=tsv_undetermined;
   end;
 
-FUNCTION T_adapter.getCaption: string;
+FUNCTION T_adapter.getCaption: shortstring;
   begin result:='Adapter'+LineEnding+intToStr(inWidth)+'bit -> '+intToStr(outWidth)+'bit'; end;
 
 FUNCTION T_adapter.numberOfInputs: longint;
@@ -1395,7 +1398,7 @@ PROCEDURE T_clock.reset;
     counter:=0;
   end;
 
-FUNCTION T_clock.getCaption: string;
+FUNCTION T_clock.getCaption: shortstring;
   begin
     result:=#240#159#149#145;
   end;
@@ -1468,7 +1471,7 @@ PROCEDURE T_clock.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrappe
 CONSTRUCTOR T_outputGate.create;
   begin inherited; end;
 
-FUNCTION T_outputGate.getCaption: string;
+FUNCTION T_outputGate.getCaption: shortstring;
   begin
     if ioLabel=''
     then result:='out '+intToStr(ioIndex)
@@ -1496,7 +1499,7 @@ PROCEDURE T_inputGate.reset;
     for i:=0 to WIRE_MAX_WIDTH-1 do io.bit[i]:=tsv_undetermined;
   end;
 
-FUNCTION T_inputGate.getCaption: string;
+FUNCTION T_inputGate.getCaption: shortstring;
   begin
     if ioLabel=''
     then result:='in '+intToStr(ioIndex)
@@ -1628,7 +1631,7 @@ CONSTRUCTOR T_notGate.create;
 PROCEDURE T_notGate.reset;
   begin input:=tsv_undetermined; output:=tsv_undetermined; end;
 
-FUNCTION T_abstractGate.getCaption: string;
+FUNCTION T_abstractGate.getCaption: shortstring;
   begin result:=C_gateTypeName[gateType]; end;
 
 FUNCTION T_notGate.numberOfInputs: longint;

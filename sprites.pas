@@ -35,7 +35,7 @@ TYPE
   P_blockSprite=^T_blockSprite;
   T_blockSprite=object(T_sprite)
     private
-      caption:string;
+      caption:shortstring;
       width,height:longint;
       marked:boolean;
     protected
@@ -60,9 +60,9 @@ TYPE
 
   T_ioTextSprite=object(T_blockSprite)
     private
-      wireModeText:string;
+      wireModeText:shortstring;
     public
-      CONSTRUCTOR create(CONST wireMode:T_multibitWireRepresentation; CONST value:string);
+      CONSTRUCTOR create(CONST wireMode:T_multibitWireRepresentation; CONST value:shortstring);
       PROCEDURE setZoom(CONST zoom:longint); virtual;
   end;
 
@@ -93,8 +93,8 @@ TYPE
   T_spriteMap=specialize G_stringKeyMap<P_sprite>;
 
 FUNCTION getIoSprite(CONST pos:T_ioDirection; CONST wireValue:T_wireValue; CONST caption:string):P_sprite;
-FUNCTION getBlockSprite(CONST caption:string; CONST gridWidth,gridHeight:longint; CONST marked:boolean):P_sprite;
-FUNCTION getIoBlockSprite(CONST caption:string; CONST inputIndex:longint; CONST marked:boolean):P_sprite;
+FUNCTION getBlockSprite(CONST caption:shortstring; CONST gridWidth,gridHeight:longint; CONST marked:boolean):P_sprite;
+FUNCTION getIoBlockSprite(CONST caption:shortstring; CONST inputIndex:longint; CONST marked:boolean):P_sprite;
 FUNCTION getIoTextSprite(CONST wireValue:T_wireValue; mode:T_multibitWireRepresentation):P_sprite;
 FUNCTION get7SegmentSprite(CONST wireValue: T_wireValue; CONST marked:boolean):P_sprite;
 IMPLEMENTATION
@@ -188,7 +188,7 @@ FUNCTION getIoSprite(CONST pos: T_ioDirection; CONST wireValue:T_wireValue; CONS
     result^.lastUsed:=now;
   end;
 
-FUNCTION getBlockSprite(CONST caption: string; CONST gridWidth, gridHeight: longint; CONST marked: boolean): P_sprite;
+FUNCTION getBlockSprite(CONST caption: shortstring; CONST gridWidth, gridHeight: longint; CONST marked: boolean): P_sprite;
   VAR key:string;
   begin
     key:=caption+' '+intToStr(gridWidth)+' '+intToStr(gridHeight)+BoolToStr(marked,'M','');
@@ -200,7 +200,7 @@ FUNCTION getBlockSprite(CONST caption: string; CONST gridWidth, gridHeight: long
     result^.lastUsed:=now;
   end;
 
-FUNCTION getIoBlockSprite(CONST caption: string; CONST inputIndex:longint; CONST marked: boolean): P_sprite;
+FUNCTION getIoBlockSprite(CONST caption: shortstring; CONST inputIndex:longint; CONST marked: boolean): P_sprite;
   VAR key:string;
   begin
     key:=caption+' '+BoolToStr(marked,'M','')+intToStr(inputIndex);
@@ -214,7 +214,7 @@ FUNCTION getIoBlockSprite(CONST caption: string; CONST inputIndex:longint; CONST
 
 FUNCTION getIoTextSprite(CONST wireValue: T_wireValue; mode: T_multibitWireRepresentation): P_sprite;
   VAR key:string;
-      cap:string;
+      cap:shortstring;
   begin
     if wireValue.width<=1 then mode:=wr_binary;
     cap:=getWireString(wireValue,mode);
@@ -346,7 +346,7 @@ PROCEDURE T_7SegmentSprite.setZoom(CONST zoom: longint);
 
 { T_ioTextSprite }
 
-CONSTRUCTOR T_ioTextSprite.create(CONST wireMode: T_multibitWireRepresentation; CONST value: string);
+CONSTRUCTOR T_ioTextSprite.create(CONST wireMode: T_multibitWireRepresentation; CONST value: shortstring);
   begin
     inherited create(value,4,4,false);
     wireModeText:=C_multibitWireRepresentationName[wireMode];

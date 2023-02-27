@@ -53,7 +53,7 @@ TYPE
       DESTRUCTOR destroy; virtual;
       PROCEDURE reset;                   virtual;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual;
-      FUNCTION  getCaption:string;       virtual;
+      FUNCTION  getCaption:shortstring;       virtual;
       FUNCTION  getDescription:string;   virtual;
       FUNCTION  getIndexInPalette: longint; virtual;
       FUNCTION  numberOfInputs :longint; virtual;
@@ -225,7 +225,7 @@ FUNCTION T_compoundGate.clone(CONST includeState: boolean): P_abstractGate;
     result:=cloned;
   end;
 
-FUNCTION T_compoundGate.getCaption: string;
+FUNCTION T_compoundGate.getCaption: shortstring;
   begin
     if prototype=nil
     then result:=captionString

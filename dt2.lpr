@@ -17,7 +17,7 @@ USES
 
 begin
   RequireDerivedFormResource:=true;
-  Application.Scaled:=true;
+  Application.Scaled:=True;
   Application.initialize;
   Application.CreateForm(TDigitaltrainerMainForm, DigitaltrainerMainForm);
   Application.run;

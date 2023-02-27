@@ -109,6 +109,8 @@ CONSTRUCTOR T_visualGate.create(CONST behavior_: P_abstractGate);
 
 DESTRUCTOR T_visualGate.destroy;
   begin
+    SetLength(ioLocations.p[gt_input],0);
+    SetLength(ioLocations.p[gt_output],0);
     dispose(behavior,destroy);
   end;
 

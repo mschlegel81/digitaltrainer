@@ -172,7 +172,12 @@ PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.FormKeyDown(Sender: TObject; VAR key: word; Shift: TShiftState);
   begin
-    if Sender.ClassNameIs('TComboBox') or Sender.ClassNameIs('TEdit') then exit;
+    if Sender.ClassNameIs('TComboBox') or
+       Sender.ClassNameIs('TEdit') or
+       Sender.ClassNameIs('TPickListCellEditor') or
+       Sender.ClassNameIs('TStringCellEditor') or
+       Sender.ClassNameIs('TMemo') then exit;
+    writeln('FormKeyDown by "',sender.ClassName,'"');
     workspace.activeBoard^.handleInputKey(key,ssShift in Shift);
   end;
 
