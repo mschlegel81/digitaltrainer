@@ -177,7 +177,7 @@ PROCEDURE TDigitaltrainerMainForm.FormKeyDown(Sender: TObject; VAR key: word; Sh
        Sender.ClassNameIs('TPickListCellEditor') or
        Sender.ClassNameIs('TStringCellEditor') or
        Sender.ClassNameIs('TMemo') then exit;
-    writeln('FormKeyDown by "',sender.ClassName,'"');
+    writeln('FormKeyDown by "',Sender.ClassName,'"');
     workspace.activeBoard^.handleInputKey(key,ssShift in Shift);
   end;
 

@@ -443,7 +443,6 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
                                                          2,3);
         ChangeDirectionPenalty=4;
 
-
   VAR map:array of record comeFrom:T_point; score:longint; end;
       pointToExamine:array of T_point;
       pointToExamine1:longint=0;
@@ -464,7 +463,7 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
     end;
 
   FUNCTION nextPointToExamine:T_scan;
-    VAR TMP:array[-1..7] of record dtt:double; dir:T_wireDirection; end;
+    VAR tmp:array[-1..7] of record dtt:double; dir:T_wireDirection; end;
 
         i:longint=0;
         j:longint;
@@ -474,14 +473,14 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
       inc(pointToExamine0);
       result.dirCount:=0;
       for dir in directionMask*allowedDirections[result.p[0]+result.p[1]*width] do begin
-        TMP[result.dirCount].dir:=dir;
-        TMP[result.dirCount].dtt:=euklideanDistance(endPoint,result.p+dir);
-        for j:=0 to result.dirCount-1 do if TMP[result.dirCount].dtt>TMP[j].dtt then begin
-          TMP[-1]:=TMP[result.dirCount]; TMP[result.dirCount]:=TMP[j]; TMP[j]:=TMP[-1];
+        tmp[result.dirCount].dir:=dir;
+        tmp[result.dirCount].dtt:=euklideanDistance(endPoint,result.p+dir);
+        for j:=0 to result.dirCount-1 do if tmp[result.dirCount].dtt>tmp[j].dtt then begin
+          tmp[-1]:=tmp[result.dirCount]; tmp[result.dirCount]:=tmp[j]; tmp[j]:=tmp[-1];
         end;
         inc(result.dirCount);
       end;
-      for j:=0 to result.dirCount-1 do result.dir[j]:=TMP[j].dir;
+      for j:=0 to result.dirCount-1 do result.dir[j]:=tmp[j].dir;
     end;
 
   PROCEDURE prime;
@@ -538,10 +537,9 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
       end;
     end;
 
-
   VAR scan: T_scan;
       i,j, newCost:longint;
-      found:boolean=falsE;
+      found:boolean=false;
       prevStep:T_wireDirection;
       directionIsValid, needRescore: boolean;
       next: T_point;
@@ -562,7 +560,6 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
       scan:=nextPointToExamine;
 //      writeln('Scan: ',scan.p[0],',',scan.p[1],' towards ',endPoint[0],',',endPoint[1]);
       prevStep:=directionBetween(map[scan.p[0]+scan.p[1]*width].comeFrom,scan.p,directionIsValid);
-
 
       for i:=0 to scan.dirCount-1 do begin
         next:=scan.p+scan.dir[i];
