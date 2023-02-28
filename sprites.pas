@@ -90,6 +90,17 @@ TYPE
       PROCEDURE setZoom(CONST zoom:longint); virtual;
   end;
 
+  P_watcherSprite=^T_watcherSprite;
+
+  { T_watcherSprite }
+
+  T_watcherSprite=object(T_sprite)
+    anchor:T_ioDirection;
+    text:string;
+    CONSTRUCTOR create(CONST txt:string; CONST ioDir:T_ioDirection);
+    PROCEDURE setZoom(CONST zoom:longint); virtual;
+  end;
+
   T_spriteMap=specialize G_stringKeyMap<P_sprite>;
 
 FUNCTION getIoSprite(CONST pos:T_ioDirection; CONST wireValue:T_wireValue; CONST caption:string):P_sprite;
@@ -242,6 +253,36 @@ FUNCTION get7SegmentSprite(CONST wireValue: T_wireValue; CONST marked: boolean):
       spriteAllocated;
     end;
     result^.lastUsed:=now;
+  end;
+
+{ T_watcherSprite }
+
+CONSTRUCTOR T_watcherSprite.create(CONST txt: string; CONST ioDir: T_ioDirection);
+  begin
+    inherited create;
+    text  :=txt;
+    anchor:=ioDir;
+  end;
+
+PROCEDURE T_watcherSprite.setZoom(CONST zoom: longint);
+  CONST width =80;
+        height=30;
+  begin
+    if preparedForZoom>=0 then begin
+      preparedForZoom:=zoom;
+      exit;
+    end;
+    screenOffset:=pointOf(0,0);
+
+    if Bitmap=nil
+    then Bitmap:=TBGRABitmap.create(width,height,0)
+    else Bitmap.setSize(width,height);
+    Bitmap.CanvasBGRA.Brush.color:=BOARD_COLOR;
+    Bitmap.CanvasBGRA.Pen.style:=psSolid;
+    Bitmap.CanvasBGRA.Pen.color:=WIRE_COLOR;
+    Bitmap.CanvasBGRA.Rectangle(0,0,width+1,width+1);
+    textOut(text,0,0,width,height,WIRE_COLOR);
+    preparedForZoom:=zoom;
   end;
 
 { T_7SegmentSprite }

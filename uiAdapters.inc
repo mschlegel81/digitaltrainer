@@ -96,6 +96,7 @@ T_uiAdapter=object
     PROCEDURE saveStateToUndoList;
     FUNCTION performUndo(CONST setBoard:F_setBoardCallback):boolean;
     FUNCTION performRedo(CONST setBoard:F_setBoardCallback):boolean;
+    FUNCTION isPrototypeInUse(CONST prototype: P_captionedAndIndexed):boolean;
 
     FUNCTION boardOrigin:T_point;
     FUNCTION gridToCanvas(CONST p:T_point):T_point;
@@ -118,7 +119,8 @@ T_uiAdapter=object
 {$endif}
 {$ifdef includeImplementation}
 
-CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape; CONST boardImage:TImage; CONST paletteComboBox: TComboBox;
+CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape;
+  CONST boardImage: TImage; CONST paletteComboBox: TComboBox;
   CONST boardHorizontalScrollBar, boardVerticalScrollBar,
   paletteScrollBar: TScrollBar; CONST ioEdit: TEdit;
   CONST showPropertyEditorCallback: F_showPropertyEditorCallback;
@@ -281,6 +283,18 @@ FUNCTION T_uiAdapter.performRedo(CONST setBoard: F_setBoardCallback): boolean;
     end else result:=false;
   end;
 
+FUNCTION T_uiAdapter.isPrototypeInUse(CONST prototype: P_captionedAndIndexed): boolean;
+  VAR b:P_visualBoard;
+  begin
+    if (activeBoard<>nil) and (activeBoard^.usesPrototype(prototype)) then exit(true);
+    with helperState do begin
+      if (Clipboard<>nil) and Clipboard^.usesPrototype(prototype) then exit(true);
+      for b in undoList do if b^.usesPrototype(prototype) then exit(true);
+      for b in redoList do if b^.usesPrototype(prototype) then exit(true);
+    end;
+    result:=false;
+  end;
+
 FUNCTION T_uiAdapter.boardOrigin: T_point;
   begin
     result:=pointOf(-uiElement.boardHorizontalScrollBar.position,
@@ -309,7 +323,8 @@ FUNCTION T_uiAdapter.canvasToGrid(CONST x, y: longint): T_point;
     result:=canvasToGrid(pointOf(x,y));
   end;
 
-PROCEDURE T_uiAdapter.palletteConnected(CONST paintEvent: F_procedure; CONST gateHitInfo:F_gateHitInfo);
+PROCEDURE T_uiAdapter.palletteConnected(CONST paintEvent: F_procedure;
+  CONST gateHitInfo: F_gateHitInfo);
   begin
     callback.paintPalette:=paintEvent;
     callback.paletteItemAt:=gateHitInfo;

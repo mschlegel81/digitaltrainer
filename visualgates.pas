@@ -79,11 +79,17 @@ PROCEDURE T_visualGate.ioEditKeyPress(Sender: TObject; VAR key: char);
        ['0'..'9'    ,#8], //wr_decimal,
        ['0'..'9','-',#8]);//wr_2complement
   begin
+    writeln('IO_KEY_PRESS ',ord(key));
     if key=#13 then begin
       ioEditEditingDone(Sender);
       uiAdapter^.hideIoEdit;
-    end
-    else if not(key in AllowedKeys[ioMode]) then key:=#0;
+    end else if key=#32 then begin
+      behavior^.setInput(0,parseWire(uiAdapter^.uiElement.ioEdit.text,behavior^.inputWidth(0),ioMode));
+      paintAll(uiAdapter^.uiElement.boardImage.Canvas,true);
+      uiAdapter^.uiElement.boardImage.Invalidate;
+      uiAdapter^.callback.boardModifiedCallback();
+      key:=#0;
+    end else if not(key in AllowedKeys[ioMode]) then key:=#0;
   end;
 
 PROCEDURE T_visualGate.ioEditEditingDone(Sender: TObject);

@@ -747,7 +747,7 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
       end;
 
     VAR wireRank:array of longint;
-        i,j,sourceRank,sinkRank:longint;
+        i,j,maxGateRank,sourceRank,sinkRank:longint;
         anyChange:boolean;
 
         tempWire:T_visualWire;
@@ -777,18 +777,24 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
         end;
       until not(anyChange);
 
-      repeat
-        anyChange:=false;
-        for i:=0 to length(wires)-1 do if wireRank[i]=maxLongint then begin
-          sinkRank:=0;
-          for j:=0 to length(wires[i].sink)-1 do sinkRank:=max(sinkRank,getGateRank(wires[i].sink[j].gate));
-          if sinkRank<maxLongint then begin
-            anyChange:=true;
-            wireRank[i]:=sinkRank-1;
-            setGateRank(wires[i].source,sinkRank-2);
-          end;
-        end;
-      until not(anyChange);
+      //maxGateRank:=0;
+      //for i in gateRank do if (i<>MaxLongint) and (i>maxGateRank) then maxGateRank:=i;
+      //for i:=0 to length(wires)-1 do if wireRank[i]=MaxLongint then begin
+      //  for j:=0 to length(wires[i].sink)-1 do if wires[i].sink[j].gate^.behavior^.gateType=gt_output then wireRank[i]:=maxGateRank-1;
+      //end;
+      //
+      //repeat
+      //  anyChange:=false;
+      //  for i:=0 to length(wires)-1 do if wireRank[i]=maxLongint then begin
+      //    sinkRank:=0;
+      //    for j:=0 to length(wires[i].sink)-1 do sinkRank:=max(sinkRank,getGateRank(wires[i].sink[j].gate));
+      //    if sinkRank<maxLongint then begin
+      //      anyChange:=true;
+      //      wireRank[i]:=sinkRank-1;
+      //      setGateRank(wires[i].source,sinkRank-2);
+      //    end;
+      //  end;
+      //until not(anyChange);
 
       setLength(gateRank,0);
 

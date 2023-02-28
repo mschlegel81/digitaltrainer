@@ -453,6 +453,7 @@ PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard; subPaletteI
 PROCEDURE T_workspacePalette.deleteEntry(CONST prototype: P_captionedAndIndexed);
   VAR i,i0:longint;
   begin
+    if ui^.isPrototypeInUse(prototype) then exit;
     i0:=prototype^.getIndexInPalette;
     for i:=0 to length(paletteEntries)-1 do
       if (i<>i0) and

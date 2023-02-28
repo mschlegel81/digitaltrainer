@@ -82,67 +82,6 @@ TYPE
 
 IMPLEMENTATION
 
-{ T_abstractPrototypeSource }
-
-//procedure T_abstractPrototypeSource.addPrototype(const prototype: P_compoundGate);
-//  VAR i:longint=0;
-//      j:longint;
-//  begin
-//    while (i<length(prototypes)) and not(prototypes[i]^.usesPrototype(prototype)) do inc(i);
-//    setLength(prototypes,length(prototypes)+1);
-//    for j:=length(prototypes)-1 downto i do prototypes[j]:=prototypes[j-1];
-//    prototypes[i]:=prototype;
-//  end;
-//
-//function T_abstractPrototypeSource.getSerialVersion: dword;
-//  begin
-//    result:=0;
-//  end;
-//
-//function T_abstractPrototypeSource.loadFromStream(var stream: T_bufferedInputStreamWrapper): boolean;
-//  VAR i:longint;
-//      prototype:P_compoundGate;
-//      prototypeCount: QWord;
-//  begin
-//    result:=inherited;
-//    prototypeCount:=stream.readNaturalNumber;
-//    SetLength(prototypes,0);
-//    for i:=0 to prototypeCount-1 do if stream.allOkay then begin
-//      new(prototype,create(@self));
-//      prototype^.readPrototypeFromStream(stream,i);
-//      SetLength(prototypes,i+1);
-//      prototypes[i]:=prototype;
-//      prototype:=nil;
-//    end;
-//    result:=stream.allOkay;
-//  end;
-//
-//procedure T_abstractPrototypeSource.saveToStream(var stream: T_bufferedOutputStreamWrapper);
-//  VAR i:longint;
-//  begin
-//    inherited;
-//    stream.writeNaturalNumber(Length(prototypes));
-//    for i:=0 to length(prototypes)-1 do begin
-//      prototypes[i]^.myIndex:=i;
-//      prototypes[i]^.writePrototypeToStream(stream);
-//    end;
-//  end;
-//
-//function T_abstractPrototypeSource.readGate(var stream: T_bufferedInputStreamWrapper): P_abstractGate;
-//  VAR gateType:T_gateType;
-//      prototypeIndex:longint;
-//  begin
-//    gateType:=T_gateType(stream.readByte([byte(low(gateType))..byte(high(gateType))]));
-//    if gateType=gt_compound then begin
-//      prototypeIndex:=stream.readNaturalNumber;
-//      assert((prototypeIndex>=0) and (prototypeIndex<length(prototypes)),'Prototype index out of bounds');
-//      result:=prototypes[prototypeIndex]^.clone(false);
-//    end else begin
-//      result:=newBaseGate(gateType);
-//      result^.readMetaDataFromStream(stream);
-//    end;
-//  end;
-
 { T_wire }
 
 FUNCTION T_wire.simulateStep: boolean;
@@ -156,8 +95,7 @@ FUNCTION T_wire.simulateStep: boolean;
 
 { T_compoundGate }
 
-CONSTRUCTOR T_compoundGate.create(CONST prototypeSrc: P_abstractPrototypeSource
-  );
+CONSTRUCTOR T_compoundGate.create(CONST prototypeSrc: P_abstractPrototypeSource);
   begin
     inherited create;
     prototypeSource:=prototypeSrc;
@@ -300,12 +238,13 @@ FUNCTION T_compoundGate.getOutput(CONST index: longint): T_wireValue;
     then result:=outputs[index]^.getInput(0);
   end;
 
-FUNCTION T_compoundGate.setInput(CONST index: longint; CONST value: T_wireValue
-  ): boolean;
+FUNCTION T_compoundGate.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
+  VAR wire: T_wire;
   begin
     if (index>=0) and (index<length(inputs))
     then result:=inputs[index]^.setInput(0,value)
     else result:=false;
+    if result then for wire in wires do if wire.simulateStep then lastStepBusy:=true;
   end;
 
 FUNCTION T_compoundGate.getInput(CONST index: longint): T_wireValue;
