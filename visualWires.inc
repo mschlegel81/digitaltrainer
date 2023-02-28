@@ -1,4 +1,7 @@
 {$ifdef includeInterface}
+
+{ T_visualWire }
+
 T_visualWire=object
   source:P_visualGate;
   sourceOutputIndex:longint;
@@ -8,7 +11,9 @@ T_visualWire=object
     gateInputIndex:longint;
     path:T_wirePath;
   end;
+  pathLength:double;
 
+  PROCEDURE updatePathLength;
   PROCEDURE dropWiresAssociatedWith(CONST gate:P_visualGate);
   FUNCTION simulateStep:boolean;
   PROCEDURE paint(CONST zoom:longint; CONST Canvas:TBGRACanvas);
@@ -45,6 +50,21 @@ PROCEDURE paintWire(CONST zoom:longint; CONST Canvas:TBGRACanvas; CONST bitWidth
     end;
   end;
 
+PROCEDURE T_visualWire.updatePathLength;
+  VAR i:longint;
+      startPosition: T_point;
+      sinkPosition : T_point;
+  begin
+    pathLength:=0;
+    startPosition:=source^.getOutputPositionInGridSize(sourceOutputIndex)+source^.gridPos;
+    for i:=0 to length(sink)-1 do with sink[i] do
+      if length(path)=0 then begin
+        pathLength+=euklideanDistance(startPosition,gate^.getInputPositionInGridSize(gateInputIndex)+gate^.gridPos);
+      end else begin
+        pathLength+=pathTotalLength(path);
+      end;
+  end;
+
 PROCEDURE T_visualWire.dropWiresAssociatedWith(CONST gate: P_visualGate);
   VAR i,j:longint;
   begin
@@ -71,7 +91,7 @@ FUNCTION T_visualWire.simulateStep: boolean;
     for i:=0 to length(sink)-1 do if sink[i].gate^.behavior^.setInput(sink[i].gateInputIndex,value) then result:=true;
   end;
 
-PROCEDURE T_visualWire.paint(CONST zoom:longint; CONST Canvas:TBGRACanvas);
+PROCEDURE T_visualWire.paint(CONST zoom: longint; CONST Canvas: TBGRACanvas);
   VAR wrap:T_wirePathArray;
       i:longint;
   begin
@@ -83,7 +103,8 @@ PROCEDURE T_visualWire.paint(CONST zoom:longint; CONST Canvas:TBGRACanvas);
     setLength(wrap,0);
   end;
 
-FUNCTION T_visualWire.isWirePosition(CONST gridX, gridY: longint; OUT horizontalWire: boolean): boolean;
+FUNCTION T_visualWire.isWirePosition(CONST gridX, gridY: longint; OUT
+  horizontalWire: boolean): boolean;
   VAR i:longint;
       orientation: T_wireDirection;
   begin
@@ -94,7 +115,8 @@ FUNCTION T_visualWire.isWirePosition(CONST gridX, gridY: longint; OUT horizontal
     result:=false;
   end;
 
-PROCEDURE  T_visualWire.dropWiresTouchingPosition(CONST gridX, gridY: longint; CONST horizontalWire: boolean);
+PROCEDURE T_visualWire.dropWiresTouchingPosition(CONST gridX, gridY: longint;
+  CONST horizontalWire: boolean);
   VAR i:longint;
       j:longint=0;
       orientation: T_wireDirection;

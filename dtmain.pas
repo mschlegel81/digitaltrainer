@@ -99,6 +99,7 @@ TYPE
     uiAdapter:T_uiAdapter;
     gateProperties  :T_gatePropertyValues;
     pauseByUser:boolean;
+    gateCount:T_gateCount;
 
     workspace:T_workspace;
 
@@ -385,7 +386,7 @@ PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
     stepsToSimulate:=SPEED_SETTING[speedTrackBar.position].simSteps;
     stepsSimulated:=workspace.activeBoard^.simulateSteps(stepsToSimulate);
     stepsTotal+=stepsSimulated;
-    infoLabel.caption:='Schritte simuliert: '+intToStr(stepsTotal);
+    infoLabel.caption:='Elemente: '+intToStr(gatesTotal(gateCount))+LineEnding+'Schritte simuliert: '+intToStr(stepsTotal);
     if stepsSimulated>=stepsToSimulate
     then begin
       if (GetTickCount64-startTicks>SPEED_SETTING[speedTrackBar.position].timerInterval) and (speedTrackBar.position>0)
@@ -463,6 +464,9 @@ PROCEDURE TDigitaltrainerMainForm.boardChanged;
       SimulationTimer.enabled:=true;
       PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
     end;
+    gateCount:=workspace.activeBoard^.getGateCount;
+    infoLabel.Hint:=gateCountReport(gateCount);
+
   end;
 
 PROCEDURE TDigitaltrainerMainForm.AnimationTimerTimer(Sender: TObject);

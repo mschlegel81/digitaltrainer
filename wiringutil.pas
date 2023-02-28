@@ -78,6 +78,7 @@ FUNCTION readPoint(VAR stream: T_bufferedInputStreamWrapper):T_point;
 FUNCTION maxNormDistance(CONST x,y:T_point):longint;
 FUNCTION euklideanDistance(CONST x, y: T_point): double;
 FUNCTION pathScore(CONST path:T_wirePath):double;
+FUNCTION pathTotalLength(CONST path:T_wirePath):double;
 
 FUNCTION linesIntersect(CONST a0,a1,b0,b1:T_point):boolean;
 FUNCTION lineCrossesRectangle(CONST a0,a1,rectangleOrigin,rectangleExtend:T_point):boolean;
@@ -378,6 +379,14 @@ FUNCTION pathScore(CONST path: T_wirePath): double;
       if valid then result+=maxNormDistance(path[i],path[i+1])*DirectionCost[dir]
                else result+=euklideanDistance(path[i],path[i+1]);
     end;
+  end;
+
+FUNCTION pathTotalLength(CONST path: T_wirePath): double;
+  VAR i:longint;
+  begin
+    if length(path)<=1 then exit(0);
+    result:=0;
+    for i:=0 to length(path)-2 do result+=euklideanDistance(path[i],path[i+1]);
   end;
 
 FUNCTION simplifyPath(CONST path:T_wirePath):T_wirePath;

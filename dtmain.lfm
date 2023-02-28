@@ -266,6 +266,8 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       Font.Color = clWhite
       ParentColor = False
       ParentFont = False
+      ParentShowHint = False
+      ShowHint = True
     end
   end
   object PaletteScrollBar: TScrollBar

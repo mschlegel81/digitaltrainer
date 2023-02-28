@@ -77,8 +77,7 @@ FUNCTION T_workspace.getSerialVersion: dword;
     result:=serialVersionOf('T_workspace',1);
   end;
 
-FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
-  ): boolean;
+FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
   begin
     result:=inherited and
     workspacePalette^.loadFromStream(stream) and
