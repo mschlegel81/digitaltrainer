@@ -1,6 +1,21 @@
 {$ifdef includeInterface}
 
 { T_visualBoard }
+P_watcher=^T_watcher;
+
+{ T_watcher }
+
+T_watcher=object
+  gate:P_visualGate;
+  input:boolean;
+  ioIndex:longint;
+
+  CONSTRUCTOR create(CONST gate_:P_visualGate; CONST input_:boolean; CONST ioIndex_:longint);
+  DESTRUCTOR destroy;
+  FUNCTION getCanvasPos(CONST uiAdapter:P_uiAdapter):T_point;
+  PROCEDURE paint(CONST uiAdapter:P_uiAdapter; CONST Canvas:TCanvas);
+  FUNCTION isAtCanvasPos(CONST uiAdapter:P_uiAdapter; CONST x,y:longint):boolean;
+end;
 
 T_visualBoard=object(T_captionedAndIndexed)
   private
@@ -16,6 +31,7 @@ T_visualBoard=object(T_captionedAndIndexed)
     wires  : array of T_visualWire;
 
     ui:P_uiAdapter;
+    watchers:array of P_watcher;
 
     gridX0,gridX1,gridY0,gridY1:longint;
 
@@ -25,6 +41,7 @@ T_visualBoard=object(T_captionedAndIndexed)
     PROCEDURE boardMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
     PROCEDURE boardMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE reshapeGrid(CONST newGridX1,newGridY1:longint; CONST byMouseEvent:boolean);
+    PROCEDURE dropWatchersAssociatedWith(CONST gate:P_visualGate);
   public
     CONSTRUCTOR create(CONST palette:P_abstractPrototypeSource);
     PROCEDURE clear;
@@ -108,6 +125,7 @@ PROCEDURE T_visualBoard.clear;
     setLength(wires,0);
     wiresUpToDate:=false;
     if ui<>nil then ui^.hideIoEdit;
+    setLength(watchers,0);
   end;
 
 DESTRUCTOR T_visualBoard.destroy;
@@ -405,6 +423,8 @@ PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray;
       end;
       setLength(wires,j);
 
+      dropWatchersAssociatedWith(element);
+
       j:=0; for i:=0 to length(inputs )-1 do if inputs [i]=element then dispose(inputs [i],destroy) else begin inputs [j]:=inputs [i]; inc(j); end; setLength(inputs ,j);
       j:=0; for i:=0 to length(outputs)-1 do if outputs[i]=element then dispose(outputs[i],destroy) else begin outputs[j]:=outputs[i]; inc(j); end; setLength(outputs,j);
       j:=0; for i:=0 to length(gates  )-1 do if gates  [i]=element then dispose(gates  [i],destroy) else begin gates  [j]:=gates  [i]; inc(j); end; setLength(gates  ,j);
@@ -413,8 +433,7 @@ PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray;
     rewire(true);
   end;
 
-FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
-  ): boolean;
+FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
   FUNCTION gateByIndex(index:longint):P_visualGate;
     begin
       if index<length(inputs) then exit(inputs[index]); dec(index,length(inputs));
@@ -922,8 +941,21 @@ PROCEDURE T_visualBoard.reshapeGrid(CONST newGridX1, newGridY1: longint;
     rewire(false);
   end;
 
-PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,
-  Y: integer);
+PROCEDURE T_visualBoard.dropWatchersAssociatedWith(CONST gate:P_visualGate);
+  VAR i:longint;
+      j:longint=0;
+  begin
+    for i:=0 to length(watchers)-1 do
+    if watchers[i]^.gate=gate
+    then dispose(watchers[i],destroy)
+    else begin
+      watchers[j]:=watchers[i];
+      inc(j);
+    end;
+    setLength(watchers,j);
+  end;
+
+PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
   VAR gridPos:T_point;
       i:longint;
       horizontal: boolean;
@@ -1061,9 +1093,33 @@ PROCEDURE T_visualBoard.ScrollbarScroll(Sender: TObject;
     paint;
   end;
 
-PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
-  Shift: TShiftState; X, Y: integer);
+PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR gridPos: T_point;
+  FUNCTION handleWatcherHit:boolean;
+    VAR i,toDrop:longint;
+        j:longint=0;
+    begin
+      toDrop:=0;
+      while (toDrop<length(watchers)) and not(watchers[toDrop]^.isAtCanvasPos(ui,x,y)) do inc(toDrop);
+      if toDrop>=length(watchers) then exit(false);
+
+      result:=true;
+      for i:=0 to length(watchers)-1 do if i=toDrop then dispose(watchers[i],destroy) else begin watchers[j]:=watchers[i]; inc(j); end;
+      setLength(watchers,j);
+      ui^.paintAll;
+    end;
+
+  PROCEDURE addWatcher(CONST gate:P_visualGate; CONST input:boolean; CONST ioIndex:longint);
+    VAR w:P_watcher;
+    begin
+      for w in watchers do if (w^.gate=gate) and (w^.input=input) and (w^.ioIndex=ioIndex) then exit;
+      new(w,create(gate,input,ioIndex));
+      setLength(watchers,length(watchers)+1);
+      watchers[length(watchers)-1]:=w;
+      w^.paint(ui,ui^.uiElement.boardImage.Canvas);
+      ui^.uiElement.boardImage.Invalidate;
+    end;
+
   FUNCTION handleGateHit(CONST g:P_visualGate):boolean;
 
     CONST next:array[T_multibitWireRepresentation] of T_multibitWireRepresentation=(wr_decimal,wr_2complement,wr_binary);
@@ -1103,8 +1159,13 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
           end;
         end;
         outputConnector:begin
-          ui^.startDrag(x,y,g,uas_draggingWire,hoverInfo.ioIndex);
+          if button=mbLeft
+          then ui^.startDrag(x,y,g,uas_draggingWire,hoverInfo.ioIndex)
+          else addWatcher(g,false,hoverInfo.ioIndex);
         end;
+        inputConnector:
+          if button<>mbLeft
+          then addWatcher(g,true,hoverInfo.ioIndex);
     end;
   end;
 
@@ -1136,6 +1197,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
     if gridPos[0]=gridX1 then begin ui^.state:=uas_draggingGridOutputX0; exit; end;
     if gridPos[1]=gridY1 then begin ui^.state:=uas_draggingGridOutputY0; exit; end;
 
+    if handleWatcherHit then exit;
     for g in inputs  do if handleGateHit(g) then exit;
     for g in gates   do if handleGateHit(g) then exit;
     for g in outputs do if handleGateHit(g) then exit;
@@ -1264,12 +1326,14 @@ FUNCTION T_visualBoard.getIndexInPalette: longint;
     result:=myIndex;
   end;
 
-PROCEDURE T_visualBoard.afterGatePropertiesEdited(
-  CONST editedGate: P_visualGate; CONST editedIsBoardElement: boolean);
+PROCEDURE T_visualBoard.afterGatePropertiesEdited(CONST editedGate: P_visualGate; CONST editedIsBoardElement: boolean);
   VAR g:P_visualGate;
   begin
     for g in gates do if g^.behavior^.equals(editedGate^.behavior) then g^.propertyEditDone(false,0,0);
-    if editedIsBoardElement then repositionElement(editedGate,true,true);
+    if editedIsBoardElement then begin
+      repositionElement(editedGate,true,true);
+      dropWatchersAssociatedWith(editedGate);
+    end;
     rewire(true);
   end;
 
@@ -1323,6 +1387,7 @@ FUNCTION T_visualBoard.simulateSteps(CONST count: longint): longint;
       g:P_visualGate;
       i:longint;
       Canvas: TCanvas;
+      w:P_watcher;
   begin
     result:=0;
     for step:=1 to count do begin
@@ -1337,6 +1402,7 @@ FUNCTION T_visualBoard.simulateSteps(CONST count: longint): longint;
       for g in inputs  do g^.paintAll(Canvas,true);
       for g in gates   do g^.paintAll(Canvas,true);
       for g in outputs do g^.paintAll(Canvas,true);
+      for w in watchers do w^.paint(ui,Canvas);
       ui^.uiElement.boardImage.Invalidate;
     end;
   end;
@@ -1503,6 +1569,7 @@ PROCEDURE T_visualBoard.pasteFromClipboard(CONST tgtX, tgtY: longint);
 PROCEDURE T_visualBoard.paint(CONST exludeDragged: boolean);
   VAR Canvas:TCanvas;
       g:P_visualGate;
+      w:P_watcher;
   FUNCTION isExcluded(CONST g:P_visualGate):boolean;
     VAR d:P_visualGate;
     begin
@@ -1517,6 +1584,7 @@ PROCEDURE T_visualBoard.paint(CONST exludeDragged: boolean);
     for g in inputs  do if not isExcluded(g) then g^.paintAll(Canvas);
     for g in gates   do if not isExcluded(g) then g^.paintAll(Canvas);
     for g in outputs do if not isExcluded(g) then g^.paintAll(Canvas);
+    for w in watchers do w^.paint(ui,Canvas);
     ui^.callback.paintPalette();
     ui^.uiElement.boardImage.Invalidate;
   end;
@@ -1529,6 +1597,47 @@ FUNCTION T_visualBoard.getGateCount: T_gateCount;
     for g in inputs  do g^.behavior^.countGates(result);
     for g in gates   do g^.behavior^.countGates(result);
     for g in outputs do g^.behavior^.countGates(result);
+  end;
+
+CONSTRUCTOR T_watcher.create(CONST gate_: P_visualGate; CONST input_: boolean; CONST ioIndex_: longint);
+  begin
+    gate:=gate_;
+    input:=input_;
+    ioIndex:=ioIndex_;
+  end;
+
+DESTRUCTOR T_watcher.destroy;
+  begin
+  end;
+
+FUNCTION T_watcher.getCanvasPos(CONST uiAdapter: P_uiAdapter): T_point;
+  begin
+    if input
+    then result:=gate^.getInputPositionInGridSize(ioIndex)
+    else result:=gate^.getOutputPositionInGridSize(ioIndex);
+    result:=uiAdapter^.gridToCanvas(result+gate^.gridPos);
+  end;
+
+PROCEDURE T_watcher.paint(CONST uiAdapter: P_uiAdapter; CONST Canvas: TCanvas);
+  CONST gt:array[false..true] of T_gateType=(gt_output,gt_input);
+  VAR wire:T_wireValue;
+  begin
+    if input
+    then wire:=gate^.behavior^.getInput(ioIndex)
+    else wire:=gate^.behavior^.getOutput(ioIndex);
+    with gate^.ioLocations.p[gt[input],ioIndex] do
+    getWatcherSprite(ioLabel,ioIndex,wire,input,leftOrRight)^.renderAt(Canvas,uiAdapter^.getZoom,getCanvasPos(uiAdapter));
+  end;
+
+FUNCTION T_watcher.isAtCanvasPos(CONST uiAdapter: P_uiAdapter; CONST x,y: longint): boolean;
+  CONST gt:array[false..true] of T_gateType=(gt_output,gt_input);
+  VAR wire:T_wireValue;
+  begin
+    if input
+    then wire:=gate^.behavior^.getInput(ioIndex)
+    else wire:=gate^.behavior^.getOutput(ioIndex);
+    with gate^.ioLocations.p[gt[input],ioIndex] do
+    result:=P_watcherSprite(getWatcherSprite(ioLabel,ioIndex,wire,input,leftOrRight))^.isAtPixel(pointOf(x,y)-getCanvasPos(uiAdapter))
   end;
 
 {$endif}

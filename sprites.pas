@@ -29,6 +29,7 @@ TYPE
       FUNCTION screenHeight:longint;
       PROCEDURE setZoom(CONST zoom:longint); virtual; abstract;
       PROCEDURE renderAt(CONST Canvas:TCanvas; CONST zoom:longint; CONST screenPosition:T_point);
+      FUNCTION isAtPixel(CONST p:T_point):boolean;
   end;
 
   { T_blockSprite }
@@ -75,9 +76,9 @@ TYPE
     private
       position:T_ioDirection; //no diagonals, only main axes
       state:T_ioState;
-      cap:string;
+      cap:shortstring;
     public
-      CONSTRUCTOR create(CONST pos:T_ioDirection; CONST s:T_ioState; CONST caption:string);
+      CONSTRUCTOR create(CONST pos:T_ioDirection; CONST s:T_ioState; CONST caption:shortstring);
       PROCEDURE setZoom(CONST zoom:longint); virtual;
   end;
 
@@ -96,8 +97,9 @@ TYPE
 
   T_watcherSprite=object(T_sprite)
     anchor:T_ioDirection;
-    text:string;
-    CONSTRUCTOR create(CONST txt:string; CONST ioDir:T_ioDirection);
+    ioLabel:shortstring;
+    wire:T_wireValue;
+    CONSTRUCTOR create(CONST ioLabel_:shortstring; CONST wireValue:T_wireValue; CONST ioDir:T_ioDirection);
     PROCEDURE setZoom(CONST zoom:longint); virtual;
   end;
 
@@ -108,13 +110,15 @@ FUNCTION getBlockSprite(CONST caption:shortstring; CONST gridWidth,gridHeight:lo
 FUNCTION getIoBlockSprite(CONST caption:shortstring; CONST inputIndex:longint; CONST marked:boolean):P_sprite;
 FUNCTION getIoTextSprite(CONST wireValue:T_wireValue; mode:T_multibitWireRepresentation):P_sprite;
 FUNCTION get7SegmentSprite(CONST wireValue: T_wireValue; CONST marked:boolean):P_sprite;
+FUNCTION getWatcherSprite(CONST ioLabel_:shortstring; CONST ioIndex:longint; CONST wireValue:T_wireValue; CONST isInput,leftOrRight:boolean):P_sprite;
 IMPLEMENTATION
 USES sysutils,myStringUtil,types,Classes,math;
 VAR ioSpriteMap,
     blockSpriteMap,
     ioBlockSpriteMap,
     ioTextSpriteMap,
-    sevSegSpriteMap:T_spriteMap;
+    sevSegSpriteMap,
+    watcherSpriteMap:T_spriteMap;
     allocationCounter:longint=0;
     lastCleanupTime:double=0;
 CONST oneMinute=1/(24*60);
@@ -137,6 +141,7 @@ PROCEDURE dropOldSprites(CONST timeoutInDays:double);
     dropFromMap(ioBlockSpriteMap);
     dropFromMap(ioTextSpriteMap );
     dropFromMap(sevSegSpriteMap );
+    dropFromMap(watcherSpriteMap);
   end;
 
 PROCEDURE disposeSprite(VAR s:P_sprite);
@@ -153,6 +158,7 @@ PROCEDURE init;
     ioBlockSpriteMap.create(@disposeSprite);
     ioTextSpriteMap .create(@disposeSprite);
     sevSegSpriteMap .create(@disposeSprite);
+    watcherSpriteMap.create(@disposeSprite);
   end;
 
 PROCEDURE finalize;
@@ -162,6 +168,7 @@ PROCEDURE finalize;
     ioBlockSpriteMap.destroy;
     ioTextSpriteMap .destroy;
     sevSegSpriteMap .destroy;
+    watcherSpriteMap.destroy;
   end;
 
 PROCEDURE spriteAllocated;
@@ -255,33 +262,148 @@ FUNCTION get7SegmentSprite(CONST wireValue: T_wireValue; CONST marked: boolean):
     result^.lastUsed:=now;
   end;
 
+FUNCTION getWatcherSprite(CONST ioLabel_: shortstring; CONST ioIndex:longint; CONST wireValue: T_wireValue; CONST isInput, leftOrRight: boolean): P_sprite;
+  VAR key:string;
+      ioLabel:shortstring;
+      dir:T_ioDirection;
+  begin
+    if isInput then begin
+      if leftOrRight
+      then begin dir:=io_right;  key:='R'; end
+      else begin dir:=io_bottom; key:='B'; end;
+    end else begin
+      if leftOrRight
+      then begin dir:=io_left;   key:='L'; end
+      else begin dir:=io_top;    key:='T'; end;
+    end;
+
+    if ioLabel_=''
+    then ioLabel:=BoolToStr(isInput,'in #','out #')+intToStr(ioIndex)
+    else ioLabel:=BoolToStr(isInput,'in: ','out: ')+ioLabel_;
+
+    key+=getBinaryString(wireValue)+' '+ioLabel;
+    if not watcherSpriteMap.containsKey(key,result) then begin
+      new(P_watcherSprite(result),create(ioLabel,wireValue,dir));
+      watcherSpriteMap.put(key,result);
+      spriteAllocated;
+    end;
+    result^.lastUsed:=now;
+  end;
+
 { T_watcherSprite }
 
-CONSTRUCTOR T_watcherSprite.create(CONST txt: string; CONST ioDir: T_ioDirection);
+CONSTRUCTOR T_watcherSprite.create(CONST ioLabel_:shortstring; CONST wireValue:T_wireValue; CONST ioDir:T_ioDirection);
   begin
     inherited create;
-    text  :=txt;
-    anchor:=ioDir;
+    ioLabel:=ioLabel_;
+    wire   :=wireValue;
+    anchor :=ioDir;
+    setZoom(1);
   end;
 
 PROCEDURE T_watcherSprite.setZoom(CONST zoom: longint);
-  CONST width =80;
-        height=30;
+  CONST rectWidth =132;
+        rectHeight=60;
+        tipSize   =12;
+  VAR i:longint;
+      width,height:longint;
+      x0:longint=0;
+      y0:longint=0;
+      poly: array of TPoint;
   begin
+    screenOffset:=pointOf(0,0);
+
+    setLength(poly,8);
+
+    width:=rectWidth;
+    height:=rectHeight;
+    case anchor of
+      io_left: begin
+        screenOffset:=pointOf(-(zoom shr 1),30);
+        width+=tipSize;
+        x0   +=tipSize;
+        poly[0]:=point(tipSize,0);
+        poly[1]:=point(tipSize,30-tipSize);
+        poly[2]:=point(0      ,30);
+        poly[3]:=point(tipSize,30+tipSize);
+        poly[4]:=point(tipSize,rectHeight-1);
+        poly[5]:=point(width-1,rectHeight-1);
+        poly[6]:=point(width-1,0         );
+        poly[7]:=poly[0];
+      end;
+      io_right: begin
+        width+=tipSize;
+        screenOffset:=pointOf(width+zoom shr 1,30);
+        poly[0]:=point(0        ,0);
+        poly[1]:=point(0          ,rectHeight-1);
+        poly[2]:=point(rectWidth-1,rectHeight-1);
+        poly[3]:=point(rectWidth-1,30+tipSize);
+        poly[4]:=point(rectWidth+tipSize,30);
+        poly[5]:=point(rectWidth-1,30-tipSize);
+        poly[6]:=point(rectWidth-1,0);
+        poly[7]:=poly[0];
+      end;
+      io_top: begin
+        height+=tipSize;
+        y0    +=tipSize;
+        screenOffset:=pointOf(66,-(zoom shr 1));
+        poly[0]:=point(0        ,tipSize);
+        poly[1]:=point(0        ,height-1);
+        poly[2]:=point(rectWidth-1,height-1);
+        poly[3]:=point(rectWidth-1,tipSize);
+        poly[4]:=point(66+tipSize,tipSize);
+        poly[5]:=point(66,0);
+        poly[6]:=point(66-tipSize,tipSize);
+        poly[7]:=poly[0];
+      end;
+      io_bottom: begin
+        height+=tipSize;
+        screenOffset:=pointOf(66,height+zoom shr 1);
+        poly[0]:=point(0         ,0);
+        poly[1]:=point(0         ,rectHeight);
+        poly[2]:=point(66-tipSize,rectHeight);
+        poly[3]:=point(66,rectHeight+tipSize);
+        poly[4]:=point(66+tipSize,rectHeight);
+        poly[5]:=point(rectWidth-1,rectHeight);
+        poly[6]:=point(rectWidth-1,0);
+        poly[7]:=poly[0];
+      end;
+    end;
+
     if preparedForZoom>=0 then begin
       preparedForZoom:=zoom;
       exit;
     end;
-    screenOffset:=pointOf(0,0);
 
     if Bitmap=nil
-    then Bitmap:=TBGRABitmap.create(width,height,0)
+    then Bitmap:=TBGRABitmap.create(width,height,BOARD_COLOR)
     else Bitmap.setSize(width,height);
     Bitmap.CanvasBGRA.Brush.color:=BOARD_COLOR;
     Bitmap.CanvasBGRA.Pen.style:=psSolid;
     Bitmap.CanvasBGRA.Pen.color:=WIRE_COLOR;
-    Bitmap.CanvasBGRA.Rectangle(0,0,width+1,width+1);
-    textOut(text,0,0,width,height,WIRE_COLOR);
+
+    Bitmap.CanvasBGRA.Polygon(poly);
+
+    Bitmap.CanvasBGRA.Font.orientation:=0;
+    Bitmap.CanvasBGRA.Font.quality:=fqFineAntialiasing;
+    Bitmap.CanvasBGRA.Font.Antialiasing:=true;
+    Bitmap.CanvasBGRA.Font.height:=16;
+    Bitmap.CanvasBGRA.Font.color:=GATE_LABEL_COLOR;
+    Bitmap.CanvasBGRA.textOut(x0+2,y0+2 ,ioLabel);
+    Bitmap.CanvasBGRA.textOut(x0+2,y0+18,'dec: '+getDecimalString(wire));
+    Bitmap.CanvasBGRA.textOut(x0+2,y0+34,'2cmp: '+get2ComplementString(wire));
+
+    Bitmap.CanvasBGRA.Pen.style:=psSolid;
+    Bitmap.CanvasBGRA.Pen.color:=0;
+    for i:=0 to wire.width-1 do begin
+      case wire.bit[i] of
+        tsv_true        : Bitmap.CanvasBGRA.Brush.color:=$000080ff;
+        tsv_false       : Bitmap.CanvasBGRA.Brush.color:=0;
+        tsv_undetermined: Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+      end;
+      Bitmap.CanvasBGRA.Rectangle(x0+2+8* i   ,y0+50,
+                                  x0+2+8*(i+1),y0+50+8);
+    end;
     preparedForZoom:=zoom;
   end;
 
@@ -427,7 +549,7 @@ CONSTRUCTOR T_ioBlockSprite.create(CONST caption_: string; CONST inputIndex:long
 
 { T_ioSprite }
 
-CONSTRUCTOR T_ioSprite.create(CONST pos: T_ioDirection; CONST s: T_ioState; CONST caption:string);
+CONSTRUCTOR T_ioSprite.create(CONST pos: T_ioDirection; CONST s: T_ioState; CONST caption:shortstring);
   begin
     inherited create;
     position:=pos;
@@ -554,7 +676,7 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
 
 { T_blockSprite }
 
-PROCEDURE T_sprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; CONST textColor:longint=$00FFFFFF);
+PROCEDURE T_sprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; CONST textColor: longint);
   VAR
     lines       :T_arrayOfString;
     line:string;
@@ -753,7 +875,8 @@ FUNCTION T_sprite.screenHeight: longint;
     result:=Bitmap.height;
   end;
 
-PROCEDURE T_sprite.renderAt(CONST Canvas:TCanvas; CONST zoom:longint; CONST screenPosition: T_point);
+PROCEDURE T_sprite.renderAt(CONST Canvas: TCanvas; CONST zoom: longint;
+  CONST screenPosition: T_point);
   begin
     if zoom<>preparedForZoom then setZoom(zoom);
     if (screenPosition[0]-screenOffset[0]>Canvas.width) or
@@ -764,6 +887,12 @@ PROCEDURE T_sprite.renderAt(CONST Canvas:TCanvas; CONST zoom:longint; CONST scre
     Bitmap.draw(Canvas,
                 screenPosition[0]-screenOffset[0],
                 screenPosition[1]-screenOffset[1],true);
+  end;
+
+FUNCTION T_sprite.isAtPixel(CONST p: T_point): boolean;
+  begin
+    result:=(p[0]>=-screenOffset[0]) and (p[0]<=Bitmap.width-screenOffset[0]) and
+            (p[1]>=-screenOffset[1]) and (p[1]<=Bitmap.width-screenOffset[1]);
   end;
 
 INITIALIZATION
