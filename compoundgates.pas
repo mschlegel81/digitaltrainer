@@ -14,6 +14,7 @@ TYPE
   T_abstractPrototypeSource=object(T_serializable)
     FUNCTION readGate(VAR stream:T_bufferedInputStreamWrapper):P_abstractGate; virtual; abstract;
     FUNCTION obtainGate(CONST prototypeIndex:longint):P_compoundGate; virtual; abstract;
+    PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual; abstract;
   end;
 
   { T_wire }
@@ -336,7 +337,7 @@ PROCEDURE T_compoundGate.countGates(VAR gateCount: T_gateCount);
 
 FUNCTION T_compoundGate.equals(CONST other: P_abstractGate): boolean;
   begin
-    result:=(gateType=other^.gateType) and ((P_compoundGate(other)^.prototype=prototype) or (P_compoundGate(other)^.prototype=prototype));
+    result:=(gateType=other^.gateType) and ((P_compoundGate(other)^.prototype=prototype));
   end;
 
 FUNCTION T_compoundGate.usesPrototype(CONST p: P_captionedAndIndexed): boolean;

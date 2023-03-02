@@ -248,8 +248,7 @@ FUNCTION T_visualGate.overlaps(CONST other: P_visualGate): boolean;
         and (max(gridPos[1],other^.gridPos[1])<min(gridPos[1]+gridHeight,other^.gridPos[1]+other^.gridHeight));
   end;
 
-FUNCTION T_visualGate.isAtGridPos(CONST p: T_point; OUT info: T_hoverInfo
-  ): boolean;
+FUNCTION T_visualGate.isAtGridPos(CONST p: T_point; OUT info: T_hoverInfo): boolean;
   VAR i:longint;
       d: T_point;
   begin

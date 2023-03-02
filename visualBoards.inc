@@ -1111,7 +1111,13 @@ PROCEDURE T_visualBoard.boardMouseUp(Sender: TObject; button: TMouseButton;
         ui^.state:=uas_initial;
         ui^.paintAll;
       end;
-      uas_draggingFromPalette: begin
+      uas_draggingFromPalette: if x<=ui^.uiElement.paletteWidth then begin
+        associatedPalette^.dropPaletteItem(ui^.draggedGate);
+        dispose(ui^.dragData.draggedGates[0],destroy);
+        setLength(ui^.dragData.draggedGates,0);
+        ui^.state:=uas_initial;
+        ui^.paintAll;
+      end else begin
         elementAdded(ui^.draggedGate,(x>=ui^.uiElement.paletteWidth) and (y>=0));
         ui^.state:=uas_initial;
         ui^.paintAll;

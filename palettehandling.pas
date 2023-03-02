@@ -32,6 +32,7 @@ TYPE
     PROCEDURE comboBoxSelect(Sender:TObject);
     FUNCTION allowDeletion(CONST gate:P_abstractGate):boolean; virtual;
     PROCEDURE paint;
+    PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual;
   end;
 
   { T_workspacePalette }
@@ -75,8 +76,7 @@ TYPE
     FUNCTION  allowDeletion(CONST gate:P_abstractGate):boolean; virtual;
     PROCEDURE setFilter(CONST newValue:longint);
 
-    PROCEDURE dropPaletteItem(CONST canvasY:longint; CONST gate:P_visualGate);
-
+    PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual;
   end;
 
   { T_challengePalette }
@@ -360,27 +360,55 @@ PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
       result:=(filter=paletteIndex) or
               paletteEntries[paletteIndex].prototype^.usesPrototype(paletteEntries[filter].prototype);
     end;
+  TYPE T_item=record
+        entryIndex,visualSorting:longint;
+        visualItem:P_visualGate;
+      end;
 
-  VAR i,k:longint;
+  VAR items:array of T_item;
+      tmp:T_item;
+
+      i,j,k:longint;
       behavior: P_abstractGate;
 
   begin
     for i:=0 to length(visualPaletteItems)-1 do dispose(visualPaletteItems[i],destroy);
-    setLength(visualPaletteItems,0);
+    setLength(items,0);
     k:=0;
-    for i:=0 to length(paletteEntries)-1 do if (paletteEntries[i].subPaletteIndex=lastSubPaletteIndex) and not(excludedByFilter(i)) then begin
+    for i:=0 to length(paletteEntries)-1 do
+    if (paletteEntries[i].subPaletteIndex=lastSubPaletteIndex) and not(excludedByFilter(i)) then begin
       if paletteEntries[i].entryType=gt_compound
       then behavior:=paletteEntries[i].prototype^.extractBehavior
       else behavior:=newBaseGate(paletteEntries[i].entryType);
-      setLength(visualPaletteItems,k+1);
-      new(visualPaletteItems[k],create(behavior));
-      visualPaletteItems[k]^.uiAdapter:=ui;
+      setLength(items,k+1);
+      new(items[k].visualItem,create(behavior));
+      items[k].visualItem^.uiAdapter:=ui;
+      items[k].entryIndex:=i;
+      items[k].visualSorting:=paletteEntries[i].visualSorting;
+      for j:=0 to k-1 do if items[j].visualSorting>items[k].visualSorting then begin
+        tmp     :=items[j];
+        items[j]:=items[k];
+        items[k]:=tmp;
+      end;
       inc(k);
     end;
+
+    //items are already sorted; now ensure that visualSorting are distinct numbers
+    if length(items)>0 then begin
+      j:=items[0].visualSorting;
+      for k:=1 to length(items)-1 do if items[k].visualSorting<=j then begin
+        items[k]                           .visualSorting:=j+1;
+        paletteEntries[items[k].entryIndex].visualSorting:=j+1;
+      end;
+    end;
+
+    setLength(visualPaletteItems,length(items));
+    for k:=0 to length(visualPaletteItems)-1 do visualPaletteItems[k]:=items[k].visualItem;
+
+    setLength(items,0);
   end;
 
-FUNCTION T_workspacePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
-  ): P_abstractGate;
+FUNCTION T_workspacePalette.readGate(VAR stream: T_bufferedInputStreamWrapper): P_abstractGate;
   VAR gateType:T_gateType;
       prototypeIndex:longint;
   begin
@@ -453,8 +481,7 @@ PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard;
     filter:=-1;
   end;
 
-PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard;
-  subPaletteIndex: longint; CONST subPaletteName: string);
+PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string);
   VAR i,j:longint;
       clonedBoard: P_visualBoard;
   begin
@@ -533,10 +560,55 @@ PROCEDURE T_workspacePalette.setFilter(CONST newValue: longint);
     end;
   end;
 
-PROCEDURE T_workspacePalette.dropPaletteItem(CONST canvasY: longint; CONST gate: P_visualGate);
+PROCEDURE T_workspacePalette.dropPaletteItem(CONST gatePtr: pointer);
+  TYPE T_item=record
+        index:longint;
+        visualSorting:longint;
+        visual:P_visualGate;
+      end;
+  VAR movedIdx:longint=-1;
+      k, canvasY:longint;
+      items:array of T_item;
+      temp:T_item;
+      gate:P_visualGate;
   begin
-    //TODO: all elements above should get a smaller index, all below a higher index...
 
+    if length(visualPaletteItems)<=1 then exit; //nothing to do here
+
+    gate:=P_visualGate(gatePtr);
+    canvasY:=gate^.canvasPos[1];
+    setLength(items,length(visualPaletteItems));
+    for k:=0 to length(items)-1 do begin
+      items[k].index:=findEntry(visualPaletteItems[k]^.getBehavior);
+      assert(items[k].index>=0);
+      items[k].visualSorting:=paletteEntries[items[k].index].visualSorting;
+      items[k].visual:=visualPaletteItems[k];
+      if visualPaletteItems[k]^.getBehavior^.equals(gate^.getBehavior) then movedIdx:=k;
+    end;
+    if movedIdx<0 then exit;
+
+    if canvasY<items[movedIdx].visual^.canvasPos[1]
+    then while (movedIdx>0) and (items[movedIdx-1].visual^.canvasPos[1]>canvasY) do begin
+      temp             .index :=items[movedIdx-1].index;
+      items[movedIdx-1].index :=items[movedIdx  ].index;
+      items[movedIdx  ].index :=temp             .index;
+      temp             .visual:=items[movedIdx-1].visual;
+      items[movedIdx-1].visual:=items[movedIdx  ].visual;
+      items[movedIdx  ].visual:=temp             .visual;
+      dec(movedIdx);
+    end else while (movedIdx<length(visualPaletteItems)-1) and (items[movedIdx+1].visual^.canvasPos[1]<canvasY) do begin
+      temp             .index :=items[movedIdx+1].index;
+      items[movedIdx+1].index :=items[movedIdx  ].index;
+      items[movedIdx  ].index :=temp             .index;
+      temp             .visual:=items[movedIdx+1].visual;
+      items[movedIdx+1].visual:=items[movedIdx  ].visual;
+      items[movedIdx  ].visual:=temp             .visual;
+      inc(movedIdx);
+    end;
+    for k:=0 to length(items)-1 do paletteEntries[items[k].index].visualSorting:=items[k].visualSorting;
+    ensureVisualPaletteItems;
+    checkSizes;
+    paint;
   end;
 
 { T_palette }
@@ -625,6 +697,10 @@ PROCEDURE T_palette.paint;
                             g^.gridPos[1]*ui^.getZoom+yOffset);
       g^.paintAll(ui^.paletteCanvas,ui^.getZoom);
     end;
+  end;
+
+PROCEDURE T_palette.dropPaletteItem(CONST gatePtr:pointer);
+  begin
   end;
 
 end.
