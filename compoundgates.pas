@@ -8,13 +8,13 @@ USES
   Classes, sysutils,logicalGates, serializationUtil,wiringUtil;
 
 TYPE
+  P_compoundGate=^T_compoundGate;
+
   P_abstractPrototypeSource=^T_abstractPrototypeSource;
   T_abstractPrototypeSource=object(T_serializable)
-    PROCEDURE BringToFront; virtual; abstract;
     FUNCTION readGate(VAR stream:T_bufferedInputStreamWrapper):P_abstractGate; virtual; abstract;
+    FUNCTION obtainGate(CONST prototypeIndex:longint):P_compoundGate; virtual; abstract;
   end;
-
-  P_compoundGate=^T_compoundGate;
 
   { T_wire }
   T_wire=object
@@ -77,6 +77,7 @@ TYPE
       FUNCTION equals(CONST other:P_abstractGate):boolean; virtual;
 
       FUNCTION usesPrototype(CONST p:P_captionedAndIndexed):boolean;
+      PROCEDURE prototypeUpdated(CONST oldPrototype, newPrototype: P_captionedAndIndexed);
       FUNCTION getPrototypeIndex:longint;
     end;
 
@@ -285,9 +286,7 @@ PROCEDURE T_compoundGate.writePrototypeToStream(
     end;
   end;
 
-FUNCTION T_compoundGate.readPrototypeFromStream(
-  VAR stream: T_bufferedInputStreamWrapper; CONST acutalIndex: longint
-  ): boolean;
+FUNCTION T_compoundGate.readPrototypeFromStream(VAR stream: T_bufferedInputStreamWrapper; CONST acutalIndex: longint): boolean;
   FUNCTION gateFromDeserialization(index:longint):P_abstractGate;
     begin
       assert(index>=0,'Negative gate index!');
@@ -316,14 +315,13 @@ FUNCTION T_compoundGate.readPrototypeFromStream(
     end;
   end;
 
-PROCEDURE T_compoundGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);
+PROCEDURE T_compoundGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly: boolean);
   begin
     inherited;
     stream.writeLongint(prototype^.getIndexInPalette);
   end;
 
-PROCEDURE T_compoundGate.readMetaDataFromStream(
-  VAR stream: T_bufferedInputStreamWrapper);
+PROCEDURE T_compoundGate.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
   begin
     assert(false,'This should never be called');
   end;
@@ -347,6 +345,56 @@ FUNCTION T_compoundGate.usesPrototype(CONST p: P_captionedAndIndexed): boolean;
     result:=false;
     if (prototype=p) then exit(true);
     for g in gates do if (g^.gateType=gt_compound) and P_compoundGate(g)^.usesPrototype(p) then result:=true;
+  end;
+
+PROCEDURE T_compoundGate.prototypeUpdated(CONST oldPrototype, newPrototype: P_captionedAndIndexed);
+  PROCEDURE rewire(CONST old,new:P_compoundGate);
+    VAR i,i_,j,j_:longint;
+    begin
+      i_:=0;
+      for i:=0 to length(wires)-1 do begin
+        if wires[i].source=P_abstractGate(old) then begin
+          wires[i].source:=new;
+          if (wires[i].sourceOutputIndex>=new^.numberOfOutputs) or (old^.outputWidth(wires[i].sourceOutputIndex)<>new^.outputWidth(wires[i].sourceOutputIndex))
+          then setLength(wires[i].sink,0);
+        end;
+
+        j_:=0;
+        for j:=0 to length(wires[i].sink)-1 do begin
+          if (wires[i].sink[j].gate=P_abstractGate(old)) then begin
+            wires[i].sink[j].gate:=new;
+            if (wires[i].sink[j].gateInputIndex>=new^.numberOfInputs) or (old^.inputWidth(wires[i].sink[j].gateInputIndex)<>new^.inputWidth(wires[i].sink[j].gateInputIndex))
+            then begin end else begin
+              wires[i].sink[j_]:=wires[i].sink[j];
+              inc(j_);
+            end;
+          end else begin
+            wires[i].sink[j_]:=wires[i].sink[j];
+            inc(j_);
+          end;
+        end;
+        if length(wires[i].sink)>0 then begin
+          wires[i_]:=wires[i];
+          inc(i_);
+        end;
+      end;
+      setLength(wires,i_);
+    end;
+
+  VAR i:longint;
+      anyUpdated:boolean=false;
+      replacement: P_compoundGate;
+
+  begin
+    assert(prototypeSource<>nil);
+    for i:=0 to length(gates)-1 do if (gates[i]^.gateType=gt_compound) then begin
+      if (P_compoundGate(gates[i])^.prototype=oldPrototype) then begin
+        replacement:=prototypeSource^.obtainGate(oldPrototype^.getIndexInPalette);
+        rewire(P_compoundGate(gates[i]),replacement);
+        dispose(gates[i],destroy);
+        gates[i]:=replacement;
+      end else P_compoundGate(gates[i])^.prototypeUpdated(oldPrototype,newPrototype);
+    end;
   end;
 
 FUNCTION T_compoundGate.getPrototypeIndex: longint;

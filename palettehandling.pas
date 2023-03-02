@@ -8,6 +8,8 @@ USES
   Classes, sysutils,StdCtrls, ExtCtrls,logicalGates,visualGates,compoundGates, myGenerics,serializationUtil,wiringUtil;
 
 TYPE
+  //TODO: Add Drag-and-drop resorting of palette elements (?)
+  //      There are potential conflicts with automatic sorting by dependencies; Either introduce additional visual sort key or come up with something else...
   P_palette=^T_palette;
 
   { T_palette }
@@ -35,10 +37,11 @@ TYPE
   { T_workspacePalette }
 
   T_workspacePaletteEntry= record
-      subPaletteIndex:longint;
-      entryType:T_gateType;
-      prototype:P_visualBoard;
-    end;
+    visualSorting,
+    subPaletteIndex:longint;
+    entryType:T_gateType;
+    prototype:P_visualBoard;
+  end;
 
   P_workspacePalette=^T_workspacePalette;
   T_workspacePalette=object(T_palette)
@@ -62,6 +65,7 @@ TYPE
     PROCEDURE ensureVisualPaletteItems; virtual;
 
     FUNCTION readGate(VAR stream:T_bufferedInputStreamWrapper):P_abstractGate; virtual;
+    FUNCTION obtainGate(CONST prototypeIndex:longint):P_compoundGate; virtual;
     FUNCTION findEntry(CONST gate:P_abstractGate):longint;
     PROCEDURE reassignEntry(CONST gate:P_abstractGate; CONST newPalette:string);
 
@@ -71,12 +75,15 @@ TYPE
     FUNCTION  allowDeletion(CONST gate:P_abstractGate):boolean; virtual;
     PROCEDURE setFilter(CONST newValue:longint);
 
+    PROCEDURE dropPaletteItem(CONST canvasY:longint; CONST gate:P_visualGate);
+
   end;
 
   { T_challengePalette }
   P_challengePalette=^T_challengePalette;
   T_challengePalette=object(T_palette)
     paletteEntries:array of record
+      visualSorting,
       visible:boolean;
       entryType:T_gateType;
       prototype:P_compoundGate;
@@ -92,6 +99,7 @@ TYPE
     PROCEDURE ensureVisualPaletteItems; virtual;
 
     FUNCTION readGate(VAR stream:T_bufferedInputStreamWrapper):P_abstractGate; virtual;
+    FUNCTION obtainGate(CONST prototypeIndex:longint):P_compoundGate; virtual;
   end;
 
 IMPLEMENTATION
@@ -114,7 +122,8 @@ DESTRUCTOR T_challengePalette.destroy;
     setLength(paletteEntries,0);
   end;
 
-FUNCTION T_challengePalette.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_challengePalette.loadFromStream(
+  VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i:longint;
   begin
     setLength(paletteEntries,stream.readNaturalNumber);
@@ -129,7 +138,8 @@ FUNCTION T_challengePalette.loadFromStream(VAR stream: T_bufferedInputStreamWrap
     result:=stream.allOkay;
   end;
 
-PROCEDURE T_challengePalette.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_challengePalette.saveToStream(
+  VAR stream: T_bufferedOutputStreamWrapper);
   VAR i:longint;
   begin
     stream.writeNaturalNumber(length(paletteEntries));
@@ -172,7 +182,8 @@ PROCEDURE T_challengePalette.ensureVisualPaletteItems;
     end;
   end;
 
-FUNCTION T_challengePalette.readGate(VAR stream: T_bufferedInputStreamWrapper): P_abstractGate;
+FUNCTION T_challengePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
+  ): P_abstractGate;
   VAR gateType:T_gateType;
       prototypeIndex:longint;
   begin
@@ -185,6 +196,12 @@ FUNCTION T_challengePalette.readGate(VAR stream: T_bufferedInputStreamWrapper): 
       result:=newBaseGate(gateType);
       result^.readMetaDataFromStream(stream);
     end;
+  end;
+
+FUNCTION T_challengePalette.obtainGate(CONST prototypeIndex: longint): P_compoundGate;
+  begin
+    assert((prototypeIndex>=0) and (prototypeIndex<length(paletteEntries)),'Prototype index out of bounds');
+    result:=P_compoundGate(paletteEntries[prototypeIndex].prototype^.clone(false));
   end;
 
 { T_workspacePalette }
@@ -258,6 +275,7 @@ FUNCTION T_workspacePalette.loadFromStream(
 
     setLength(paletteEntries,stream.readNaturalNumber);
     for i:=0 to length(paletteEntries)-1 do with paletteEntries[i] do begin
+      visualSorting:=stream.readNaturalNumber;
       subPaletteIndex:=stream.readNaturalNumber;
       entryType:=T_gateType(stream.readByte([byte(low(T_gateType))..byte(high(T_gateType))]));
       if entryType=gt_compound then begin
@@ -278,6 +296,7 @@ PROCEDURE T_workspacePalette.saveToStream(
 
     stream.writeNaturalNumber(length(paletteEntries));
     for i:=0 to length(paletteEntries)-1 do with paletteEntries[i] do begin
+      stream.writeNaturalNumber(visualSorting);
       stream.writeNaturalNumber(subPaletteIndex);
       stream.writeByte(byte(entryType));
       if entryType=gt_compound then prototype^.savePaletteEntryToStream(stream,i);
@@ -293,25 +312,25 @@ PROCEDURE T_workspacePalette.initDefaults;
     filter:=maxLongint;
 
     setLength(paletteEntries,19);
-    with paletteEntries[ 0] do begin prototype:=nil; entryType:=gt_notGate;             subPaletteIndex:=1; end;
-    with paletteEntries[ 1] do begin prototype:=nil; entryType:=gt_andGate;             subPaletteIndex:=1; end;
-    with paletteEntries[ 2] do begin prototype:=nil; entryType:=gt_orGate;              subPaletteIndex:=1; end;
-    with paletteEntries[ 3] do begin prototype:=nil; entryType:=gt_xorGate;             subPaletteIndex:=1; end;
-    with paletteEntries[ 4] do begin prototype:=nil; entryType:=gt_nandGate;            subPaletteIndex:=1; end;
-    with paletteEntries[ 5] do begin prototype:=nil; entryType:=gt_norGate;             subPaletteIndex:=1; end;
-    with paletteEntries[ 6] do begin prototype:=nil; entryType:=gt_nxorGate;            subPaletteIndex:=1; end;
-    with paletteEntries[ 7] do begin prototype:=nil; entryType:=gt_input;               subPaletteIndex:=0; end;
-    with paletteEntries[ 8] do begin prototype:=nil; entryType:=gt_output;              subPaletteIndex:=0; end;
-    with paletteEntries[ 9] do begin prototype:=nil; entryType:=gt_clock;               subPaletteIndex:=2; end;
-    with paletteEntries[10] do begin prototype:=nil; entryType:=gt_gatedClock;          subPaletteIndex:=2; end;
-    with paletteEntries[11] do begin prototype:=nil; entryType:=gt_adapter;             subPaletteIndex:=2; end;
-    with paletteEntries[12] do begin prototype:=nil; entryType:=gt_true;                subPaletteIndex:=0; end;
-    with paletteEntries[13] do begin prototype:=nil; entryType:=gt_false;               subPaletteIndex:=0; end;
-    with paletteEntries[14] do begin prototype:=nil; entryType:=gt_undeterminedToTrue;  subPaletteIndex:=2; end;
-    with paletteEntries[15] do begin prototype:=nil; entryType:=gt_undeterminedToFalse; subPaletteIndex:=2; end;
-    with paletteEntries[16] do begin prototype:=nil; entryType:=gt_rom;                 subPaletteIndex:=2; end;
-    with paletteEntries[17] do begin prototype:=nil; entryType:=gt_ram;                 subPaletteIndex:=2; end;
-    with paletteEntries[18] do begin prototype:=nil; entryType:=gt_7segmentDummy;       subPaletteIndex:=2; end;
+    with paletteEntries[ 0] do begin prototype:=nil; entryType:=gt_notGate;             subPaletteIndex:=1; visualSorting:=0; end;
+    with paletteEntries[ 1] do begin prototype:=nil; entryType:=gt_andGate;             subPaletteIndex:=1; visualSorting:=0; end;
+    with paletteEntries[ 2] do begin prototype:=nil; entryType:=gt_orGate;              subPaletteIndex:=1; visualSorting:=0; end;
+    with paletteEntries[ 3] do begin prototype:=nil; entryType:=gt_xorGate;             subPaletteIndex:=1; visualSorting:=0; end;
+    with paletteEntries[ 4] do begin prototype:=nil; entryType:=gt_nandGate;            subPaletteIndex:=1; visualSorting:=0; end;
+    with paletteEntries[ 5] do begin prototype:=nil; entryType:=gt_norGate;             subPaletteIndex:=1; visualSorting:=0; end;
+    with paletteEntries[ 6] do begin prototype:=nil; entryType:=gt_nxorGate;            subPaletteIndex:=1; visualSorting:=0; end;
+    with paletteEntries[ 7] do begin prototype:=nil; entryType:=gt_input;               subPaletteIndex:=0; visualSorting:=0; end;
+    with paletteEntries[ 8] do begin prototype:=nil; entryType:=gt_output;              subPaletteIndex:=0; visualSorting:=0; end;
+    with paletteEntries[ 9] do begin prototype:=nil; entryType:=gt_clock;               subPaletteIndex:=2; visualSorting:=0; end;
+    with paletteEntries[10] do begin prototype:=nil; entryType:=gt_gatedClock;          subPaletteIndex:=2; visualSorting:=0; end;
+    with paletteEntries[11] do begin prototype:=nil; entryType:=gt_adapter;             subPaletteIndex:=0; visualSorting:=0; end;
+    with paletteEntries[12] do begin prototype:=nil; entryType:=gt_true;                subPaletteIndex:=0; visualSorting:=0; end;
+    with paletteEntries[13] do begin prototype:=nil; entryType:=gt_false;               subPaletteIndex:=0; visualSorting:=0; end;
+    with paletteEntries[14] do begin prototype:=nil; entryType:=gt_undeterminedToTrue;  subPaletteIndex:=2; visualSorting:=0; end;
+    with paletteEntries[15] do begin prototype:=nil; entryType:=gt_undeterminedToFalse; subPaletteIndex:=2; visualSorting:=0; end;
+    with paletteEntries[16] do begin prototype:=nil; entryType:=gt_rom;                 subPaletteIndex:=2; visualSorting:=0; end;
+    with paletteEntries[17] do begin prototype:=nil; entryType:=gt_ram;                 subPaletteIndex:=2; visualSorting:=0; end;
+    with paletteEntries[18] do begin prototype:=nil; entryType:=gt_7segmentDummy;       subPaletteIndex:=2; visualSorting:=0; end;
   end;
 
 FUNCTION T_workspacePalette.subPaletteNames: T_arrayOfString;
@@ -344,6 +363,7 @@ PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
 
   VAR i,k:longint;
       behavior: P_abstractGate;
+
   begin
     for i:=0 to length(visualPaletteItems)-1 do dispose(visualPaletteItems[i],destroy);
     setLength(visualPaletteItems,0);
@@ -373,6 +393,13 @@ FUNCTION T_workspacePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
       result:=newBaseGate(gateType);
       result^.readMetaDataFromStream(stream);
     end;
+  end;
+
+FUNCTION T_workspacePalette.obtainGate(CONST prototypeIndex: longint
+  ): P_compoundGate;
+  begin
+    assert((prototypeIndex>=0) and (prototypeIndex<length(paletteEntries)),'Prototype index out of bounds');
+    result:=paletteEntries[prototypeIndex].prototype^.extractBehavior;
   end;
 
 FUNCTION T_workspacePalette.findEntry(CONST gate: P_abstractGate): longint;
@@ -426,8 +453,10 @@ PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard;
     filter:=-1;
   end;
 
-PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string);
-  VAR i:longint;
+PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard;
+  subPaletteIndex: longint; CONST subPaletteName: string);
+  VAR i,j:longint;
+      clonedBoard: P_visualBoard;
   begin
     if board^.getIndexInPalette<0 then exit;
     if subPaletteIndex<0 then for i:=0 to length(paletteNames)-1 do if paletteNames[i]=subPaletteName then subPaletteIndex:=i;
@@ -438,11 +467,17 @@ PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard; subPaletteI
     end;
     i:=board^.getIndexInPalette;
     paletteEntries[i].entryType:=gt_compound;
-    //TODO: Update prototype wherever it is referenced (loop over all palette prototypes)
+    clonedBoard:=board^.clone;
+
+    //Update prototype everywhere
+    ui^.prototypeUpdated(paletteEntries[i].prototype,clonedBoard);
+    for j:=0 to length(paletteEntries)-1 do
+    if (j<>i) and (paletteEntries[j].prototype<>nil)
+    then paletteEntries[j].prototype^.prototypeUpdated(paletteEntries[i].prototype,clonedBoard);
 
     if  paletteEntries[i].prototype<>nil
     then dispose(paletteEntries[i].prototype,destroy);
-    paletteEntries[i].prototype:=board^.clone;
+    paletteEntries[i].prototype:=clonedBoard;
     paletteEntries[i].subPaletteIndex:=subPaletteIndex;
 
     reindex;
@@ -465,6 +500,8 @@ PROCEDURE T_workspacePalette.deleteEntry(CONST prototype: P_captionedAndIndexed)
     setLength(paletteEntries,length(paletteEntries)-1);
     reindex;
     ensureVisualPaletteItems;
+    checkSizes;
+    ui^.paintAll;
   end;
 
 FUNCTION T_workspacePalette.allowDeletion(CONST gate: P_abstractGate): boolean;
@@ -476,6 +513,7 @@ FUNCTION T_workspacePalette.allowDeletion(CONST gate: P_abstractGate): boolean;
     if not(P_compoundGate(gate)^.prototype^.isVisualBoard) then exit(false);
     prototype:=P_visualBoard(P_compoundGate(gate)^.prototype);
 
+    if ui^.isPrototypeInUse(prototype) then exit(false);
     for i:=0 to length(paletteEntries)-1 do
       if (i<>prototype^.getIndexInPalette) and
          (paletteEntries[i].prototype<>nil) and
@@ -493,6 +531,12 @@ PROCEDURE T_workspacePalette.setFilter(CONST newValue: longint);
       ensureVisualPaletteItems;
       checkSizes;
     end;
+  end;
+
+PROCEDURE T_workspacePalette.dropPaletteItem(CONST canvasY: longint; CONST gate: P_visualGate);
+  begin
+    //TODO: all elements above should get a smaller index, all below a higher index...
+
   end;
 
 { T_palette }
@@ -557,6 +601,7 @@ PROCEDURE T_palette.comboBoxSelect(Sender: TObject);
   begin
     selectSubPalette(ui^.paletteComboBox.ItemIndex);
     ui^.paintAll;
+    ui^.donePainting;
   end;
 
 FUNCTION T_palette.allowDeletion(CONST gate: P_abstractGate): boolean;

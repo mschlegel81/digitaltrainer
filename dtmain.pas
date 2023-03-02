@@ -88,6 +88,8 @@ TYPE
     PROCEDURE propOkShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
     PROCEDURE ResetShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE selectionShapeMouseDown(Sender: TObject; button: TMouseButton;
+      Shift: TShiftState; X, Y: integer);
     PROCEDURE SimulationTimerTimer(Sender: TObject);
     PROCEDURE speedTrackBarChange(Sender: TObject);
     PROCEDURE ZoomInShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -155,7 +157,8 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
                      @showPropertyEditor,
                      @boardChanged,
                      @BeginFormUpdate,
-                     @EndFormUpdate);
+                     @EndFormUpdate,
+                     @Application.ProcessMessages);
 
     workspace.create;
     workspace.activePalette^.attachUI(@uiAdapter);
@@ -178,7 +181,7 @@ PROCEDURE TDigitaltrainerMainForm.FormKeyDown(Sender: TObject; VAR key: word; Sh
        Sender.ClassNameIs('TPickListCellEditor') or
        Sender.ClassNameIs('TStringCellEditor') or
        Sender.ClassNameIs('TMemo') then exit;
-    writeln('FormKeyDown by "',Sender.ClassName,'"');
+    writeln('FormKeyDown by "',Sender.ClassName,'" key=',key);
     workspace.activeBoard^.handleInputKey(key,ssShift in Shift);
   end;
 
@@ -228,7 +231,7 @@ PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miNewBoardClick(Sender: TObject);
   begin
     workspace.clearBoard(@uiAdapter);
-    workspace.activeBoard^.paint();
+    workspace.activeBoard^.paintBoard();
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miPasteClick(Sender: TObject);
@@ -324,7 +327,7 @@ begin
   ValueListEditor1.OnValidateEntry:=nil;
   gateProperties.destroy;
   uiAdapter.resetState;
-  workspace.activeBoard^.paint();
+  workspace.activeBoard^.paintBoard();
 end;
 
 PROCEDURE TDigitaltrainerMainForm.ResetShapeMouseDown(Sender: TObject;
@@ -335,6 +338,12 @@ PROCEDURE TDigitaltrainerMainForm.ResetShapeMouseDown(Sender: TObject;
     uiAdapter.paintAll;
     stepsTotal:=0;
   end;
+
+PROCEDURE TDigitaltrainerMainForm.selectionShapeMouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+begin
+  uiAdapter.endSelectionDrag;
+end;
 
 CONST SPEED_SETTING:array[0..34] of record
         timerInterval,
@@ -376,26 +385,40 @@ CONST SPEED_SETTING:array[0..34] of record
            (timerInterval:  40; simSteps:3707; labelCaption:'92.7kHz'),
            (timerInterval:  40; simSteps:5243; labelCaption:'131.1kHz'));
 
+VAR lastSimTime:qword=0;
 PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
-  VAR startTicks: qword;
-      stepsSimulated: longint;
+  VAR stepsSimulated: longint;
       stepsToSimulate:longint;
+      elapsed, speed: qword;
   begin
     if uiAdapter.getState<>uas_initial then exit;
-    startTicks:=GetTickCount64;
     stepsToSimulate:=SPEED_SETTING[speedTrackBar.position].simSteps;
-    stepsSimulated:=workspace.activeBoard^.simulateSteps(stepsToSimulate);
+    stepsSimulated:=workspace.activeBoard^.simulateSteps(stepsToSimulate,SPEED_SETTING[speedTrackBar.position].timerInterval);
     stepsTotal+=stepsSimulated;
     infoLabel.caption:='Elemente: '+intToStr(gatesTotal(gateCount))+LineEnding+'Schritte simuliert: '+intToStr(stepsTotal);
-    if stepsSimulated>=stepsToSimulate
-    then begin
-      if (GetTickCount64-startTicks>SPEED_SETTING[speedTrackBar.position].timerInterval) and (speedTrackBar.position>0)
-      then begin
-        speedTrackBar.position:=speedTrackBar.position-1;
-        SimulationTimer.interval:=SPEED_SETTING[speedTrackBar.position].timerInterval;
-        Label1.caption:='Speed: '+SPEED_SETTING[speedTrackBar.position].labelCaption;
+
+    elapsed:=GetTickCount64-lastSimTime;
+    lastSimTime:=GetTickCount64;
+
+    if elapsed>0 then begin
+      speed:=stepsSimulated*1000 div elapsed;
+      if speed>1000 then begin
+        speed:=speed div 1000;
+        Label1.caption:='Speed: '+intToStr(speed)+'kHz ('+SPEED_SETTING[speedTrackBar.position].labelCaption+')';
+      end else if speed>0 then begin
+        Label1.caption:='Speed: '+intToStr(speed)+'Hz ('+SPEED_SETTING[speedTrackBar.position].labelCaption+')';
       end;
-    end else begin
+    end;
+
+    //Slow down, if simulation takes longer than timer interval
+    //if (GetTickCount64-startTicks>SPEED_SETTING[speedTrackBar.position].timerInterval) and (speedTrackBar.position>0)
+    //then begin
+    //  speedTrackBar.position:=speedTrackBar.position-1;
+    //  SimulationTimer.interval:=SPEED_SETTING[speedTrackBar.position].timerInterval;
+    //  Label1.caption:='Speed: '+SPEED_SETTING[speedTrackBar.position].labelCaption;
+    //end;
+
+    if stepsSimulated=0 then begin
       SimulationTimer.enabled:=false;
       PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
     end;

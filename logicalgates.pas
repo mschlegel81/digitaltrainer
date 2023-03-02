@@ -683,9 +683,6 @@ OPERATOR=(CONST x, y: T_gateConnector): boolean;
     result:=(x.gate=y.gate) and (x.index=y.index);
   end;
 
-VAR lastAdapterInputWidth:byte=1;
-    lastAdapterOutputWidth:byte=4;
-
 FUNCTION newBaseGate(CONST gateType: T_gateType): P_abstractGate;
   begin
     case gateType of
@@ -699,7 +696,7 @@ FUNCTION newBaseGate(CONST gateType: T_gateType): P_abstractGate;
       gt_input   : new(P_inputGate (result),create);
       gt_output  : new(P_outputGate(result),create);
       gt_clock   : new(P_clock     (result),create);
-      gt_adapter : new(P_adapter(result),create(lastAdapterInputWidth,lastAdapterOutputWidth));
+      gt_adapter : new(P_adapter(result),create(4,1));
       gt_true :new(P_constantGate(result),create(true ));
       gt_false:new(P_constantGate(result),create(false));
       gt_gatedClock: new(P_gatedClock(result),create);
@@ -759,7 +756,7 @@ PROCEDURE T_ramGate.reset;
     dataIn  .width:=16;
     for i:=0 to WIRE_MAX_WIDTH-1 do writeAdr.bit[i]:=tsv_undetermined;
     clockIn.width:=1;
-    clockIn.bit[i]:=tsv_undetermined;
+    clockIn.bit[0]:=tsv_undetermined;
     setLength(data,0);
     clockWasHigh:=1431655765;
   end;
@@ -1383,8 +1380,6 @@ PROCEDURE T_adapter.setIoWidth(CONST inW, outW: byte);
       io.width:=outWidth;
       inCount:=outWidth div inWidth;
     end;
-    lastAdapterInputWidth :=inWidth;
-    lastAdapterOutputWidth:=outWidth;
   end;
 
 PROCEDURE T_adapter.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);

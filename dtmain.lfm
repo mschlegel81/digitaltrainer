@@ -528,6 +528,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Width = 65
     Brush.Style = bsClear
     Pen.Color = 43775
+    OnMouseDown = selectionShapeMouseDown
     Visible = False
   end
   object ioEdit: TEdit

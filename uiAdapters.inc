@@ -37,6 +37,7 @@ T_uiAdapter=object
       BeginFormUpdate,EndFormUpdate:F_procedure;
       paletteItemAt:F_gateHitInfo;
       paintPalette:F_procedure;
+      ProcessMessages:F_procedure;
     end;
 
     zoom:longint;
@@ -69,15 +70,8 @@ T_uiAdapter=object
                        CONST ioEdit:TEdit;
                        CONST showPropertyEditorCallback:F_showPropertyEditorCallback;
                        CONST boardModifiedCallback:F_procedure;
-                       CONST BeginFormUpdate,EndFormUpdate:F_procedure);
+                       CONST BeginFormUpdate,EndFormUpdate,ProcessMessages:F_procedure);
     DESTRUCTOR destroy;
-
-    //PROCEDURE paletteEntryMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
-    //PROCEDURE paletteEntryMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
-    //PROCEDURE boardElementMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
-    //PROCEDURE boardElementMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
-    //PROCEDURE boardOutputMouseMove(Sender: TObject; Shift: TShiftState; X, Y: integer);
-    //PROCEDURE boardOutputMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
 
     PROCEDURE propertyEditorShown(CONST gate:P_visualGate; CONST fromBoard:boolean);
     FUNCTION draggedGate:P_visualGate;
@@ -97,6 +91,7 @@ T_uiAdapter=object
     FUNCTION performUndo(CONST setBoard:F_setBoardCallback):boolean;
     FUNCTION performRedo(CONST setBoard:F_setBoardCallback):boolean;
     FUNCTION isPrototypeInUse(CONST prototype: P_captionedAndIndexed):boolean;
+    PROCEDURE prototypeUpdated(CONST oldPrototype,newPrototype:P_visualBoard);
 
     FUNCTION boardOrigin:T_point;
     FUNCTION gridToCanvas(CONST p:T_point):T_point;
@@ -115,6 +110,7 @@ T_uiAdapter=object
     PROCEDURE hideIoEdit;
 
     PROCEDURE paintAll;
+    PROCEDURE donePainting;
   end;
 {$endif}
 {$ifdef includeImplementation}
@@ -125,7 +121,7 @@ CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape;
   paletteScrollBar: TScrollBar; CONST ioEdit: TEdit;
   CONST showPropertyEditorCallback: F_showPropertyEditorCallback;
   CONST boardModifiedCallback: F_procedure; CONST BeginFormUpdate,
-  EndFormUpdate: F_procedure);
+  EndFormUpdate, ProcessMessages: F_procedure);
   begin
     uiElement.selectionShape          :=selectionShape;
     uiElement.boardImage              :=boardImage;
@@ -139,7 +135,7 @@ CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape;
     callback.boardModifiedCallback:=boardModifiedCallback;
     callback.BeginFormUpdate:=BeginFormUpdate;
     callback.EndFormUpdate:=EndFormUpdate;
-
+    callback.ProcessMessages:=ProcessMessages;
     zoom:=30;
     state:=uas_initial;
   end;
@@ -261,7 +257,7 @@ FUNCTION T_uiAdapter.performUndo(CONST setBoard: F_setBoardCallback): boolean;
       setLength(undoList,length(undoList)-1);
       setBoard(activeBoard);
       activeBoard^.attachUI(@self);
-      activeBoard^.paint;
+      activeBoard^.paintBoard;
       hideIoEdit;
       result:=true;
     end else result:=false;
@@ -277,7 +273,7 @@ FUNCTION T_uiAdapter.performRedo(CONST setBoard: F_setBoardCallback): boolean;
       setLength(redoList,length(redoList)-1);
       setBoard(activeBoard);
       activeBoard^.attachUI(@self);
-      activeBoard^.paint;
+      activeBoard^.paintBoard;
       hideIoEdit;
       result:=true;
     end else result:=false;
@@ -293,6 +289,17 @@ FUNCTION T_uiAdapter.isPrototypeInUse(CONST prototype: P_captionedAndIndexed): b
       for b in redoList do if b^.usesPrototype(prototype) then exit(true);
     end;
     result:=false;
+  end;
+
+PROCEDURE T_uiAdapter.prototypeUpdated(CONST oldPrototype, newPrototype: P_visualBoard);
+  VAR b:P_visualBoard;
+  begin
+    if (activeBoard<>nil) then activeBoard^.prototypeUpdated(oldPrototype,newPrototype);
+    with helperState do begin
+      if (Clipboard<>nil) then Clipboard^.prototypeUpdated(oldPrototype,newPrototype);
+      for b in undoList do b^.prototypeUpdated(oldPrototype,newPrototype);
+      for b in redoList do b^.prototypeUpdated(oldPrototype,newPrototype);
+    end;
   end;
 
 FUNCTION T_uiAdapter.boardOrigin: T_point;
@@ -332,7 +339,7 @@ PROCEDURE T_uiAdapter.palletteConnected(CONST paintEvent: F_procedure;
 
 FUNCTION T_uiAdapter.paletteCanvas: TCanvas;
   begin
-    result:=uiElement.boardImage.picture.Bitmap.Canvas;
+    result:=uiElement.boardImage.Canvas;
   end;
 
 PROCEDURE T_uiAdapter.setPaletteSize(CONST paletteWidthInGridSize,
@@ -436,9 +443,13 @@ PROCEDURE T_uiAdapter.paintAll;
       Canvas.Pen.style:=psClear;
       Canvas.FillRect(0,0,width,height);
     end;
-    activeBoard^.paint(state in [uas_draggingFromBoard,uas_multiDragFromBoard,uas_draggingFromPalette]);
-    callback.paintPalette();
+    activeBoard^.paintBoard(state in [uas_draggingFromBoard,uas_multiDragFromBoard,uas_draggingFromPalette]);
+  end;
+
+PROCEDURE T_uiAdapter.donePainting;
+  begin
     uiElement.boardImage.Invalidate;
+    callback.ProcessMessages();
   end;
 
 {$endif}
