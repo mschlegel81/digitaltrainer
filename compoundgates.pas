@@ -10,15 +10,26 @@ USES
 TYPE
   P_compoundGate=^T_compoundGate;
 
+  T_challengeOptions=set of (co_allGates,
+                             co_halfGates,
+                             co_io,
+                             co_freePalette,
+                             co_preconfiguredPalette,
+                             co_preconfiguredPaletteWithCounts);
+
   P_abstractPrototypeSource=^T_abstractPrototypeSource;
+
+  { T_abstractPrototypeSource }
+
   T_abstractPrototypeSource=object(T_serializable)
     FUNCTION readGate(VAR stream:T_bufferedInputStreamWrapper):P_abstractGate; virtual; abstract;
     FUNCTION obtainGate(CONST prototypeIndex:longint):P_compoundGate; virtual; abstract;
     PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual; abstract;
 
-    FUNCTION hasPrototype(CONST prototypeIndex:longint):boolean; virtual; abstract;
-    PROCEDURE addPrototype(CONST prototypeIndex:longint; CONST behavior:P_compoundGate); virtual; abstract;
+    FUNCTION ensurePrototype(CONST prototypeIndex:longint):boolean; virtual; abstract;
+    PROCEDURE addPrototype(CONST prototypeIndex:longint; CONST behavior:P_compoundGate; CONST visible:boolean); virtual; abstract;
     PROCEDURE ensureBaseGate(CONST gate:P_abstractGate); virtual; abstract;
+    PROCEDURE countUpGate(CONST gate:P_abstractGate); virtual; abstract;
   end;
 
   { T_wire }
@@ -186,7 +197,7 @@ FUNCTION T_compoundGate.exportForChallenge(CONST challengePalette: P_abstractPro
     end;
 
   begin
-    if (challengePalette^.hasPrototype(prototype^.getIndexInPalette))
+    if (challengePalette^.ensurePrototype(prototype^.getIndexInPalette))
     then exit(challengePalette^.obtainGate(prototype^.getIndexInPalette));
 
     new(cloned,create(challengePalette));
@@ -194,11 +205,9 @@ FUNCTION T_compoundGate.exportForChallenge(CONST challengePalette: P_abstractPro
     then cloned^.prototype:=@self
     else cloned^.prototype:=prototype;
     setLength(cloned^.inputs ,length(inputs )); for i:=0 to length(inputs )-1 do begin
-      challengePalette^.ensureBaseGate(inputs[i]);
       cloned^.inputs [i]:=P_inputGate (inputs[i]^.clone(false));
     end;
     setLength(cloned^.outputs,length(outputs)); for i:=0 to length(outputs)-1 do begin
-      challengePalette^.ensureBaseGate(outputs[i]);
       cloned^.outputs[i]:=P_outputGate(outputs[i]^.clone(false));
     end;
     setLength(cloned^.gates  ,length(gates));   for i:=0 to length(gates  )-1 do begin
@@ -221,7 +230,7 @@ FUNCTION T_compoundGate.exportForChallenge(CONST challengePalette: P_abstractPro
       end;
     end;
 
-    challengePalette^.addPrototype(prototype^.getIndexInPalette,cloned);
+    challengePalette^.addPrototype(prototype^.getIndexInPalette,cloned,false);
     result:=cloned;
   end;
 

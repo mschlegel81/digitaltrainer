@@ -9,6 +9,7 @@ USES
   serializationUtil, Forms, Controls, wiringUtil, math, sprites, BGRABitmap,
   BGRACanvas;
 TYPE
+  //TODO: Add "fixed" flag for gates that may neither be removed nor moved nor edited...
   P_uiAdapter=^T_uiAdapter;
   P_visualGate=^T_visualGate;
   P_visualBoard=^T_visualBoard;

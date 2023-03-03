@@ -31,6 +31,13 @@ TYPE
     FUNCTION allowDeletion(CONST gate:P_abstractGate):boolean; virtual;
     PROCEDURE paint;
     PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual;
+
+    FUNCTION ensurePrototype(CONST prototypeIndex:longint):boolean; virtual;
+    PROCEDURE addPrototype(CONST prototypeIndex:longint; CONST behavior:P_compoundGate; CONST visible:boolean); virtual;
+    PROCEDURE ensureBaseGate(CONST gate:P_abstractGate); virtual;
+    PROCEDURE countUpGate(CONST gate:P_abstractGate); virtual;
+
+    PROCEDURE gateDeleted(CONST gate:P_visualGate); virtual;
   end;
 
   { T_workspacePalette }
@@ -86,6 +93,7 @@ TYPE
       visible:boolean;
       entryType:T_gateType;
       prototype:P_compoundGate;
+      availableCount:longint;
     end;
     CONSTRUCTOR create;
     DESTRUCTOR destroy;
@@ -99,6 +107,13 @@ TYPE
 
     FUNCTION readGate(VAR stream:T_bufferedInputStreamWrapper):P_abstractGate; virtual;
     FUNCTION obtainGate(CONST prototypeIndex:longint):P_compoundGate; virtual;
+
+    FUNCTION ensurePrototype(CONST prototypeIndex:longint):boolean; virtual;
+    PROCEDURE addPrototype(CONST prototypeIndex:longint; CONST behavior:P_compoundGate; CONST visible:boolean); virtual;
+    PROCEDURE ensureBaseGate(CONST gate:P_abstractGate); virtual;
+    PROCEDURE countUpGate(CONST gate:P_abstractGate); virtual;
+
+    PROCEDURE gateDeleted(CONST gate:P_visualGate); virtual;
   end;
 
 IMPLEMENTATION
@@ -197,10 +212,36 @@ FUNCTION T_challengePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
     end;
   end;
 
-FUNCTION T_challengePalette.obtainGate(CONST prototypeIndex: longint): P_compoundGate;
+FUNCTION T_challengePalette.obtainGate(CONST prototypeIndex: longint
+  ): P_compoundGate;
   begin
     assert((prototypeIndex>=0) and (prototypeIndex<length(paletteEntries)),'Prototype index out of bounds');
     result:=P_compoundGate(paletteEntries[prototypeIndex].prototype^.clone(false));
+  end;
+
+FUNCTION T_challengePalette.ensurePrototype(CONST prototypeIndex: longint): boolean;
+  begin
+    //TODO: Implement T_challengePalette.ensurePrototype
+  end;
+
+PROCEDURE T_challengePalette.addPrototype(CONST prototypeIndex: longint; CONST behavior: P_compoundGate; CONST visible: boolean);
+  begin
+    //TODO: Implement T_challengePalette.addPrototype
+  end;
+
+PROCEDURE T_challengePalette.ensureBaseGate(CONST gate: P_abstractGate);
+  begin
+    //TODO: Implement T_challengePalette.ensureBaseGate();
+  end;
+
+PROCEDURE T_challengePalette.countUpGate(CONST gate: P_abstractGate);
+  begin
+    //TODO: Implement T_challengePalette.countUpGate
+  end;
+
+PROCEDURE T_challengePalette.gateDeleted(CONST gate: P_visualGate);
+  begin
+    //TODO: Implement T_challengePalette.gateDeleted
   end;
 
 { T_workspacePalette }
@@ -681,7 +722,8 @@ PROCEDURE T_palette.attachUI(CONST uiAdapter: P_uiAdapter);
     ui^.palletteConnected(@paint,@isGateHit);
   end;
 
-FUNCTION T_palette.isGateHit(CONST gridPos: T_point; OUT gate: P_visualGate): boolean;
+FUNCTION T_palette.isGateHit(CONST gridPos: T_point; OUT gate: P_visualGate
+  ): boolean;
   VAR g:P_visualGate;
      hoverInfo: T_hoverInfo;
   begin
@@ -720,9 +762,23 @@ PROCEDURE T_palette.paint;
     end;
   end;
 
-PROCEDURE T_palette.dropPaletteItem(CONST gatePtr:pointer);
-  begin
-  end;
+PROCEDURE T_palette.dropPaletteItem(CONST gatePtr: pointer);
+  begin end; //dummy
+
+FUNCTION T_palette.ensurePrototype(CONST prototypeIndex: longint): boolean;
+  begin end; //dummy
+
+PROCEDURE T_palette.addPrototype(CONST prototypeIndex: longint; CONST behavior: P_compoundGate; CONST visible: boolean);
+  begin end; //dummy
+
+PROCEDURE T_palette.ensureBaseGate(CONST gate: P_abstractGate);
+  begin end; //dummy
+
+PROCEDURE T_palette.countUpGate(CONST gate: P_abstractGate);
+  begin end; //dummy
+
+PROCEDURE T_palette.gateDeleted(CONST gate: P_visualGate);
+  begin end; //dummy
 
 end.
 
