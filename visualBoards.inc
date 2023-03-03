@@ -868,12 +868,12 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
             or (wires[i].sink[j].path[length(wires[i].sink[j].path)-1]<>endPoints[j]);
 
         if wireNeedsUpdate then begin
-          paths:=graph^.findPaths(startPoint,endPoints,false);
+          paths:=graph^.findPaths(startPoint,endPoints,forced);
           for j:=0 to length(paths)-1 do begin
             wires[i].sink[j].path:=paths[j];
             graph^.dropWire(paths[j]);
           end;
-        end else for j:=0 to length(wires[i].sink)-1 do graph^.dropWire(wires[i].sink[j].path);
+        end else for j:=0 to length(wires[i].sink)-1 do graph^.dropWire(wires[i].sink[j].path,true);
       end;
       dispose(graph,destroy);
     end;

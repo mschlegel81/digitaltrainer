@@ -76,6 +76,8 @@ FUNCTION readPoint(VAR stream: T_bufferedInputStreamWrapper):T_point;
 FUNCTION maxNormDistance(CONST x,y:T_point):longint;
 FUNCTION euklideanDistance(CONST x, y: T_point): double;
 FUNCTION pathTotalLength(CONST path:T_wirePath):double;
+FUNCTION multipathEffectiveLength(CONST list:T_wirePathArray; CONST indexToReplace:longint; CONST replacement:T_wirePath):double;
+FUNCTION multipathEffectiveLength(CONST list:T_wirePathArray):double;
 
 FUNCTION linesIntersect(CONST a0,a1,b0,b1:T_point):boolean;
 FUNCTION lineCrossesRectangle(CONST a0,a1,rectangleOrigin,rectangleExtend:T_point):boolean;
@@ -338,6 +340,54 @@ FUNCTION pathTotalLength(CONST path: T_wirePath): double;
     if length(path)<=1 then exit(0);
     result:=0;
     for i:=0 to length(path)-2 do result+=euklideanDistance(path[i],path[i+1]);
+  end;
+
+FUNCTION multipathEffectiveLength(CONST list:T_wirePathArray; CONST indexToReplace:longint; CONST replacement:T_wirePath):double;
+  VAR stepsCounted:array of record p0,p1:T_point; end;
+      k:longint=0;
+      pathLength:double=0;
+      prevPoint:T_point;
+  FUNCTION isStepAlreadyCounted(CONST q0,q1:T_point):boolean;
+    VAR i:longint;
+    begin
+      for i:=0 to k-1 do if (stepsCounted[i].p0=q0) and (stepsCounted[i].p1=q1) then exit(true);
+      result:=false;
+    end;
+
+  PROCEDURE countPoint(CONST nextPoint:T_point);
+    begin
+      if not(isStepAlreadyCounted(prevPoint,nextPoint)) then begin
+        if k>=length(stepsCounted) then setLength(stepsCounted,length(stepsCounted)*2);
+        stepsCounted[k].p0:=prevPoint;
+        stepsCounted[k].p1:=nextPoint;
+        pathLength+=euklideanDistance(prevPoint,nextPoint);
+      end;
+      prevPoint:=nextPoint;
+    end;
+
+  PROCEDURE countPath(CONST path:T_wirePath);
+    VAR i:longint;
+    begin
+      if length(path)<2 then exit;
+      prevPoint:=path[0];
+      for i:=1 to length(path)-1 do countPoint(path[i]);
+    end;
+
+  VAR i:longint;
+  begin
+    setLength(stepsCounted,16);
+    for i:=0 to length(list)-1 do if i=indexToReplace then countPath(replacement) else countPath(list[i]);
+    result:=pathLength;
+    setLength(stepsCounted,0);
+  end;
+
+FUNCTION multipathEffectiveLength(CONST list: T_wirePathArray): double;
+  begin
+    if length(list)=0
+    then result:=0
+    else if length(list)=1
+         then result:=pathTotalLength(list[0])
+         else result:=multipathEffectiveLength(list,-1,list[0]);
   end;
 
 FUNCTION simplifyPath(CONST path:T_wirePath):T_wirePath;
@@ -641,44 +691,6 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint: T_point; CONST endPoints: T_wir
       end;
     end;
 
-  FUNCTION compositeLength(CONST list:T_wirePathArray; CONST indexToReplace:longint; CONST replacement:T_wirePath):double;
-    VAR stepsCounted:array of record p0,p1:T_point; end;
-        k:longint=0;
-        pathLength:double=0;
-        prevPoint:T_point;
-    FUNCTION isStepAlreadyCounted(CONST q0,q1:T_point):boolean;
-      VAR i:longint;
-      begin
-        for i:=0 to k-1 do if (stepsCounted[i].p0=q0) and (stepsCounted[i].p1=q1) then exit(true);
-        result:=false;
-      end;
-
-    PROCEDURE countPoint(CONST nextPoint:T_point);
-      begin
-        if not(isStepAlreadyCounted(prevPoint,nextPoint)) then begin
-          if k>=length(stepsCounted) then setLength(stepsCounted,length(stepsCounted)*2);
-          stepsCounted[k].p0:=prevPoint;
-          stepsCounted[k].p1:=nextPoint;
-          pathLength+=euklideanDistance(prevPoint,nextPoint);
-        end;
-        prevPoint:=nextPoint;
-      end;
-
-    PROCEDURE countPath(CONST path:T_wirePath);
-      VAR i:longint;
-      begin
-        if length(path)<2 then exit;
-        prevPoint:=path[0];
-        for i:=1 to length(path)-1 do countPoint(path[i]);
-      end;
-
-    VAR i:longint;
-    begin
-      setLength(stepsCounted,16);
-      for i:=0 to length(list)-1 do if i=indexToReplace then countPath(replacement) else countPath(list[i]);
-      result:=pathLength;
-    end;
-
   VAR score:double;
       newScore:double;
   begin
@@ -713,13 +725,13 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint: T_point; CONST endPoints: T_wir
     end;
 
     if (length(endPoints)>1) and exhaustiveScan then repeat
-      score:=compositeLength(result,-1,nextPath);
+      score:=multipathEffectiveLength(result,-1,nextPath);
 //      writeln('Composite path score (-): ',score);
       anyImproved:=false;
       for swapTemp in initialRun do with swapTemp do begin
         if length(result[idx])>0 then begin
           nextPath:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),exhaustiveScan,mask);
-          newScore:=compositeLength(result,idx,nextPath);
+          newScore:=multipathEffectiveLength(result,idx,nextPath);
 //          writeln('Composite path score (',idx,'): ',newScore);
           if newScore<score then begin
             setLength(result[idx],0);

@@ -54,15 +54,14 @@ PROCEDURE T_visualWire.updatePathLength;
   VAR i:longint;
       startPosition: T_point;
       sinkPosition : T_point;
+      allPaths:T_wirePathArray;
   begin
-    pathLength:=0;
+    setLength(allPaths,length(sink));
+    for i:=0 to length(sink)-1 do allPaths[i]:=sink[i].path;
+    pathLength:=multipathEffectiveLength(allPaths);
     startPosition:=source^.getOutputPositionInGridSize(sourceOutputIndex)+source^.gridPos;
-    for i:=0 to length(sink)-1 do with sink[i] do
-      if length(path)=0 then begin
-        pathLength+=euklideanDistance(startPosition,gate^.getInputPositionInGridSize(gateInputIndex)+gate^.gridPos);
-      end else begin
-        pathLength+=pathTotalLength(path);
-      end;
+    for i:=0 to length(sink)-1 do with sink[i] do if length(path)=0
+    then pathLength+=2*euklideanDistance(startPosition,gate^.getInputPositionInGridSize(gateInputIndex)+gate^.gridPos);
   end;
 
 PROCEDURE T_visualWire.dropWiresAssociatedWith(CONST gate: P_visualGate);

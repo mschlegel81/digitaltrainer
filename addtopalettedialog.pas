@@ -14,7 +14,7 @@ TYPE
 
   TAddToPaletteForm = class(TForm)
     paletteComboBox: TComboBox;
-    captionEdit: TEdit;
+    CaptionEdit: TEdit;
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
@@ -25,7 +25,7 @@ TYPE
     propOkLabel1: TLabel;
     propOkShape: TShape;
     propOkShape1: TShape;
-    PROCEDURE captionEditEditingDone(Sender: TObject);
+    PROCEDURE CaptionEditEditingDone(Sender: TObject);
     PROCEDURE DescriptionMemoEditingDone(Sender: TObject);
     PROCEDURE propCancelShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
@@ -58,9 +58,9 @@ FUNCTION AddToPaletteForm: TAddToPaletteForm;
 
 { TAddToPaletteForm }
 
-PROCEDURE TAddToPaletteForm.captionEditEditingDone(Sender: TObject);
+PROCEDURE TAddToPaletteForm.CaptionEditEditingDone(Sender: TObject);
   begin
-    currentBoard^.setCaption(StringReplace(captionEdit.text,'\n',LineEnding,[rfReplaceAll]));
+    currentBoard^.setCaption(StringReplace(CaptionEdit.text,'\n',LineEnding,[rfReplaceAll]));
   end;
 
 PROCEDURE TAddToPaletteForm.DescriptionMemoEditingDone(Sender: TObject);
@@ -91,7 +91,7 @@ FUNCTION TAddToPaletteForm.showFor(CONST palette: P_workspacePalette; CONST boar
     currentBoard  :=board;
     currentPalette:=palette;
 
-    captionEdit    .text:=StringReplace(board^.getCaption,LineEnding,'\n',[rfReplaceAll]);
+    CaptionEdit    .text:=StringReplace(board^.getCaption,LineEnding,'\n',[rfReplaceAll]);
     DescriptionMemo.text:=board^.getDescription;
     paletteComboBox.items.clear;
 
