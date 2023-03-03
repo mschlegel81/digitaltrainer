@@ -396,9 +396,12 @@ PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
     //items are already sorted; now ensure that visualSorting are distinct numbers
     if length(items)>0 then begin
       j:=items[0].visualSorting;
-      for k:=1 to length(items)-1 do if items[k].visualSorting<=j then begin
-        items[k]                           .visualSorting:=j+1;
-        paletteEntries[items[k].entryIndex].visualSorting:=j+1;
+      for k:=1 to length(items)-1 do begin
+        if items[k].visualSorting<=j then begin
+          items[k]                           .visualSorting:=j+1;
+          paletteEntries[items[k].entryIndex].visualSorting:=j+1;
+        end;
+        j:=items[k].visualSorting;
       end;
     end;
 
