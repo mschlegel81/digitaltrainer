@@ -681,7 +681,7 @@ PROCEDURE T_palette.comboBoxSelect(Sender: TObject);
   begin
     selectSubPalette(ui^.paletteComboBox.ItemIndex);
     ui^.paintAll;
-    ui^.paintImage;
+    ui^.repaintImage;
   end;
 
 FUNCTION T_palette.allowDeletion(CONST gate: P_abstractGate): boolean;

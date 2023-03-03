@@ -110,7 +110,7 @@ T_uiAdapter=object
     PROCEDURE hideIoEdit;
 
     PROCEDURE paintAll;
-    PROCEDURE paintImage;
+    PROCEDURE repaintImage;
     PROCEDURE donePainting;
   end;
 {$endif}
@@ -447,7 +447,7 @@ PROCEDURE T_uiAdapter.paintAll;
     activeBoard^.paintBoard(state in [uas_draggingFromBoard,uas_multiDragFromBoard,uas_draggingFromPalette]);
   end;
 
-PROCEDURE T_uiAdapter.paintImage;
+PROCEDURE T_uiAdapter.repaintImage;
   begin
     uiElement.boardImage.repaint;
   end;
@@ -455,7 +455,6 @@ PROCEDURE T_uiAdapter.paintImage;
 PROCEDURE T_uiAdapter.donePainting;
   begin
     uiElement.boardImage.Invalidate;
-    callback.ProcessMessages();
   end;
 
 {$endif}

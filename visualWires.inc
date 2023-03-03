@@ -53,7 +53,6 @@ PROCEDURE paintWire(CONST zoom:longint; CONST Canvas:TBGRACanvas; CONST bitWidth
 PROCEDURE T_visualWire.updatePathLength;
   VAR i:longint;
       startPosition: T_point;
-      sinkPosition : T_point;
       allPaths:T_wirePathArray;
   begin
     setLength(allPaths,length(sink));

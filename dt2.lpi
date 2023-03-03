@@ -134,6 +134,11 @@
         <Filename Value="uiAdapters.inc"/>
         <IsPartOfProject Value="True"/>
       </Unit>
+      <Unit>
+        <Filename Value="gateproperties.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="gateProperties"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

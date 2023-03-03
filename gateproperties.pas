@@ -31,7 +31,7 @@ CONST
    (name:'Beschreibung';            typ:pt_string; minValue:0; maxValue:         0; readonly:true),
    (name:'Beschreibung';            typ:pt_string; minValue:0; maxValue:         0; readonly:false),
    (name:'Label';                   typ:pt_string; minValue:0; maxValue:         0; readonly:false),
-   (name:'Intervall';               typ:pt_number; minValue:1; maxValue:1024; readonly:false),
+   (name:'Intervall';               typ:pt_number; minValue:1; maxValue:maxLongint; readonly:false),
    (name:'Breite Eingang (bits)';   typ:pt_wireWidth; minValue:1; maxValue:WIRE_MAX_WIDTH; readonly:false),
    (name:'Breite Ausgang (bits)';   typ:pt_wireWidth; minValue:1; maxValue:WIRE_MAX_WIDTH; readonly:false),
    (name:'Anzahl Eingänge';         typ:pt_connectionCount; minValue:2; maxValue:WIRE_MAX_WIDTH; readonly:false),

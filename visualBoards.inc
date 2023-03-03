@@ -978,7 +978,7 @@ PROCEDURE T_visualBoard.deleteMarkedGates;
     if i>0 then begin
       remove(toRemove,false);
       paintBoard();
-      ui^.donePainting;
+      ui^.repaintImage;
     end;
   end;
 
@@ -1185,13 +1185,13 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
               ui^.startDrag(x,y,g,uas_draggingFromBoard);
               paintBoard(true);
             end;
-            ui^.donePainting;
+            ui^.repaintImage;
           end else if (button=mbRight) then begin
             if (g^.behavior^.gateType in [gt_input,gt_output]) and (hoverInfo.ioIndex>0) then begin
               g^.ioMode:=next[g^.ioMode];
               g^.paintAll(ui^.uiElement.boardImage.Canvas);
               ui^.hideIoEdit;
-              ui^.donePainting;
+              ui^.repaintImage;
             end else begin
               ui^.state:=uas_initial;
               ui^.callback.showPropertyEditorCallback(
@@ -1259,7 +1259,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
       setLength(wires,j);
       rewire(false);
       paintBoard;
-      ui^.donePainting;
+      ui^.repaintImage;
       ui^.callback.boardModifiedCallback();
       exit;
     end;
@@ -1269,7 +1269,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
       for g in outputs do g^.marked:=false;
       for g in gates   do g^.marked:=false;
       paintBoard;
-      ui^.donePainting;
+      ui^.repaintImage;
     end;
     ui^.startDragSelectionFrame(X+ui^.uiElement.boardImage.Left,Y+ui^.uiElement.boardImage.top);
 
@@ -1343,7 +1343,7 @@ PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point;
     wiresUpToDate:=false;
 
     ui^.callback.paintPalette();
-    ui^.donePainting;
+    ui^.repaintImage;
 
   end;
 
