@@ -8,8 +8,6 @@ USES
   Classes, sysutils,StdCtrls, ExtCtrls,logicalGates,visualGates,compoundGates, myGenerics,serializationUtil,wiringUtil;
 
 TYPE
-  //TODO: Add Drag-and-drop resorting of palette elements (?)
-  //      There are potential conflicts with automatic sorting by dependencies; Either introduce additional visual sort key or come up with something else...
   P_palette=^T_palette;
 
   { T_palette }
@@ -465,21 +463,28 @@ PROCEDURE T_workspacePalette.reassignEntry(CONST gate: P_abstractGate;
     removeSubPalette(previousPaletteIndex);
   end;
 
-PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard;
-  subPaletteIndex: longint; CONST subPaletteName: string);
+PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string);
   VAR i:longint;
+      visualIndex:longint=0;
   begin
     if subPaletteIndex<0 then for i:=0 to length(paletteNames)-1 do if paletteNames[i]=subPaletteName then subPaletteIndex:=i;
     if subPaletteIndex<0 then begin
       subPaletteIndex:=length(paletteNames);
       setLength(paletteNames,subPaletteIndex+1);
       paletteNames[subPaletteIndex]:=subPaletteName;
+    end else begin
+      for i:=0 to length(paletteEntries)-1 do
+      if (paletteEntries[i].subPaletteIndex=subPaletteIndex) and
+          (visualIndex< 1+paletteEntries[i].visualSorting)
+      then visualIndex:=1+paletteEntries[i].visualSorting;
     end;
     i:=length(paletteEntries);
     setLength(paletteEntries,i+1);
-    paletteEntries[i].entryType:=gt_compound;
-    paletteEntries[i].prototype:=board^.clone;
+
+    paletteEntries[i].entryType      :=gt_compound;
+    paletteEntries[i].prototype      :=board^.clone;
     paletteEntries[i].subPaletteIndex:=subPaletteIndex;
+    paletteEntries[i].visualSorting  :=visualIndex;
     reindex;
     filter:=-1;
   end;
@@ -676,7 +681,7 @@ PROCEDURE T_palette.comboBoxSelect(Sender: TObject);
   begin
     selectSubPalette(ui^.paletteComboBox.ItemIndex);
     ui^.paintAll;
-    ui^.donePainting;
+    ui^.paintImage;
   end;
 
 FUNCTION T_palette.allowDeletion(CONST gate: P_abstractGate): boolean;

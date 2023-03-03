@@ -110,6 +110,7 @@ T_uiAdapter=object
     PROCEDURE hideIoEdit;
 
     PROCEDURE paintAll;
+    PROCEDURE paintImage;
     PROCEDURE donePainting;
   end;
 {$endif}
@@ -444,6 +445,11 @@ PROCEDURE T_uiAdapter.paintAll;
       Canvas.FillRect(0,0,width,height);
     end;
     activeBoard^.paintBoard(state in [uas_draggingFromBoard,uas_multiDragFromBoard,uas_draggingFromPalette]);
+  end;
+
+PROCEDURE T_uiAdapter.paintImage;
+  begin
+    uiElement.boardImage.repaint;
   end;
 
 PROCEDURE T_uiAdapter.donePainting;

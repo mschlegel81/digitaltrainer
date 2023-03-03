@@ -403,6 +403,7 @@ PROCEDURE T_visualBoard.repositionElement(CONST elements: T_visualGateArray;
     rewire(true);
     enumerateIo;
     ui^.paintAll;
+    ui^.uiElement.boardImage.repaint;
   end;
 
 PROCEDURE T_visualBoard.remove(CONST element: P_visualGate;
