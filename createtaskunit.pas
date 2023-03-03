@@ -33,10 +33,13 @@ TYPE
     rbIncludeHalfOfGates: TRadioButton;
     rbIncludeNothing: TRadioButton;
     DifficultyTrackBar: TTrackBar;
+    PROCEDURE rbIncludeAllGatesChange(Sender: TObject);
+    PROCEDURE TestCaseCountEditEditingDone(Sender: TObject);
     PROCEDURE TestCasesStringGridEditingDone(Sender: TObject);
-    PROCEDURE TestCasesStringGridHeaderClick(Sender: TObject;
-      IsColumn: boolean; index: integer);
+    PROCEDURE TestCasesStringGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);
   private
+    challenge:P_challenge;
+    FUNCTION minimumDifficulty: longint;
 
   public
     PROCEDURE showFor(CONST board:P_visualBoard; CONST challenges:P_challengeSet);
@@ -54,6 +57,15 @@ FUNCTION CreateTaskForm: TCreateTaskForm;
     result:=myCreateTaskForm;
   end;
 
+FUNCTION TCreateTaskForm.minimumDifficulty:longint;
+  begin
+    if      rbIncludeAllGates   .checked then result:=0
+    else if rbIncludeHalfOfGates.checked then result:=17
+    else if rbIncludeIO         .checked then result:=17*2
+                                         else result:=17*3;
+    if cbAllowAllGates.checked then result:=(result+17)*2;
+  end;
+
 { TCreateTaskForm }
 
 PROCEDURE TCreateTaskForm.TestCasesStringGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);
@@ -66,16 +78,49 @@ begin
 
 end;
 
+PROCEDURE TCreateTaskForm.rbIncludeAllGatesChange(Sender: TObject);
+  begin
+    if DifficultyTrackBar.position<minimumDifficulty then
+       DifficultyTrackBar.position:=minimumDifficulty;
+  end;
+
+PROCEDURE TCreateTaskForm.TestCaseCountEditEditingDone(Sender: TObject);
+begin
+
+end;
+
 PROCEDURE TCreateTaskForm.showFor(CONST board: P_visualBoard; CONST challenges: P_challengeSet);
   begin
     TestCasesStringGrid.editor.Font.color:=clWhite;
     TestCasesStringGrid.editor.color:=clBlack;
     rbIncludeAllGates.Font.color:=clWhite;
 
+    TitleEdit.text:=StringReplace(board^.getCaption,LineEnding,'\n',[rfReplaceAll]);
+    DescriptionMemo.text:=board^.getDescription;
+
+    new(challenge,create);
+
+   // challengeLevel      :byte;
+   // callengeCompleted   :boolean;
+   // board               :P_visualBoard;
+   // resultTemplate      :P_visualBoard;
+   // expectedBehavior    :P_compoundGate;
+   // tests:array of record
+   //   inputs:array of T_wireValue;
+   //   maxTotalSteps:longint;
+   //   timeout:longint;
+   // end;
+   // palette             :P_challengePalette;
+   // challengeTitle      :string;
+   // challengeDescription:string;
+
     //TODO: Add initialization
     if ShowModal=mrOk then begin
       //TODO: Add action on accept...
       //Perform challenge creation
+      challenges^.add(challenge);
+    end else begin
+      dispose(challenge,destroy);
     end;
   end;
 

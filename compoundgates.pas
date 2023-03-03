@@ -15,6 +15,10 @@ TYPE
     FUNCTION readGate(VAR stream:T_bufferedInputStreamWrapper):P_abstractGate; virtual; abstract;
     FUNCTION obtainGate(CONST prototypeIndex:longint):P_compoundGate; virtual; abstract;
     PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual; abstract;
+
+    FUNCTION hasPrototype(CONST prototypeIndex:longint):boolean; virtual; abstract;
+    PROCEDURE addPrototype(CONST prototypeIndex:longint; CONST behavior:P_compoundGate); virtual; abstract;
+    PROCEDURE ensureBaseGate(CONST gate:P_abstractGate); virtual; abstract;
   end;
 
   { T_wire }
@@ -54,6 +58,8 @@ TYPE
       DESTRUCTOR destroy; virtual;
       PROCEDURE reset;                   virtual;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual;
+      FUNCTION  exportForChallenge(CONST challengePalette:P_abstractPrototypeSource):P_abstractGate;
+
       FUNCTION  getCaption:shortstring;       virtual;
       FUNCTION  getDescription:string;   virtual;
       FUNCTION  getIndexInPalette: longint; virtual;
@@ -97,7 +103,8 @@ FUNCTION T_wire.simulateStep: boolean;
 
 { T_compoundGate }
 
-CONSTRUCTOR T_compoundGate.create(CONST prototypeSrc: P_abstractPrototypeSource);
+CONSTRUCTOR T_compoundGate.create(CONST prototypeSrc: P_abstractPrototypeSource
+  );
   begin
     inherited create;
     prototypeSource:=prototypeSrc;
@@ -162,6 +169,59 @@ FUNCTION T_compoundGate.clone(CONST includeState: boolean): P_abstractGate;
         cloned^.wires[i].sink[j].gateInputIndex:=  wires[i].sink[j].gateInputIndex;
       end;
     end;
+    result:=cloned;
+  end;
+
+FUNCTION T_compoundGate.exportForChallenge(CONST challengePalette: P_abstractPrototypeSource): P_abstractGate;
+  VAR cloned:P_compoundGate;
+      i,j:longint;
+  FUNCTION gateInClone(CONST gate:P_abstractGate):P_abstractGate;
+    VAR i:longint;
+    begin
+      result:=nil;
+      for i:=0 to length(inputs )-1 do if P_abstractGate(inputs [i])=gate then exit(cloned^.inputs[i]);
+      for i:=0 to length(outputs)-1 do if P_abstractGate(outputs[i])=gate then exit(cloned^.outputs[i]);
+      for i:=0 to length(gates  )-1 do if                gates  [i] =gate then exit(cloned^.gates[i]);
+      assert(result<>nil,'exportForChallenge of T_circuitBoard failed');
+    end;
+
+  begin
+    if (challengePalette^.hasPrototype(prototype^.getIndexInPalette))
+    then exit(challengePalette^.obtainGate(prototype^.getIndexInPalette));
+
+    new(cloned,create(challengePalette));
+    if prototype=nil
+    then cloned^.prototype:=@self
+    else cloned^.prototype:=prototype;
+    setLength(cloned^.inputs ,length(inputs )); for i:=0 to length(inputs )-1 do begin
+      challengePalette^.ensureBaseGate(inputs[i]);
+      cloned^.inputs [i]:=P_inputGate (inputs[i]^.clone(false));
+    end;
+    setLength(cloned^.outputs,length(outputs)); for i:=0 to length(outputs)-1 do begin
+      challengePalette^.ensureBaseGate(outputs[i]);
+      cloned^.outputs[i]:=P_outputGate(outputs[i]^.clone(false));
+    end;
+    setLength(cloned^.gates  ,length(gates));   for i:=0 to length(gates  )-1 do begin
+      if gates[i]^.gateType=gt_compound
+      then cloned^.gates[i]:=P_compoundGate(gates[i])^.exportForChallenge(challengePalette)
+      else begin
+        challengePalette^.ensureBaseGate(gates[i]);
+        cloned^.gates[i]:=gates[i]^.clone(false);
+      end;
+    end;
+
+    setLength(cloned^.wires,length(wires));
+    for i:=0 to length(wires)-1 do begin
+      cloned^.wires[i].source:=gateInClone(wires[i].source);
+      cloned^.wires[i].sourceOutputIndex:= wires[i].sourceOutputIndex;
+      setLength(cloned^.wires[i].sink,length(wires[i].sink));
+      for j:=0 to length(wires[i].sink)-1 do begin
+        cloned^.wires[i].sink[j].gate:=gateInClone(wires[i].sink[j].gate);
+        cloned^.wires[i].sink[j].gateInputIndex:=  wires[i].sink[j].gateInputIndex;
+      end;
+    end;
+
+    challengePalette^.addPrototype(prototype^.getIndexInPalette,cloned);
     result:=cloned;
   end;
 
@@ -240,7 +300,8 @@ FUNCTION T_compoundGate.getOutput(CONST index: longint): T_wireValue;
     then result:=outputs[index]^.getInput(0);
   end;
 
-FUNCTION T_compoundGate.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
+FUNCTION T_compoundGate.setInput(CONST index: longint; CONST value: T_wireValue
+  ): boolean;
   VAR wire: T_wire;
   begin
     if (index>=0) and (index<length(inputs))
@@ -287,7 +348,9 @@ PROCEDURE T_compoundGate.writePrototypeToStream(
     end;
   end;
 
-FUNCTION T_compoundGate.readPrototypeFromStream(VAR stream: T_bufferedInputStreamWrapper; CONST acutalIndex: longint): boolean;
+FUNCTION T_compoundGate.readPrototypeFromStream(
+  VAR stream: T_bufferedInputStreamWrapper; CONST acutalIndex: longint
+  ): boolean;
   FUNCTION gateFromDeserialization(index:longint):P_abstractGate;
     begin
       assert(index>=0,'Negative gate index!');
@@ -316,13 +379,15 @@ FUNCTION T_compoundGate.readPrototypeFromStream(VAR stream: T_bufferedInputStrea
     end;
   end;
 
-PROCEDURE T_compoundGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly: boolean);
+PROCEDURE T_compoundGate.writeToStream(
+  VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly: boolean);
   begin
     inherited;
     stream.writeLongint(prototype^.getIndexInPalette);
   end;
 
-PROCEDURE T_compoundGate.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
+PROCEDURE T_compoundGate.readMetaDataFromStream(
+  VAR stream: T_bufferedInputStreamWrapper);
   begin
     assert(false,'This should never be called');
   end;
@@ -348,7 +413,8 @@ FUNCTION T_compoundGate.usesPrototype(CONST p: P_captionedAndIndexed): boolean;
     for g in gates do if (g^.gateType=gt_compound) and P_compoundGate(g)^.usesPrototype(p) then result:=true;
   end;
 
-PROCEDURE T_compoundGate.prototypeUpdated(CONST oldPrototype, newPrototype: P_captionedAndIndexed);
+PROCEDURE T_compoundGate.prototypeUpdated(CONST oldPrototype,
+  newPrototype: P_captionedAndIndexed);
   PROCEDURE rewire(CONST old,new:P_compoundGate);
     VAR i,i_,j,j_:longint;
     begin

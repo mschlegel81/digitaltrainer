@@ -100,6 +100,8 @@ TYPE
     width:byte;
   end;
 
+  T_wireValueArray=array of T_wireValue;
+
   { T_captionedAndIndexed }
 
   P_captionedAndIndexed=^T_captionedAndIndexed;

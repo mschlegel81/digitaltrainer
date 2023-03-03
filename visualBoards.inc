@@ -65,6 +65,9 @@ T_visualBoard=object(T_captionedAndIndexed)
     PROCEDURE savePaletteEntryToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST paletteIndex:longint);
     PROCEDURE loadPaletteEntryFromStream(VAR stream:T_bufferedInputStreamWrapper; CONST paletteIndex:longint);
     FUNCTION extractBehavior:P_compoundGate;
+    PROCEDURE extractChallenge(CONST
+                               CONST challengePalette:P_abstractPrototypeSource;
+
     FUNCTION clone:P_visualBoard;
 
     PROCEDURE enumerateIo;
@@ -89,6 +92,7 @@ T_visualBoard=object(T_captionedAndIndexed)
 
     PROCEDURE reset;
     FUNCTION simulateSteps(CONST count,timeOutInTicks: longint):longint;
+    FUNCTION simulateSteps(CONST count:longint; CONST inputWires:T_wireValueArray; OUT idleAfterSteps:boolean):T_wireValueArray;
     FUNCTION startMultiDrag(CONST primaryGate:P_visualGate):boolean;
     FUNCTION isVisualBoard: boolean; virtual;
     FUNCTION usesPrototype(CONST p:P_captionedAndIndexed):boolean;
@@ -415,7 +419,8 @@ PROCEDURE T_visualBoard.remove(CONST element: P_visualGate;
     remove(wrap,skipSaveUndo);
   end;
 
-PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray; CONST skipSaveUndo: boolean);
+PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray;
+  CONST skipSaveUndo: boolean);
   VAR
     element: P_visualGate;
     j, i: integer;
@@ -1127,13 +1132,15 @@ PROCEDURE T_visualBoard.boardMouseUp(Sender: TObject; button: TMouseButton;
     end;
   end;
 
-PROCEDURE T_visualBoard.ScrollbarScroll(Sender: TObject; ScrollCode: TScrollCode; VAR ScrollPos: integer);
+PROCEDURE T_visualBoard.ScrollbarScroll(Sender: TObject;
+  ScrollCode: TScrollCode; VAR ScrollPos: integer);
   begin
     paintBoard;
     ui^.uiElement.boardImage.repaint;
   end;
 
-PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
+  Shift: TShiftState; X, Y: integer);
   VAR gridPos: T_point;
   FUNCTION handleWatcherHit:boolean;
     VAR i,toDrop:longint;
@@ -1372,7 +1379,8 @@ FUNCTION T_visualBoard.getIndexInPalette: longint;
     result:=myIndex;
   end;
 
-PROCEDURE T_visualBoard.afterGatePropertiesEdited(CONST editedGate: P_visualGate; CONST editedIsBoardElement: boolean);
+PROCEDURE T_visualBoard.afterGatePropertiesEdited(
+  CONST editedGate: P_visualGate; CONST editedIsBoardElement: boolean);
   VAR g:P_visualGate;
   begin
     for g in gates do if g^.behavior^.equals(editedGate^.behavior) then g^.propertyEditDone(false,0,0);
@@ -1427,7 +1435,7 @@ PROCEDURE T_visualBoard.reset;
     for g in gates   do g^.getBehavior^.reset;
   end;
 
-FUNCTION T_visualBoard.simulateSteps(CONST count,timeOutInTicks: longint): longint;
+FUNCTION T_visualBoard.simulateSteps(CONST count, timeOutInTicks: longint): longint;
   VAR changed:boolean=true;
       step:longint=0;
       g:P_visualGate;
@@ -1454,6 +1462,29 @@ FUNCTION T_visualBoard.simulateSteps(CONST count,timeOutInTicks: longint): longi
       for w in watchers do w^.paint(ui,Canvas);
       ui^.uiElement.boardImage.repaint;
     end;
+  end;
+
+FUNCTION T_visualBoard.simulateSteps(CONST count: longint; CONST inputWires: T_wireValueArray; OUT stepsDone: longint): T_wireValueArray;
+  VAR i:longint;
+      changed:boolean=true;
+  begin
+
+    for i:=0 to min(length(inputs),length(inputWires))-1 do begin
+      assert(inputs[i]^.behavior^.inputWidth(0)=inputWires[i].width);
+      inputs[i]^.behavior^.setInput(0,inputWires[i]);
+    end;
+
+    stepsDone:=0;
+    while changed and (stepsDone<count) do begin
+      changed:=false;
+      for i:=0 to length(wires)-1 do if wires[i].simulateStep then changed:=true;
+      for g in gates              do if g^.simulateStep       then changed:=true;
+      inc(stepsDone);
+    end;
+    idleAfterSteps:=not(changed);
+
+    setLength(result,length(outputs));
+    for i:=0 to length(outputs)-1 do result[i]:=outputs[i]^.behavior^.getInput(0);
   end;
 
 FUNCTION T_visualBoard.startMultiDrag(CONST primaryGate: P_visualGate): boolean;
@@ -1487,7 +1518,8 @@ FUNCTION T_visualBoard.usesPrototype(CONST p: P_captionedAndIndexed): boolean;
     for g in gates do if (g^.behavior^.gateType=gt_compound) and P_compoundGate(g^.behavior)^.usesPrototype(p) then result:=true;
   end;
 
-PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype, newPrototype: P_visualBoard);
+PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype,
+  newPrototype: P_visualBoard);
   VAR g:P_visualGate;
       anyGateUpdated:boolean=false;
   begin

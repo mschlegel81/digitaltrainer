@@ -14,6 +14,15 @@ TYPE
   P_visualBoard=^T_visualBoard;
   T_visualGateArray=array of P_visualGate;
 
+  T_gateInterface=record
+    name:string;
+    wireWidth:byte;
+  end;
+
+  T_gateInterfaces=record
+    inputs,outputs:array of T_gateInterface;
+  end;
+
   T_hoverInfo=record
     subElement:(noHit,block,inputConnector,outputConnector);
     ioIndex:longint;

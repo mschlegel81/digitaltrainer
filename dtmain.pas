@@ -295,13 +295,14 @@ PROCEDURE TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject;
     uiAdapter.resetState;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject;button: TMouseButton; Shift: TShiftState; X, Y: integer);
-  begin
+PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject;button: TMouseButton; Shift: TShiftState; X, Y: integer);  begin
 
     buttonClicked(propEditShape);
     ValueListEditor1.OnValidateEntry:=nil;
     if not(gateProperties.arePropertiesForBoard)
     then begin
+      AddToPaletteForm.setSubpalette(workspace.activePalette^.lastSubPaletteIndex);
+
       workspace.editPaletteEntry(P_visualBoard(P_compoundGate(uiAdapter.draggedGate^.getBehavior)^.prototype),@uiAdapter);
     end;
     gateProperties.destroy;
@@ -312,7 +313,7 @@ PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject;button:
 PROCEDURE TDigitaltrainerMainForm.propOkShapeMouseDown(Sender: TObject;
   button: TMouseButton; Shift: TShiftState; X, Y: integer);
 begin
-  buttonClicked(propEditShape);
+  buttonClicked(propOkShape);
   propEditPanel.visible:=false;
   if gateProperties.applyValues then begin
     uiAdapter.draggedGate^.propertyEditDone(not(gateProperties.arePropertiesForBoard),

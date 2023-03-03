@@ -73,6 +73,7 @@ TYPE
     PROCEDURE deleteEntry(CONST prototype:P_captionedAndIndexed);
     FUNCTION  allowDeletion(CONST gate:P_abstractGate):boolean; virtual;
     PROCEDURE setFilter(CONST newValue:longint);
+    PROCEDURE ensureIndexes;
 
     PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual;
   end;
@@ -409,7 +410,8 @@ PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
     setLength(items,0);
   end;
 
-FUNCTION T_workspacePalette.readGate(VAR stream: T_bufferedInputStreamWrapper): P_abstractGate;
+FUNCTION T_workspacePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
+  ): P_abstractGate;
   VAR gateType:T_gateType;
       prototypeIndex:longint;
   begin
@@ -463,7 +465,8 @@ PROCEDURE T_workspacePalette.reassignEntry(CONST gate: P_abstractGate;
     removeSubPalette(previousPaletteIndex);
   end;
 
-PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string);
+PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard;
+  subPaletteIndex: longint; CONST subPaletteName: string);
   VAR i:longint;
       visualIndex:longint=0;
   begin
@@ -489,7 +492,8 @@ PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard; subPaletteInde
     filter:=-1;
   end;
 
-PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string);
+PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard;
+  subPaletteIndex: longint; CONST subPaletteName: string);
   VAR i,j:longint;
       clonedBoard: P_visualBoard;
   begin
@@ -520,7 +524,8 @@ PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard; subPaletteI
     ensureVisualPaletteItems;
   end;
 
-PROCEDURE T_workspacePalette.deleteEntry(CONST prototype: P_captionedAndIndexed);
+PROCEDURE T_workspacePalette.deleteEntry(CONST prototype: P_captionedAndIndexed
+  );
   VAR i,i0:longint;
   begin
     if ui^.isPrototypeInUse(prototype) then exit;
@@ -566,6 +571,14 @@ PROCEDURE T_workspacePalette.setFilter(CONST newValue: longint);
       ensureVisualPaletteItems;
       checkSizes;
     end;
+  end;
+
+PROCEDURE T_workspacePalette.ensureIndexes;
+  VAR i:longint;
+  begin
+    for i:=0 to length(paletteEntries)-1 do
+      if paletteEntries[i].prototype<>nil
+      then paletteEntries[i].prototype^.setIndexInPalette(i);
   end;
 
 PROCEDURE T_workspacePalette.dropPaletteItem(CONST gatePtr: pointer);

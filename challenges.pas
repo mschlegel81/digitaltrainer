@@ -19,9 +19,8 @@ TYPE
     resultTemplate      :P_visualBoard;
     expectedBehavior    :P_compoundGate;
     tests:array of record
-      inputs:array of T_wireValue;
+      inputs:T_wireValueArray;
       maxTotalSteps:longint;
-      timeout:longint;
     end;
     palette             :P_challengePalette;
     challengeTitle      :string;
@@ -36,6 +35,15 @@ TYPE
 
     FUNCTION resetChallenge:P_visualBoard;
     PROCEDURE testChallenge;
+
+    //For creation purposes...
+    PROCEDURE initNewChallenge(CONST expectedAsVisual:P_visualBoard);
+    PROCEDURE setResultTemplate(CONST expectedAsVisual:P_visualBoard; CONST allGates,halfOfGates,ioOnly,nothing:boolean);
+    PROCEDURE setChallengePalette(CONST allowAllGates:boolean);
+
+    PROCEDURE setNumberOfTestCases(CONST count:longint);
+    PROCEDURE generateTestCase(CONST index:longint; CONST Interfaces:T_gateInterfaces);
+    PROCEDURE generateTestCases;
   end;
 
   { T_challengeSet }
@@ -50,6 +58,7 @@ TYPE
     FUNCTION getSerialVersion:dword; virtual;
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+    PROCEDURE add(CONST c:P_challenge);
   end;
 
 CONST checkMark='✓';
@@ -76,7 +85,8 @@ FUNCTION T_challengeSet.getSerialVersion: dword;
     result:=serialVersionOf('T_challengeSet',0);
   end;
 
-FUNCTION T_challengeSet.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_challengeSet.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
+  ): boolean;
   VAR i:longint;
   begin
     if not inherited then exit(false);
@@ -90,13 +100,20 @@ FUNCTION T_challengeSet.loadFromStream(VAR stream: T_bufferedInputStreamWrapper)
     end;
   end;
 
-PROCEDURE T_challengeSet.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_challengeSet.saveToStream(VAR stream: T_bufferedOutputStreamWrapper
+  );
   VAR i:longint;
   begin
     inherited;
     stream.writeBoolean(editable);
     stream.writeNaturalNumber(length(challenge));
     for i:=0 to length(challenge)-1 do challenge[i]^.saveToStream(stream);
+  end;
+
+PROCEDURE T_challengeSet.add(CONST c: P_challenge);
+  begin
+    setLength(challenge,length(challenge)+1);
+    challenge[length(challenge)-1]:=c;
   end;
 
 { T_challenge }
@@ -130,7 +147,8 @@ FUNCTION T_challenge.getSerialVersion: dword;
     result:=serialVersionOf('T_challenge',0);
   end;
 
-FUNCTION T_challenge.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_challenge.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
+  ): boolean;
   VAR i,j:longint;
       testCount: qword;
   begin
@@ -154,7 +172,6 @@ FUNCTION T_challenge.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): b
       setLength(inputs,expectedBehavior^.numberOfInputs);
       for j:=0 to expectedBehavior^.numberOfInputs-1 do inputs[j]:=deserialize(stream.readNaturalNumber);
       maxTotalSteps:=stream.readNaturalNumber;
-      timeout:=stream.readNaturalNumber;
     end;
 
     result:=result and stream.allOkay;
@@ -176,7 +193,6 @@ PROCEDURE T_challenge.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
     for i:=0 to length(tests)-1 do with tests[i] do begin
       for j:=0 to expectedBehavior^.numberOfInputs-1 do stream.writeNaturalNumber(serialize(inputs[j]));
       stream.writeNaturalNumber(maxTotalSteps);
-      stream.writeNaturalNumber(timeout);
     end;
   end;
 
@@ -195,6 +211,52 @@ PROCEDURE T_challenge.testChallenge;
     //A visual test would be nice, but this requires closer integration with simulation timer
     //
   end;
+
+PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard);
+  begin
+    //challengeLevel:=0;
+    //callengeCompleted:=false;
+    //board:=nil;
+    //resultTemplate:=nil;
+    //expectedBehavior:=expectedAsVisual^.extractBehavior;
+    //
+    //expectedBehavior    :P_compoundGate;
+    //tests:array of record
+    //  inputs:array of T_wireValue;
+    //  maxTotalSteps:longint;
+    //end;
+    //palette             :P_challengePalette;
+    //challengeTitle      :string;
+    //challengeDescription:string;
+    //
+  end;
+
+PROCEDURE T_challenge.setResultTemplate(CONST expectedAsVisual: P_visualBoard;
+  CONST allGates, halfOfGates, ioOnly, nothing: boolean);
+begin
+
+end;
+
+PROCEDURE T_challenge.setChallengePalette(CONST allowAllGates: boolean);
+begin
+
+end;
+
+PROCEDURE T_challenge.setNumberOfTestCases(CONST count: longint);
+begin
+
+end;
+
+PROCEDURE T_challenge.generateTestCase(CONST index: longint;
+  CONST Interfaces: T_gateInterfaces);
+begin
+
+end;
+
+PROCEDURE T_challenge.generateTestCases;
+begin
+
+end;
 
 end.
 

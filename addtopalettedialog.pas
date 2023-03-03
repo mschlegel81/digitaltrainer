@@ -33,9 +33,11 @@ TYPE
       Shift: TShiftState; X, Y: integer);
     PROCEDURE propOkShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
+    PROCEDURE setSubpalette(CONST idx:longint);
   private
     currentBoard:P_visualBoard;
     currentPalette:P_workspacePalette;
+    subPaletteIndex:longint;
 
   public
     FUNCTION showFor(CONST palette:P_workspacePalette; CONST board:P_visualBoard):boolean;
@@ -68,24 +70,33 @@ PROCEDURE TAddToPaletteForm.DescriptionMemoEditingDone(Sender: TObject);
     currentBoard^.setDescription(DescriptionMemo.text);
   end;
 
-PROCEDURE TAddToPaletteForm.propCancelShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TAddToPaletteForm.propCancelShapeMouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     ModalResult:=mrCancel;
   end;
 
-PROCEDURE TAddToPaletteForm.propOkShape1MouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TAddToPaletteForm.propOkShape1MouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     ModalResult:=mrOk;
     currentPalette^.updateEntry(currentBoard,paletteComboBox.ItemIndex,paletteComboBox.text);
   end;
 
-PROCEDURE TAddToPaletteForm.propOkShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TAddToPaletteForm.propOkShapeMouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     ModalResult:=mrOk;
     currentPalette^.addBoard(currentBoard,paletteComboBox.ItemIndex,paletteComboBox.text);
   end;
 
-FUNCTION TAddToPaletteForm.showFor(CONST palette: P_workspacePalette; CONST board: P_visualBoard): boolean;
+PROCEDURE TAddToPaletteForm.setSubpalette(CONST idx: longint);
+  begin
+    subPaletteIndex:=idx;
+  end;
+
+FUNCTION TAddToPaletteForm.showFor(CONST palette: P_workspacePalette;
+  CONST board: P_visualBoard): boolean;
   VAR s:string;
   begin
     currentBoard  :=board;
@@ -98,6 +109,8 @@ FUNCTION TAddToPaletteForm.showFor(CONST palette: P_workspacePalette; CONST boar
     setEnableButton(propOkShape1,propOkLabel1,board^.getIndexInPalette>=0);
 
     for s in palette^.subPaletteNames do paletteComboBox.items.add(s);
+    paletteComboBox.ItemIndex:=subPaletteIndex;
+
     if ShowModal=mrOk
     then result:=true
     else result:=false;
