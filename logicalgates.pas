@@ -1886,7 +1886,9 @@ FUNCTION T_inputGate.equals(CONST other: P_abstractGate): boolean;
   begin
     result:=(other^.gateType=gateType) and
       ((P_inputGate(other)^.ioIndex=ioIndex) and
-       (P_inputGate(other)^.width  =width  ));
+       (P_inputGate(other)^.width  =width  ) and
+       (P_inputGate(other)^.onLeftOrRightSide=onLeftOrRightSide) and
+       (P_inputGate(other)^.ioLabel=ioLabel));
   end;
 
 FUNCTION T_adapter.equals(CONST other:P_abstractGate):boolean;

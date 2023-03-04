@@ -81,7 +81,7 @@ FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): b
   begin
     result:=inherited and
     workspacePalette^.loadFromStream(stream) and
-    workspaceBoard  ^.loadFromStream(stream) and
+    workspaceBoard  ^.loadFromStream(stream,false) and
     challenges      ^.loadFromStream(stream);
     activeChallengeIndex:=stream.readLongint;
     if (activeChallengeIndex>=0) and (activeChallengeIndex<length(challenges^.challenge))
@@ -93,7 +93,7 @@ PROCEDURE T_workspace.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
   begin
     inherited;
     workspacePalette^.saveToStream(stream);
-    workspaceBoard^.saveToStream(stream);
+    workspaceBoard^.saveToStream(stream,false);
     challenges^.saveToStream(stream);
     stream.writeLongint(activeChallengeIndex);
   end;

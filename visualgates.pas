@@ -9,20 +9,10 @@ USES
   serializationUtil, Forms, Controls, wiringUtil, math, sprites, BGRABitmap,
   BGRACanvas;
 TYPE
-  //TODO: Add "fixed" flag for gates that may neither be removed nor moved nor edited...
   P_uiAdapter=^T_uiAdapter;
   P_visualGate=^T_visualGate;
   P_visualBoard=^T_visualBoard;
   T_visualGateArray=array of P_visualGate;
-
-  T_gateInterface=record
-    name:string;
-    wireWidth:byte;
-  end;
-
-  T_gateInterfaces=record
-    inputs,outputs:array of T_gateInterface;
-  end;
 
   T_hoverInfo=record
     subElement:(noHit,block,inputConnector,outputConnector);
@@ -47,6 +37,7 @@ TYPE
       PROCEDURE ioEditEditingDone(Sender: TObject);
       PROCEDURE ioEditKeyPress(Sender: TObject; VAR key: char);
     public
+      fixedPosition,fixedProperties:boolean;
       canvasPos,
       gridPos:T_point;
       uiAdapter:P_uiAdapter;
@@ -113,6 +104,8 @@ PROCEDURE T_visualGate.ioEditEditingDone(Sender: TObject);
 
 CONSTRUCTOR T_visualGate.create(CONST behavior_: P_abstractGate);
   begin
+    fixedPosition:=false;
+    fixedProperties:=false;
     uiAdapter :=nil;
     canvasPos:=pointOf(0,0);
     gridPos  :=pointOf(0,0);
@@ -139,7 +132,7 @@ PROCEDURE T_visualGate.setupVisuals;
         gridHeight:=4;
       end;
       gt_7segmentDummy: begin
-        gridWidth:=4;
+        gridWidth :=4;
         gridHeight:=6;
       end;
       else begin
@@ -215,10 +208,12 @@ PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST zoom: longint;
 FUNCTION T_visualGate.clone: P_visualGate;
   begin
     new(result,create(behavior^.clone(true)));
-    result^.gridPos  :=gridPos;
-    result^.uiAdapter:=uiAdapter;
-    result^.canvasPos:=canvasPos;
-    result^.ioMode   :=ioMode;
+    result^.gridPos        :=gridPos;
+    result^.uiAdapter      :=uiAdapter;
+    result^.canvasPos      :=canvasPos;
+    result^.ioMode         :=ioMode;
+    result^.fixedProperties:=fixedProperties;
+    result^.fixedPosition  :=false;
   end;
 
 PROCEDURE T_visualGate.propertyEditDone(CONST paletteElement: boolean;
@@ -301,131 +296,6 @@ PROCEDURE T_visualGate.flipInputBits;
     uiAdapter^.callback.boardModifiedCallback();
     uiAdapter^.hideIoEdit;
   end;
-
-//PROCEDURE T_visualGate.setPaletteEntryMouseActions;
-//  begin
-//    if length(shapes)=0 then exit;
-//    shapes[0].OnMouseDown:=@paletteEntryMouseDown;
-//    labels[0].OnMouseDown:=@paletteEntryMouseDown;
-//    shapes[0].OnMouseMove:=@uiAdapter^.paletteEntryMouseMove;
-//    labels[0].OnMouseMove:=@uiAdapter^.paletteEntryMouseMove;
-//    shapes[0].OnMouseUp:=@uiAdapter^.paletteEntryMouseUp;
-//    labels[0].OnMouseUp:=@uiAdapter^.paletteEntryMouseUp;
-//    shapes[0].ShowHint:=true;
-//    shapes[0].Hint:=behavior^.getDescription;
-//  end;
-
-//PROCEDURE T_visualGate.paletteEntryMouseDown(Sender: TObject;
-//  button: TMouseButton; Shift: TShiftState; X, Y: integer);
-//  VAR clonedSelf:P_visualGate;
-//  begin
-//    if uiAdapter=nil then exit;
-//    if uiAdapter^.state<>uas_initial then exit;
-//
-//    if button=mbLeft then begin
-//      clonedSelf:=clone;
-//      clonedSelf^.ensureGuiElements(uiAdapter^.mainForm);
-//      clonedSelf^.paintAll(uiAdapter^.boardUiElements.wireImage, shapes[0].Left,shapes[0].top,uiAdapter^.zoom);
-//      uiAdapter^.startDrag(x,y,TGraphicControl(Sender),
-//                           clonedSelf,
-//                           uas_draggingFromPalette);
-//    end else if button=mbRight then begin
-//      uiAdapter^.showPropertyEditorCallback(@self,false,shapes[0].Left+shapes[0].width,shapes[0].top);
-//    end
-//  end;
-
-//PROCEDURE T_visualGate.boardElementMouseDown(Sender: TObject;
-//  button: TMouseButton; Shift: TShiftState; X, Y: integer);
-//  begin
-//    if uiAdapter=nil then exit;
-//    if uiAdapter^.state<>uas_initial then exit;
-//
-//    if button=mbLeft then begin
-//      if ssShift in Shift then begin
-//        marked:=not(marked);
-//        updateVisuals;
-//      end else uiAdapter^.startDrag(x,y,TGraphicControl(Sender),
-//                                    @self,
-//                                    uas_draggingFromBoard);
-//    end else if button=mbRight then begin
-//      uiAdapter^.showPropertyEditorCallback(@self,true,shapes[0].Left+shapes[0].width,shapes[0].top);
-//    end;
-//  end;
-
-//PROCEDURE T_visualGate.boardElementOutputMouseDown(Sender: TObject;
-//  button: TMouseButton; Shift: TShiftState; X, Y: integer);
-//  begin
-//    if uiAdapter=nil then exit;
-//    if uiAdapter^.state<>uas_initial then exit;
-//    if button=mbLeft then begin
-//      uiAdapter^.startDrag(x,y,TGraphicControl(Sender),
-//                           @self,
-//                           uas_draggingWire,
-//                           TGraphicControl(Sender).Tag);
-//    end;
-//  end;
-
-//PROCEDURE T_visualGate.ioModeShapeMouseDown(Sender: TObject;
-//  button: TMouseButton; Shift: TShiftState; X, Y: integer);
-//  CONST next:array[T_multibitWireRepresentation] of T_multibitWireRepresentation=(wr_decimal,wr_2complement,wr_binary);
-//        prev:array[T_multibitWireRepresentation] of T_multibitWireRepresentation=(wr_2complement,wr_binary,wr_decimal);
-//
-//  begin
-//    if button=mbLeft
-//    then ioMode:=next[ioMode]
-//    else ioMode:=prev[ioMode];
-//    labels[length(labels)-1].caption:=C_multibitWireRepresentationName[ioMode];
-//    ioEdit.text:=getWireString(behavior^.getInput(0),ioMode);
-//    updateVisuals;
-//  end;
-
-//PROCEDURE T_visualGate.setBoardElementMouseActions;
-//  VAR index,i:longint;
-//
-//  begin
-//    if length(shapes)=0 then exit;
-//    shapes[0].OnMouseDown:=@boardElementMouseDown;
-//    labels[0].OnMouseDown:=@boardElementMouseDown;
-//    shapes[0].OnMouseMove:=@uiAdapter^.boardElementMouseMove;
-//    labels[0].OnMouseMove:=@uiAdapter^.boardElementMouseMove;
-//    shapes[0].OnMouseUp:=@uiAdapter^.boardElementMouseUp;
-//    labels[0].OnMouseUp:=@uiAdapter^.boardElementMouseUp;
-//    index:=1+behavior^.numberOfInputs;
-//    for i:=0 to behavior^.numberOfOutputs-1 do begin
-//      shapes[index].Tag:=i;
-//      shapes[index].OnMouseDown:=@boardElementOutputMouseDown;
-//      shapes[index].OnMouseMove:=@uiAdapter^.boardOutputMouseMove;
-//      shapes[index].OnMouseUp  :=@uiAdapter^.boardOutputMouseUp;
-//      labels[index].Tag:=i;
-//      labels[index].OnMouseDown:=@boardElementOutputMouseDown;
-//      labels[index].OnMouseMove:=@uiAdapter^.boardOutputMouseMove;
-//      labels[index].OnMouseUp  :=@uiAdapter^.boardOutputMouseUp;
-//      inc(index);
-//    end;
-//
-//    if behavior^.gateType in [gt_input,gt_output] then begin
-//      index:=length(shapes)-1;
-//      shapes[index].OnMouseDown:=@ioModeShapeMouseDown;
-//      labels[index].OnMouseDown:=@ioModeShapeMouseDown;
-//    end;
-//
-//    if behavior^.gateType=gt_input then begin
-//      ioEdit.OnKeyPress:=@ioEditKeyPress;
-//      ioEdit.OnEditingDone:=@ioEditEditingDone;
-//    end;
-//
-//    shapes[0].ShowHint:=true;
-//    shapes[0].Hint:=behavior^.getDescription;
-//  end;
-
-//procedure T_visualGate.BringToFront;
-//  VAR i:longint;
-//  begin
-//    if length(shapes)=0 then exit;
-//    for i:=0 to length(shapes)-1 do shapes[i].BringToFront;
-//    for i:=0 to length(labels)-1 do labels[i].BringToFront;
-//    if ioEdit<>nil then ioEdit.BringToFront;
-//  end;
 
 end.
 

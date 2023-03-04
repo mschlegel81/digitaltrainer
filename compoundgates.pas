@@ -10,14 +10,22 @@ USES
 TYPE
   P_compoundGate=^T_compoundGate;
 
-  T_challengeOptions=set of (co_allGates,
-                             co_halfGates,
-                             co_io,
-                             co_freePalette,
-                             co_preconfiguredPalette,
-                             co_preconfiguredPaletteWithCounts);
+  T_challengeBoardOption=(co_allGates,co_halfGates,co_ioOnly,co_none);
+  T_challengePaletteOption=(co_preconfiguredPaletteWithCounts,
+                            co_preconfiguredPalette,
+                            co_unconfiguredPaletteWithCounts,
+                            co_freePalette);
 
   P_abstractPrototypeSource=^T_abstractPrototypeSource;
+
+  T_gateInterface=record
+    name:string;
+    wireWidth:byte;
+  end;
+
+  T_gateInterfaces=record
+    inputs,outputs:array of T_gateInterface;
+  end;
 
   { T_abstractPrototypeSource }
 
@@ -26,10 +34,11 @@ TYPE
     FUNCTION obtainGate(CONST prototypeIndex:longint):P_compoundGate; virtual; abstract;
     PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual; abstract;
 
-    FUNCTION ensurePrototype(CONST prototypeIndex:longint):boolean; virtual; abstract;
+    FUNCTION hasPrototype(CONST prototypeIndex:longint):boolean; virtual; abstract;
     PROCEDURE addPrototype(CONST prototypeIndex:longint; CONST behavior:P_compoundGate; CONST visible:boolean); virtual; abstract;
-    PROCEDURE ensureBaseGate(CONST gate:P_abstractGate); virtual; abstract;
+    PROCEDURE ensureBaseGate(CONST gate:P_abstractGate; CONST visible:boolean); virtual; abstract;
     PROCEDURE countUpGate(CONST gate:P_abstractGate); virtual; abstract;
+    PROCEDURE countDownGate(CONST gate:P_abstractGate); virtual; abstract;
   end;
 
   { T_wire }
@@ -97,6 +106,8 @@ TYPE
       FUNCTION usesPrototype(CONST p:P_captionedAndIndexed):boolean;
       PROCEDURE prototypeUpdated(CONST oldPrototype, newPrototype: P_captionedAndIndexed);
       FUNCTION getPrototypeIndex:longint;
+
+      FUNCTION getInterfaces:T_gateInterfaces;
     end;
 
 IMPLEMENTATION
@@ -183,7 +194,8 @@ FUNCTION T_compoundGate.clone(CONST includeState: boolean): P_abstractGate;
     result:=cloned;
   end;
 
-FUNCTION T_compoundGate.exportForChallenge(CONST challengePalette: P_abstractPrototypeSource): P_abstractGate;
+FUNCTION T_compoundGate.exportForChallenge(
+  CONST challengePalette: P_abstractPrototypeSource): P_abstractGate;
   VAR cloned:P_compoundGate;
       i,j:longint;
   FUNCTION gateInClone(CONST gate:P_abstractGate):P_abstractGate;
@@ -197,7 +209,7 @@ FUNCTION T_compoundGate.exportForChallenge(CONST challengePalette: P_abstractPro
     end;
 
   begin
-    if (challengePalette^.ensurePrototype(prototype^.getIndexInPalette))
+    if (challengePalette^.hasPrototype(prototype^.getIndexInPalette))
     then exit(challengePalette^.obtainGate(prototype^.getIndexInPalette));
 
     new(cloned,create(challengePalette));
@@ -214,7 +226,7 @@ FUNCTION T_compoundGate.exportForChallenge(CONST challengePalette: P_abstractPro
       if gates[i]^.gateType=gt_compound
       then cloned^.gates[i]:=P_compoundGate(gates[i])^.exportForChallenge(challengePalette)
       else begin
-        challengePalette^.ensureBaseGate(gates[i]);
+        challengePalette^.ensureBaseGate(gates[i],false);
         cloned^.gates[i]:=gates[i]^.clone(false);
       end;
     end;
@@ -458,9 +470,7 @@ PROCEDURE T_compoundGate.prototypeUpdated(CONST oldPrototype,
     end;
 
   VAR i:longint;
-      anyUpdated:boolean=false;
       replacement: P_compoundGate;
-
   begin
     assert(prototypeSource<>nil);
     for i:=0 to length(gates)-1 do if (gates[i]^.gateType=gt_compound) then begin
@@ -476,6 +486,22 @@ PROCEDURE T_compoundGate.prototypeUpdated(CONST oldPrototype,
 FUNCTION T_compoundGate.getPrototypeIndex: longint;
   begin
     result:=myIndex;
+  end;
+
+FUNCTION T_compoundGate.getInterfaces: T_gateInterfaces;
+  VAR i:longint;
+  begin
+    initialize(result);
+    setLength(result.inputs,length(inputs));
+    for i:=0 to length(inputs)-1 do begin
+      result.inputs[i].name     :=inputs[i]^.getCaption;
+      result.inputs[i].wireWidth:=inputs[i]^.outputWidth(0);
+    end;
+    setLength(result.outputs,length(outputs));
+    for i:=0 to length(outputs)-1 do begin
+      result.outputs[i].name     :=outputs[i]^.getCaption;
+      result.outputs[i].wireWidth:=outputs[i]^.inputWidth(0);
+    end;
   end;
 
 end.

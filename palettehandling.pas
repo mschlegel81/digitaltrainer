@@ -32,12 +32,11 @@ TYPE
     PROCEDURE paint;
     PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual;
 
-    FUNCTION ensurePrototype(CONST prototypeIndex:longint):boolean; virtual;
+    FUNCTION hasPrototype(CONST prototypeIndex:longint):boolean; virtual;
     PROCEDURE addPrototype(CONST prototypeIndex:longint; CONST behavior:P_compoundGate; CONST visible:boolean); virtual;
-    PROCEDURE ensureBaseGate(CONST gate:P_abstractGate); virtual;
+    PROCEDURE ensureBaseGate(CONST gate:P_abstractGate; CONST visible:boolean); virtual;
     PROCEDURE countUpGate(CONST gate:P_abstractGate); virtual;
-
-    PROCEDURE gateDeleted(CONST gate:P_visualGate); virtual;
+    PROCEDURE countDownGate(CONST gate:P_abstractGate); virtual;
   end;
 
   { T_workspacePalette }
@@ -85,19 +84,28 @@ TYPE
     PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual;
   end;
 
+  T_challengePaletteEntry=record
+      visible,preconfigured:boolean;
+      availableCount:longint;
+      entryType:T_gateType;
+      prototype:P_abstractGate;
+      sourcePaletteIndex:longint;
+    end;
+
   { T_challengePalette }
   P_challengePalette=^T_challengePalette;
   T_challengePalette=object(T_palette)
-    paletteEntries:array of record
-      visualSorting,
-      visible:boolean;
-      entryType:T_gateType;
-      prototype:P_compoundGate;
-      availableCount:longint;
-    end;
+    private
+      FUNCTION IndexOf(CONST gate:P_abstractGate):longint;
+    public
+    paletteEntries:array of T_challengePaletteEntry;
+    allowConfiguration:boolean;
+    constructingChallenge:boolean;
+
     CONSTRUCTOR create;
     DESTRUCTOR destroy;
 
+    //TODO: Preconfigured base gates must be stored including their meta data
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
 
@@ -108,12 +116,13 @@ TYPE
     FUNCTION readGate(VAR stream:T_bufferedInputStreamWrapper):P_abstractGate; virtual;
     FUNCTION obtainGate(CONST prototypeIndex:longint):P_compoundGate; virtual;
 
-    FUNCTION ensurePrototype(CONST prototypeIndex:longint):boolean; virtual;
+    FUNCTION hasPrototype(CONST prototypeIndex:longint):boolean; virtual;
     PROCEDURE addPrototype(CONST prototypeIndex:longint; CONST behavior:P_compoundGate; CONST visible:boolean); virtual;
-    PROCEDURE ensureBaseGate(CONST gate:P_abstractGate); virtual;
+    PROCEDURE ensureBaseGate(CONST gate:P_abstractGate; CONST visible:boolean); virtual;
     PROCEDURE countUpGate(CONST gate:P_abstractGate); virtual;
+    PROCEDURE countDownGate(CONST gate:P_abstractGate); virtual;
 
-    PROCEDURE gateDeleted(CONST gate:P_visualGate); virtual;
+    PROCEDURE finalizePalette(CONST boardOptions:T_challengeBoardOption; CONST paletteOptions: T_challengePaletteOption);
   end;
 
 IMPLEMENTATION
@@ -121,9 +130,28 @@ USES visuals,Graphics;
 
 { T_challengePalette }
 
+FUNCTION T_challengePalette.IndexOf(CONST gate: P_abstractGate): longint;
+  VAR i:longint;
+  begin
+    if gate^.gateType=gt_compound then begin
+      for i:=0 to length(paletteEntries)-1 do
+        if (paletteEntries[i].entryType=gt_compound) and
+           (gate^.equals(paletteEntries[i].prototype) or
+            (P_compoundGate(gate)^.prototype=P_captionedAndIndexed(paletteEntries[i].prototype)))
+        then exit(i);
+    end else begin
+      for i:=0 to length(paletteEntries)-1 do
+        if (paletteEntries[i].entryType=gate^.gateType) and
+           (not(paletteEntries[i].preconfigured) or gate^.equals(paletteEntries[i].prototype))
+        then exit(i);
+    end;
+    result:=-1;
+  end;
+
 CONSTRUCTOR T_challengePalette.create;
   begin
     setLength(paletteEntries,0);
+    constructingChallenge:=true;
   end;
 
 DESTRUCTOR T_challengePalette.destroy;
@@ -136,8 +164,7 @@ DESTRUCTOR T_challengePalette.destroy;
     setLength(paletteEntries,0);
   end;
 
-FUNCTION T_challengePalette.loadFromStream(
-  VAR stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_challengePalette.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i:longint;
   begin
     setLength(paletteEntries,stream.readNaturalNumber);
@@ -145,22 +172,28 @@ FUNCTION T_challengePalette.loadFromStream(
       visible:=stream.readBoolean;
       entryType:=T_gateType(stream.readByte([byte(low(T_gateType))..byte(high(T_gateType))]));
       if entryType=gt_compound then begin
-        new(prototype,create(@self));
-        prototype^.readPrototypeFromStream(stream,i);
+        new(P_compoundGate(prototype),create(@self));
+        P_compoundGate(prototype)^.readPrototypeFromStream(stream,i);
       end else prototype:=nil;
     end;
     result:=stream.allOkay;
+    constructingChallenge:=false;
   end;
 
-PROCEDURE T_challengePalette.saveToStream(
-  VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_challengePalette.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
   VAR i:longint;
   begin
+    stream.writeBoolean(allowConfiguration);
     stream.writeNaturalNumber(length(paletteEntries));
     for i:=0 to length(paletteEntries)-1 do with paletteEntries[i] do begin
       stream.writeBoolean(visible);
       stream.writeByte(byte(entryType));
-      if entryType=gt_compound then prototype^.writePrototypeToStream(stream,i);
+      if entryType=gt_compound
+      then P_compoundGate(prototype)^.writePrototypeToStream(stream,i)
+      else begin
+        stream.writeBoolean(preconfigured);
+        if preconfigured then prototype^.writeToStream(stream,true);
+      end;
     end;
   end;
 
@@ -184,7 +217,8 @@ PROCEDURE T_challengePalette.ensureVisualPaletteItems;
   begin
     for i:=0 to length(visualPaletteItems)-1 do dispose(visualPaletteItems[i],destroy);
     k:=0;
-    for i:=0 to length(paletteEntries)-1 do if paletteEntries[i].visible then begin
+    for i:=0 to length(paletteEntries)-1 do if (paletteEntries[i].visible) and (paletteEntries[i].availableCount>0) then begin
+
       if paletteEntries[i].entryType=gt_compound
       then behavior:=paletteEntries[i].prototype^.clone(false)
       else behavior:=newBaseGate(paletteEntries[i].entryType);
@@ -192,12 +226,12 @@ PROCEDURE T_challengePalette.ensureVisualPaletteItems;
       setLength(visualPaletteItems,k+1);
       new(visualPaletteItems[k],create(behavior));
       visualPaletteItems[k]^.uiAdapter:=ui;
+      if not(allowConfiguration) then visualPaletteItems[k]^.fixedProperties:=true;
       inc(k);
     end;
   end;
 
-FUNCTION T_challengePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
-  ): P_abstractGate;
+FUNCTION T_challengePalette.readGate(VAR stream: T_bufferedInputStreamWrapper): P_abstractGate;
   VAR gateType:T_gateType;
       prototypeIndex:longint;
   begin
@@ -212,36 +246,107 @@ FUNCTION T_challengePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
     end;
   end;
 
-FUNCTION T_challengePalette.obtainGate(CONST prototypeIndex: longint
-  ): P_compoundGate;
+FUNCTION T_challengePalette.obtainGate(CONST prototypeIndex: longint): P_compoundGate;
   begin
     assert((prototypeIndex>=0) and (prototypeIndex<length(paletteEntries)),'Prototype index out of bounds');
     result:=P_compoundGate(paletteEntries[prototypeIndex].prototype^.clone(false));
   end;
 
-FUNCTION T_challengePalette.ensurePrototype(CONST prototypeIndex: longint): boolean;
+FUNCTION T_challengePalette.hasPrototype(CONST prototypeIndex: longint): boolean;
+  VAR i:longint;
   begin
-    //TODO: Implement T_challengePalette.ensurePrototype
+    if constructingChallenge then begin
+      for i:=0 to length(paletteEntries)-1 do
+        if (paletteEntries[i].sourcePaletteIndex=prototypeIndex) and
+           (paletteEntries[i].prototype<>nil) then exit(true);
+      result:=false;
+    end else begin
+      result:=(prototypeIndex>=0) and
+              (prototypeIndex<length(paletteEntries)) and
+              (paletteEntries[prototypeIndex].prototype<>nil);
+    end;
   end;
 
 PROCEDURE T_challengePalette.addPrototype(CONST prototypeIndex: longint; CONST behavior: P_compoundGate; CONST visible: boolean);
+  VAR i:longint;
   begin
-    //TODO: Implement T_challengePalette.addPrototype
+    assert(constructingChallenge,'This should only be called during challenge creation');
+    i:=length(paletteEntries);
+    setLength(paletteEntries,i+1);
+
+    paletteEntries[i].visible           :=visible;
+    paletteEntries[i].availableCount    :=0;
+    paletteEntries[i].entryType         :=gt_compound;
+    paletteEntries[i].prototype         :=behavior;
+    paletteEntries[i].sourcePaletteIndex:=prototypeIndex;
   end;
 
-PROCEDURE T_challengePalette.ensureBaseGate(CONST gate: P_abstractGate);
+PROCEDURE T_challengePalette.ensureBaseGate(CONST gate: P_abstractGate; CONST visible:boolean);
+  VAR idx:longint;
   begin
-    //TODO: Implement T_challengePalette.ensureBaseGate();
+    idx:=IndexOf(gate); if idx>=0 then exit;
+
+    idx:=length(paletteEntries);
+    setLength(paletteEntries,idx+1);
+
+    paletteEntries[idx].visible           :=visible;
+    paletteEntries[idx].availableCount    :=0;
+    paletteEntries[idx].entryType         :=gt_compound;
+    paletteEntries[idx].prototype         :=gate^.clone(false);
+    paletteEntries[idx].preconfigured     :=true;
+    paletteEntries[idx].sourcePaletteIndex:=-1;
   end;
 
 PROCEDURE T_challengePalette.countUpGate(CONST gate: P_abstractGate);
+  VAR idx:longint;
   begin
-    //TODO: Implement T_challengePalette.countUpGate
+    idx:=IndexOf(gate); if idx<0 then exit;
+    inc(paletteEntries[idx].availableCount);
   end;
 
-PROCEDURE T_challengePalette.gateDeleted(CONST gate: P_visualGate);
+PROCEDURE T_challengePalette.countDownGate(CONST gate: P_abstractGate);
+  VAR idx:longint;
   begin
-    //TODO: Implement T_challengePalette.gateDeleted
+    idx:=IndexOf(gate); if idx<0 then exit;
+    dec(paletteEntries[idx].availableCount);
+  end;
+
+PROCEDURE T_challengePalette.finalizePalette(CONST boardOptions:T_challengeBoardOption; CONST paletteOptions: T_challengePaletteOption);
+  VAR i,j:longint;
+      gateTypesAvailable:array [T_gateType] of longint;
+      gt:T_gateType;
+  begin
+    //Remove configured base gates
+    if paletteOptions in [co_unconfiguredPaletteWithCounts,co_freePalette]
+    then begin
+      for gt in T_gateType do gateTypesAvailable[gt]:=-1;
+      j:=0;
+      for i:=0 to length(paletteEntries)-1 do begin
+        if paletteEntries[i].entryType<>gt_compound then begin
+          dispose(paletteEntries[i].prototype,destroy);
+          paletteEntries[i].prototype:=nil;
+          paletteEntries[i].preconfigured:=false;
+          if gateTypesAvailable[paletteEntries[i].entryType]<0 then begin
+            gateTypesAvailable[paletteEntries[i].entryType]:=j;
+            paletteEntries[j]:=paletteEntries[i];
+            inc(j);
+          end else paletteEntries[gateTypesAvailable[paletteEntries[i].entryType]].availableCount+=paletteEntries[i].availableCount;
+        end else begin
+          paletteEntries[j]:=paletteEntries[i];
+          inc(j);
+        end;
+      end;
+      setLength(paletteEntries,j);
+      allowConfiguration:=true;
+    end else allowConfiguration:=false;
+
+    //Set available count to (virtually) infinite, if counts should be ignored
+    if paletteOptions in [co_preconfiguredPalette,co_freePalette]
+    then for i:=0 to length(paletteEntries)-1 do
+      paletteEntries[i].availableCount:=maxLongint shr 1;
+
+    //Set all entries to visible if appropriate...
+    if paletteOptions=co_freePalette then for i:=0 to length(paletteEntries)-1 do paletteEntries[i].visible:=true;
   end;
 
 { T_workspacePalette }
@@ -249,7 +354,6 @@ PROCEDURE T_challengePalette.gateDeleted(CONST gate: P_visualGate);
 PROCEDURE T_workspacePalette.removeSubPalette(CONST index: longint);
   VAR i:longint;
   begin
-    //if so, decrease all subPaletteIndexes>previousPaletteIndex ...
     for i:=0 to length(paletteEntries)-1 do
       if paletteEntries[i].subPaletteIndex>index
       then dec(paletteEntries[i].subPaletteIndex);
@@ -765,19 +869,20 @@ PROCEDURE T_palette.paint;
 PROCEDURE T_palette.dropPaletteItem(CONST gatePtr: pointer);
   begin end; //dummy
 
-FUNCTION T_palette.ensurePrototype(CONST prototypeIndex: longint): boolean;
+FUNCTION T_palette.hasPrototype(CONST prototypeIndex: longint): boolean;
+  begin result:=false; end; //dummy
+
+PROCEDURE T_palette.addPrototype(CONST prototypeIndex: longint;
+  CONST behavior: P_compoundGate; CONST visible: boolean);
   begin end; //dummy
 
-PROCEDURE T_palette.addPrototype(CONST prototypeIndex: longint; CONST behavior: P_compoundGate; CONST visible: boolean);
-  begin end; //dummy
-
-PROCEDURE T_palette.ensureBaseGate(CONST gate: P_abstractGate);
+PROCEDURE T_palette.ensureBaseGate(CONST gate: P_abstractGate; CONST visible:boolean);
   begin end; //dummy
 
 PROCEDURE T_palette.countUpGate(CONST gate: P_abstractGate);
   begin end; //dummy
 
-PROCEDURE T_palette.gateDeleted(CONST gate: P_visualGate);
+PROCEDURE T_palette.countDownGate(CONST gate: P_abstractGate);
   begin end; //dummy
 
 end.

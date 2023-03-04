@@ -214,6 +214,7 @@ PROCEDURE TDigitaltrainerMainForm.miCopyClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miEditModeClick(Sender: TObject);
   begin
     //TODO
+    //In challenge mode, the clipboard must be disabled.
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);

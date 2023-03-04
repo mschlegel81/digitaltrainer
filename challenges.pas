@@ -37,10 +37,7 @@ TYPE
     PROCEDURE testChallenge;
 
     //For creation purposes...
-    PROCEDURE initNewChallenge(CONST expectedAsVisual:P_visualBoard);
-    PROCEDURE setResultTemplate(CONST expectedAsVisual:P_visualBoard; CONST allGates,halfOfGates,ioOnly,nothing:boolean);
-    PROCEDURE setChallengePalette(CONST allowAllGates:boolean);
-
+    PROCEDURE initNewChallenge(CONST expectedAsVisual:P_visualBoard; CONST challengeBoardOption:T_challengeBoardOption; CONST challengePaletteOption:T_challengePaletteOption);
     PROCEDURE setNumberOfTestCases(CONST count:longint);
     PROCEDURE generateTestCase(CONST index:longint; CONST Interfaces:T_gateInterfaces);
     PROCEDURE generateTestCases;
@@ -160,8 +157,8 @@ FUNCTION T_challenge.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
     if not(stream.allOkay) then exit(false);
 
     result:=palette^.loadFromStream(stream)
-        and board         ^.loadFromStream(stream)
-        and resultTemplate^.loadFromStream(stream)
+        and board         ^.loadFromStream(stream,true)
+        and resultTemplate^.loadFromStream(stream,false)
         and expectedBehavior^.readPrototypeFromStream(stream,-1);
     if not(result) then exit(result);
 
@@ -186,8 +183,8 @@ PROCEDURE T_challenge.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
     stream.writeAnsiString(challengeTitle);
     stream.writeAnsiString(challengeDescription);
     palette^.saveToStream(stream);
-    board^.saveToStream(stream);
-    resultTemplate^.saveToStream(stream);
+    board^.saveToStream(stream,true);
+    resultTemplate^.saveToStream(stream,false);
     expectedBehavior^.writePrototypeToStream(stream,-1);
     stream.writeNaturalNumber(length(tests));
     for i:=0 to length(tests)-1 do with tests[i] do begin
@@ -197,9 +194,10 @@ PROCEDURE T_challenge.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
   end;
 
 FUNCTION T_challenge.resetChallenge: P_visualBoard;
+  VAR i:longint;
   begin
     dispose(board,destroy);
-    board:=resultTemplate^.clone;
+    board:=resultTemplate^.clone(not(palette^.allowConfiguration));
     result:=board;
   end;
 
@@ -212,51 +210,50 @@ PROCEDURE T_challenge.testChallenge;
     //
   end;
 
-PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard);
+PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard; CONST challengeBoardOption:T_challengeBoardOption; CONST challengePaletteOption:T_challengePaletteOption);
+  VAR
+    Interfaces: T_gateInterfaces;
+    totalInputBits:longint=0;
+    i:longint;
   begin
-    //challengeLevel:=0;
-    //callengeCompleted:=false;
-    //board:=nil;
-    //resultTemplate:=nil;
-    //expectedBehavior:=expectedAsVisual^.extractBehavior;
-    //
-    //expectedBehavior    :P_compoundGate;
-    //tests:array of record
-    //  inputs:array of T_wireValue;
-    //  maxTotalSteps:longint;
-    //end;
-    //palette             :P_challengePalette;
-    //challengeTitle      :string;
-    //challengeDescription:string;
-    //
+    challengeLevel      :=0;
+    callengeCompleted   :=false;
+    board               :=nil;
+
+    new(palette,create);
+    expectedAsVisual^.extractChallenge(challengeBoardOption,palette,expectedBehavior,resultTemplate);
+    palette^.finalizePalette(challengeBoardOption,challengePaletteOption);
+
+    challengeTitle      :=expectedAsVisual^.getCaption;
+    challengeDescription:=expectedAsVisual^.getDescription;
+
+    setLength(tests,0);
+    Interfaces:=expectedAsVisual^.getInterfaces;
+    for i:=0 to length(Interfaces.inputs)-1 do totalInputBits+=Interfaces.inputs[i].wireWidth;
+
+    i:=1;
+    while (totalInputBits>0) and (i<256) do begin
+      dec(totalInputBits);
+      i+=i;
+    end;
+    if i=1 then i+=4;
+    setNumberOfTestCases(i);
   end;
 
-PROCEDURE T_challenge.setResultTemplate(CONST expectedAsVisual: P_visualBoard;
-  CONST allGates, halfOfGates, ioOnly, nothing: boolean);
-begin
-
-end;
-
-PROCEDURE T_challenge.setChallengePalette(CONST allowAllGates: boolean);
-begin
-
-end;
-
 PROCEDURE T_challenge.setNumberOfTestCases(CONST count: longint);
-begin
+  begin
 
-end;
+  end;
 
-PROCEDURE T_challenge.generateTestCase(CONST index: longint;
-  CONST Interfaces: T_gateInterfaces);
-begin
+PROCEDURE T_challenge.generateTestCase(CONST index: longint; CONST Interfaces: T_gateInterfaces);
+  begin
 
-end;
+  end;
 
 PROCEDURE T_challenge.generateTestCases;
-begin
+  begin
 
-end;
+  end;
 
 end.
 

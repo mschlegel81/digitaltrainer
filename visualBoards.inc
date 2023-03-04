@@ -60,17 +60,18 @@ T_visualBoard=object(T_captionedAndIndexed)
     PROCEDURE remove(CONST element:P_visualGate       ; CONST skipSaveUndo:boolean);
     PROCEDURE remove(CONST elements: T_visualGateArray; CONST skipSaveUndo:boolean);
 
-    FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean;
-    PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper);
+    FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper; CONST includeFixing:boolean):boolean;
+    PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST includeFixing:boolean);
     PROCEDURE savePaletteEntryToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST paletteIndex:longint);
     PROCEDURE loadPaletteEntryFromStream(VAR stream:T_bufferedInputStreamWrapper; CONST paletteIndex:longint);
     FUNCTION extractBehavior:P_compoundGate;
-    PROCEDURE extractChallenge(CONST options:T_challengeOptions;
+    PROCEDURE extractChallenge(CONST options:T_challengeBoardOption;
                                CONST challengePalette:P_abstractPrototypeSource;
                                OUT expectedBehavior:P_compoundGate;
                                OUT boardTemplate:P_visualBoard);
+    FUNCTION getInterfaces:T_gateInterfaces;
 
-    FUNCTION clone:P_visualBoard;
+    FUNCTION clone(CONST fixProperties:boolean=false):P_visualBoard;
 
     PROCEDURE enumerateIo;
 
@@ -428,7 +429,9 @@ PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray;
     j, i: integer;
   begin
     if not(skipSaveUndo) then ui^.saveStateToUndoList;
-    for element in elements do begin
+    for element in elements do if not element^.fixedPosition then begin
+      //For challenges with fixed number of gates, this has to be added to the palette again.
+      associatedPalette^.countUpGate(element^.behavior);
       j:=0;
       for i:=0 to length(wires)-1 do begin
         wires[i].dropWiresAssociatedWith(element);
@@ -449,8 +452,8 @@ PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray;
     rewire(true);
   end;
 
-FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
-  ): boolean;
+FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper;
+  CONST includeFixing: boolean): boolean;
   FUNCTION gateByIndex(index:longint):P_visualGate;
     begin
       if index<length(inputs) then exit(inputs[index]); dec(index,length(inputs));
@@ -477,6 +480,10 @@ FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
       inputGate^.readMetaDataFromStream(stream);
       new(inputs[i],create(inputGate));
       inputs[i]^.gridPos:=readPoint(stream);
+      if includeFixing then begin
+        inputs[i]^.fixedPosition:=stream.readBoolean;
+        inputs[i]^.fixedProperties:=stream.readBoolean;
+      end;
     end;
     if not(stream.allOkay) then exit(false);
 
@@ -485,6 +492,10 @@ FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
       behavior:=associatedPalette^.readGate(stream);
       new(gates[i],create(behavior));
       gates[i]^.gridPos:=readPoint(stream);
+      if includeFixing then begin
+        gates[i]^.fixedPosition:=stream.readBoolean;
+        gates[i]^.fixedProperties:=stream.readBoolean;
+      end;
     end;
     if not(stream.allOkay) then exit(false);
 
@@ -494,6 +505,10 @@ FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
       outputGate^.readMetaDataFromStream(stream);
       new(outputs[i],create(outputGate));
       outputs[i]^.gridPos:=readPoint(stream);
+      if includeFixing then begin
+        outputs[i]^.fixedPosition:=stream.readBoolean;
+        outputs[i]^.fixedProperties:=stream.readBoolean;
+      end;
     end;
     if not(stream.allOkay) then exit(false);
 
@@ -510,7 +525,8 @@ FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
     result:=stream.allOkay;
   end;
 
-PROCEDURE T_visualBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_visualBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper;
+  CONST includeFixing: boolean);
   FUNCTION gateToIndex(CONST g:P_visualGate):longint;
     VAR i:longint;
         offset:longint=0;
@@ -531,18 +547,30 @@ PROCEDURE T_visualBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
     for i:=0 to length(inputs)-1 do begin
       inputs[i]^.behavior^.writeToStream(stream,true);
       writePointToStream(stream,inputs[i]^.gridPos);
+      if includeFixing then begin
+        stream.writeBoolean(inputs[i]^.fixedPosition);
+        stream.writeBoolean(inputs[i]^.fixedProperties);
+      end;
     end;
 
     stream.writeNaturalNumber(length(gates));
     for i:=0 to length(gates)-1 do begin
       gates[i]^.behavior^.writeToStream(stream);
       writePointToStream(stream,gates[i]^.gridPos);
+      if includeFixing then begin
+        stream.writeBoolean(gates[i]^.fixedPosition);
+        stream.writeBoolean(gates[i]^.fixedProperties);
+      end;
     end;
 
     stream.writeNaturalNumber(length(outputs));
     for i:=0 to length(outputs)-1 do begin
       outputs[i]^.behavior^.writeToStream(stream,true);
       writePointToStream(stream,outputs[i]^.gridPos);
+      if includeFixing then begin
+        stream.writeBoolean(outputs[i]^.fixedPosition);
+        stream.writeBoolean(outputs[i]^.fixedProperties);
+      end;
     end;
 
     stream.writeNaturalNumber(length(wires));
@@ -561,13 +589,13 @@ PROCEDURE T_visualBoard.savePaletteEntryToStream(
   VAR stream: T_bufferedOutputStreamWrapper; CONST paletteIndex: longint);
   begin
     myIndex:=paletteIndex;
-    saveToStream(stream);
+    saveToStream(stream,false);
   end;
 
 PROCEDURE T_visualBoard.loadPaletteEntryFromStream(
   VAR stream: T_bufferedInputStreamWrapper; CONST paletteIndex: longint);
   begin
-    loadFromStream(stream);
+    loadFromStream(stream,false);
     myIndex:=paletteIndex;
   end;
 
@@ -606,7 +634,9 @@ FUNCTION T_visualBoard.extractBehavior: P_compoundGate;
     result:=cloned;
   end;
 
-PROCEDURE T_visualBoard.extractChallenge(CONST options: T_challengeOptions; CONST challengePalette: P_abstractPrototypeSource; OUT expectedBehavior: P_compoundGate; OUT boardTemplate: P_visualBoard);
+PROCEDURE T_visualBoard.extractChallenge(CONST options: T_challengeBoardOption;
+  CONST challengePalette: P_abstractPrototypeSource; OUT
+  expectedBehavior: P_compoundGate; OUT boardTemplate: P_visualBoard);
   PROCEDURE setupExpectedBehavior;
     VAR i,j:longint;
     FUNCTION gateInClone(CONST gate:P_visualGate):P_abstractGate;
@@ -626,14 +656,12 @@ PROCEDURE T_visualBoard.extractChallenge(CONST options: T_challengeOptions; CONS
       expectedBehavior^.descriptionString:='';
       setLength(expectedBehavior^.inputs ,length(inputs ));
       for i:=0 to length(inputs )-1 do begin
-        if not((co_allGates in options) or (co_halfGates in options) or (co_io in options))
-        then challengePalette^.ensureBaseGate(inputs [i]^.behavior);
+        challengePalette^.ensureBaseGate(inputs [i]^.behavior,true);
         expectedBehavior^.inputs [i]:=P_inputGate (inputs [i]^.behavior^.clone(false));
       end;
       setLength(expectedBehavior^.outputs,length(outputs));
       for i:=0 to length(outputs)-1 do begin
-        if not((co_allGates in options) or (co_halfGates in options) or (co_io in options))
-        then challengePalette^.ensureBaseGate(outputs[i]^.behavior);
+        challengePalette^.ensureBaseGate(outputs[i]^.behavior,true);
         expectedBehavior^.outputs[i]:=P_outputGate(outputs[i]^.behavior^.clone(false));
       end;
       setLength(expectedBehavior^.gates,length(gates));
@@ -641,7 +669,7 @@ PROCEDURE T_visualBoard.extractChallenge(CONST options: T_challengeOptions; CONS
         if gates[i]^.behavior^.gateType=gt_compound
         then expectedBehavior^.gates[i]:=P_compoundGate(gates[i]^.behavior)^.exportForChallenge(challengePalette)
         else begin
-          challengePalette^.ensureBaseGate(gates[i]^.behavior);
+          challengePalette^.ensureBaseGate(gates[i]^.behavior,true);
           expectedBehavior^.gates[i]:=gates[i]^.behavior^.clone(false);
         end
       end;
@@ -663,15 +691,11 @@ PROCEDURE T_visualBoard.extractChallenge(CONST options: T_challengeOptions; CONS
       begin
         case g^.behavior^.gateType of
           gt_input,gt_output:
-          begin
-            result:=(co_halfGates in options) or (co_allGates in options) or (co_io in options);
-          end;
-          else begin
-            result:=(co_allGates in options) or
-                    (co_halfGates in options) and (random<0.5);
-          end;
+            result:=options<>co_none;
+          else
+            result:=(options=co_allGates) or
+                    (options=co_halfGates) and (random<0.5);
         end;
-
       end;
 
     begin
@@ -724,7 +748,23 @@ PROCEDURE T_visualBoard.extractChallenge(CONST options: T_challengeOptions; CONS
     setupTemplate;
   end;
 
-FUNCTION T_visualBoard.clone: P_visualBoard;
+FUNCTION T_visualBoard.getInterfaces: T_gateInterfaces;
+  VAR i:longint;
+  begin
+    initialize(result);
+    setLength(result.inputs,length(inputs));
+    for i:=0 to length(inputs)-1 do begin
+      result.inputs[i].name     :=inputs[i]^.behavior^.getCaption;
+      result.inputs[i].wireWidth:=inputs[i]^.behavior^.outputWidth(0);
+    end;
+    setLength(result.outputs,length(outputs));
+    for i:=0 to length(outputs)-1 do begin
+      result.outputs[i].name     :=outputs[i]^.behavior^.getCaption;
+      result.outputs[i].wireWidth:=outputs[i]^.behavior^.inputWidth(0);
+    end;
+  end;
+
+FUNCTION T_visualBoard.clone(CONST fixProperties: boolean): P_visualBoard;
   VAR cloned:P_visualBoard;
       i,j:longint;
   FUNCTION gateInClone(CONST gate:P_visualGate):P_visualGate;
@@ -745,9 +785,9 @@ FUNCTION T_visualBoard.clone: P_visualBoard;
     cloned^.gridX1:=gridX1;
     cloned^.gridY0:=gridY0;
     cloned^.gridY1:=gridY1;
-    setLength(cloned^.inputs ,length(inputs )); for i:=0 to length(inputs )-1 do cloned^.inputs [i]:=inputs [i]^.clone;
-    setLength(cloned^.outputs,length(outputs)); for i:=0 to length(outputs)-1 do cloned^.outputs[i]:=outputs[i]^.clone;
-    setLength(cloned^.gates  ,length(gates));   for i:=0 to length(gates  )-1 do cloned^.gates  [i]:=gates  [i]^.clone;
+    setLength(cloned^.inputs ,length(inputs )); for i:=0 to length(inputs )-1 do begin cloned^.inputs [i]:=inputs [i]^.clone; if fixProperties then cloned^.inputs [i]^.fixedProperties:=true; end;
+    setLength(cloned^.outputs,length(outputs)); for i:=0 to length(outputs)-1 do begin cloned^.outputs[i]:=outputs[i]^.clone; if fixProperties then cloned^.outputs[i]^.fixedProperties:=true; end;
+    setLength(cloned^.gates  ,length(gates));   for i:=0 to length(gates  )-1 do begin cloned^.gates  [i]:=gates  [i]^.clone; if fixProperties then cloned^.gates  [i]^.fixedProperties:=true; end;
     setLength(cloned^.wires  ,length(wires));
     for i:=0 to length(wires)-1 do begin
       cloned^.wires[i].source:=gateInClone(wires[i].source);
@@ -1295,7 +1335,6 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
     begin
       result:=g^.isAtGridPos(gridPos,hoverInfo);
       if not(result) then exit(false);
-
       case hoverInfo.subElement of
         block:begin
           if (button=mbLeft) then begin
@@ -1309,8 +1348,10 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
               ui^.showIoEdit(g);
             end else begin
               if g^.behavior^.gateType=gt_input then g^.flipInputBits;
-              ui^.startDrag(x,y,g,uas_draggingFromBoard);
-              paintBoard(true);
+              if not(g^.fixedPosition) then begin
+                ui^.startDrag(x,y,g,uas_draggingFromBoard);
+                paintBoard(true);
+              end;
             end;
             ui^.repaintImage;
           end else if (button=mbRight) then begin
@@ -1321,6 +1362,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
               ui^.repaintImage;
             end else begin
               ui^.state:=uas_initial;
+              if not g^.fixedProperties then
               ui^.callback.showPropertyEditorCallback(
                 g,
                 true,
@@ -1353,6 +1395,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
         if button=mbLeft then begin
           g:=g^.clone;
           g^.setupVisuals;
+          associatedPalette^.countDownGate(g^.behavior);
           ui^.startDrag(x,y,g,uas_draggingFromPalette);
         end else if button=mbRight then begin
           ui^.callback.showPropertyEditorCallback(g,false,
