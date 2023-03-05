@@ -32,7 +32,7 @@ TYPE
       behavior:P_abstractGate;
       ioLocations: T_ioLocations;
       ioMode:T_multibitWireRepresentation;
-
+      outputMark:T_ioMark;
       marked:boolean;
       PROCEDURE ioEditEditingDone(Sender: TObject);
       PROCEDURE ioEditKeyPress(Sender: TObject; VAR key: char);
@@ -47,8 +47,8 @@ TYPE
       PROCEDURE setupVisuals;
 
       FUNCTION simulateStep:boolean;
-      PROCEDURE paintAll(CONST Canvas:TCanvas; CONST ioOnly:boolean=false);
-      PROCEDURE paintAll(CONST Canvas:TCanvas; CONST zoom:longint; CONST ioOnly:boolean=false);
+      PROCEDURE paintAll(CONST Canvas:TCanvas);
+      PROCEDURE paintAll(CONST Canvas:TCanvas; CONST zoom:longint);
       FUNCTION  clone:P_visualGate;
       PROCEDURE propertyEditDone(CONST paletteElement:boolean; CONST x0,y0:longint);
 
@@ -86,7 +86,7 @@ PROCEDURE T_visualGate.ioEditKeyPress(Sender: TObject; VAR key: char);
       uiAdapter^.hideIoEdit;
     end else if key=#32 then begin
       behavior^.setInput(0,parseWire(uiAdapter^.uiElement.ioEdit.text,behavior^.inputWidth(0),ioMode));
-      paintAll(uiAdapter^.uiElement.boardImage.Canvas,true);
+      paintAll(uiAdapter^.uiElement.boardImage.Canvas);
       uiAdapter^.uiElement.boardImage.Invalidate;
       uiAdapter^.callback.boardModifiedCallback();
       key:=#0;
@@ -97,7 +97,7 @@ PROCEDURE T_visualGate.ioEditEditingDone(Sender: TObject);
   begin
     behavior^.setInput(0,parseWire(uiAdapter^.uiElement.ioEdit.text,behavior^.inputWidth(0),ioMode));
     uiAdapter^.uiElement.ioEdit.text:=getWireString(behavior^.getInput(0),ioMode);
-    paintAll(uiAdapter^.uiElement.boardImage.Canvas,true);
+    paintAll(uiAdapter^.uiElement.boardImage.Canvas);
     uiAdapter^.uiElement.boardImage.Invalidate;
     uiAdapter^.callback.boardModifiedCallback();
   end;
@@ -113,6 +113,7 @@ CONSTRUCTOR T_visualGate.create(CONST behavior_: P_abstractGate);
     gridHeight:=0;
     behavior:=behavior_;
     ioLocations:=behavior^.getIoLocations;
+    outputMark:=iom_none;
     setupVisuals;
   end;
 
@@ -151,10 +152,10 @@ FUNCTION T_visualGate.simulateStep: boolean;
     result:=behavior^.simulateStep;
   end;
 
-PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST ioOnly: boolean);
+PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas);
   begin
     canvasPos:=uiAdapter^.gridToCanvas(gridPos);
-    paintAll(Canvas,uiAdapter^.zoom,ioOnly);
+    paintAll(Canvas,uiAdapter^.zoom);
   end;
 
 PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST zoom: longint;
@@ -170,14 +171,12 @@ PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST zoom: longint;
   begin
     case behavior^.gateType of
       gt_input,gt_output: begin
-        if not(ioOnly) then
-        getIoBlockSprite(behavior^.getCaption,myInputIndex,marked)^.renderAt(Canvas,zoom,canvasPos);
+        getIoBlockSprite(behavior^.getCaption,myInputIndex,marked,outputMark)^.renderAt(Canvas,zoom,canvasPos);
         getIoTextSprite(behavior^.getInput(0),ioMode)^.renderAt(Canvas,zoom,canvasPos);
       end;
       gt_7segmentDummy:
         get7SegmentSprite(behavior^.getInput(0),marked)^.renderAt(Canvas,zoom,canvasPos);
       else begin
-        if not(ioOnly) then
         getBlockSprite  (behavior^.getCaption,gridWidth,gridHeight,marked)^.renderAt(Canvas,zoom,canvasPos);
       end;
     end;

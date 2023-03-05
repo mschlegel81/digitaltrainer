@@ -94,6 +94,7 @@ T_visualBoard=object(T_captionedAndIndexed)
                       CONST sinkGate:P_visualGate; CONST sinkInputIndex:longint);
 
     PROCEDURE reset;
+    FUNCTION coSimulateSteps(CONST count,timeOutInTicks: longint; CONST expectedBehavior:P_abstractGate):longint;
     FUNCTION simulateSteps(CONST count,timeOutInTicks: longint):longint;
     FUNCTION simulateSteps(CONST count: longint; CONST inputWires: T_wireValueArray; OUT stepsDone: longint): T_wireValueArray;
     FUNCTION startMultiDrag(CONST primaryGate:P_visualGate):boolean;
@@ -1600,7 +1601,35 @@ PROCEDURE T_visualBoard.reset;
     for g in gates   do g^.getBehavior^.reset;
   end;
 
-FUNCTION T_visualBoard.simulateSteps(CONST count, timeOutInTicks: longint): longint;
+FUNCTION T_visualBoard.coSimulateSteps(CONST count, timeOutInTicks: longint; CONST expectedBehavior: P_abstractGate): longint;
+  VAR changed:boolean=true;
+      step:longint=0;
+      g:P_visualGate;
+      i:longint;
+      timeout: qword;
+  begin
+    timeout:=GetTickCount64+timeOutInTicks;
+
+    result:=0;
+    while changed and (result<count) and (GetTickCount64<timeout) do begin
+      changed:=false;
+      expectedBehavior^.simulateStep;
+      for i:=0 to length(wires)-1 do if wires[i].simulateStep then changed:=true;
+      for g in gates              do if g^.simulateStep       then changed:=true;
+
+      for i:=0 to length(outputs)-1 do
+        if outputs[i]^.behavior^.getInput(0)=expectedBehavior^.getOutput(i)
+        then outputs[i]^.outputMark:=iom_correctOutput
+        else outputs[i]^.outputMark:=iom_incorrectOutput;
+
+      if changed then inc(result);
+    end;
+
+    if result>0 then ui^.paintAll;
+  end;
+
+FUNCTION T_visualBoard.simulateSteps(CONST count, timeOutInTicks: longint
+  ): longint;
   VAR changed:boolean=true;
       step:longint=0;
       g:P_visualGate;
@@ -1621,9 +1650,9 @@ FUNCTION T_visualBoard.simulateSteps(CONST count, timeOutInTicks: longint): long
 
     if result>0 then begin
       Canvas:=ui^.uiElement.boardImage.Canvas;
-      for g in inputs   do g^.paintAll(Canvas,true);
-      for g in gates    do g^.paintAll(Canvas,true);
-      for g in outputs  do g^.paintAll(Canvas,true);
+      for g in inputs   do g^.paintAll(Canvas);
+      for g in gates    do g^.paintAll(Canvas);
+      for g in outputs  do g^.paintAll(Canvas);
       for w in watchers do w^.paint(ui,Canvas);
       ui^.uiElement.boardImage.repaint;
     end;

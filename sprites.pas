@@ -227,7 +227,7 @@ FUNCTION getIoBlockSprite(CONST caption: shortstring; CONST inputIndex:longint; 
   begin
     key:=caption+' '+BoolToStr(marked,'M','')+intToStr(inputIndex);
     case ioMark of
-      iom_incorrectOutput: key+='_mC'
+      iom_incorrectOutput: key+='_mC';
       iom_correctOutput  : key+='_mI';
     end;
     if not ioBlockSpriteMap.containsKey(key,result) then begin
