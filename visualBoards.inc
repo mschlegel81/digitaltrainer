@@ -756,11 +756,13 @@ FUNCTION T_visualBoard.getInterfaces: T_gateInterfaces;
     for i:=0 to length(inputs)-1 do begin
       result.inputs[i].name     :=inputs[i]^.behavior^.getCaption;
       result.inputs[i].wireWidth:=inputs[i]^.behavior^.outputWidth(0);
+      result.inputs[i].representation:=inputs[i]^.ioMode;
     end;
     setLength(result.outputs,length(outputs));
     for i:=0 to length(outputs)-1 do begin
       result.outputs[i].name     :=outputs[i]^.behavior^.getCaption;
       result.outputs[i].wireWidth:=outputs[i]^.behavior^.inputWidth(0);
+      result.outputs[i].representation:=outputs[i]^.ioMode;
     end;
   end;
 

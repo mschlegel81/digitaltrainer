@@ -21,6 +21,7 @@ TYPE
   T_gateInterface=record
     name:string;
     wireWidth:byte;
+    representation:T_multibitWireRepresentation;
   end;
 
   T_gateInterfaces=record
@@ -90,6 +91,8 @@ TYPE
       FUNCTION  outputWidth(CONST index:longint):byte; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
       FUNCTION  simulateStep:boolean;    virtual;
+      FUNCTION  simulateSteps(CONST count: longint; CONST inputWires: T_wireValueArray; OUT stepsDone: longint): T_wireValueArray;
+
       FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
@@ -111,7 +114,7 @@ TYPE
     end;
 
 IMPLEMENTATION
-
+USES math;
 { T_wire }
 
 FUNCTION T_wire.simulateStep: boolean;
@@ -213,9 +216,9 @@ FUNCTION T_compoundGate.exportForChallenge(
     then exit(challengePalette^.obtainGate(prototype^.getIndexInPalette));
 
     new(cloned,create(challengePalette));
-    if prototype=nil
-    then cloned^.prototype:=@self
-    else cloned^.prototype:=prototype;
+    cloned^.prototype:=nil;
+    cloned^.captionString:=getCaption;
+    cloned^.descriptionString:=getDescription;
     setLength(cloned^.inputs ,length(inputs )); for i:=0 to length(inputs )-1 do begin
       cloned^.inputs [i]:=P_inputGate (inputs[i]^.clone(false));
     end;
@@ -243,7 +246,7 @@ FUNCTION T_compoundGate.exportForChallenge(
     end;
 
     challengePalette^.addPrototype(prototype^.getIndexInPalette,cloned,false);
-    result:=cloned;
+    result:=challengePalette^.obtainGate(prototype^.getIndexInPalette);
   end;
 
 FUNCTION T_compoundGate.getCaption: shortstring;
@@ -313,6 +316,29 @@ FUNCTION T_compoundGate.simulateStep: boolean;
     if not(result) and not(lastStepBusy) then exit(false);
     for g in gates do if g^.simulateStep then result:=true;
     lastStepBusy:=result;
+  end;
+
+FUNCTION T_compoundGate.simulateSteps(CONST count: longint; CONST inputWires: T_wireValueArray; OUT stepsDone: longint): T_wireValueArray;
+  VAR i:longint;
+      changed:boolean=true;
+      g: P_abstractGate;
+  begin
+
+    for i:=0 to min(length(inputs),length(inputWires))-1 do begin
+      assert(inputs[i]^.inputWidth(0)=inputWires[i].width);
+      inputs[i]^.setInput(0,inputWires[i]);
+    end;
+
+    stepsDone:=0;
+    while changed and (stepsDone<count) do begin
+      changed:=false;
+      for i:=0 to length(wires)-1 do if wires[i].simulateStep then changed:=true;
+      for g in gates              do if g^.simulateStep       then changed:=true;
+      inc(stepsDone);
+    end;
+
+    setLength(result,length(outputs));
+    for i:=0 to length(outputs)-1 do result[i]:=outputs[i]^.getInput(0);
   end;
 
 FUNCTION T_compoundGate.getOutput(CONST index: longint): T_wireValue;
@@ -496,11 +522,17 @@ FUNCTION T_compoundGate.getInterfaces: T_gateInterfaces;
     for i:=0 to length(inputs)-1 do begin
       result.inputs[i].name     :=inputs[i]^.getCaption;
       result.inputs[i].wireWidth:=inputs[i]^.outputWidth(0);
+      if result.inputs[i].wireWidth=1
+      then result.inputs[i].representation:=wr_binary
+      else result.inputs[i].representation:=wr_decimal;
     end;
     setLength(result.outputs,length(outputs));
     for i:=0 to length(outputs)-1 do begin
       result.outputs[i].name     :=outputs[i]^.getCaption;
       result.outputs[i].wireWidth:=outputs[i]^.inputWidth(0);
+      if result.outputs[i].wireWidth=1
+      then result.outputs[i].representation:=wr_binary
+      else result.outputs[i].representation:=wr_decimal;
     end;
   end;
 
