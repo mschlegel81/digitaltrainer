@@ -1600,8 +1600,7 @@ PROCEDURE T_visualBoard.reset;
     for g in gates   do g^.getBehavior^.reset;
   end;
 
-FUNCTION T_visualBoard.simulateSteps(CONST count, timeOutInTicks: longint
-  ): longint;
+FUNCTION T_visualBoard.simulateSteps(CONST count, timeOutInTicks: longint): longint;
   VAR changed:boolean=true;
       step:longint=0;
       g:P_visualGate;

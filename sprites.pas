@@ -12,6 +12,8 @@ CONST
 TYPE
   P_sprite=^T_sprite;
 
+  T_ioMark=(iom_none,iom_correctOutput,iom_incorrectOutput);
+
   { T_sprite }
 
   T_sprite=object
@@ -40,7 +42,7 @@ TYPE
       width,height:longint;
       marked:boolean;
     protected
-      PROCEDURE initBaseShape(CONST zoom:longint);
+      PROCEDURE initBaseShape(CONST zoom:longint; CONST ioMark:T_ioMark=iom_none);
     public
       CONSTRUCTOR create(CONST caption_:string; CONST gridWidth,gridHeight:longint; CONST marked_:boolean);
       PROCEDURE setZoom(CONST zoom:longint); virtual;
@@ -51,8 +53,9 @@ TYPE
   T_ioBlockSprite=object(T_blockSprite)
     private
       inIdx:longint;
+      ioMark:T_ioMark;
     public
-      CONSTRUCTOR create(CONST caption_:string; CONST inputIndex:longint; CONST marked_:boolean);
+      CONSTRUCTOR create(CONST caption_:string; CONST inputIndex:longint; CONST marked_:boolean; CONST ioMark_:T_ioMark);
       PROCEDURE setZoom(CONST zoom:longint); virtual;
   end;
 
@@ -107,7 +110,7 @@ TYPE
 
 FUNCTION getIoSprite(CONST pos:T_ioDirection; CONST wireValue:T_wireValue; CONST caption:string):P_sprite;
 FUNCTION getBlockSprite(CONST caption:shortstring; CONST gridWidth,gridHeight:longint; CONST marked:boolean):P_sprite;
-FUNCTION getIoBlockSprite(CONST caption:shortstring; CONST inputIndex:longint; CONST marked:boolean):P_sprite;
+FUNCTION getIoBlockSprite(CONST caption:shortstring; CONST inputIndex:longint; CONST marked:boolean; CONST ioMark:T_ioMark=iom_none):P_sprite;
 FUNCTION getIoTextSprite(CONST wireValue:T_wireValue; mode:T_multibitWireRepresentation):P_sprite;
 FUNCTION get7SegmentSprite(CONST wireValue: T_wireValue; CONST marked:boolean):P_sprite;
 FUNCTION getWatcherSprite(CONST ioLabel_:shortstring; CONST ioIndex:longint; CONST wireValue:T_wireValue; CONST isInput,leftOrRight:boolean):P_sprite;
@@ -218,12 +221,17 @@ FUNCTION getBlockSprite(CONST caption: shortstring; CONST gridWidth, gridHeight:
     result^.lastUsed:=now;
   end;
 
-FUNCTION getIoBlockSprite(CONST caption: shortstring; CONST inputIndex:longint; CONST marked: boolean): P_sprite;
+FUNCTION getIoBlockSprite(CONST caption: shortstring; CONST inputIndex:longint; CONST marked: boolean; CONST ioMark:T_ioMark): P_sprite;
   VAR key:string;
+
   begin
     key:=caption+' '+BoolToStr(marked,'M','')+intToStr(inputIndex);
+    case ioMark of
+      iom_incorrectOutput: key+='_mC'
+      iom_correctOutput  : key+='_mI';
+    end;
     if not ioBlockSpriteMap.containsKey(key,result) then begin
-      new(P_ioBlockSprite(result),create(caption,inputIndex,marked));
+      new(P_ioBlockSprite(result),create(caption,inputIndex,marked,ioMark));
       ioBlockSpriteMap.put(key,result);
       spriteAllocated;
     end;
@@ -541,10 +549,11 @@ PROCEDURE T_ioTextSprite.setZoom(CONST zoom: longint);
 
 { T_ioBlockSprite }
 
-CONSTRUCTOR T_ioBlockSprite.create(CONST caption_: string; CONST inputIndex:longint; CONST marked_: boolean);
+CONSTRUCTOR T_ioBlockSprite.create(CONST caption_: string; CONST inputIndex:longint; CONST marked_: boolean; CONST ioMark_:T_ioMark);
   begin
     inherited create(caption_,4,4,marked_);
     inIdx:=inputIndex;
+    ioMark:=ioMark_;
   end;
 
 { T_ioSprite }
@@ -738,9 +747,9 @@ PROCEDURE T_sprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; CONST
 
   end;
 
-PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint);
+PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint; CONST ioMark:T_ioMark);
   VAR newWidth,newHeight:longint;
-  PROCEDURE drawGlowingFrame;
+  PROCEDURE drawGlowingFrame(CONST FrameColor:longint);
     VAR i:longint;
         bw,mw:longint;
     begin
@@ -749,9 +758,9 @@ PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint);
         mw:=256-bw;
 
         Bitmap.CanvasBGRA.Pen.color:=
-        (((( BOARD_COLOR         and 255)*bw+( MARK_COLOR         and 255)*mw) shr 8) and 255) or
-        (((((BOARD_COLOR shr  8) and 255)*bw+((MARK_COLOR shr  8) and 255)*mw) shr 8) and 255) shl 8 or
-        (((((BOARD_COLOR shr 16) and 255)*bw+((MARK_COLOR shr 16) and 255)*mw) shr 8) and 255) shl 16;
+        (((( BOARD_COLOR         and 255)*bw+( FrameColor         and 255)*mw) shr 8) and 255) or
+        (((((BOARD_COLOR shr  8) and 255)*bw+((FrameColor shr  8) and 255)*mw) shr 8) and 255) shl 8 or
+        (((((BOARD_COLOR shr 16) and 255)*bw+((FrameColor shr 16) and 255)*mw) shr 8) and 255) shl 16;
 
         Bitmap.CanvasBGRA.Rectangle(3          -i,
                                     3          -i,
@@ -800,8 +809,12 @@ PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint);
                                 newWidth -3,
                                 newHeight-3);
     if marked
-    then drawGlowingFrame
-    else drawShadow;
+    then drawGlowingFrame(MARK_COLOR)
+    else case ioMark of
+      iom_none: drawShadow;
+      iom_correctOutput:   drawGlowingFrame(CORRECT_COLOR);
+      iom_incorrectOutput: drawGlowingFrame(INCORRECT_COLOR);
+    end;
   end;
 
 CONSTRUCTOR T_blockSprite.create(CONST caption_: string; CONST gridWidth, gridHeight: longint; CONST marked_: boolean);

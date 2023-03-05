@@ -48,7 +48,7 @@ TYPE
     expectedBehavior    :P_compoundGate;
     tests:array of record
       inputs:T_wireValueArray;
-      actuallyActive,
+      actuallyActive,  //during construction only
       maxTotalSteps:longint;
       outputs:T_wireValueArray;
     end;

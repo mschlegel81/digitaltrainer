@@ -438,7 +438,6 @@ object CreateTaskForm: TCreateTaskForm
     BorderSpacing.Right = 5
     BorderSpacing.Bottom = 5
     Brush.Color = 6303792
-    OnChangeBounds = addTaskShapeChangeBounds
     OnMouseDown = addTaskShapeMouseDown
     Shape = stRoundRect
   end

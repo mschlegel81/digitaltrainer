@@ -10,6 +10,8 @@ USES
   challenges, paletteHandling, gateProperties, addToPaletteDialog, visuals,workspaces,createTaskUnit;
 
 TYPE
+  //TODO: Add unit for selecting (possibly deleting) tasks
+  //TODO: Add UI-Elements for visualization of tests...
 
   { TDigitaltrainerMainForm }
 

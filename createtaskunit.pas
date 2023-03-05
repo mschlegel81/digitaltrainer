@@ -270,15 +270,13 @@ PROCEDURE TCreateTaskForm.FormShow(Sender: TObject);
   begin
   end;
 
-PROCEDURE TCreateTaskForm.addTaskShapeMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
-begin
-
-end;
+PROCEDURE TCreateTaskForm.addTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  begin
+    ModalResult:=mrOk;
+  end;
 
 PROCEDURE TCreateTaskForm.addTaskShapeChangeBounds(Sender: TObject);
   begin
-    ModalResult:=mrOk;
   end;
 
 PROCEDURE TCreateTaskForm.TestCaseCountEditEditingDone(Sender: TObject);
