@@ -49,8 +49,14 @@ TYPE
       inputs:T_wireValueArray;
       actuallyActive,  //during construction only
       maxTotalSteps:longint;
-      outputs:T_wireValueArray;
+      outputs:T_wireValueArray; //during construction only
     end;
+    testRun:record
+      active:boolean;
+      testInputIndex:longint;
+      testStep:longint;
+    end;
+
     Interfaces: T_gateInterfaces; //during construction only
 
     palette             :P_challengePalette;
@@ -59,13 +65,17 @@ TYPE
 
     CONSTRUCTOR create;
     DESTRUCTOR destroy;
+    DESTRUCTOR destroyPartial;
+    FUNCTION partialClone:P_challenge;
 
     FUNCTION getSerialVersion:dword; virtual;
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
 
     FUNCTION resetChallenge:P_visualBoard;
-    PROCEDURE testChallenge;
+    PROCEDURE startTesting(CONST board:P_visualBoard);
+    PROPERTY currentlyTesting:boolean read testRun.active;
+    FUNCTION testStep(CONST count, timeOutInTicks: longint; CONST board: P_visualBoard): longint;
 
     //For creation purposes...
     PROCEDURE initNewChallenge(CONST expectedAsVisual:P_visualBoard; CONST challengeBoardOption:T_challengeBoardOption; CONST challengePaletteOption:T_challengePaletteOption);
@@ -120,7 +130,7 @@ FUNCTION challengeTestCreation(p:pointer):ptrint; Register;
   begin
     with P_challengeTestCreationThread(p)^ do begin
       challenge^.updateTestCaseResults(@setLastPreparedIndex,@continueEvaluation,initialRun);
-      if not(continueEvaluation) then initialRun:=false;
+      if continueEvaluation then initialRun:=false;
       running:=false;
     end;
     result:=0;
@@ -161,23 +171,22 @@ FUNCTION T_challengeSet.getSerialVersion: dword;
     result:=serialVersionOf('T_challengeSet',0);
   end;
 
-FUNCTION T_challengeSet.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
-  ): boolean;
+FUNCTION T_challengeSet.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i:longint;
   begin
     if not inherited then exit(false);
     if length(challenge)>0 then exit(false);
-    editable:=stream.readBoolean;
 
+    editable:=stream.readBoolean;
     setLength(challenge,stream.readNaturalNumber);
+    result:=stream.allOkay;
     for i:=0 to length(challenge)-1 do begin
       new(challenge[i],create);
       result:=result and challenge[i]^.loadFromStream(stream);
     end;
   end;
 
-PROCEDURE T_challengeSet.saveToStream(VAR stream: T_bufferedOutputStreamWrapper
-  );
+PROCEDURE T_challengeSet.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
   VAR i:longint;
   begin
     inherited;
@@ -207,6 +216,7 @@ CONSTRUCTOR T_challenge.create;
     new(expectedBehavior,create(palette));
     setLength(tests,0);
     challengeTestCreationThread.create(@self);
+    testRun.active:=false;
   end;
 
 DESTRUCTOR T_challenge.destroy;
@@ -217,6 +227,34 @@ DESTRUCTOR T_challenge.destroy;
     dispose(resultTemplate,destroy);
     dispose(expectedBehavior,destroy);
     dispose(palette,destroy);
+  end;
+
+DESTRUCTOR T_challenge.destroyPartial;
+  VAR i:longint;
+  begin
+    challengeTestCreationThread.destroy;
+    for i:=0 to length(tests)-1 do setLength(tests[i].inputs,0); setLength(tests,0);
+  end;
+
+FUNCTION T_challenge.partialClone: P_challenge;
+  VAR i, j: longint;
+  begin
+    new(result,create);
+    result^.challengeLevel:=challengeLevel;
+    result^.challengeTitle:=challengeTitle;
+    result^.challengeDescription:=challengeDescription;
+
+    result^.palette:=palette;
+    result^.resultTemplate:=resultTemplate;
+    result^.expectedBehavior:=expectedBehavior;
+    result^.Interfaces:=expectedBehavior^.getInterfaces;
+
+    setLength(result^.tests,length(tests));
+    for i:=0 to length(tests)-1 do begin
+      setLength(result^.tests[i].inputs,length(tests[i].inputs));
+      for j:=0 to length(tests[i].inputs)-1 do result^.tests[i].inputs[j]:=tests[i].inputs[j];
+      result^.tests[i].maxTotalSteps:=tests[i].maxTotalSteps;
+    end;
   end;
 
 FUNCTION T_challenge.getSerialVersion: dword;
@@ -238,7 +276,8 @@ FUNCTION T_challenge.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
 
     result:=palette^.loadFromStream(stream)
         and resultTemplate^.loadFromStream(stream,false)
-        and expectedBehavior^.readPrototypeFromStream(stream,-1);
+        and expectedBehavior^.readPrototypeFromStream(stream,-1)
+        and stream.allOkay;
     if not(result) then exit(result);
 
     testCount:=stream.readNaturalNumber;
@@ -261,9 +300,11 @@ PROCEDURE T_challenge.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
     stream.writeBoolean(callengeCompleted);
     stream.writeAnsiString(challengeTitle);
     stream.writeAnsiString(challengeDescription);
+
     palette^.saveToStream(stream);
     resultTemplate^.saveToStream(stream,false);
     expectedBehavior^.writePrototypeToStream(stream,-1);
+
     stream.writeNaturalNumber(length(tests));
     for i:=0 to length(tests)-1 do with tests[i] do begin
       for j:=0 to expectedBehavior^.numberOfInputs-1 do stream.writeNaturalNumber(serialize(inputs[j]));
@@ -279,16 +320,48 @@ FUNCTION T_challenge.resetChallenge: P_visualBoard;
     palette^.resetCounts;
   end;
 
-PROCEDURE T_challenge.testChallenge;
+PROCEDURE T_challenge.startTesting(CONST board: P_visualBoard);
   begin
-    //TODO: Test the challenge;
-    //Reset the board
-    //Set to completed, if everything fits...
-    //A visual test would be nice, but this requires closer integration with simulation timer
-    //
+    with testRun do begin
+      active:=board^.interfacesMatch(expectedBehavior);
+      testInputIndex:=0;
+      testStep:=0;
+      if not(active) then exit;
+    end;
+    board           ^.reset;
+    expectedBehavior^.reset;
+    board^.setInputs(tests[0].inputs);
   end;
 
-PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard; CONST challengeBoardOption: T_challengeBoardOption; CONST challengePaletteOption: T_challengePaletteOption);
+FUNCTION T_challenge.testStep(CONST count, timeOutInTicks: longint;
+  CONST board: P_visualBoard): longint;
+  VAR stepsToSimulate: longint;
+  begin
+    with testRun do stepsToSimulate:=tests[testInputIndex].maxTotalSteps-testStep;
+    if count<stepsToSimulate then stepsToSimulate:=count;
+    writeln('Tests to simulate: ',count,'/',stepsToSimulate);
+    writeln('Simulating step ',testRun.testStep,' of test case #',testRun.testInputIndex);
+
+    result:=board^.coSimulateSteps(stepsToSimulate,timeOutInTicks,expectedBehavior);
+    testRun.testStep+=result;
+    if result=0 then inc(testRun.testStep);
+    if testRun.testStep>=tests[testRun.testInputIndex].maxTotalSteps then begin
+      if board^.outputsMatch(expectedBehavior) then begin
+        inc(testRun.testInputIndex);
+        if testRun.testInputIndex>=length(tests) then begin
+          testRun.active:=false;
+          callengeCompleted:=true;
+        end else begin
+          testRun.testStep:=0;
+          board^.setInputs(tests[testRun.testInputIndex].inputs);
+        end;
+      end else testRun.active:=false;
+    end;
+  end;
+
+PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard;
+  CONST challengeBoardOption: T_challengeBoardOption;
+  CONST challengePaletteOption: T_challengePaletteOption);
   VAR
     totalInputBits:longint=0;
     i:longint;
@@ -422,14 +495,12 @@ PROCEDURE T_challenge.updateTestCaseResults(
     end;
     if callback<>nil then callback(-1);
     for i:=0 to length(tests)-1 do if (resume=nil) or resume^ then begin
-      writeln('Executing test case #',i);
       tests[i].outputs:=expectedBehavior^.simulateSteps(tests[i].maxTotalSteps,tests[i].inputs,stepsDone);
       tests[i].actuallyActive:=stepsDone;
       if initCounts then tests[i].maxTotalSteps:=stepsDone+4+stepsDone shr 3;
       if callback<>nil then callback(i);
     end;
     if (resume<>nil) and not(resume^) and (callback<>nil) then callback(length(tests)-1);
-    writeln('Leaving routine updateTestCaseResults');
   end;
 
 end.

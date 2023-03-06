@@ -96,7 +96,11 @@ T_visualBoard=object(T_captionedAndIndexed)
     PROCEDURE reset;
     FUNCTION coSimulateSteps(CONST count,timeOutInTicks: longint; CONST expectedBehavior:P_abstractGate):longint;
     FUNCTION simulateSteps(CONST count,timeOutInTicks: longint):longint;
-    FUNCTION simulateSteps(CONST count: longint; CONST inputWires: T_wireValueArray; OUT stepsDone: longint): T_wireValueArray;
+    FUNCTION outputsMatch(CONST expected:P_compoundGate):boolean;
+    FUNCTION interfacesMatch(CONST expected:P_compoundGate):boolean;
+    PROCEDURE setInputs(CONST inputWires:T_wireValueArray);
+
+    //FUNCTION simulateSteps(CONST count: longint; CONST inputWires: T_wireValueArray; OUT stepsDone: longint): T_wireValueArray;
     FUNCTION startMultiDrag(CONST primaryGate:P_visualGate):boolean;
     FUNCTION isVisualBoard: boolean; virtual;
     FUNCTION usesPrototype(CONST p:P_captionedAndIndexed):boolean;
@@ -1398,8 +1402,8 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
         if button=mbLeft then begin
           g:=g^.clone;
           g^.setupVisuals;
-          associatedPalette^.countDownGate(g^.behavior);
           ui^.startDrag(x,y,g,uas_draggingFromPalette);
+          associatedPalette^.countDownGate(g^.behavior);
         end else if button=mbRight then begin
           ui^.callback.showPropertyEditorCallback(g,false,
             g^.canvasPos[0]+g^.gridWidth*ui^.zoom+ui^.uiElement.boardImage.Left,
@@ -1603,35 +1607,61 @@ PROCEDURE T_visualBoard.reset;
 
 FUNCTION T_visualBoard.coSimulateSteps(CONST count, timeOutInTicks: longint; CONST expectedBehavior: P_abstractGate): longint;
   VAR changed:boolean=true;
-      step:longint=0;
       g:P_visualGate;
       i:longint;
       timeout: qword;
   begin
     timeout:=GetTickCount64+timeOutInTicks;
 
+    for i:=0 to length(inputs)-1 do expectedBehavior^.setInput(i,inputs[i]^.behavior^.getInput(0));
+
     result:=0;
     while changed and (result<count) and (GetTickCount64<timeout) do begin
+      writeln('Co-Simulating a step... (',result,'/',count,')');
       changed:=false;
-      expectedBehavior^.simulateStep;
+      if expectedBehavior^.simulateStep then changed:=true;
       for i:=0 to length(wires)-1 do if wires[i].simulateStep then changed:=true;
       for g in gates              do if g^.simulateStep       then changed:=true;
 
-      for i:=0 to length(outputs)-1 do
-        if outputs[i]^.behavior^.getInput(0)=expectedBehavior^.getOutput(i)
-        then outputs[i]^.outputMark:=iom_correctOutput
-        else outputs[i]^.outputMark:=iom_incorrectOutput;
-
       if changed then inc(result);
     end;
+    for i:=0 to length(outputs)-1 do
+      if   outputs[i]^.behavior^.getInput(0)=expectedBehavior^.getOutput(i)
+      then outputs[i]^.outputMark:=iom_correctOutput
+      else outputs[i]^.outputMark:=iom_incorrectOutput;
 
     if result>0 then ui^.paintAll;
   end;
 
-FUNCTION T_visualBoard.simulateSteps(CONST count, timeOutInTicks: longint
-  ): longint;
+FUNCTION T_visualBoard.outputsMatch(CONST expected: P_compoundGate): boolean;
+  VAR i:longint;
+  begin
+    result:=true;
+    for i:=0 to length(outputs)-1 do
+      if   outputs[i]^.behavior^.getInput(0)=expected^.getOutput(i)
+      then begin end
+      else exit(false);
+  end;
+
+FUNCTION T_visualBoard.interfacesMatch(CONST expected: P_compoundGate): boolean;
+  VAR i:longint;
+  begin
+    result:=(length(inputs) = expected^.numberOfInputs) and
+            (length(outputs)=expected^.numberOfOutputs);
+    if not(result) then exit(false);
+    for i:=0 to length(inputs)-1 do if inputs[i]^.behavior^.inputWidth(0)<>expected^.inputWidth(i) then exit(false);
+    for i:=0 to length(outputs)-1 do if outputs[i]^.behavior^.inputWidth(0)<>expected^.outputWidth(i) then exit(false);
+  end;
+
+PROCEDURE T_visualBoard.setInputs(CONST inputWires: T_wireValueArray);
+  VAR i:longint;
+  begin
+    for i:=0 to min(length(inputs),length(inputWires)-1) do inputs[i]^.behavior^.setInput(0,inputWires[i]);
+    ui^.paintAll;
+  end;
+
+FUNCTION T_visualBoard.simulateSteps(CONST count, timeOutInTicks: longint): longint;
   VAR changed:boolean=true;
-      step:longint=0;
       g:P_visualGate;
       i:longint;
       Canvas: TCanvas;
@@ -1652,35 +1682,38 @@ FUNCTION T_visualBoard.simulateSteps(CONST count, timeOutInTicks: longint
       Canvas:=ui^.uiElement.boardImage.Canvas;
       for g in inputs   do g^.paintAll(Canvas);
       for g in gates    do g^.paintAll(Canvas);
-      for g in outputs  do g^.paintAll(Canvas);
+      for g in outputs  do begin
+        g^.outputMark:=iom_none;
+        g^.paintAll(Canvas);
+      end;
       for w in watchers do w^.paint(ui,Canvas);
       ui^.uiElement.boardImage.repaint;
     end;
   end;
 
-FUNCTION T_visualBoard.simulateSteps(CONST count: longint;
-  CONST inputWires: T_wireValueArray; OUT stepsDone: longint): T_wireValueArray;
-  VAR i:longint;
-      changed:boolean=true;
-      g: P_visualGate;
-  begin
-
-    for i:=0 to min(length(inputs),length(inputWires))-1 do begin
-      assert(inputs[i]^.behavior^.inputWidth(0)=inputWires[i].width);
-      inputs[i]^.behavior^.setInput(0,inputWires[i]);
-    end;
-
-    stepsDone:=0;
-    while changed and (stepsDone<count) do begin
-      changed:=false;
-      for i:=0 to length(wires)-1 do if wires[i].simulateStep then changed:=true;
-      for g in gates              do if g^.simulateStep       then changed:=true;
-      inc(stepsDone);
-    end;
-
-    setLength(result,length(outputs));
-    for i:=0 to length(outputs)-1 do result[i]:=outputs[i]^.behavior^.getInput(0);
-  end;
+//FUNCTION T_visualBoard.simulateSteps(CONST count: longint;
+//  CONST inputWires: T_wireValueArray; OUT stepsDone: longint): T_wireValueArray;
+//  VAR i:longint;
+//      changed:boolean=true;
+//      g: P_visualGate;
+//  begin
+//
+//    for i:=0 to min(length(inputs),length(inputWires))-1 do begin
+//      assert(inputs[i]^.behavior^.inputWidth(0)=inputWires[i].width);
+//      inputs[i]^.behavior^.setInput(0,inputWires[i]);
+//    end;
+//
+//    stepsDone:=0;
+//    while changed and (stepsDone<count) do begin
+//      changed:=false;
+//      for i:=0 to length(wires)-1 do if wires[i].simulateStep then changed:=true;
+//      for g in gates              do if g^.simulateStep       then changed:=true;
+//      inc(stepsDone);
+//    end;
+//
+//    setLength(result,length(outputs));
+//    for i:=0 to length(outputs)-1 do result[i]:=outputs[i]^.behavior^.getInput(0);
+//  end;
 
 FUNCTION T_visualBoard.startMultiDrag(CONST primaryGate: P_visualGate): boolean;
   VAR marked:T_visualGateArray;

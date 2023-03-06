@@ -106,7 +106,6 @@ TYPE
     CONSTRUCTOR create;
     DESTRUCTOR destroy;
 
-    //TODO: Preconfigured base gates must be stored including their meta data
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
 
@@ -165,18 +164,29 @@ DESTRUCTOR T_challengePalette.destroy;
     setLength(paletteEntries,0);
   end;
 
-FUNCTION T_challengePalette.loadFromStream(
-  VAR stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_challengePalette.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i:longint;
   begin
+    allowConfiguration:=stream.readBoolean;
     setLength(paletteEntries,stream.readNaturalNumber);
     for i:=0 to length(paletteEntries)-1 do with paletteEntries[i] do begin
-      visible:=stream.readBoolean;
+      visible              :=stream.readBoolean;
+      initialAvailableCount:=stream.readLongint;
+      currentAvailableCount:=stream.readLongint;
+      sourcePaletteIndex:=-1;
+
       entryType:=T_gateType(stream.readByte([byte(low(T_gateType))..byte(high(T_gateType))]));
       if entryType=gt_compound then begin
         new(P_compoundGate(prototype),create(@self));
         P_compoundGate(prototype)^.readPrototypeFromStream(stream,i);
-      end else prototype:=nil;
+        preconfigured:=true; //compound gates are always preconfigured...
+      end else begin
+        preconfigured:=stream.readBoolean;
+        if preconfigured then begin
+          prototype:=newBaseGate(entryType);
+          prototype^.readMetaDataFromStream(stream);
+        end else prototype:=nil;
+      end;
     end;
     result:=stream.allOkay;
     constructingChallenge:=false;
@@ -190,7 +200,10 @@ PROCEDURE T_challengePalette.saveToStream(
     stream.writeNaturalNumber(length(paletteEntries));
     for i:=0 to length(paletteEntries)-1 do with paletteEntries[i] do begin
       stream.writeBoolean(visible);
+      stream.writeLongint(initialAvailableCount);
+      stream.writeLongint(currentAvailableCount);
       stream.writeByte(byte(entryType));
+
       if entryType=gt_compound
       then P_compoundGate(prototype)^.writePrototypeToStream(stream,i)
       else begin
@@ -232,6 +245,7 @@ PROCEDURE T_challengePalette.ensureVisualPaletteItems;
       if not(allowConfiguration) then visualPaletteItems[k]^.fixedProperties:=true;
       inc(k);
     end;
+    setLength(visualPaletteItems,k);
   end;
 
 PROCEDURE T_challengePalette.resetCounts;
@@ -323,6 +337,7 @@ PROCEDURE T_challengePalette.countUpGate(CONST gate: P_abstractGate);
   begin
     idx:=IndexOf(gate); if idx<0 then exit;
     inc(paletteEntries[idx].currentAvailableCount);
+    if (paletteEntries[idx].currentAvailableCount=1) then ensureVisualPaletteItems;
   end;
 
 PROCEDURE T_challengePalette.countDownGate(CONST gate: P_abstractGate);
@@ -330,6 +345,7 @@ PROCEDURE T_challengePalette.countDownGate(CONST gate: P_abstractGate);
   begin
     idx:=IndexOf(gate); if idx<0 then exit;
     dec(paletteEntries[idx].currentAvailableCount);
+    if (paletteEntries[idx].currentAvailableCount<=0) then ensureVisualPaletteItems;
   end;
 
 PROCEDURE T_challengePalette.finalizePalette(CONST boardOptions: T_challengeBoardOption; CONST paletteOptions: T_challengePaletteOption);

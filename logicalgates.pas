@@ -482,11 +482,11 @@ FUNCTION parseWire           (CONST s:string; CONST width:byte; CONST mode:T_mul
 FUNCTION getDecimalValue     (CONST wire:T_wireValue; OUT valid:boolean):longint;
 FUNCTION get2ComplementValue (CONST wire:T_wireValue; OUT valid:boolean):longint;
 
-FUNCTION serialize(CONST wireValue:T_wireValue):qword;
-FUNCTION deserialize(n:qword):T_wireValue;
-
 FUNCTION gatesTotal(CONST gateCount:T_gateCount):longint;
 FUNCTION gateCountReport(CONST gateCount:T_gateCount):string;
+
+FUNCTION serialize(CONST wireValue: T_wireValue): qword;
+FUNCTION deserialize(n: qword): T_wireValue;
 
 IMPLEMENTATION
 USES sysutils,myStringUtil;
@@ -562,8 +562,7 @@ FUNCTION getWireString(CONST wire: T_wireValue; CONST mode: T_multibitWireRepres
     end;
   end;
 
-FUNCTION get2ComplementValue(CONST wire: T_wireValue; OUT valid: boolean
-  ): longint;
+FUNCTION get2ComplementValue(CONST wire: T_wireValue; OUT valid: boolean): longint;
   VAR i:longint;
       k:int64=0;
       maxVal:int64;
@@ -588,21 +587,36 @@ FUNCTION get2ComplementValue(CONST wire: T_wireValue; OUT valid: boolean
   end;
 
 FUNCTION serialize(CONST wireValue: T_wireValue): qword;
-  CONST BYTE_OF:array[T_triStateValue] of byte=(1,2,3);
+  CONST BYTE_OF:array[T_triStateValue] of byte=(0,1,2);
   VAR i:longint;
   begin
     result:=0;
     for i:=wireValue.width-1 downto 0 do
-      result:=(result shl 2)+BYTE_OF[wireValue.bit[i]];
+      result:=result*3+BYTE_OF[wireValue.bit[i]];
+    result*=4;
+    case wireValue.width of
+      1: result+=0;
+      4: result+=1;
+      8: result+=2;
+     16: result+=3;
+    else assert(false);
+    end;
   end;
 
 FUNCTION deserialize(n: qword): T_wireValue;
-  CONST WIRE_VALUE_OF:array[0..3] of T_triStateValue=(tsv_undetermined,tsv_false,tsv_undetermined,tsv_true);
+  CONST WIRE_VALUE_OF:array[0..2] of T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
+  VAR i: integer;
   begin
-    result.width:=0;
-    while n>0 do begin
-      result.bit[result.width]:=WIRE_VALUE_OF[n and 3];
-      n:=n shr 2;
+    case byte(n and 3) of
+      0: result.width:=1;
+      1: result.width:=4;
+      2: result.width:=8;
+      3: result.width:=16;
+    end;
+    n:=n div 4;
+    for i:=0 to result.width-1 do begin
+      result.bit[i]:=WIRE_VALUE_OF[n mod 3];
+      n:=n div 3;
     end;
   end;
 

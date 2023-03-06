@@ -8,7 +8,7 @@ USES serializationUtil,visualGates,compoundGates,paletteHandling,challenges;
 TYPE
 
   { T_workspace }
-
+  P_workspace=^T_workspace;
   T_workspace=object(T_serializable)
   private
     workspacePalette:P_workspacePalette;
@@ -24,11 +24,15 @@ TYPE
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
 
-    PROCEDURE startChallenge(CONST challengeIndex:longint);
+    FUNCTION startChallenge(CONST challengeIndex:longint):boolean;
+    PROCEDURE setFreeEditMode;
+    PROCEDURE challengeDeleted(CONST deletedChallengeIndex:longint);
 
     FUNCTION  activePalette:P_palette;
     FUNCTION  activeBoard  :P_visualBoard;
     PROCEDURE setActiveBoard(CONST board:P_visualBoard);
+    PROPERTY  getActiveChallenge:P_challenge read activeChallenge;
+
     FUNCTION  EditorMode   :boolean;
     PROCEDURE editPaletteEntry(CONST prototype:P_visualBoard; CONST uiAdapter:P_uiAdapter);
     PROCEDURE clearBoard(CONST uiAdapter: P_uiAdapter);
@@ -79,7 +83,8 @@ FUNCTION T_workspace.getSerialVersion: dword;
     result:=serialVersionOf('T_workspace',1);
   end;
 
-FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
+  ): boolean;
   begin
     result:=inherited and
     workspacePalette^.loadFromStream(stream) and
@@ -98,6 +103,34 @@ PROCEDURE T_workspace.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
     workspaceBoard^.saveToStream(stream,false);
     challenges^.saveToStream(stream);
     stream.writeLongint(activeChallengeIndex);
+  end;
+
+FUNCTION T_workspace.startChallenge(CONST challengeIndex: longint): boolean;
+  begin
+    if (challengeIndex<0) or (challengeIndex>=length(challenges^.challenge)) then exit(false);
+    activeChallengeIndex:=challengeIndex;
+    activeChallenge:=challenges^.challenge[challengeIndex];
+    dispose(workspaceBoard,destroy);
+    workspaceBoard:=activeChallenge^.resetChallenge;
+    result:=true;
+  end;
+
+PROCEDURE T_workspace.setFreeEditMode;
+  begin
+    activeChallenge:=nil;
+    activeChallengeIndex:=-1;
+    dispose(workspaceBoard,destroy);
+    new(workspaceBoard,create(workspacePalette));
+  end;
+
+PROCEDURE T_workspace.challengeDeleted(CONST deletedChallengeIndex: longint);
+  begin
+    if activeChallenge=nil then exit;
+    if activeChallengeIndex=deletedChallengeIndex then begin
+      setFreeEditMode;
+      exit;
+    end;
+    if deletedChallengeIndex<activeChallengeIndex then dec(activeChallengeIndex);
   end;
 
 FUNCTION T_workspace.activePalette: P_palette;
@@ -136,9 +169,9 @@ PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard;
 PROCEDURE T_workspace.clearBoard(CONST uiAdapter: P_uiAdapter);
   begin
     if activeChallenge<>nil then begin
-      dispose(activeChallenge^.board,destroy);
-      activeChallenge^.board:=activeChallenge^.resultTemplate^.clone;
-      activeChallenge^.board^.attachUI(uiAdapter);
+      dispose(workspaceBoard,destroy);
+      workspaceBoard:=activeChallenge^.resetChallenge;
+      workspaceBoard^.attachUI(uiAdapter);
     end else begin
       workspaceBoard^.clear;
       workspacePalette^.setFilter(maxLongint);

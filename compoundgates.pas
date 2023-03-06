@@ -395,9 +395,7 @@ PROCEDURE T_compoundGate.writePrototypeToStream(
     end;
   end;
 
-FUNCTION T_compoundGate.readPrototypeFromStream(
-  VAR stream: T_bufferedInputStreamWrapper; CONST acutalIndex: longint
-  ): boolean;
+FUNCTION T_compoundGate.readPrototypeFromStream(VAR stream: T_bufferedInputStreamWrapper; CONST acutalIndex: longint): boolean;
   FUNCTION gateFromDeserialization(index:longint):P_abstractGate;
     begin
       assert(index>=0,'Negative gate index!');
@@ -415,7 +413,7 @@ FUNCTION T_compoundGate.readPrototypeFromStream(
     setLength(outputs,stream.readNaturalNumber); for i:=0 to length(outputs)-1 do outputs[i]:=P_outputGate(prototypeSource^.readGate(stream));
     setLength(gates  ,stream.readNaturalNumber); for i:=0 to length(gates  )-1 do gates  [i]:=             prototypeSource^.readGate(stream);
     setLength(wires,stream.readNaturalNumber);
-    for i:=0 to length(wires) do with wires[i] do begin
+    for i:=0 to length(wires)-1 do with wires[i] do begin
       source:=gateFromDeserialization(stream.readNaturalNumber);
       sourceOutputIndex:=stream.readNaturalNumber;
       setLength(sink,stream.readNaturalNumber);

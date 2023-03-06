@@ -29,7 +29,7 @@ TYPE
     TestInputsPanel: TPanel;
     generateTestCasesLabel: TLabel;
     generateTestCasesShape: TShape;
-    Timer1: TTimer;
+    timer1: TTimer;
     TitleEdit: TEdit;
     Label1: TLabel;
     Label2: TLabel;
@@ -68,6 +68,7 @@ TYPE
 
   public
     PROCEDURE showFor(CONST board:P_visualBoard; CONST challenges:P_challengeSet);
+    PROCEDURE showForExistingChallenge(CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet );
   end;
 
 FUNCTION CreateTaskForm:TCreateTaskForm;
@@ -145,7 +146,9 @@ PROCEDURE TCreateTaskForm.fillTable;
       inc(i);
       k:=0;
       for gateInterface in challenge^.Interfaces.outputs do begin
-        TestCasesStringGrid.Cells[i,j+1]:=getWireString(challenge^.tests[j].outputs[k],gateInterface.representation);
+        if k<length(challenge^.tests[j].outputs)
+        then TestCasesStringGrid.Cells[i,j+1]:=getWireString(challenge^.tests[j].outputs[k],gateInterface.representation)
+        else TestCasesStringGrid.Cells[i,j+1]:='?';
         inc(i); inc(k);
       end;
     end;
@@ -179,7 +182,8 @@ PROCEDURE TCreateTaskForm.updateTableRow(CONST j: longint);
 
 { TCreateTaskForm }
 
-PROCEDURE TCreateTaskForm.TestCasesStringGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);
+PROCEDURE TCreateTaskForm.TestCasesStringGridHeaderClick(Sender: TObject;
+  IsColumn: boolean; index: integer);
   CONST nextMode:array[T_multibitWireRepresentation] of T_multibitWireRepresentation=(wr_decimal,wr_2complement,wr_binary);
   begin
     if not(IsColumn) then exit;
@@ -196,7 +200,8 @@ PROCEDURE TCreateTaskForm.TestCasesStringGridHeaderClick(Sender: TObject; IsColu
     end;
   end;
 
-PROCEDURE TCreateTaskForm.TestCasesStringGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
+PROCEDURE TCreateTaskForm.TestCasesStringGridValidateEntry(Sender: TObject;
+  aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
   VAR
     newStepCount: longint;
     wireValue: T_wireValue;
@@ -260,7 +265,8 @@ PROCEDURE TCreateTaskForm.rbIncludeAllGatesChange(Sender: TObject);
        DifficultyTrackBar.position:=minimumDifficulty;
   end;
 
-PROCEDURE TCreateTaskForm.generateTestCasesShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TCreateTaskForm.generateTestCasesShapeMouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     lastUpdatedRow:=-1;
     challenge^.generateTestCases;
@@ -270,7 +276,8 @@ PROCEDURE TCreateTaskForm.FormShow(Sender: TObject);
   begin
   end;
 
-PROCEDURE TCreateTaskForm.addTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TCreateTaskForm.addTaskShapeMouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     ModalResult:=mrOk;
   end;
@@ -306,7 +313,11 @@ PROCEDURE TCreateTaskForm.showFor(CONST board: P_visualBoard; CONST challenges: 
     TestCaseCountEdit.text:=intToStr(length(challenge^.tests));
     fillTable;
     lastUpdatedRow:=-1;
-    Timer1.enabled:=true;
+    timer1.enabled:=true;
+    RadioPanel .visible:=true;
+    RadioPanel1.visible:=true;
+    Label4.visible:=true;
+    Label7.visible:=true;
 
     if ShowModal=mrOk then begin
       challenge^.initNewChallenge(board,boardOption,paletteOption);
@@ -318,7 +329,37 @@ PROCEDURE TCreateTaskForm.showFor(CONST board: P_visualBoard; CONST challenges: 
       dispose(challenge,destroy);
     end;
     challenge:=nil;
-    Timer1.enabled:=false;
+    timer1.enabled:=false;
+  end;
+
+PROCEDURE TCreateTaskForm.showForExistingChallenge(CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet );
+  begin
+    challenge:=challenges^.challenge[originalChallengeIndex]^.partialClone;
+    RadioPanel .visible:=false;
+    RadioPanel1.visible:=false;
+    Label4.visible:=false;
+    Label7.visible:=false;
+
+    TitleEdit.text:=challenge^.challengeTitle;
+    DescriptionMemo.text:=challenge^.challengeDescription;
+    DifficultyTrackBar.position:=challenge^.challengeLevel;
+    TestCaseCountEdit.text:=intToStr(length(challenge^.tests));
+
+    fillTable;
+    lastUpdatedRow:=-1;
+    timer1.enabled:=true;
+    challenge^.updateTestCaseResults;
+
+    if ShowModal=mrOk then begin
+      challenge^.challengeLevel:=DifficultyTrackBar.position;
+      challenge^.challengeTitle:=TitleEdit.text;
+      challenge^.challengeDescription:=DescriptionMemo.text;
+
+      dispose(challenges^.challenge[originalChallengeIndex],destroyPartial);
+      challenges^.challenge[originalChallengeIndex]:=challenge;
+    end else dispose(challenge,destroyPartial);
+    challenge:=nil;
+    timer1.enabled:=false;
   end;
 
 FINALIZATION

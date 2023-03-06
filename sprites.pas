@@ -715,6 +715,7 @@ PROCEDURE T_sprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; CONST
     Bitmap.CanvasBGRA.Font.quality:=fqFineAntialiasing;
     Bitmap.CanvasBGRA.Font.Antialiasing:=true;
     updateTextExtend;
+    if (maxTextWidth=0) or (textHeight=0) then exit;
 
     //fit for aspect ratio:
     if ((y1-y0)>(x1-x0)) and (maxTextWidth>textHeight) then begin
@@ -840,7 +841,7 @@ PROCEDURE T_blockSprite.setZoom(CONST zoom: longint);
 
 PROCEDURE T_ioBlockSprite.setZoom(CONST zoom: longint);
   begin
-    initBaseShape(zoom);
+    initBaseShape(zoom,ioMark);
     Bitmap.CanvasBGRA.Pen.color:=0;
     Bitmap.CanvasBGRA.MoveTo(screenOffset[0]           ,screenOffset[1]+(zoom*height   shr 1));
     Bitmap.CanvasBGRA.LineTo(screenOffset[0]+zoom*width,screenOffset[1]+(zoom*height   shr 1));
