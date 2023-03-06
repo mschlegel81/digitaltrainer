@@ -62,7 +62,7 @@ PROCEDURE TSelectTaskForm.FormShow(Sender: TObject);
 PROCEDURE TSelectTaskForm.DeleteTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR i:longint;
   begin
-    if not(challengeSet^.editable) or (selectedChallengeIndex<0) then exit;
+    if (selectedChallengeIndex<0) or not(challengeSet^.challenge[selectedChallengeIndex]^.editable) then exit;
     dispose(challengeSet^.challenge[selectedChallengeIndex],destroy);
     for i:=selectedChallengeIndex+1 to length(challengeSet^.challenge)-1 do
       challengeSet^.challenge[i-1]:=challengeSet^.challenge[i];
@@ -90,8 +90,8 @@ PROCEDURE TSelectTaskForm.ChallengesGridSelection(Sender: TObject; aCol,
     ChallengesMemo.text:=challengeSet^.challenge[aRow]^.challengeDescription;
     selectedChallengeIndex:=aRow;
     setEnableButton(StartTaskShape,StartTaskLabel,true);
-    setEnableButton(DeleteTaskShape,DeleteTaskLabel,challengeSet^.editable);
-    setEnableButton(EditTaskShape,EditTaskLabel,challengeSet^.editable);
+    setEnableButton(DeleteTaskShape,DeleteTaskLabel,challengeSet^.challenge[aRow]^.editable);
+    setEnableButton(EditTaskShape,EditTaskLabel,challengeSet^.challenge[aRow]^.editable);
   end;
 
 PROCEDURE TSelectTaskForm.StartTaskShapeMouseDown(Sender: TObject;

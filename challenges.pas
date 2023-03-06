@@ -59,6 +59,7 @@ TYPE
 
     Interfaces: T_gateInterfaces; //during construction only
 
+    editable:boolean;
     palette             :P_challengePalette;
     challengeTitle      :string;
     challengeDescription:string;
@@ -88,7 +89,6 @@ TYPE
   { T_challengeSet }
   P_challengeSet=^T_challengeSet;
   T_challengeSet=object(T_serializable)
-    editable:boolean;
     challenge:array of P_challenge;
 
     CONSTRUCTOR create;
@@ -155,7 +155,6 @@ PROCEDURE T_challengeTestCreationThread.ensureStop;
 
 CONSTRUCTOR T_challengeSet.create;
   begin
-    editable:=true;
     setLength(challenge,0);
   end;
 
@@ -168,7 +167,7 @@ DESTRUCTOR T_challengeSet.destroy;
 
 FUNCTION T_challengeSet.getSerialVersion: dword;
   begin
-    result:=serialVersionOf('T_challengeSet',0);
+    result:=serialVersionOf('T_challengeSet',1);
   end;
 
 FUNCTION T_challengeSet.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
@@ -177,7 +176,6 @@ FUNCTION T_challengeSet.loadFromStream(VAR stream: T_bufferedInputStreamWrapper)
     if not inherited then exit(false);
     if length(challenge)>0 then exit(false);
 
-    editable:=stream.readBoolean;
     setLength(challenge,stream.readNaturalNumber);
     result:=stream.allOkay;
     for i:=0 to length(challenge)-1 do begin
@@ -190,7 +188,6 @@ PROCEDURE T_challengeSet.saveToStream(VAR stream: T_bufferedOutputStreamWrapper)
   VAR i:longint;
   begin
     inherited;
-    stream.writeBoolean(editable);
     stream.writeNaturalNumber(length(challenge));
     for i:=0 to length(challenge)-1 do challenge[i]^.saveToStream(stream);
   end;
