@@ -43,7 +43,6 @@ TYPE
   public
     challengeLevel      :byte;
     callengeCompleted   :boolean;
-    board               :P_visualBoard;
     resultTemplate      :P_visualBoard;
     expectedBehavior    :P_compoundGate;
     tests:array of record
@@ -204,7 +203,6 @@ CONSTRUCTOR T_challenge.create;
     challengeDescription:='';
 
     new(palette,create);
-    new(board           ,create(palette));
     new(resultTemplate  ,create(palette));
     new(expectedBehavior,create(palette));
     setLength(tests,0);
@@ -216,7 +214,6 @@ DESTRUCTOR T_challenge.destroy;
   begin
     challengeTestCreationThread.destroy;
     for i:=0 to length(tests)-1 do setLength(tests[i].inputs,0); setLength(tests,0);
-    if board<>nil then dispose(board,destroy);
     dispose(resultTemplate,destroy);
     dispose(expectedBehavior,destroy);
     dispose(palette,destroy);
@@ -240,7 +237,6 @@ FUNCTION T_challenge.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
     if not(stream.allOkay) then exit(false);
 
     result:=palette^.loadFromStream(stream)
-        and board         ^.loadFromStream(stream,true)
         and resultTemplate^.loadFromStream(stream,false)
         and expectedBehavior^.readPrototypeFromStream(stream,-1);
     if not(result) then exit(result);
@@ -266,7 +262,6 @@ PROCEDURE T_challenge.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
     stream.writeAnsiString(challengeTitle);
     stream.writeAnsiString(challengeDescription);
     palette^.saveToStream(stream);
-    board^.saveToStream(stream,true);
     resultTemplate^.saveToStream(stream,false);
     expectedBehavior^.writePrototypeToStream(stream,-1);
     stream.writeNaturalNumber(length(tests));
@@ -277,8 +272,8 @@ PROCEDURE T_challenge.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
   end;
 
 FUNCTION T_challenge.resetChallenge: P_visualBoard;
+  VAR board: P_visualBoard;
   begin
-    dispose(board,destroy);
     board:=resultTemplate^.clone(not(palette^.allowConfiguration));
     result:=board;
     palette^.resetCounts;
@@ -301,7 +296,6 @@ PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard; CO
     randomize;
     challengeLevel      :=0;
     callengeCompleted   :=false;
-    board               :=nil;
 
     if expectedBehavior<>nil then dispose(expectedBehavior,destroy);
     if resultTemplate  <>nil then dispose(resultTemplate,destroy);

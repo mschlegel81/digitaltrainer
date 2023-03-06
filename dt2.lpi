@@ -139,6 +139,14 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="gateProperties"/>
       </Unit>
+      <Unit>
+        <Filename Value="selecttaskunit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="SelectTaskForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="selectTaskUnit"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

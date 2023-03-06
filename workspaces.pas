@@ -24,13 +24,15 @@ TYPE
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
 
-    FUNCTION activePalette:P_palette;
-    FUNCTION activeBoard  :P_visualBoard;
+    PROCEDURE startChallenge(CONST challengeIndex:longint);
+
+    FUNCTION  activePalette:P_palette;
+    FUNCTION  activeBoard  :P_visualBoard;
     PROCEDURE setActiveBoard(CONST board:P_visualBoard);
-    FUNCTION EditorMode   :boolean;
+    FUNCTION  EditorMode   :boolean;
     PROCEDURE editPaletteEntry(CONST prototype:P_visualBoard; CONST uiAdapter:P_uiAdapter);
     PROCEDURE clearBoard(CONST uiAdapter: P_uiAdapter);
-    PROPERTY getChallenges:P_challengeSet read challenges;
+    PROPERTY  getChallenges:P_challengeSet read challenges;
   end;
 
 IMPLEMENTATION
@@ -107,16 +109,12 @@ FUNCTION T_workspace.activePalette: P_palette;
 
 FUNCTION T_workspace.activeBoard: P_visualBoard;
   begin
-    if activeChallenge=nil
-    then result:=workspaceBoard
-    else result:=activeChallenge^.board;
+    result:=workspaceBoard;
   end;
 
 PROCEDURE T_workspace.setActiveBoard(CONST board: P_visualBoard);
   begin
-    if activeChallenge=nil
-    then workspaceBoard:=board
-    else activeChallenge^.board:=board;
+    workspaceBoard:=board;
   end;
 
 FUNCTION T_workspace.EditorMode: boolean;

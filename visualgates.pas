@@ -158,8 +158,7 @@ PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas);
     paintAll(Canvas,uiAdapter^.zoom);
   end;
 
-PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST zoom: longint;
-  CONST ioOnly: boolean);
+PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST zoom: longint);
   FUNCTION myInputIndex:longint;
     begin
       if behavior^.gateType<>gt_input then exit(-1);

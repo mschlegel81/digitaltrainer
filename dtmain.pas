@@ -7,7 +7,8 @@ INTERFACE
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
   Buttons, StdCtrls, Menus, ValEdit, Grids, visualGates, logicalGates,
-  challenges, paletteHandling, gateProperties, addToPaletteDialog, visuals,workspaces,createTaskUnit;
+  challenges, paletteHandling, gateProperties, addToPaletteDialog, visuals,workspaces,
+  createTaskUnit,selectTaskUnit;
 
 TYPE
   //TODO: Add unit for selecting (possibly deleting) tasks
@@ -77,6 +78,7 @@ TYPE
     PROCEDURE miPasteClick(Sender: TObject);
     PROCEDURE miRedoClick(Sender: TObject);
     PROCEDURE miSaveAsTaskClick(Sender: TObject);
+    PROCEDURE miTasksClick(Sender: TObject);
     PROCEDURE miUndoClick(Sender: TObject);
     PROCEDURE PaletteScrollBarScroll(Sender: TObject; ScrollCode: TScrollCode;
       VAR ScrollPos: integer);
@@ -253,6 +255,14 @@ PROCEDURE TDigitaltrainerMainForm.miSaveAsTaskClick(Sender: TObject);
 begin
   if workspace.EditorMode then CreateTaskForm.showFor(workspace.activeBoard,workspace.getChallenges);
 end;
+
+PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);
+  begin
+    if SelectTaskForm.startTaskAfterShowing(workspace.getChallenges) then begin
+
+      //TODO: Implement me!
+    end;
+  end;
 
 PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
   begin
