@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectOptions>
+    <Version Value="12"/>
+    <PathDelim Value="\"/>
+    <General>
+      <SessionStorage Value="InProjectDir"/>
+      <Title Value="dt2"/>
+      <Scaled Value="True"/>
+      <ResourceType Value="res"/>
+      <UseXPManifest Value="True"/>
+      <XPManifest>
+        <DpiAware Value="True/PM_V2"/>
+      </XPManifest>
+      <Icon Value="0"/>
+    </General>
+    <BuildModes>
+      <Item Name="Default" Default="True"/>
+      <Item Name="opt">
+        <CompilerOptions>
+          <Version Value="11"/>
+          <PathDelim Value="\"/>
+          <Target>
+            <Filename Value="dt2"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <OtherUnitFiles Value="common"/>
+            <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <CodeGeneration>
+            <Optimizations>
+              <OptimizationLevel Value="3"/>
+            </Optimizations>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <GenerateDebugInfo Value="False"/>
+              <DebugInfoType Value="dsDwarf2"/>
+              <StripSymbols Value="True"/>
+            </Debugging>
+            <Options>
+              <Win32>
+                <GraphicApplication Value="True"/>
+              </Win32>
+            </Options>
+          </Linking>
+        </CompilerOptions>
+      </Item>
+    </BuildModes>
+    <PublishOptions>
+      <Version Value="2"/>
+      <UseFileFilters Value="True"/>
+    </PublishOptions>
+    <RunParams>
+      <FormatVersion Value="2"/>
+    </RunParams>
+    <RequiredPackages>
+      <Item>
+        <PackageName Value="BGRABitmapPack"/>
+      </Item>
+      <Item>
+        <PackageName Value="LCL"/>
+      </Item>
+    </RequiredPackages>
+    <Units>
+      <Unit>
+        <Filename Value="dt2.lpr"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="dtmain.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="DigitaltrainerMainForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="dtMain"/>
+      </Unit>
+      <Unit>
+        <Filename Value="visualgates.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="visualGates"/>
+      </Unit>
+      <Unit>
+        <Filename Value="logicalgates.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="logicalGates"/>
+      </Unit>
+      <Unit>
+        <Filename Value="compoundgates.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="compoundGates"/>
+      </Unit>
+      <Unit>
+        <Filename Value="palettehandling.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="paletteHandling"/>
+      </Unit>
+      <Unit>
+        <Filename Value="challenges.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="addtopalettedialog.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="AddToPaletteForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="addToPaletteDialog"/>
+      </Unit>
+      <Unit>
+        <Filename Value="visuals.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="workspaces.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="wiringutil.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="wiringUtil"/>
+      </Unit>
+      <Unit>
+        <Filename Value="createtaskunit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="CreateTaskForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="createTaskUnit"/>
+      </Unit>
+      <Unit>
+        <Filename Value="sprites.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="visualBoards.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="uiAdapters.inc"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="gateproperties.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="gateProperties"/>
+      </Unit>
+      <Unit>
+        <Filename Value="selecttaskunit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="SelectTaskForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="selectTaskUnit"/>
+      </Unit>
+      <Unit>
+        <Filename Value="taskfinishedunit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="TaskFinishedForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="taskFinishedUnit"/>
+      </Unit>
+      <Unit>
+        <Filename Value="romeditorunit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="RomEditorForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="romEditorUnit"/>
+      </Unit>
+    </Units>
+  </ProjectOptions>
+  <CompilerOptions>
+    <Version Value="11"/>
+    <PathDelim Value="\"/>
+    <Target>
+      <Filename Value="dt2"/>
+    </Target>
+    <SearchPaths>
+      <IncludeFiles Value="$(ProjOutDir)"/>
+      <OtherUnitFiles Value="common"/>
+      <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+    </SearchPaths>
+    <Parsing>
+      <SyntaxOptions>
+        <IncludeAssertionCode Value="True"/>
+      </SyntaxOptions>
+    </Parsing>
+    <CodeGeneration>
+      <Checks>
+        <IOChecks Value="True"/>
+        <RangeChecks Value="True"/>
+        <OverflowChecks Value="True"/>
+        <StackChecks Value="True"/>
+      </Checks>
+      <VerifyObjMethodCallValidity Value="True"/>
+    </CodeGeneration>
+    <Linking>
+      <Debugging>
+        <DebugInfoType Value="dsDwarf2"/>
+        <UseHeaptrc Value="True"/>
+        <TrashVariables Value="True"/>
+      </Debugging>
+    </Linking>
+    <Other>
+      <CustomOptions Value="-ddebugMode"/>
+    </Other>
+  </CompilerOptions>
+  <Debugging>
+    <Exceptions>
+      <Item>
+        <Name Value="EAbort"/>
+      </Item>
+      <Item>
+        <Name Value="ECodetoolError"/>
+      </Item>
+      <Item>
+        <Name Value="EFOpenError"/>
+      </Item>
+    </Exceptions>
+  </Debugging>
+</CONFIG>

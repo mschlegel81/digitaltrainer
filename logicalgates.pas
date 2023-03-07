@@ -1,7 +1,5 @@
-UNIT logicGates;
-
-{$mode objfpc}
-
+UNIT logicalGates;
+{$mode objfpc}{$H+}
 INTERFACE
 USES serializationUtil;
 CONST WIRE_MAX_WIDTH=16;
@@ -22,11 +20,38 @@ TYPE
               gt_false,
               gt_gatedClock,
               gt_undeterminedToTrue,
-              gt_undeterminedToFalse);
+              gt_undeterminedToFalse,
+              gt_ram,
+              gt_rom,
+              gt_7segmentDummy);
   T_gateTypeSet=array of T_gateType;
   T_gateCount=array[T_gateType] of longint;
+  T_multibitWireRepresentation=(wr_binary,wr_decimal,wr_2complement);
 
 CONST
+  C_multibitWireRepresentationName:array[T_multibitWireRepresentation] of string=('bin','dec','2cmp');
+  C_gateDefaultDescription:array [T_gateType] of string=
+  {gt_notGate}   ('Logische Negation',
+  {gt_andGate}    'Logisches und',
+  {gt_orGate}     'Logisches oder (inklusiv)',
+  {gt_xorGate}    'Logisches oder (exklusiv)',
+  {gt_nandGate}   'Logisches nicht-und',
+  {gt_norGate}    'Logisches nicht-oder',
+  {gt_nxorGate}   'Logisches nicht-exklusiv-oder',
+  {gt_input}      'Eingabe-Baustein',
+  {gt_output}     'Ausgabe-Baustein',
+  {gt_compound}   '<compound>',
+  {gt_clock}      'Zeitgeber'+LineEnding+'Ausgangssignal wechselt periodisch',
+  {gt_adapter}    'Ein Adapter für unterschiedliche Kabel-Breiten',
+  {gt_true}       'Konstant 1',
+  {gt_false}      'Konstant 0',
+  {gt_gatedClock} 'Geschalter Zeitgeber'+LineEnding+'Ausgangssignal wechselt periodisch'+LineEnding+'falls am Eingang 1 anliegt',
+  {gt_un....true} 'Gibt für unbestimmten Eingang 1 aus',
+  {gt_un...false} 'Gibt für unbestimmten Eingang 0 aus',
+                  'Speicher'+LineEnding+'Schreibt auf fallender Flanke von clk',
+                  'Nur-Lese-Speicher',
+                  '7-Segment-Anzeige');
+
   C_gateTypeName:array[T_gateType] of string=
     {gt_notGate}   ('not',
     {gt_andGate}    'and',
@@ -44,27 +69,67 @@ CONST
     {gt_false}      'constant false',
     {gt_gatedClock} 'gated clock',
     {gt_un....true} 'tend to true',
-    {gt_un...false} 'tend to false');
+    {gt_un...false} 'tend to false',
+                    'ram',
+                    'rom',
+                    '7seg');
 
 TYPE
   T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
+
+  { T_ioLocations }
+
+  T_ioLocation=record
+    leftOrRight:boolean;
+    positionIndex:longint;
+    ioLabel:string;
+  end;
+
+  T_ioLocations=object
+    numberOfLeftInputs,
+    numberOfTopInputs,
+    numberOfRightOutputs,
+    numberOfBottomOutputs:longint;
+    p:array[gt_input..gt_output] of array of T_ioLocation;
+    PROCEDURE init;
+    PROCEDURE add(CONST gt:T_gateType; CONST leftOrRight:boolean; CONST pos:longint; CONST lab:string);
+  end;
 
   T_wireValue=record
     bit:array[0..WIRE_MAX_WIDTH-1] of T_triStateValue;
     width:byte;
   end;
 
+  T_wireValueArray=array of T_wireValue;
+
+  { T_captionedAndIndexed }
+
+  P_captionedAndIndexed=^T_captionedAndIndexed;
+  T_captionedAndIndexed=object
+
+    FUNCTION  getCaption:shortstring;       virtual; abstract;
+    FUNCTION  getDescription:string;   virtual; abstract;
+    PROCEDURE setCaption(CONST s:string);       virtual;
+    PROCEDURE setDescription(CONST s:string);   virtual;
+    FUNCTION  getIndexInPalette:longint; virtual;
+    FUNCTION  isVisualBoard:boolean; virtual;
+  end;
+
   P_abstractGate=^T_abstractGate;
-  T_abstractGate=object
+
+  { T_abstractGate }
+
+  T_abstractGate=object(T_captionedAndIndexed)
     public
       CONSTRUCTOR create;
       DESTRUCTOR destroy; virtual;
       PROCEDURE reset;                   virtual; abstract;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual; abstract;
-      FUNCTION  caption:string;          virtual;
+      FUNCTION  getCaption:shortstring;       virtual;
       FUNCTION  getDescription:string;   virtual;
       FUNCTION  numberOfInputs :longint; virtual; abstract;
       FUNCTION  numberOfOutputs:longint; virtual; abstract;
+      FUNCTION  getIoLocations:T_ioLocations; virtual;
       FUNCTION  inputWidth (CONST index:longint):byte; virtual;
       FUNCTION  outputWidth(CONST index:longint):byte; virtual;
       FUNCTION  gateType:T_gateType;     virtual; abstract;
@@ -73,7 +138,7 @@ TYPE
       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual; abstract;
       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual; abstract;
 
-      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
 
       PROCEDURE countGates(VAR gateCount:T_gateCount); virtual;
@@ -90,7 +155,7 @@ TYPE
       CONSTRUCTOR create(CONST constantTrue:boolean);
       PROCEDURE reset;                   virtual;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual;
-      FUNCTION  caption:string;          virtual;
+      FUNCTION  getCaption:shortstring; virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
@@ -127,6 +192,9 @@ TYPE
   end;
 
   P_inputGate=^T_inputGate;
+
+  { T_inputGate }
+
   T_inputGate=object(T_abstractGate)
     private
       io:T_wireValue;
@@ -134,12 +202,16 @@ TYPE
       ioLabel:shortstring;
       ioIndex:longint;
       width:byte;
+
+      onLeftOrRightSide:boolean;
+      positionIndex:longint;
       CONSTRUCTOR create;
       PROCEDURE reset;                   virtual;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
-      FUNCTION  caption:string;          virtual;
+      FUNCTION  getCaption:shortstring; virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
+      FUNCTION  getIoLocations:T_ioLocations; virtual;
       FUNCTION  inputWidth (CONST index:longint):byte; virtual;
       FUNCTION  outputWidth(CONST index:longint):byte; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
@@ -148,7 +220,7 @@ TYPE
       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
 
-      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
       FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
   end;
@@ -158,10 +230,23 @@ TYPE
     public
       CONSTRUCTOR create;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
-      FUNCTION  caption:string;          virtual;
+      FUNCTION  getCaption:shortstring; virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
+  end;
+
+  P_7segmentGate=^T_7segmentGate;
+
+  { T_7segmentGate }
+
+  T_7segmentGate=object(T_outputGate)
+    CONSTRUCTOR create;
+    FUNCTION  gateType:T_gateType; virtual;
+    PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
+    PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
+    FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
+    FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
   end;
 
   P_adapter=^T_adapter;
@@ -173,7 +258,7 @@ TYPE
       CONSTRUCTOR create(CONST inW,outW:byte);
       PROCEDURE reset;                   virtual;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
-      FUNCTION  caption:string;          virtual;
+      FUNCTION  getCaption:shortstring; virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  inputWidth (CONST index:longint):byte; virtual;
@@ -185,7 +270,7 @@ TYPE
       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
       PROCEDURE setIoWidth(CONST inW,outW:byte);
 
-      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
       FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
   end;
@@ -206,7 +291,7 @@ TYPE
        FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
        FUNCTION  getInput(CONST index:longint):T_wireValue;              virtual;
 
-       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
        PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
        FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
    end;
@@ -261,7 +346,7 @@ TYPE
       CONSTRUCTOR create;
       PROCEDURE reset;                   virtual;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
-      FUNCTION  caption:string;          virtual;
+      FUNCTION  getCaption:shortstring; virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  numberOfOutputs:longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
@@ -270,7 +355,7 @@ TYPE
       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
       FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
 
-      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+      PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
       PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
       FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
     end;
@@ -281,7 +366,7 @@ TYPE
       CONSTRUCTOR create;
       PROCEDURE reset;                   virtual;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
-      FUNCTION  caption:string;          virtual;
+      FUNCTION  getCaption:shortstring; virtual;
       FUNCTION  numberOfInputs :longint; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
       FUNCTION  simulateStep:boolean;    virtual;
@@ -295,7 +380,7 @@ TYPE
        input,output:T_wireValue;
        CONSTRUCTOR create;
        PROCEDURE reset;                   virtual;
-       FUNCTION  caption:string;          virtual;
+       FUNCTION  getCaption:shortstring; virtual;
        FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
        FUNCTION  numberOfInputs :longint; virtual;
        FUNCTION  numberOfOutputs:longint; virtual;
@@ -304,7 +389,7 @@ TYPE
        FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
        FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
        FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
-       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+       PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
        PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
        FUNCTION  equals(CONST other:P_abstractGate):boolean; virtual;
    end;
@@ -314,7 +399,7 @@ TYPE
      public
        CONSTRUCTOR create;
        PROCEDURE reset;                   virtual;
-       FUNCTION  caption:string;          virtual;
+       FUNCTION  getCaption:shortstring; virtual;
        FUNCTION  clone(CONST includeState:boolean):P_abstractGate;    virtual;
        FUNCTION  numberOfInputs :longint; virtual;
        FUNCTION  numberOfOutputs:longint; virtual;
@@ -322,23 +407,90 @@ TYPE
        FUNCTION  simulateStep:boolean;    virtual;
    end;
 
+   P_RomGate=^T_romGate;
+   T_romGate=object(T_abstractGate)
+     data:T_wireValueArray;
+     decodedAdress:longint;
+     readAdr:T_wireValue;
+
+     CONSTRUCTOR create;
+     DESTRUCTOR destroy; virtual;
+     PROCEDURE reset;                   virtual;
+     FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual;
+     FUNCTION  getCaption:shortstring;       virtual;
+     FUNCTION  numberOfInputs :longint; virtual;
+     FUNCTION  numberOfOutputs:longint; virtual;
+     FUNCTION  getIoLocations:T_ioLocations; virtual;
+     FUNCTION  inputWidth (CONST index:longint):byte; virtual;
+     FUNCTION  outputWidth(CONST index:longint):byte; virtual;
+     FUNCTION  gateType:T_gateType;     virtual;
+     FUNCTION  simulateStep:boolean;    virtual;
+     FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
+     FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
+     FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
+     PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
+     PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
+     FUNCTION equals(CONST other:P_abstractGate):boolean; virtual;
+     FUNCTION behaviorEquals(CONST other:P_abstractGate):boolean; virtual;
+   end;
+
+   P_RamGate=^T_ramGate;
+
+   { T_ramGate }
+
+   T_ramGate=object(T_romGate)
+     writeAdr,
+     dataIn,
+     clockIn:T_wireValue;
+     clockWasHigh:dword;
+
+     CONSTRUCTOR create;
+     PROCEDURE reset;                   virtual;
+     FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual;
+     FUNCTION  getCaption:shortstring;       virtual;
+     FUNCTION  numberOfInputs :longint; virtual;
+     FUNCTION  getIoLocations:T_ioLocations; virtual;
+     FUNCTION  inputWidth (CONST index:longint):byte; virtual;
+     FUNCTION  outputWidth(CONST index:longint):byte; virtual;
+     FUNCTION  gateType:T_gateType;     virtual;
+     FUNCTION  simulateStep:boolean;    virtual;
+     FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
+     FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
+     FUNCTION  getInput(CONST index:longint):T_wireValue; virtual;
+     PROCEDURE writeToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false); virtual;
+     PROCEDURE readMetaDataFromStream(VAR stream:T_bufferedInputStreamWrapper); virtual;
+     FUNCTION equals(CONST other:P_abstractGate):boolean; virtual;
+     FUNCTION behaviorEquals(CONST other:P_abstractGate):boolean; virtual;
+   end;
+
 FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
 OPERATOR =(CONST x,y:T_gateConnector):boolean;
 OPERATOR :=(CONST x:T_triStateValue):T_wireValue;
 FUNCTION isFullyDefined(CONST w:T_wireValue):boolean;
 OPERATOR =(CONST x,y:T_wireValue):boolean;
-FUNCTION getBinaryString(CONST wire:T_wireValue):string;
-FUNCTION getDecimalString(CONST wire:T_wireValue):string;
-FUNCTION getDecimalValue(CONST wire:T_wireValue; OUT valid:boolean):longint;
-FUNCTION get2ComplementString(CONST wire:T_wireValue):string;
-FUNCTION get2ComplementValue(CONST wire:T_wireValue; OUT valid:boolean):longint;
+
+FUNCTION getBinaryString     (CONST wire:T_wireValue):shortstring;
+FUNCTION getDecimalString    (CONST wire:T_wireValue):shortstring;
+FUNCTION get2ComplementString(CONST wire:T_wireValue):shortstring;
+FUNCTION getWireString       (CONST wire:T_wireValue; CONST mode:T_multibitWireRepresentation):shortstring;
 
 FUNCTION parseWireBin        (CONST s:string; CONST width:byte):T_wireValue;
 FUNCTION parseWireDecimal    (CONST s:string; CONST width:byte):T_wireValue;
 FUNCTION parseWire2Complement(CONST s:string; CONST width:byte):T_wireValue;
+FUNCTION parseWire           (CONST s:string; CONST width:byte; CONST mode:T_multibitWireRepresentation):T_wireValue;
+
+FUNCTION getDecimalValue     (CONST wire:T_wireValue; OUT valid:boolean):longint;
+FUNCTION get2ComplementValue (CONST wire:T_wireValue; OUT valid:boolean):longint;
+
+FUNCTION gatesTotal(CONST gateCount:T_gateCount):longint;
+FUNCTION gateCountReport(CONST gateCount:T_gateCount):string;
+
+FUNCTION serialize(CONST wireValue: T_wireValue): qword;
+FUNCTION deserialize(n: qword): T_wireValue;
+
 IMPLEMENTATION
-USES sysutils;
-FUNCTION getBinaryString(CONST wire:T_wireValue):string;
+USES sysutils,myStringUtil;
+FUNCTION getBinaryString(CONST wire: T_wireValue): shortstring;
   VAR i:longint;
   begin
     result:='';
@@ -350,7 +502,7 @@ FUNCTION getBinaryString(CONST wire:T_wireValue):string;
     end;
   end;
 
-FUNCTION getDecimalString(CONST wire:T_wireValue):string;
+FUNCTION getDecimalString(CONST wire: T_wireValue): shortstring;
   VAR i:longint;
       k:int64=0;
   begin
@@ -365,7 +517,7 @@ FUNCTION getDecimalString(CONST wire:T_wireValue):string;
     result:=intToStr(k);
   end;
 
-FUNCTION getDecimalValue(CONST wire:T_wireValue; OUT valid:boolean):longint;
+FUNCTION getDecimalValue(CONST wire: T_wireValue; OUT valid: boolean): longint;
   VAR i:longint;
       k:int64=0;
   begin
@@ -374,17 +526,14 @@ FUNCTION getDecimalValue(CONST wire:T_wireValue; OUT valid:boolean):longint;
       k:=k shl 1;
       case wire.bit[i] of
         tsv_true        : inc(k);
-        tsv_false       : begin end;
-        tsv_undetermined: begin
-          valid:=false;
-          exit(1 shl (wire.width-1));
-        end;
+        //tsv_false       : begin end;
+        tsv_undetermined: valid:=false;
       end;
     end;
     result:=k;
   end;
 
-FUNCTION get2ComplementString(CONST wire:T_wireValue):string;
+FUNCTION get2ComplementString(CONST wire: T_wireValue): shortstring;
   VAR i:longint;
       k:int64=0;
       maxVal:int64;
@@ -404,7 +553,16 @@ FUNCTION get2ComplementString(CONST wire:T_wireValue):string;
     result:=intToStr(k);
   end;
 
-FUNCTION get2ComplementValue(CONST wire:T_wireValue; OUT valid:boolean):longint;
+FUNCTION getWireString(CONST wire: T_wireValue; CONST mode: T_multibitWireRepresentation): shortstring;
+  begin
+    case mode of
+      wr_binary     : result:=getBinaryString(wire);
+      wr_decimal    : result:=getDecimalString(wire);
+      wr_2complement: result:=get2ComplementString(wire);
+    end;
+  end;
+
+FUNCTION get2ComplementValue(CONST wire: T_wireValue; OUT valid: boolean): longint;
   VAR i:longint;
       k:int64=0;
       maxVal:int64;
@@ -426,6 +584,57 @@ FUNCTION get2ComplementValue(CONST wire:T_wireValue; OUT valid:boolean):longint;
       if k>maxVal then k-=maxVal+maxVal;
     end;
     result:=k;
+  end;
+
+FUNCTION serialize(CONST wireValue: T_wireValue): qword;
+  CONST BYTE_OF:array[T_triStateValue] of byte=(0,1,2);
+  VAR i:longint;
+  begin
+    result:=0;
+    for i:=wireValue.width-1 downto 0 do
+      result:=result*3+BYTE_OF[wireValue.bit[i]];
+    result*=4;
+    case wireValue.width of
+      1: result+=0;
+      4: result+=1;
+      8: result+=2;
+     16: result+=3;
+    else assert(false);
+    end;
+  end;
+
+FUNCTION deserialize(n: qword): T_wireValue;
+  CONST WIRE_VALUE_OF:array[0..2] of T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
+  VAR i: integer;
+  begin
+    case byte(n and 3) of
+      0: result.width:=1;
+      1: result.width:=4;
+      2: result.width:=8;
+      3: result.width:=16;
+    end;
+    n:=n div 4;
+    for i:=0 to result.width-1 do begin
+      result.bit[i]:=WIRE_VALUE_OF[n mod 3];
+      n:=n div 3;
+    end;
+  end;
+
+FUNCTION gatesTotal(CONST gateCount: T_gateCount): longint;
+  VAR gt:T_gateType;
+  begin
+    result:=0;
+    for gt in T_gateType do result+=gateCount[gt];
+  end;
+
+FUNCTION gateCountReport(CONST gateCount: T_gateCount): string;
+  VAR gt:T_gateType;
+  begin
+    result:='';
+    for gt in T_gateType do if gateCount[gt]>0 then begin
+      if result<>'' then result+=LineEnding;
+      result+=C_gateTypeName[gt]+C_tabChar+intToStr(gateCount[gt]);
+    end;
   end;
 
 FUNCTION parseWireBin(CONST s: string; CONST width: byte): T_wireValue;
@@ -476,15 +685,21 @@ FUNCTION parseWire2Complement(CONST s: string; CONST width: byte): T_wireValue;
     end;
   end;
 
-OPERATOR =(CONST x,y:T_gateConnector):boolean;
+FUNCTION parseWire(CONST s: string; CONST width: byte; CONST mode: T_multibitWireRepresentation): T_wireValue;
+  begin
+    case mode of
+      wr_binary     : result:=parseWireBin(s,width);
+      wr_decimal    : result:=parseWireDecimal(s,width);
+      wr_2complement: result:=parseWire2Complement(s,width);
+    end;
+  end;
+
+OPERATOR=(CONST x, y: T_gateConnector): boolean;
   begin
     result:=(x.gate=y.gate) and (x.index=y.index);
   end;
 
-VAR lastAdapterInputWidth:byte=1;
-    lastAdapterOutputWidth:byte=4;
-
-FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
+FUNCTION newBaseGate(CONST gateType: T_gateType): P_abstractGate;
   begin
     case gateType of
       gt_notGate : new(P_notGate   (result),create);
@@ -497,14 +712,379 @@ FUNCTION newBaseGate(CONST gateType:T_gateType):P_abstractGate;
       gt_input   : new(P_inputGate (result),create);
       gt_output  : new(P_outputGate(result),create);
       gt_clock   : new(P_clock     (result),create);
-      gt_adapter : new(P_adapter(result),create(lastAdapterInputWidth,lastAdapterOutputWidth));
+      gt_adapter : new(P_adapter(result),create(4,1));
       gt_true :new(P_constantGate(result),create(true ));
       gt_false:new(P_constantGate(result),create(false));
       gt_gatedClock: new(P_gatedClock(result),create);
       gt_undeterminedToFalse: new(P_tendToFalse(result),create);
       gt_undeterminedToTrue : new(P_tendToTrue (result),create);
+      gt_ram: new(P_RamGate(result),create);
+      gt_rom: new(P_RomGate(result),create);
+      gt_7segmentDummy: new(P_7segmentGate(result),create);
       else result:=nil;
     end;
+  end;
+
+{ T_7segmentGate }
+
+CONSTRUCTOR T_7segmentGate.create;
+  begin
+    inherited;
+    io:=tsv_false; ioLabel:=''; width:=8; onLeftOrRightSide:=false; positionIndex:=0;
+  end;
+
+FUNCTION T_7segmentGate.gateType: T_gateType;
+  begin
+    result:=gt_7segmentDummy;
+  end;
+
+PROCEDURE T_7segmentGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly: boolean);
+  begin
+    if not(metaDataOnly) then stream.writeByte(byte(gateType));
+  end;
+
+PROCEDURE T_7segmentGate.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
+  begin
+  end;
+
+FUNCTION T_7segmentGate.equals(CONST other: P_abstractGate): boolean;
+  begin
+    result:=other^.gateType=gateType;
+  end;
+
+FUNCTION T_7segmentGate.clone(CONST includeState: boolean): P_abstractGate;
+  begin
+    new(P_7segmentGate(result),create);
+  end;
+
+{ T_ramGate }
+
+CONSTRUCTOR T_ramGate.create;
+  begin
+    inherited;
+  end;
+
+PROCEDURE T_ramGate.reset;
+  VAR i:longint;
+  begin
+    inherited;
+    writeAdr.width:=16;
+    dataIn  .width:=16;
+    for i:=0 to WIRE_MAX_WIDTH-1 do writeAdr.bit[i]:=tsv_undetermined;
+    clockIn.width:=1;
+    clockIn.bit[0]:=tsv_undetermined;
+    setLength(data,0);
+    clockWasHigh:=1431655765;
+  end;
+
+FUNCTION T_ramGate.clone(CONST includeState: boolean): P_abstractGate;
+  VAR i:longint;
+  begin
+    new(P_RamGate(result),create);
+
+    setLength(P_RamGate(result)^.data,length(data));
+    for i:=0 to length(data)-1 do P_RomGate(result)^.data[i]:=data[i];
+    P_RomGate(result)^.readAdr:=readAdr;
+  end;
+
+FUNCTION T_ramGate.getCaption: shortstring;
+  begin
+    result:='RAM';
+  end;
+
+FUNCTION T_ramGate.numberOfInputs: longint;
+  begin
+    result:=4;
+  end;
+
+FUNCTION T_ramGate.getIoLocations: T_ioLocations;
+  begin
+    result.init;
+    result.add(gt_input,true,0,'readAdr');
+    result.add(gt_input,true,1,'writeAdr');
+    result.add(gt_input,true,2,'data');
+    result.add(gt_input,true,3,'clk');
+    result.add(gt_output,true,0,'data');
+  end;
+
+FUNCTION T_ramGate.inputWidth(CONST index: longint): byte;
+  begin
+    if index=3 then result:=1 else result:=16;
+  end;
+
+FUNCTION T_ramGate.outputWidth(CONST index: longint): byte;
+  begin
+    result:=16;
+  end;
+
+FUNCTION T_ramGate.gateType: T_gateType;
+  begin
+    result:=gt_ram;
+  end;
+
+CONST zero:T_wireValue=(bit:(tsv_false,tsv_false,tsv_false,tsv_false,
+                             tsv_false,tsv_false,tsv_false,tsv_false,
+                             tsv_false,tsv_false,tsv_false,tsv_false,
+                             tsv_false,tsv_false,tsv_false,tsv_false); width:16);
+
+FUNCTION T_ramGate.simulateStep: boolean;
+  VAR writeIndex:longint;
+      i0,i:longint;
+  begin
+    if (clockWasHigh=4294967295) and (clockIn.bit[0]=tsv_false) and isFullyDefined(dataIn) then begin
+      writeIndex:=getDecimalValue(writeAdr,result);
+      result:=result and (writeIndex>=0) and (writeIndex<=65535);
+      if result then begin
+        i0:=length(data);
+        if writeIndex>=i0 then begin
+          setLength(data,writeIndex+1);
+          for i:=i0 to writeIndex-1 do data[i]:=zero;
+        end;
+        data[writeIndex]:=dataIn;
+      end;
+    end else result:=(clockWasHigh<>4294967295) and (clockWasHigh<>0);
+    clockWasHigh:=clockWasHigh shl 1;
+    if clockIn.bit[0]=tsv_true then clockWasHigh:=clockWasHigh or 1;
+    if inherited then result:=true;
+  end;
+
+FUNCTION T_ramGate.getOutput(CONST index: longint): T_wireValue;
+  begin
+    result:=inherited;
+  end;
+
+FUNCTION T_ramGate.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
+  begin
+    if (index<0) or (index>3) then result:=false
+    else case byte(index) of
+      0: begin
+           result:=readAdr<>value;
+           readAdr:=value;
+         end;
+      1: begin
+           result:=writeAdr<>value;
+           writeAdr:=value;
+         end;
+      2: begin
+           result:=dataIn<>value;
+           dataIn:=value;
+         end;
+      3: begin
+           result:=clockIn<>value;
+           clockIn:=value;
+         end;
+    end;
+  end;
+
+FUNCTION T_ramGate.getInput(CONST index: longint): T_wireValue;
+  begin
+    case byte(index) of
+      0: result:=readAdr;
+      1: result:=writeAdr;
+      2: result:=dataIn;
+      3: result:=clockIn;
+    end;
+  end;
+
+PROCEDURE T_ramGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly: boolean);
+  begin
+    if not(metaDataOnly) then stream.writeByte(byte(gateType));
+  end;
+
+PROCEDURE T_ramGate.readMetaDataFromStream( VAR stream: T_bufferedInputStreamWrapper);
+  begin
+    //Mo meta data
+  end;
+
+FUNCTION T_ramGate.equals(CONST other: P_abstractGate): boolean;
+  begin
+    result:=other^.gateType=gateType;
+  end;
+
+FUNCTION T_ramGate.behaviorEquals(CONST other: P_abstractGate): boolean;
+  begin
+    result:=other^.gateType=gateType;
+  end;
+
+{ T_romGate }
+
+CONSTRUCTOR T_romGate.create;
+  begin
+    inherited;
+    initialize(data);
+    reset;
+  end;
+
+DESTRUCTOR T_romGate.destroy;
+  begin
+    setLength(data,0);
+    inherited;
+  end;
+
+PROCEDURE T_romGate.reset;
+  VAR i:byte;
+  begin
+    readAdr.width:=16;
+    for i:=0 to WIRE_MAX_WIDTH-1 do readAdr.bit[i]:=tsv_undetermined;
+  end;
+
+FUNCTION T_romGate.clone(CONST includeState: boolean): P_abstractGate;
+  VAR i:longint;
+  begin
+    new(P_RomGate(result),create);
+    setLength(P_RomGate(result)^.data,length(data));
+    for i:=0 to length(data)-1 do P_RomGate(result)^.data[i]:=data[i];
+    P_RomGate(result)^.readAdr:=readAdr;
+  end;
+
+FUNCTION T_romGate.getCaption: shortstring;
+  begin
+    result:='ROM';
+  end;
+
+FUNCTION T_romGate.numberOfInputs: longint;
+  begin
+    result:=1;
+  end;
+
+FUNCTION T_romGate.numberOfOutputs: longint;
+  begin
+    result:=1;
+  end;
+
+FUNCTION T_romGate.getIoLocations: T_ioLocations;
+  begin
+    result.init;
+    result.add(gt_input,true,0,'readAdr');
+    result.add(gt_output,true,0,'data');
+  end;
+
+FUNCTION T_romGate.inputWidth(CONST index: longint): byte;
+  begin
+    result:=16;
+  end;
+
+FUNCTION T_romGate.outputWidth(CONST index: longint): byte;
+  begin
+    result:=16;
+  end;
+
+FUNCTION T_romGate.gateType: T_gateType;
+  begin
+    result:=gt_rom;
+  end;
+
+FUNCTION T_romGate.simulateStep: boolean;
+  VAR newAdress:longint;
+  begin
+    newAdress:=getDecimalValue(readAdr,result);
+    result:=result and (newAdress<>decodedAdress);
+    decodedAdress:=newAdress;
+  end;
+
+FUNCTION T_romGate.getOutput(CONST index: longint): T_wireValue;
+  begin
+    if (decodedAdress>=0) and (decodedAdress<length(data))
+    then result:=data[decodedAdress]
+    else result:=zero;
+  end;
+
+FUNCTION T_romGate.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
+  VAR i:longint;
+  begin
+    result:=value<>readAdr;
+    readAdr:=value;
+  end;
+
+FUNCTION T_romGate.getInput(CONST index: longint): T_wireValue;
+  begin
+    result:=readAdr;
+  end;
+
+PROCEDURE T_romGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly: boolean);
+  VAR i:longint;
+  begin
+    inherited;
+    stream.writeNaturalNumber(length(data));
+    for i:=0 to length(data)-1 do stream.writeNaturalNumber(serialize(data[i]));
+  end;
+
+PROCEDURE T_romGate.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
+  VAR i:longint;
+  begin
+    i:=stream.readNaturalNumber;
+    if (i>65536) or (i<0) then begin
+      stream.logWrongTypeError;
+      exit;
+    end;
+    setLength(data,i);
+    for i:=0 to length(data)-1 do data[i]:=deserialize(stream.readNaturalNumber);
+  end;
+
+FUNCTION T_romGate.equals(CONST other: P_abstractGate): boolean;
+  VAR i:longint;
+  begin
+    if (other^.gateType<>gateType) then exit(false);
+    if (length(data)<>length(P_RomGate(other)^.data)) then exit(false);
+    for i:=0 to length(data)-1 do if data[i]<>P_RomGate(other)^.data[i] then exit(false);
+    result:=true;
+  end;
+
+FUNCTION T_romGate.behaviorEquals(CONST other: P_abstractGate): boolean;
+  begin
+    result:=equals(other);
+  end;
+
+{ T_ioLocations }
+
+PROCEDURE T_ioLocations.init;
+  begin
+    numberOfLeftInputs   :=0;
+    numberOfTopInputs    :=0;
+    numberOfRightOutputs :=0;
+    numberOfBottomOutputs:=0;
+    setLength(p[gt_input ],0);
+    setLength(p[gt_output],0);
+  end;
+
+PROCEDURE T_ioLocations.add(CONST gt: T_gateType; CONST leftOrRight: boolean; CONST pos: longint; CONST lab: string);
+  VAR i:longint;
+  begin
+    i:=length(p[gt]);
+    setLength(p[gt],i+1);
+    p[gt,i].leftOrRight  :=leftOrRight;
+    p[gt,i].positionIndex:=pos;
+    p[gt,i].ioLabel      :=lab;
+    case gt of
+      gt_input:
+        if leftOrRight
+        then inc(numberOfLeftInputs)
+        else inc(numberOfTopInputs);
+      gt_output:
+        if leftOrRight
+        then inc(numberOfRightOutputs)
+        else inc(numberOfBottomOutputs);
+    end;
+  end;
+
+{ T_captionedAndIndexed }
+
+PROCEDURE T_captionedAndIndexed.setCaption(CONST s: string);
+  begin
+  end;
+
+PROCEDURE T_captionedAndIndexed.setDescription(CONST s: string);
+  begin
+  end;
+
+FUNCTION T_captionedAndIndexed.getIndexInPalette: longint;
+  begin
+    result:=-1;
+  end;
+
+FUNCTION T_captionedAndIndexed.isVisualBoard: boolean;
+  begin
+    result:=false;
   end;
 
 CONSTRUCTOR T_tendToFalse.create;
@@ -517,7 +1097,7 @@ PROCEDURE T_tendToFalse.reset;
     for i:=0 to input.width-1 do output.bit[i]:=tsv_false;
   end;
 
-FUNCTION T_tendToFalse.caption: string;
+FUNCTION T_tendToFalse.getCaption: shortstring;
   begin
     result:='½→0';
   end;
@@ -565,7 +1145,7 @@ PROCEDURE T_tendToTrue.reset;
     for i:=0 to input.width-1 do output.bit[i]:=tsv_true;
   end;
 
-FUNCTION T_tendToTrue.caption: string;
+FUNCTION T_tendToTrue.getCaption: shortstring;
   begin
     result:='½→1';
   end;
@@ -621,7 +1201,7 @@ FUNCTION T_tendToTrue.getInput(CONST index: longint): T_wireValue;
     result:=input;
   end;
 
-PROCEDURE T_tendToTrue.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_tendToTrue.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);
   begin
     inherited;
     stream.writeByte(input.width);
@@ -646,7 +1226,7 @@ PROCEDURE T_gatedClock.reset;
     enable:=tsv_undetermined;
   end;
 
-FUNCTION T_gatedClock.caption: string;
+FUNCTION T_gatedClock.getCaption: shortstring;
   begin
     result:='G'+inherited;
   end;
@@ -692,7 +1272,7 @@ CONSTRUCTOR T_constantGate.create(CONST constantTrue: boolean);
 PROCEDURE T_constantGate.reset;
   begin end;
 
-FUNCTION T_constantGate.caption: string;
+FUNCTION T_constantGate.getCaption: shortstring;
   begin
     case c of
       tsv_true : result:='1';
@@ -741,7 +1321,7 @@ PROCEDURE T_adapter.reset;
     for i:=0 to WIRE_MAX_WIDTH-1 do io.bit[i]:=tsv_undetermined;
   end;
 
-FUNCTION T_adapter.caption: string;
+FUNCTION T_adapter.getCaption: shortstring;
   begin result:='Adapter'+LineEnding+intToStr(inWidth)+'bit -> '+intToStr(outWidth)+'bit'; end;
 
 FUNCTION T_adapter.numberOfInputs: longint;
@@ -816,11 +1396,9 @@ PROCEDURE T_adapter.setIoWidth(CONST inW, outW: byte);
       io.width:=outWidth;
       inCount:=outWidth div inWidth;
     end;
-    lastAdapterInputWidth :=inWidth;
-    lastAdapterOutputWidth:=outWidth;
   end;
 
-PROCEDURE T_adapter.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_adapter.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);
   begin
     inherited;
     stream.writeByte(inWidth);
@@ -851,7 +1429,7 @@ PROCEDURE T_clock.reset;
     counter:=0;
   end;
 
-FUNCTION T_clock.caption: string;
+FUNCTION T_clock.getCaption: shortstring;
   begin
     result:=#240#159#149#145;
   end;
@@ -874,7 +1452,7 @@ FUNCTION T_clock.simulateStep: boolean;
     result:=true;
   end;
 
-OPERATOR :=(CONST x:T_triStateValue):T_wireValue;
+OPERATOR:=(CONST x: T_triStateValue): T_wireValue;
   VAR i:longint;
   begin
     result.width:=1;
@@ -882,14 +1460,14 @@ OPERATOR :=(CONST x:T_triStateValue):T_wireValue;
     for i:=1 to WIRE_MAX_WIDTH-1 do result.bit[i]:=tsv_undetermined;
   end;
 
-FUNCTION isFullyDefined(CONST w:T_wireValue):boolean;
+FUNCTION isFullyDefined(CONST w: T_wireValue): boolean;
   VAR i:longint;
   begin
     result:=true;
     for i:=0 to w.width-1 do if not(w.bit[i] in [tsv_true,tsv_false]) then exit(false);
   end;
 
-OPERATOR =(CONST x,y:T_wireValue):boolean;
+OPERATOR=(CONST x, y: T_wireValue): boolean;
   VAR i:longint;
   begin
     result:=x.width=y.width;
@@ -908,7 +1486,7 @@ FUNCTION T_clock.setInput(CONST index: longint; CONST value: T_wireValue):boolea
 FUNCTION T_clock.getInput(CONST index: longint): T_wireValue;
   begin result:=tsv_undetermined; end;
 
-PROCEDURE T_clock.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_clock.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);
   begin
     inherited;
     stream.writeNaturalNumber(interval);
@@ -924,7 +1502,7 @@ PROCEDURE T_clock.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrappe
 CONSTRUCTOR T_outputGate.create;
   begin inherited; end;
 
-FUNCTION T_outputGate.caption: string;
+FUNCTION T_outputGate.getCaption: shortstring;
   begin
     if ioLabel=''
     then result:='out '+intToStr(ioIndex)
@@ -943,7 +1521,7 @@ FUNCTION T_outputGate.gateType: T_gateType;
 { T_inputGate }
 
 CONSTRUCTOR T_inputGate.create;
-  begin inherited; io:=tsv_true; ioLabel:=''; width:=1; end;
+  begin inherited; io:=tsv_true; ioLabel:=''; width:=1; onLeftOrRightSide:=true; positionIndex:=0; end;
 
 PROCEDURE T_inputGate.reset;
   VAR i:longint;
@@ -952,7 +1530,7 @@ PROCEDURE T_inputGate.reset;
     for i:=0 to WIRE_MAX_WIDTH-1 do io.bit[i]:=tsv_undetermined;
   end;
 
-FUNCTION T_inputGate.caption: string;
+FUNCTION T_inputGate.getCaption: shortstring;
   begin
     if ioLabel=''
     then result:='in '+intToStr(ioIndex)
@@ -964,6 +1542,14 @@ FUNCTION T_inputGate.numberOfInputs: longint;
 
 FUNCTION T_inputGate.numberOfOutputs: longint;
   begin result:=1; end;
+
+FUNCTION T_inputGate.getIoLocations: T_ioLocations;
+  VAR i:longint;
+  begin
+    result.init;
+    for i:=0 to numberOfInputs-1  do result.add(gt_input ,onLeftOrRightSide,i,'');
+    for i:=0 to numberOfOutputs-1 do result.add(gt_output,onLeftOrRightSide,i,'');
+  end;
 
 FUNCTION T_inputGate.inputWidth(CONST index: longint): byte;
   begin
@@ -995,19 +1581,24 @@ FUNCTION T_inputGate.setInput(CONST index: longint; CONST value: T_wireValue): b
 FUNCTION T_inputGate.getInput(CONST index: longint): T_wireValue;
   begin result:=io; end;
 
-PROCEDURE T_inputGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_inputGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);
   begin
     inherited;
     stream.writeShortString(ioLabel);
     stream.writeNaturalNumber(ioIndex);
     stream.writeByte(width);
+    stream.writeBoolean(onLeftOrRightSide);
+    stream.writeNaturalNumber(positionIndex);
   end;
 
-PROCEDURE T_inputGate.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
+PROCEDURE T_inputGate.readMetaDataFromStream(
+  VAR stream: T_bufferedInputStreamWrapper);
   begin
     ioLabel:=stream.readShortString;
     ioIndex:=stream.readNaturalNumber;
     width:=stream.readByte;
+    onLeftOrRightSide:=stream.readBoolean;
+    positionIndex:=stream.readNaturalNumber;
   end;
 
 { T_abstractGate }
@@ -1018,21 +1609,30 @@ CONSTRUCTOR T_abstractGate.create;
 DESTRUCTOR T_abstractGate.destroy;
   begin end; //pro forma
 
-FUNCTION T_abstractGate.getDescription:string;
-  begin result:=''; end; //plausible default
+FUNCTION T_abstractGate.getDescription: string;
+  begin result:=C_gateDefaultDescription[gateType]; end;
 
-FUNCTION T_abstractGate.inputWidth(CONST index:longint):byte;
-  begin result:=1; end;
-
-FUNCTION T_abstractGate.outputWidth(CONST index:longint):byte;
-  begin result:=1; end;
-
-PROCEDURE T_abstractGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+FUNCTION T_abstractGate.getIoLocations: T_ioLocations;
+  VAR i:longint;
   begin
-    stream.writeByte(byte(gateType));
+    result.init;
+    for i:=0 to numberOfInputs-1  do result.add(gt_input,true,i,'');
+    for i:=0 to numberOfOutputs-1 do result.add(gt_output,true,i,'');
   end;
 
-PROCEDURE T_abstractGate.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
+FUNCTION T_abstractGate.inputWidth(CONST index: longint): byte;
+  begin result:=1; end;
+
+FUNCTION T_abstractGate.outputWidth(CONST index: longint): byte;
+  begin result:=1; end;
+
+PROCEDURE T_abstractGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);
+  begin
+    if not(metaDataOnly) then stream.writeByte(byte(gateType));
+  end;
+
+PROCEDURE T_abstractGate.readMetaDataFromStream(
+  VAR stream: T_bufferedInputStreamWrapper);
   begin
   end;
 
@@ -1062,7 +1662,7 @@ CONSTRUCTOR T_notGate.create;
 PROCEDURE T_notGate.reset;
   begin input:=tsv_undetermined; output:=tsv_undetermined; end;
 
-FUNCTION T_abstractGate.caption: string;
+FUNCTION T_abstractGate.getCaption: shortstring;
   begin result:=C_gateTypeName[gateType]; end;
 
 FUNCTION T_notGate.numberOfInputs: longint;
@@ -1134,7 +1734,7 @@ FUNCTION T_binaryBaseGate.setInput(CONST index: longint; CONST value: T_wireValu
 FUNCTION T_binaryBaseGate.getInput(CONST index: longint): T_wireValue;
   begin result:=input[index]; end;
 
-PROCEDURE T_binaryBaseGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_binaryBaseGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);
   begin
     inherited;
     stream.writeByte(inputCount);
@@ -1252,12 +1852,14 @@ FUNCTION T_notGate.clone(CONST includeState:boolean):P_abstractGate;
     end;
   end;
 
-FUNCTION T_inputGate.clone(CONST includeState:boolean): P_abstractGate;
+FUNCTION T_inputGate.clone(CONST includeState: boolean): P_abstractGate;
   begin
     new(P_inputGate(result),create);
     P_inputGate(result)^.ioIndex:=ioIndex;
     P_inputGate(result)^.ioLabel:=ioLabel;
     P_inputGate(result)^.width:=width;
+    P_inputGate(result)^.onLeftOrRightSide:=onLeftOrRightSide;
+    P_inputGate(result)^.positionIndex:=positionIndex;
     result^.reset;
     if includeState then P_inputGate(result)^.io:=io;
   end;
@@ -1268,6 +1870,8 @@ FUNCTION T_outputGate.clone(CONST includeState:boolean):P_abstractGate;
     P_outputGate(result)^.ioIndex:=ioIndex;
     P_outputGate(result)^.ioLabel:=ioLabel;
     P_outputGate(result)^.width:=width;
+    P_inputGate(result)^.onLeftOrRightSide:=onLeftOrRightSide;
+    P_inputGate(result)^.positionIndex:=positionIndex;
     result^.reset;
     if includeState then P_outputGate(result)^.io:=io;
   end;
@@ -1282,21 +1886,23 @@ FUNCTION T_binaryBaseGate.clone(CONST includeState:boolean):P_abstractGate;
     end;
   end;
 
-PROCEDURE T_abstractGate.countGates(VAR gateCount:T_gateCount);
+PROCEDURE T_abstractGate.countGates(VAR gateCount: T_gateCount);
   begin
     inc(gateCount[gateType]);
   end;
 
-FUNCTION T_abstractGate.equals(CONST other:P_abstractGate):boolean;
+FUNCTION T_abstractGate.equals(CONST other: P_abstractGate): boolean;
   begin
     result:=other^.gateType=gateType;
   end;
 
-FUNCTION T_inputGate.equals(CONST other:P_abstractGate):boolean;
+FUNCTION T_inputGate.equals(CONST other: P_abstractGate): boolean;
   begin
     result:=(other^.gateType=gateType) and
       ((P_inputGate(other)^.ioIndex=ioIndex) and
-       (P_inputGate(other)^.width  =width  ));
+       (P_inputGate(other)^.width  =width  ) and
+       (P_inputGate(other)^.onLeftOrRightSide=onLeftOrRightSide) and
+       (P_inputGate(other)^.ioLabel=ioLabel));
   end;
 
 FUNCTION T_adapter.equals(CONST other:P_abstractGate):boolean;
@@ -1321,8 +1927,8 @@ FUNCTION T_tendToTrue.equals(CONST other:P_abstractGate):boolean;
     result:=(other^.gateType=gateType) and (P_tendToTrue(other)^.input.width=input.width);
   end;
 
-FUNCTION T_abstractGate.behaviorEquals(CONST other:P_abstractGate):boolean;
-  VAR stepsUntilConfidence:longint=256;
+FUNCTION T_abstractGate.behaviorEquals(CONST other: P_abstractGate): boolean;
+  VAR stepsUntilConfidence:longint=1024;
       stillSimulating:boolean;
       remainingSteps:longint;
 
@@ -1388,7 +1994,6 @@ FUNCTION T_abstractGate.behaviorEquals(CONST other:P_abstractGate):boolean;
 
     //Simulate...
     //The wider the input, the more steps should be invested until gates are considered to behave equally.
-    stepsUntilConfidence:=trunc(sqr(1+totalInputWidth)*4096);
     reset;
     other^.reset;
     setRandomInput;
@@ -1408,4 +2013,3 @@ FUNCTION T_abstractGate.behaviorEquals(CONST other:P_abstractGate):boolean;
   end;
 
 end.
-

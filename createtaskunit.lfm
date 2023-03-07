@@ -1,0 +1,470 @@
+object CreateTaskForm: TCreateTaskForm
+  Left = 207
+  Height = 553
+  Top = 610
+  Width = 556
+  Caption = 'Aufgabe erstellen'
+  ClientHeight = 553
+  ClientWidth = 556
+  Color = 8405056
+  OnShow = FormShow
+  LCLVersion = '2.2.2.0'
+  object Label1: TLabel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = TitleEdit
+    Left = 4
+    Height = 15
+    Top = 4
+    Width = 22
+    BorderSpacing.Left = 4
+    Caption = 'Titel'
+    Font.Color = clWhite
+    ParentColor = False
+    ParentFont = False
+  end
+  object Label2: TLabel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = DescriptionMemo
+    Left = 4
+    Height = 15
+    Top = 31
+    Width = 72
+    BorderSpacing.Left = 4
+    Caption = 'Beschreibung'
+    Font.Color = clWhite
+    ParentColor = False
+    ParentFont = False
+  end
+  object Label3: TLabel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = DifficultyTrackBar
+    Left = 4
+    Height = 15
+    Top = 272
+    Width = 99
+    BorderSpacing.Left = 4
+    Caption = 'Schwierigkeitsgrad'
+    Font.Color = clWhite
+    ParentColor = False
+    ParentFont = False
+  end
+  object Label4: TLabel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = RadioPanel
+    Left = 4
+    Height = 15
+    Top = 88
+    Width = 43
+    BorderSpacing.Left = 4
+    Caption = 'Vorgabe'
+    Font.Color = clWhite
+    ParentColor = False
+    ParentFont = False
+  end
+  object DifficultyTrackBar: TTrackBar
+    AnchorSideLeft.Control = Label3
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = RadioPanel1
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 107
+    Height = 25
+    Top = 272
+    Width = 445
+    Frequency = 17
+    Max = 255
+    Position = 0
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Left = 4
+    BorderSpacing.Top = 4
+    BorderSpacing.Right = 4
+    TabOrder = 0
+  end
+  object TitleEdit: TEdit
+    AnchorSideLeft.Control = Label3
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 107
+    Height = 23
+    Top = 4
+    Width = 445
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Left = 4
+    BorderSpacing.Top = 4
+    BorderSpacing.Right = 4
+    Color = 7354424
+    Font.Color = clWhite
+    ParentFont = False
+    TabOrder = 1
+  end
+  object DescriptionMemo: TMemo
+    AnchorSideLeft.Control = Label3
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = TitleEdit
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 107
+    Height = 53
+    Top = 31
+    Width = 445
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Left = 4
+    BorderSpacing.Top = 4
+    BorderSpacing.Right = 4
+    Color = 7354424
+    Font.Color = clWhite
+    ParentFont = False
+    TabOrder = 2
+  end
+  object RadioPanel: TPanel
+    AnchorSideLeft.Control = Label3
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = DescriptionMemo
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 107
+    Height = 88
+    Top = 88
+    Width = 445
+    Anchors = [akTop, akLeft, akRight]
+    AutoSize = True
+    BorderSpacing.Left = 4
+    BorderSpacing.Top = 4
+    BorderSpacing.Right = 4
+    BorderWidth = 5
+    ClientHeight = 88
+    ClientWidth = 445
+    Color = 16744576
+    ParentColor = False
+    TabOrder = 3
+    object rbIncludeAllGates: TRadioButton
+      Left = 6
+      Height = 19
+      Top = 6
+      Width = 433
+      Align = alTop
+      Caption = 'alle Gatter, nur Verkabelung fehlt'
+      Checked = True
+      Font.Color = clWhite
+      OnChange = rbIncludeAllGatesChange
+      ParentFont = False
+      TabOrder = 0
+      TabStop = True
+    end
+    object rbIncludeIO: TRadioButton
+      Left = 6
+      Height = 19
+      Top = 44
+      Width = 433
+      Align = alTop
+      Caption = 'nur Inputs und Outputs'
+      Font.Color = clWhite
+      OnChange = rbIncludeAllGatesChange
+      ParentFont = False
+      TabOrder = 1
+    end
+    object rbIncludeHalfOfGates: TRadioButton
+      Left = 6
+      Height = 19
+      Top = 25
+      Width = 433
+      Align = alTop
+      Caption = 'Inputs, Outputs und die Hälfte aller Gatter'
+      Font.Color = clWhite
+      OnChange = rbIncludeAllGatesChange
+      ParentFont = False
+      TabOrder = 2
+    end
+    object rbIncludeNothing: TRadioButton
+      Left = 6
+      Height = 19
+      Top = 63
+      Width = 433
+      Align = alTop
+      Caption = 'nichts'
+      Color = 8405056
+      Font.Color = clWhite
+      OnChange = rbIncludeAllGatesChange
+      ParentColor = False
+      ParentFont = False
+      TabOrder = 3
+    end
+  end
+  object Label5: TLabel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = TestInputsPanel
+    Left = 4
+    Height = 15
+    Top = 301
+    Width = 74
+    BorderSpacing.Left = 4
+    Caption = 'Test-Eingaben'
+    Font.Color = clWhite
+    ParentColor = False
+    ParentFont = False
+  end
+  object TestInputsPanel: TPanel
+    AnchorSideLeft.Control = Label3
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = DifficultyTrackBar
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = addTaskShape
+    Left = 107
+    Height = 216
+    Top = 301
+    Width = 445
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    BorderSpacing.Left = 4
+    BorderSpacing.Top = 4
+    BorderSpacing.Right = 4
+    BorderSpacing.Bottom = 4
+    BorderWidth = 5
+    ClientHeight = 216
+    ClientWidth = 445
+    Color = 7354424
+    ParentColor = False
+    TabOrder = 4
+    object Label6: TLabel
+      AnchorSideLeft.Control = TestInputsPanel
+      AnchorSideTop.Control = TestInputsPanel
+      Left = 6
+      Height = 15
+      Top = 10
+      Width = 36
+      BorderSpacing.Top = 4
+      Caption = 'Anzahl'
+      Font.Color = clWhite
+      ParentColor = False
+      ParentFont = False
+    end
+    object TestCaseCountEdit: TEdit
+      AnchorSideLeft.Control = Label6
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = TestInputsPanel
+      Left = 46
+      Height = 23
+      Top = 10
+      Width = 80
+      BorderSpacing.Left = 4
+      BorderSpacing.Top = 4
+      Color = 7354424
+      Font.Color = clWhite
+      NumbersOnly = True
+      OnEditingDone = TestCaseCountEditEditingDone
+      ParentFont = False
+      TabOrder = 0
+      Text = '16'
+    end
+    object TestCasesStringGrid: TStringGrid
+      AnchorSideLeft.Control = TestInputsPanel
+      AnchorSideTop.Control = generateTestCasesShape
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = TestInputsPanel
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = TestInputsPanel
+      AnchorSideBottom.Side = asrBottom
+      Left = 10
+      Height = 164
+      Top = 42
+      Width = 425
+      Anchors = [akTop, akLeft, akRight, akBottom]
+      BorderSpacing.Left = 4
+      BorderSpacing.Top = 4
+      BorderSpacing.Right = 4
+      BorderSpacing.Bottom = 4
+      Color = 8405056
+      FixedColor = 7354424
+      FixedCols = 0
+      Flat = True
+      Font.Color = clWhite
+      Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goEditing, goSmoothScroll]
+      ParentFont = False
+      TabOrder = 1
+      OnEditingDone = TestCasesStringGridEditingDone
+      OnHeaderClick = TestCasesStringGridHeaderClick
+      OnValidateEntry = TestCasesStringGridValidateEntry
+    end
+    object generateTestCasesShape: TShape
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = TestInputsPanel
+      AnchorSideRight.Control = TestInputsPanel
+      AnchorSideRight.Side = asrBottom
+      Left = 306
+      Height = 28
+      Top = 10
+      Width = 129
+      Anchors = [akTop, akRight]
+      BorderSpacing.Left = 15
+      BorderSpacing.Top = 4
+      BorderSpacing.Right = 4
+      Brush.Color = 6303792
+      OnMouseDown = generateTestCasesShapeMouseDown
+      Shape = stRoundRect
+    end
+    object generateTestCasesLabel: TLabel
+      AnchorSideLeft.Control = generateTestCasesShape
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = generateTestCasesShape
+      AnchorSideTop.Side = asrCenter
+      AnchorSideRight.Side = asrBottom
+      Left = 338
+      Height = 21
+      Top = 14
+      Width = 64
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      Caption = 'erzeugen'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+      OnMouseDown = generateTestCasesShapeMouseDown
+    end
+  end
+  object RadioPanel1: TPanel
+    AnchorSideLeft.Control = Label3
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = RadioPanel
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 107
+    Height = 88
+    Top = 180
+    Width = 445
+    Anchors = [akTop, akLeft, akRight]
+    AutoSize = True
+    BorderSpacing.Left = 4
+    BorderSpacing.Top = 4
+    BorderSpacing.Right = 4
+    BorderWidth = 5
+    ClientHeight = 88
+    ClientWidth = 445
+    Color = 16744576
+    ParentColor = False
+    TabOrder = 5
+    object rbPreconfiguredPaletteWithCounts: TRadioButton
+      Left = 6
+      Height = 19
+      Top = 6
+      Width = 433
+      Align = alTop
+      Caption = 'Vorkonfigurierte Elemente; Anzahl vorgegeben'
+      Checked = True
+      Font.Color = clWhite
+      OnChange = rbIncludeAllGatesChange
+      ParentFont = False
+      TabOrder = 0
+      TabStop = True
+    end
+    object rbUnconfiguredPaletteWithCounts: TRadioButton
+      Left = 6
+      Height = 19
+      Top = 44
+      Width = 433
+      Align = alTop
+      Caption = 'Unkonfigurierte Elemente; Anzahl vorgegeben'
+      Font.Color = clWhite
+      OnChange = rbIncludeAllGatesChange
+      ParentFont = False
+      TabOrder = 1
+    end
+    object rbPreconfiguredPalette: TRadioButton
+      Left = 6
+      Height = 19
+      Top = 25
+      Width = 433
+      Align = alTop
+      Caption = 'Vorkonfigurierte Elemente; Anzahl frei'
+      Font.Color = clWhite
+      OnChange = rbIncludeAllGatesChange
+      ParentFont = False
+      TabOrder = 2
+    end
+    object rbFreePalette: TRadioButton
+      Left = 6
+      Height = 19
+      Top = 63
+      Width = 433
+      Align = alTop
+      Caption = 'freie Palette'
+      Color = 8405056
+      Font.Color = clWhite
+      OnChange = rbIncludeAllGatesChange
+      ParentColor = False
+      ParentFont = False
+      TabOrder = 3
+    end
+  end
+  object Label7: TLabel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = RadioPanel1
+    Left = 4
+    Height = 15
+    Top = 180
+    Width = 36
+    BorderSpacing.Left = 4
+    Caption = 'Palette'
+    Font.Color = clWhite
+    ParentColor = False
+    ParentFont = False
+  end
+  object addTaskShape: TShape
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = TestInputsPanel
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 392
+    Height = 28
+    Top = 521
+    Width = 160
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 15
+    BorderSpacing.Top = 4
+    BorderSpacing.Right = 4
+    BorderSpacing.Bottom = 4
+    Brush.Color = 6303792
+    OnMouseDown = addTaskShapeMouseDown
+    Shape = stRoundRect
+  end
+  object addTaskLabel: TLabel
+    AnchorSideLeft.Control = addTaskShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = addTaskShape
+    AnchorSideTop.Side = asrCenter
+    AnchorSideRight.Side = asrBottom
+    Left = 408
+    Height = 21
+    Top = 525
+    Width = 129
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    Caption = 'Aufgabe speichern'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = addTaskShapeMouseDown
+  end
+  object Timer1: TTimer
+    OnTimer = Timer1Timer
+    OnStartTimer = Timer1StartTimer
+    Left = 98
+    Top = 75
+  end
+end

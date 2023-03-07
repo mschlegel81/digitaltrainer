@@ -1,0 +1,159 @@
+object RomEditorForm: TRomEditorForm
+  Left = 931
+  Height = 222
+  Top = 413
+  Width = 320
+  Caption = 'ROM Editor'
+  ClientHeight = 222
+  ClientWidth = 320
+  Color = 7354424
+  OnCreate = FormCreate
+  LCLVersion = '2.2.2.0'
+  object StringGrid1: TStringGrid
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = propOkShape
+    Left = 5
+    Height = 169
+    Top = 5
+    Width = 310
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Color = 8405056
+    ColCount = 4
+    FixedColor = 6303792
+    Flat = True
+    Font.Color = clWhite
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goEditing, goDblClickAutoSize, goSmoothScroll]
+    ParentFont = False
+    TabOrder = 0
+    OnValidateEntry = StringGrid1ValidateEntry
+    Cells = (
+      4
+      0
+      0
+      'Adresse'
+      1
+      0
+      'Daten (bin)'
+      2
+      0
+      'Daten (dec)'
+      3
+      0
+      'Daten (2cmp)'
+    )
+  end
+  object propOkShape: TShape
+    AnchorSideLeft.Control = propAddDataShape
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 91
+    Height = 38
+    Top = 179
+    Width = 224
+    Anchors = [akLeft, akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = propOkShapeMouseDown
+    Shape = stRoundRect
+  end
+  object propOkLabel: TLabel
+    AnchorSideLeft.Control = propOkShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = propOkShape
+    AnchorSideTop.Side = asrCenter
+    Left = 158
+    Height = 21
+    Top = 188
+    Width = 91
+    Caption = 'Übernehmen'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = propOkShapeMouseDown
+  end
+  object propAddDataShape: TShape
+    AnchorSideLeft.Control = propRemDataShape
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 48
+    Height = 38
+    Top = 179
+    Width = 38
+    Anchors = [akLeft, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = propAddDataShapeMouseDown
+    Shape = stRoundRect
+  end
+  object propAddDataLabel: TLabel
+    AnchorSideLeft.Control = propAddDataShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = propAddDataShape
+    AnchorSideTop.Side = asrCenter
+    Left = 62
+    Height = 21
+    Top = 188
+    Width = 11
+    Caption = '+'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = propAddDataShapeMouseDown
+  end
+  object propRemDataShape: TShape
+    AnchorSideLeft.Control = Owner
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 5
+    Height = 38
+    Top = 179
+    Width = 38
+    Anchors = [akLeft, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = propRemDataShapeMouseDown
+    Shape = stRoundRect
+  end
+  object propRemDataLabel: TLabel
+    AnchorSideLeft.Control = propRemDataShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = propRemDataShape
+    AnchorSideTop.Side = asrCenter
+    Left = 21
+    Height = 21
+    Top = 188
+    Width = 6
+    Caption = '-'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = propRemDataShapeMouseDown
+  end
+end

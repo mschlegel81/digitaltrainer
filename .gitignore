@@ -4,3 +4,5 @@
 *.res
 /lib/*
 *.workspace
+
+/dt2.lps
