@@ -605,8 +605,7 @@ PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
     setLength(items,0);
   end;
 
-FUNCTION T_workspacePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
-  ): P_abstractGate;
+FUNCTION T_workspacePalette.readGate(VAR stream: T_bufferedInputStreamWrapper): P_abstractGate;
   VAR gateType:T_gateType;
       prototypeIndex:longint;
   begin
@@ -638,8 +637,7 @@ FUNCTION T_workspacePalette.findEntry(CONST gate: P_abstractGate): longint;
     result:=-1;
   end;
 
-PROCEDURE T_workspacePalette.reassignEntry(CONST gate: P_abstractGate;
-  CONST newPalette: string);
+PROCEDURE T_workspacePalette.reassignEntry(CONST gate: P_abstractGate; CONST newPalette: string);
   VAR entryIndex:longint;
       paletteIndex:longint=0;
       previousPaletteIndex:longint;

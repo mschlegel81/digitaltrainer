@@ -1,11 +1,11 @@
 object SelectTaskForm: TSelectTaskForm
-  Left = 635
+  Left = 697
   Height = 395
   Top = 235
-  Width = 616
+  Width = 557
   Caption = 'Aufgaben'
   ClientHeight = 395
-  ClientWidth = 616
+  ClientWidth = 557
   Color = 7354424
   OnShow = FormShow
   LCLVersion = '2.2.2.0'
@@ -18,7 +18,7 @@ object SelectTaskForm: TSelectTaskForm
     Left = 4
     Height = 248
     Top = 4
-    Width = 608
+    Width = 549
     Anchors = [akTop, akLeft, akRight, akBottom]
     BorderSpacing.Left = 4
     BorderSpacing.Top = 4
@@ -69,7 +69,7 @@ object SelectTaskForm: TSelectTaskForm
     Left = 4
     Height = 90
     Top = 257
-    Width = 608
+    Width = 549
     Anchors = [akLeft, akRight, akBottom]
     BorderSpacing.Top = 5
     BorderSpacing.Bottom = 5
@@ -83,10 +83,10 @@ object SelectTaskForm: TSelectTaskForm
     AnchorSideRight.Control = StartTaskShape
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 207
+    Left = 159
     Height = 39
     Top = 352
-    Width = 200
+    Width = 150
     Anchors = [akRight, akBottom]
     BorderSpacing.Left = 5
     BorderSpacing.Top = 5
@@ -101,7 +101,7 @@ object SelectTaskForm: TSelectTaskForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = DeleteTaskShape
     AnchorSideTop.Side = asrCenter
-    Left = 250
+    Left = 177
     Height = 21
     Top = 361
     Width = 115
@@ -116,14 +116,13 @@ object SelectTaskForm: TSelectTaskForm
     OnMouseDown = DeleteTaskShapeMouseDown
   end
   object StartTaskShape: TShape
-    AnchorSideRight.Control = Owner
-    AnchorSideRight.Side = asrBottom
+    AnchorSideRight.Control = MoveTaskDownShape
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 412
+    Left = 314
     Height = 39
     Top = 352
-    Width = 200
+    Width = 150
     Anchors = [akRight, akBottom]
     BorderSpacing.Left = 5
     BorderSpacing.Top = 5
@@ -138,7 +137,7 @@ object SelectTaskForm: TSelectTaskForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = StartTaskShape
     AnchorSideTop.Side = asrCenter
-    Left = 457
+    Left = 334
     Height = 21
     Top = 361
     Width = 110
@@ -156,10 +155,10 @@ object SelectTaskForm: TSelectTaskForm
     AnchorSideRight.Control = DeleteTaskShape
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 2
+    Left = 4
     Height = 39
     Top = 352
-    Width = 200
+    Width = 150
     Anchors = [akRight, akBottom]
     BorderSpacing.Left = 5
     BorderSpacing.Top = 5
@@ -174,7 +173,7 @@ object SelectTaskForm: TSelectTaskForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = EditTaskShape
     AnchorSideTop.Side = asrCenter
-    Left = 34
+    Left = 11
     Height = 21
     Top = 361
     Width = 136
@@ -187,5 +186,84 @@ object SelectTaskForm: TSelectTaskForm
     ParentColor = False
     ParentFont = False
     OnMouseDown = EditTaskShapeMouseDown
+  end
+  object MoveTaskUpShape: TShape
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 513
+    Height = 39
+    Top = 352
+    Width = 39
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 4
+    Brush.Color = 6303792
+    OnMouseDown = MoveTaskUpShapeMouseDown
+    Shape = stRoundRect
+  end
+  object MoveTaskUpLabel: TLabel
+    AnchorSideLeft.Control = MoveTaskUpShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = MoveTaskUpShape
+    AnchorSideTop.Side = asrCenter
+    Left = 528
+    Height = 21
+    Top = 361
+    Width = 8
+    Caption = '↑'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = MoveTaskUpShapeMouseDown
+  end
+  object MoveTaskDownShape: TShape
+    AnchorSideRight.Control = MoveTaskUpShape
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 469
+    Height = 39
+    Top = 352
+    Width = 39
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 4
+    Brush.Color = 6303792
+    OnMouseDown = MoveTaskDownShapeMouseDown
+    Shape = stRoundRect
+  end
+  object MoveTaskDownLabel: TLabel
+    AnchorSideLeft.Control = MoveTaskDownShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = MoveTaskDownShape
+    AnchorSideTop.Side = asrCenter
+    Left = 484
+    Height = 21
+    Top = 361
+    Width = 8
+    Caption = '↓'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = MoveTaskDownShapeMouseDown
+  end
+  object SaveDialog1: TSaveDialog
+    DefaultExt = '.challenges'
+    Filter = '.challenges'
+    Left = 240
+    Top = 119
   end
 end

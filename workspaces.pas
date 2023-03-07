@@ -41,6 +41,7 @@ TYPE
     PROPERTY  getChallenges:P_challengeSet read challenges;
 
     FUNCTION getInfoLabelText:string;
+    PROCEDURE replaceChallengeSet(CONST challengeSet:P_challengeSet);
   end;
 
 IMPLEMENTATION
@@ -87,8 +88,7 @@ FUNCTION T_workspace.getSerialVersion: dword;
     result:=serialVersionOf('T_workspace',1);
   end;
 
-FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
-  ): boolean;
+FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
   begin
     result:=inherited and
     workspacePalette^.loadFromStream(stream) and
@@ -199,6 +199,15 @@ FUNCTION T_workspace.getInfoLabelText: string;
     if activeChallenge<>nil
     then result:=activeChallenge^.getInfoLabelText
     else result:=workspaceBoard ^.getInfoLabelText;
+  end;
+
+PROCEDURE T_workspace.replaceChallengeSet(CONST challengeSet: P_challengeSet);
+  begin
+    setFreeEditMode;
+    dispose(challenges,destroy);
+    challenges:=challengeSet;
+    activeChallenge:=nil;
+    activeChallengeIndex:=-1;
   end;
 
 end.

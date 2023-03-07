@@ -37,6 +37,7 @@ TYPE
     challengeTestCreationThread:T_challengeTestCreationThread;
     PROCEDURE updateTestCaseResults(CONST callback:F_caseUpdatedCallback; CONST resume:PBoolean; CONST initCounts:boolean=false);
   public
+    marked:boolean; //for export dialog only
     challengeLevel      :byte;
     callengeCompleted   :boolean;
     resultTemplate      :P_visualBoard;
@@ -93,16 +94,19 @@ TYPE
     CONSTRUCTOR create;
     DESTRUCTOR destroy;
 
+    PROCEDURE markAllAsPending;
     FUNCTION getSerialVersion:dword; virtual;
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
     PROCEDURE add(CONST c:P_challenge);
+    PROCEDURE moveChallenge(CONST index:longint; CONST up:boolean);
+    FUNCTION extractForExport:P_challengeSet;
   end;
 
 CONST checkMark='✓';
 
 IMPLEMENTATION
-USES sysutils;
+USES sysutils,math;
 
 { T_challengeTestCreationThread }
 
@@ -164,6 +168,15 @@ DESTRUCTOR T_challengeSet.destroy;
     setLength(challenge,0);
   end;
 
+PROCEDURE T_challengeSet.markAllAsPending;
+  VAR i:longint;
+  begin
+    for i:=0 to length(challenge)-1 do begin
+      challenge[i]^.callengeCompleted:=false;
+      challenge[i]^.editable         :=false;
+    end;
+  end;
+
 FUNCTION T_challengeSet.getSerialVersion: dword;
   begin
     result:=serialVersionOf('T_challengeSet',1);
@@ -196,6 +209,28 @@ PROCEDURE T_challengeSet.add(CONST c: P_challenge);
     setLength(challenge,length(challenge)+1);
     challenge[length(challenge)-1]:=c;
     c^.challengeTestCreationThread.ensureStop;
+  end;
+
+PROCEDURE T_challengeSet.moveChallenge(CONST index: longint; CONST up: boolean);
+  VAR tmp:P_challenge;
+      newIndex:longint;
+  begin
+    if up
+    then newIndex:=index-1
+    else newIndex:=index+1;
+
+    if (index>=0) and (index<length(challenge)) and (newIndex>=0) and (newIndex<length(challenge)) then begin
+      tmp                :=challenge[   index];
+      challenge[   index]:=challenge[newIndex];
+      challenge[newIndex]:=tmp;
+    end;
+  end;
+
+FUNCTION T_challengeSet.extractForExport: P_challengeSet;
+  VAR i:longint;
+  begin
+    new(result,create);
+    for i:=0 to length(challenge)-1 do if challenge[i]^.marked then result^.add(challenge[i]);
   end;
 
 { T_challenge }
@@ -266,6 +301,7 @@ FUNCTION T_challenge.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
     if not inherited then exit(false);
     challengeLevel      :=stream.readByte;
     callengeCompleted   :=stream.readBoolean;
+    editable            :=stream.readBoolean;
     challengeTitle      :=stream.readAnsiString;
     challengeDescription:=stream.readAnsiString;
     if not(stream.allOkay) then exit(false);
@@ -294,6 +330,7 @@ PROCEDURE T_challenge.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
     inherited;
     stream.writeByte(challengeLevel);
     stream.writeBoolean(callengeCompleted);
+    stream.writeBoolean(editable);
     stream.writeAnsiString(challengeTitle);
     stream.writeAnsiString(challengeDescription);
 

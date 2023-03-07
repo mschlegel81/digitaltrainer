@@ -18,6 +18,12 @@ TYPE
   TDigitaltrainerMainForm = class(TForm)
     boardHorizontalScrollBar: TScrollBar;
     boardImage: TImage;
+    miImportOverwrite: TMenuItem;
+    miImportAdd: TMenuItem;
+    miExportChallenges: TMenuItem;
+    miImportChallenges: TMenuItem;
+    OpenDialog1: TOpenDialog;
+    Separator1: TMenuItem;
     WireTimer: TIdleTimer;
     ioEdit: TEdit;
     infoLabel: TLabel;
@@ -73,7 +79,10 @@ TYPE
     PROCEDURE miAddToPaletteClick(Sender: TObject);
     PROCEDURE miCopyClick(Sender: TObject);
     PROCEDURE miEditModeClick(Sender: TObject);
+    PROCEDURE miExportChallengesClick(Sender: TObject);
     PROCEDURE miFullScreenClick(Sender: TObject);
+    PROCEDURE miImportAddClick(Sender: TObject);
+    PROCEDURE miImportOverwriteClick(Sender: TObject);
     PROCEDURE miNewBoardClick(Sender: TObject);
     PROCEDURE miPasteClick(Sender: TObject);
     PROCEDURE miRedoClick(Sender: TObject);
@@ -232,6 +241,11 @@ PROCEDURE TDigitaltrainerMainForm.miEditModeClick(Sender: TObject);
     infoLabel.caption:=workspace.getInfoLabelText;
   end;
 
+PROCEDURE TDigitaltrainerMainForm.miExportChallengesClick(Sender: TObject);
+  begin
+    SelectTaskForm(@workspace).showForExport(workspace.getChallenges);
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
   begin
     if miFullScreen.checked then begin
@@ -242,6 +256,35 @@ PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
       BorderStyle:=bsNone;
     end;
     miFullScreen.checked:=not(miFullScreen.checked);
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miImportAddClick(Sender: TObject);
+  VAR newChallengeSet:P_challengeSet;
+      challenge:P_challenge;
+  begin
+    if OpenDialog1.execute then begin
+      new(newChallengeSet,create);
+      if newChallengeSet^.loadFromFile(OpenDialog1.fileName) then begin
+        newChallengeSet^.markAllAsPending;
+        for challenge in newChallengeSet^.challenge do workspace.getChallenges^.add(challenge);
+      end;
+      dispose(newChallengeSet,destroy);
+    end;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miImportOverwriteClick(Sender: TObject);
+  VAR newChallengeSet:P_challengeSet;
+  begin
+    if OpenDialog1.execute then begin
+      new(newChallengeSet,create);
+      if newChallengeSet^.loadFromFile(OpenDialog1.fileName) then begin
+        newChallengeSet^.markAllAsPending;
+        workspace.replaceChallengeSet(newChallengeSet);
+      end else dispose(newChallengeSet,destroy);
+      miEditModeClick(Sender);
+      workspace.activePalette^.attachUI(@uiAdapter);
+      workspace.activeBoard  ^.attachUI(@uiAdapter);
+    end;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miNewBoardClick(Sender: TObject);
@@ -525,12 +568,15 @@ PROCEDURE TDigitaltrainerMainForm.propertyValueChanged(Sender: TObject);
     setEnableButton(propOkShape,propOkLabel,true);
   end;
 
-PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate;
-  CONST fromBoard: boolean; CONST mouseX, mouseY: longint);
+PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate; CONST fromBoard: boolean; CONST mouseX, mouseY: longint);
   begin
     propEditPanel.visible:=true;
-    propEditPanel.Left:=mouseX;
-    propEditPanel.top:=mouseY;
+    if mouseX>width-propEditPanel.width
+    then propEditPanel.Left:=width-propEditPanel.width
+    else propEditPanel.Left:=mouseX;
+    if mouseY>height-propEditPanel.height
+    then propEditPanel.top:=height-propEditPanel.height
+    else propEditPanel.top:=mouseY;
     if propEditPanel.Left+propEditPanel.width>width then propEditPanel.Left:=width-propEditPanel.width;
     if propEditPanel.top+propEditPanel.height>height then propEditPanel.top:=height-propEditPanel.height;
     propEditPanel.BringToFront;

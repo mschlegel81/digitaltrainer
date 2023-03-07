@@ -409,7 +409,7 @@ TYPE
 
    P_RomGate=^T_romGate;
    T_romGate=object(T_abstractGate)
-     data:array of T_wireValue;
+     data:T_wireValueArray;
      decodedAdress:longint;
      readAdr:T_wireValue;
 
@@ -911,6 +911,7 @@ FUNCTION T_ramGate.behaviorEquals(CONST other: P_abstractGate): boolean;
 CONSTRUCTOR T_romGate.create;
   begin
     inherited;
+    initialize(data);
     reset;
   end;
 
@@ -991,8 +992,7 @@ FUNCTION T_romGate.getOutput(CONST index: longint): T_wireValue;
 FUNCTION T_romGate.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
   VAR i:longint;
   begin
-    result:=false;
-    for i:=0 to WIRE_MAX_WIDTH-1 do result:=result or (value.bit[i]<>readAdr.bit[i]);
+    result:=value<>readAdr;
     readAdr:=value;
   end;
 

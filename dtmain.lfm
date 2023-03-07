@@ -1,7 +1,7 @@
 object DigitaltrainerMainForm: TDigitaltrainerMainForm
-  Left = 784
+  Left = 873
   Height = 737
-  Top = 161
+  Top = 389
   Width = 1277
   Align = alTop
   Caption = 'Digitaltrainer'
@@ -560,6 +560,24 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         ShortCut = 16462
         OnClick = miNewBoardClick
       end
+      object Separator1: TMenuItem
+        Caption = '-'
+      end
+      object miImportChallenges: TMenuItem
+        Caption = 'Aufgaben &importieren'
+        object miImportOverwrite: TMenuItem
+          Caption = 'Aufgaben überschreiben'
+          OnClick = miImportOverwriteClick
+        end
+        object miImportAdd: TMenuItem
+          Caption = 'Aufgaben hinzugfügen'
+          OnClick = miImportAddClick
+        end
+      end
+      object miExportChallenges: TMenuItem
+        Caption = 'Aufgaben &exportieren'
+        OnClick = miExportChallengesClick
+      end
     end
     object miEdit: TMenuItem
       Caption = 'Bearbeiten'
@@ -620,5 +638,11 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     OnTimer = WireTimerTimer
     Left = 669
     Top = 240
+  end
+  object OpenDialog1: TOpenDialog
+    DefaultExt = '.challenges'
+    Filter = '.challenges'
+    Left = 731
+    Top = 281
   end
 end

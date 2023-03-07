@@ -162,6 +162,14 @@
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="taskFinishedUnit"/>
       </Unit>
+      <Unit>
+        <Filename Value="romeditorunit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="RomEditorForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="romEditorUnit"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

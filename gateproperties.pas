@@ -63,6 +63,7 @@ TYPE
   T_gatePropertyValue=record
     s:string;
     n:longint;
+    romContents:T_wireValueArray
   end;
 
   T_gateProperties=array of T_gateProperty;
@@ -79,6 +80,7 @@ TYPE
         value  :T_gatePropertyValue;
         modified:boolean;
       end;
+      PROCEDURE EditButtonClick(Sender: TObject);
       FUNCTION fetchValue(CONST prop:T_gatePropertyEnum):T_gatePropertyValue;
       PROCEDURE applyValue(CONST prop:T_gatePropertyEnum; CONST value:T_gatePropertyValue);
 
@@ -96,13 +98,15 @@ TYPE
   end;
 
 IMPLEMENTATION
-USES sysutils;
+USES sysutils,romEditorUnit;
 { T_gatePropertyValues }
 
 FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum): T_gatePropertyValue;
   begin
     result.n:=0;
     result.s:='';
+    initialize(result.romContents);
+    setLength(result.romContents,0);
     case prop of
       gpe_caption,gpe_captionReadOnly:
         result.s:=StringReplace(gate^.getCaption,LineEnding,'\n',[rfReplaceAll]);
@@ -146,8 +150,19 @@ FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum): T_gate
           result.n:=-1;
         end;
       end;
-
+      gpe_romData: result.romContents:=P_RomGate(gate)^.data;
       else assert(false);
+    end;
+  end;
+
+PROCEDURE T_gatePropertyValues.EditButtonClick(Sender: TObject);
+  VAR i:longint=0;
+  begin
+    while (i<length(entry)) and (entry[i].prop<>gpe_romData) do inc(i);
+    if i>=length(entry) then exit;
+    if RomEditorForm.showFor(entry[i].value.romContents) then begin
+      entry[i].modified:=true;
+      onAccept(Sender);
     end;
   end;
 
@@ -191,11 +206,14 @@ PROCEDURE T_gatePropertyValues.applyValue(CONST prop: T_gatePropertyEnum; CONST 
       gpe_inputCount :
         if gate^.gateType in [gt_andGate,gt_orGate,gt_xorGate,gt_nandGate,gt_norGate,gt_nxorGate]
         then P_binaryBaseGate(gate)^.inputCount:=value.n;
+      gpe_romData: begin
+        if gate^.gateType in [gt_ram,gt_rom]
+        then P_RomGate(gate)^.data:=value.romContents;
+      end;
     end;
   end;
 
-PROCEDURE T_gatePropertyValues.ValueListEditorValidateEntry(Sender: TObject;
-  aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
+PROCEDURE T_gatePropertyValues.ValueListEditorValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
   begin
     if aCol=0 then begin
       newValue:=oldValue;
@@ -211,8 +229,8 @@ PROCEDURE T_gatePropertyValues.connectEditor(editor: TValueListEditor);
     i: integer;
     s: string;
   begin
-
     editor.OnValidateEntry:=@ValueListEditorValidateEntry;
+    editor.OnEditButtonClick:=@EditButtonClick;
     editor.clear;
     editor.rowCount:=length(entry);
     for i:=0 to length(entry)-1 do begin
@@ -232,6 +250,10 @@ PROCEDURE T_gatePropertyValues.connectEditor(editor: TValueListEditor);
           editor.ItemProps[i].PickList.clear;
           for s in palette^.subPaletteNames do editor.ItemProps[i].PickList.add(s);
         end;
+        pt_data: begin
+          editor.Cells[1,i+1]:='<data>';
+          editor.ItemProps[i].EditStyle:=esEllipsis;
+        end;
       end;
     end;
     editor.editor.color:=$00703838;
@@ -239,9 +261,7 @@ PROCEDURE T_gatePropertyValues.connectEditor(editor: TValueListEditor);
     editor.AutoSizeColumn(0);
   end;
 
-CONSTRUCTOR T_gatePropertyValues.createForPaletteEntry(
-  editor: TValueListEditor; onModify: TNotifyEvent;
-  CONST gate_: P_abstractGate; CONST palette_: P_palette);
+CONSTRUCTOR T_gatePropertyValues.createForPaletteEntry(editor: TValueListEditor; onModify: TNotifyEvent; CONST gate_: P_abstractGate; CONST palette_: P_palette);
   VAR p:T_gatePropertyEnum;
       i:longint=0;
   begin
@@ -259,8 +279,7 @@ CONSTRUCTOR T_gatePropertyValues.createForPaletteEntry(
     connectEditor(editor);
   end;
 
-CONSTRUCTOR T_gatePropertyValues.createForBoardEntry(editor: TValueListEditor;
-  onModify: TNotifyEvent; CONST gate_: P_abstractGate);
+CONSTRUCTOR T_gatePropertyValues.createForBoardEntry(editor: TValueListEditor; onModify: TNotifyEvent; CONST gate_: P_abstractGate);
   VAR p:T_gatePropertyEnum;
       i:longint=0;
   begin
