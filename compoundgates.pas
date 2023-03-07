@@ -40,6 +40,7 @@ TYPE
     PROCEDURE ensureBaseGate(CONST gate:P_abstractGate; CONST visible:boolean); virtual; abstract;
     PROCEDURE countUpGate(CONST gate:P_abstractGate); virtual; abstract;
     PROCEDURE countDownGate(CONST gate:P_abstractGate); virtual; abstract;
+    FUNCTION isWorkspacePalette:boolean; virtual; abstract;
   end;
 
   { T_wire }
@@ -395,10 +396,6 @@ PROCEDURE T_compoundGate.writePrototypeToStream(VAR stream: T_bufferedOutputStre
 FUNCTION T_compoundGate.readPrototypeFromStream(VAR stream: T_bufferedInputStreamWrapper; CONST acutalIndex: longint): boolean;
   FUNCTION gateFromDeserialization(index:longint):P_abstractGate;
     begin
-      assert(index>=0,'Negative gate index!');
-
-      writeln('Gate for index ',index,' (',length(inputs),'/',length(outputs),'/',length(gates),')');
-
       if index<length(inputs ) then exit(inputs [index]); index-=length(inputs);
       if index<length(outputs) then exit(outputs[index]); index-=length(outputs);
       assert(index<length(gates),'Gate index overflow!');
@@ -416,11 +413,11 @@ FUNCTION T_compoundGate.readPrototypeFromStream(VAR stream: T_bufferedInputStrea
     setLength(wires  ,stream.readNaturalNumber);
     for i:=0 to length(wires)-1 do with wires[i] do begin
       source:=gateFromDeserialization(stream.readNaturalNumber);
-      sourceOutputIndex:=stream.readNaturalNumber;
-      setLength(sink,stream.readNaturalNumber);
+      sourceOutputIndex:=            stream.readNaturalNumber;
+      setLength(sink,                stream.readNaturalNumber);
       for j:=0 to length(sink)-1 do with sink[j] do begin
         gate:=gateFromDeserialization(stream.readNaturalNumber);
-        gateInputIndex:=stream.readNaturalNumber;
+        gateInputIndex:=              stream.readNaturalNumber;
       end;
     end;
     result:=stream.allOkay;
@@ -429,11 +426,10 @@ FUNCTION T_compoundGate.readPrototypeFromStream(VAR stream: T_bufferedInputStrea
 PROCEDURE T_compoundGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly: boolean);
   begin
     inherited;
-    stream.writeLongint(prototype^.getIndexInPalette);
+    stream.writeNaturalNumber(prototype^.getIndexInPalette);
   end;
 
-PROCEDURE T_compoundGate.readMetaDataFromStream(
-  VAR stream: T_bufferedInputStreamWrapper);
+PROCEDURE T_compoundGate.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
   begin
     assert(false,'This should never be called');
   end;

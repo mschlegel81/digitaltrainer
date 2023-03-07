@@ -307,7 +307,6 @@ FUNCTION T_challenge.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): b
     challengeTitle      :=stream.readAnsiString;
     challengeDescription:=stream.readAnsiString;
     if not(stream.allOkay) then exit(false);
-    writeln('Reading challenge "',challengeTitle,'"');
 
     result:=palette^.loadFromStream(stream)
         and resultTemplate^.loadFromStream(stream,false)
@@ -318,17 +317,13 @@ FUNCTION T_challenge.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): b
     testCount:=stream.readNaturalNumber;
     if (testCount>65536) or not(stream.allOkay) then exit(false);
     setLength(tests,testCount);
-    writeln('Reading ',testCount,' test cases');
     for i:=0 to length(tests)-1 do with tests[i] do begin
       setLength(inputs,expectedBehavior^.numberOfInputs);
-      writeln('Expected behaviour has ',expectedBehavior^.numberOfInputs,' inputs');
       for j:=0 to expectedBehavior^.numberOfInputs-1 do begin
         inputs[j]:=deserialize(stream.readNaturalNumber);
-        writeln('Input ',i,'/',j,'=',getBinaryString(inputs[j]),' (',inputs[j].width,')');
       end;
       maxTotalSteps:=stream.readNaturalNumber;
     end;
-    writeln('Completely deserialized challenge: ',result);
     result:=result and stream.allOkay;
   end;
 

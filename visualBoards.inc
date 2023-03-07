@@ -1428,7 +1428,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
           g^.setupVisuals;
           ui^.startDrag(x,y,g,uas_draggingFromPalette);
           associatedPalette^.countDownGate(g^.behavior);
-        end else if button=mbRight then begin
+        end else if (button=mbRight) and associatedPalette^.isWorkspacePalette then begin
           ui^.callback.showPropertyEditorCallback(g,false,
             g^.canvasPos[0]+g^.gridWidth*ui^.zoom+ui^.uiElement.boardImage.Left,
             g^.canvasPos[1]                      +ui^.uiElement.boardImage.top);
