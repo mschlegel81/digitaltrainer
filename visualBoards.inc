@@ -464,8 +464,7 @@ PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray;
     rewire(true);
   end;
 
-FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper;
-  CONST includeFixing: boolean): boolean;
+FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper; CONST includeFixing: boolean): boolean;
   FUNCTION gateByIndex(index:longint):P_visualGate;
     begin
       if index<length(inputs) then exit(inputs[index]); dec(index,length(inputs));
@@ -597,15 +596,13 @@ PROCEDURE T_visualBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper;
     end;
   end;
 
-PROCEDURE T_visualBoard.savePaletteEntryToStream(
-  VAR stream: T_bufferedOutputStreamWrapper; CONST paletteIndex: longint);
+PROCEDURE T_visualBoard.savePaletteEntryToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST paletteIndex: longint);
   begin
     myIndex:=paletteIndex;
     saveToStream(stream,false);
   end;
 
-PROCEDURE T_visualBoard.loadPaletteEntryFromStream(
-  VAR stream: T_bufferedInputStreamWrapper; CONST paletteIndex: longint);
+PROCEDURE T_visualBoard.loadPaletteEntryFromStream(VAR stream: T_bufferedInputStreamWrapper; CONST paletteIndex: longint);
   begin
     loadFromStream(stream,false);
     myIndex:=paletteIndex;
@@ -647,8 +644,7 @@ FUNCTION T_visualBoard.extractBehavior: P_compoundGate;
   end;
 
 PROCEDURE T_visualBoard.extractChallenge(CONST options: T_challengeBoardOption;
-  CONST challengePalette: P_abstractPrototypeSource; OUT
-  expectedBehavior: P_compoundGate; OUT boardTemplate: P_visualBoard);
+  CONST challengePalette: P_abstractPrototypeSource; OUT expectedBehavior: P_compoundGate; OUT boardTemplate: P_visualBoard);
   PROCEDURE setupExpectedBehavior;
     VAR i,j:longint;
     FUNCTION gateInClone(CONST gate:P_visualGate):P_abstractGate;
@@ -679,7 +675,7 @@ PROCEDURE T_visualBoard.extractChallenge(CONST options: T_challengeBoardOption;
       setLength(expectedBehavior^.gates,length(gates));
       for i:=0 to length(gates)-1 do begin
         if gates[i]^.behavior^.gateType=gt_compound
-        then expectedBehavior^.gates[i]:=P_compoundGate(gates[i]^.behavior)^.exportForChallenge(challengePalette)
+        then expectedBehavior^.gates[i]:=P_compoundGate(gates[i]^.behavior)^.exportForChallenge(challengePalette,true)
         else begin
           challengePalette^.ensureBaseGate(gates[i]^.behavior,true);
           expectedBehavior^.gates[i]:=gates[i]^.behavior^.clone(false);
@@ -747,7 +743,7 @@ PROCEDURE T_visualBoard.extractChallenge(CONST options: T_challengeBoardOption;
         then begin
           if gates[i]^.behavior^.gateType=gt_compound
           then begin
-            new(boardTemplate^.gates[j],create(P_compoundGate(gates[i]^.behavior)^.exportForChallenge(challengePalette)));
+            new(boardTemplate^.gates[j],create(P_compoundGate(gates[i]^.behavior)^.exportForChallenge(challengePalette,true)));
             boardTemplate^.gates[j]^.gridPos  :=gates[i]^.gridPos;
           end else boardTemplate^.gates[j]:=gates[i]^.clone;
           inc(j);
@@ -1083,7 +1079,6 @@ PROCEDURE T_visualBoard.updateWiresFromTask;
     if wiringTask=nil then exit;
     for k:=0 to length(wiringTask^.toFind)-1 do wires[wiringTask^.toFind[k].index].setPaths(wiringTask^.toFind[k].foundPath);
     disposeTask(wiringTask);
-    wiresUpToDate:=false;
     wiresHaveChangedInBackground:=true;
   end;
 
@@ -1092,7 +1087,8 @@ PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
       Canvas: TBGRACanvas;
       canvasWidth,canvasHeight, zoom:longint;
   begin
-    if not(wiresUpToDate) and init then begin
+    if not(wiresUpToDate and not(wiresHaveChangedInBackground)) and init then begin
+      wiresHaveChangedInBackground:=false;
       //setup
       zoom:=ui^.getZoom;
       canvasWidth :=zoom*(gridX1+4);
@@ -1126,7 +1122,6 @@ PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
       ui^.uiElement.boardImage.Canvas.FillRect(0,0,ui^.uiElement.boardImage.width,ui^.uiElement.boardImage.height);
 
       wiresUpToDate:=true;
-      wiresHaveChangedInBackground:=false;
     end;
     if draw then ui^.uiElement.wireLayer.draw(ui^.uiElement.boardImage.Canvas,
                                               ui^.uiElement.paletteWidth-ui^.uiElement.boardHorizontalScrollBar.position,

@@ -71,7 +71,7 @@ PROCEDURE TTaskFinishedForm.NextChallengeShapeMouseDown(Sender: TObject; button:
 
 PROCEDURE TTaskFinishedForm.CancelShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
-    ModalResult:=mrNone;
+    ModalResult:=mrCancel;
   end;
 
 FUNCTION TTaskFinishedForm.showAfterTest(CONST success, furtherTasksAvailable: boolean): T_finishResponse;

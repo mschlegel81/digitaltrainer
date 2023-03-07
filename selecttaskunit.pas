@@ -146,7 +146,7 @@ PROCEDURE TSelectTaskForm.StartTaskShapeMouseDown(Sender: TObject; button: TMous
         toBeExported:=challengeSet^.extractForExport;
         toBeExported^.saveToFile(SaveDialog1.fileName);
         ModalResult:=mrOk;
-        dispose(toBeExported,destroy);
+        freeMem(toBeExported,sizeOf(T_challengeSet));
       end;
     end else ModalResult:=mrOk;
   end;

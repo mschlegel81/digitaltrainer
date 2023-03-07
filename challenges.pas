@@ -193,6 +193,9 @@ FUNCTION T_challengeSet.loadFromStream(VAR stream: T_bufferedInputStreamWrapper)
     for i:=0 to length(challenge)-1 do begin
       new(challenge[i],create);
       result:=result and challenge[i]^.loadFromStream(stream);
+      {$ifdef debugMode}
+      writeln('Read challenge #',i,'/',length(challenge),' from stream: ',result);
+      {$endif}
     end;
   end;
 
@@ -293,8 +296,7 @@ FUNCTION T_challenge.getSerialVersion: dword;
     result:=serialVersionOf('T_challenge',0);
   end;
 
-FUNCTION T_challenge.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
-  ): boolean;
+FUNCTION T_challenge.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i,j:longint;
       testCount: qword;
   begin
@@ -305,6 +307,7 @@ FUNCTION T_challenge.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
     challengeTitle      :=stream.readAnsiString;
     challengeDescription:=stream.readAnsiString;
     if not(stream.allOkay) then exit(false);
+    writeln('Reading challenge "',challengeTitle,'"');
 
     result:=palette^.loadFromStream(stream)
         and resultTemplate^.loadFromStream(stream,false)
@@ -315,12 +318,17 @@ FUNCTION T_challenge.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
     testCount:=stream.readNaturalNumber;
     if (testCount>65536) or not(stream.allOkay) then exit(false);
     setLength(tests,testCount);
+    writeln('Reading ',testCount,' test cases');
     for i:=0 to length(tests)-1 do with tests[i] do begin
       setLength(inputs,expectedBehavior^.numberOfInputs);
-      for j:=0 to expectedBehavior^.numberOfInputs-1 do inputs[j]:=deserialize(stream.readNaturalNumber);
+      writeln('Expected behaviour has ',expectedBehavior^.numberOfInputs,' inputs');
+      for j:=0 to expectedBehavior^.numberOfInputs-1 do begin
+        inputs[j]:=deserialize(stream.readNaturalNumber);
+        writeln('Input ',i,'/',j,'=',getBinaryString(inputs[j]),' (',inputs[j].width,')');
+      end;
       maxTotalSteps:=stream.readNaturalNumber;
     end;
-
+    writeln('Completely deserialized challenge: ',result);
     result:=result and stream.allOkay;
   end;
 
@@ -414,12 +422,14 @@ PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard;
     randomize;
     challengeLevel      :=0;
     callengeCompleted   :=false;
+    editable            :=true;
 
     if expectedBehavior<>nil then dispose(expectedBehavior,destroy);
     if resultTemplate  <>nil then dispose(resultTemplate,destroy);
     if palette         <>nil then dispose(palette,destroy);
 
     new(palette,create);
+    palette^.constructingChallenge:=true;
     expectedAsVisual^.extractChallenge(challengeBoardOption,palette,expectedBehavior,resultTemplate);
     palette^.finalizePalette(challengeBoardOption,challengePaletteOption);
 
@@ -528,9 +538,7 @@ FUNCTION T_challenge.lastTestCasePrepared: longint;
     result:=challengeTestCreationThread.lastPreparedIndex;
   end;
 
-PROCEDURE T_challenge.updateTestCaseResults(
-  CONST callback: F_caseUpdatedCallback; CONST resume: PBoolean;
-  CONST initCounts: boolean);
+PROCEDURE T_challenge.updateTestCaseResults(CONST callback: F_caseUpdatedCallback; CONST resume: PBoolean; CONST initCounts: boolean);
   VAR i, stepsDone:longint;
   begin
     expectedBehavior^.reset;

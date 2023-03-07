@@ -183,7 +183,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       Width = 191
       Max = 34
       OnChange = SpeedTrackBarChange
-      Position = 0
+      Position = 6
       Anchors = [akLeft, akRight, akBottom]
       BorderSpacing.Left = 2
       BorderSpacing.Right = 2
@@ -628,7 +628,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Top = 180
   end
   object SimulationTimer: TTimer
-    Enabled = False
+    Interval = 125
     OnTimer = SimulationTimerTimer
     Left = 250
     Top = 259

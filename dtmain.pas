@@ -176,7 +176,10 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     setEnableButton(TestShape,TestLabel,not(workspace.EditorMode));
 
     infoLabel.caption:=workspace.getInfoLabelText;
-    pauseByUser:=true;
+
+    PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
+    pauseByUser:=false;
+
     Application.AddOnKeyDownHandler(@FormKeyDown,false);
   end;
 
@@ -268,7 +271,7 @@ PROCEDURE TDigitaltrainerMainForm.miImportAddClick(Sender: TObject);
         newChallengeSet^.markAllAsPending;
         for challenge in newChallengeSet^.challenge do workspace.getChallenges^.add(challenge);
       end;
-      dispose(newChallengeSet,destroy);
+      freeMem(newChallengeSet,sizeOf(T_challengeSet));
     end;
   end;
 

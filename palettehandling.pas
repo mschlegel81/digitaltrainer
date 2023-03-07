@@ -137,7 +137,7 @@ FUNCTION T_challengePalette.IndexOf(CONST gate: P_abstractGate): longint;
     if gate^.gateType=gt_compound then begin
       for i:=0 to length(paletteEntries)-1 do
         if (paletteEntries[i].entryType=gt_compound) and
-           (gate^.equals(paletteEntries[i].prototype) or
+           (P_compoundGate(gate)^.equalsInOtherPalette(paletteEntries[i].prototype) or
             (P_compoundGate(gate)^.prototype=P_captionedAndIndexed(paletteEntries[i].prototype)))
         then exit(i);
     end else begin
@@ -146,6 +146,7 @@ FUNCTION T_challengePalette.IndexOf(CONST gate: P_abstractGate): longint;
            (not(paletteEntries[i].preconfigured) or gate^.equals(paletteEntries[i].prototype))
         then exit(i);
     end;
+    writeln('Could not find gate ',gate^.getCaption,' of type ',gate^.gateType);
     result:=-1;
   end;
 
@@ -166,7 +167,9 @@ DESTRUCTOR T_challengePalette.destroy;
 
 FUNCTION T_challengePalette.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i:longint;
+      paletteEntryCount:longint;
   begin
+    constructingChallenge:=false;
     allowConfiguration:=stream.readBoolean;
     setLength(paletteEntries,stream.readNaturalNumber);
     for i:=0 to length(paletteEntries)-1 do with paletteEntries[i] do begin
@@ -176,6 +179,7 @@ FUNCTION T_challengePalette.loadFromStream(VAR stream: T_bufferedInputStreamWrap
       sourcePaletteIndex:=-1;
 
       entryType:=T_gateType(stream.readByte([byte(low(T_gateType))..byte(high(T_gateType))]));
+      writeln('Reading palette entry #',i,' of type ',entryType);
       if entryType=gt_compound then begin
         new(P_compoundGate(prototype),create(@self));
         P_compoundGate(prototype)^.readPrototypeFromStream(stream,i);
@@ -189,7 +193,6 @@ FUNCTION T_challengePalette.loadFromStream(VAR stream: T_bufferedInputStreamWrap
       end;
     end;
     result:=stream.allOkay;
-    constructingChallenge:=false;
   end;
 
 PROCEDURE T_challengePalette.saveToStream(
@@ -232,10 +235,18 @@ PROCEDURE T_challengePalette.ensureVisualPaletteItems;
       behavior: P_abstractGate;
   begin
     for i:=0 to length(visualPaletteItems)-1 do dispose(visualPaletteItems[i],destroy);
+
+    {$ifdef debugMode}
+    writeln('Challenge palette on ensureVisualPaletteItems:');
+    for i:=0 to length(paletteEntries)-1 do begin
+      writeln('  ',i,' ',paletteEntries[i].entryType,' ',paletteEntries[i].initialAvailableCount,' ',paletteEntries[i].visible);
+    end;
+    {$endif}
+
     k:=0;
     for i:=0 to length(paletteEntries)-1 do if (paletteEntries[i].visible) and (paletteEntries[i].currentAvailableCount>0) then begin
 
-      if paletteEntries[i].entryType=gt_compound
+      if (paletteEntries[i].entryType=gt_compound) or (paletteEntries[i].preconfigured)
       then behavior:=paletteEntries[i].prototype^.clone(false)
       else behavior:=newBaseGate(paletteEntries[i].entryType);
 
@@ -339,7 +350,9 @@ PROCEDURE T_challengePalette.ensureBaseGate(CONST gate: P_abstractGate; CONST vi
 PROCEDURE T_challengePalette.countUpGate(CONST gate: P_abstractGate);
   VAR idx:longint;
   begin
-    idx:=IndexOf(gate); if idx<0 then exit;
+    idx:=IndexOf(gate);
+    assert(idx>=0);
+    if idx<0 then exit;
     inc(paletteEntries[idx].currentAvailableCount);
     if (paletteEntries[idx].currentAvailableCount=1) then ensureVisualPaletteItems;
   end;
@@ -347,7 +360,9 @@ PROCEDURE T_challengePalette.countUpGate(CONST gate: P_abstractGate);
 PROCEDURE T_challengePalette.countDownGate(CONST gate: P_abstractGate);
   VAR idx:longint;
   begin
-    idx:=IndexOf(gate); if idx<0 then exit;
+    idx:=IndexOf(gate);
+    assert(idx>=0);
+    if idx<0 then exit;
     dec(paletteEntries[idx].currentAvailableCount);
     if (paletteEntries[idx].currentAvailableCount<=0) then ensureVisualPaletteItems;
   end;
@@ -394,9 +409,18 @@ PROCEDURE T_challengePalette.finalizePalette(CONST boardOptions: T_challengeBoar
 
     constructingChallenge:=false;
 
+    {$ifdef debugMode}
     for i:=0 to length(paletteEntries)-2 do if paletteEntries[i].entryType=gt_compound then
       for j:=i+1 to length(paletteEntries)-1 do if paletteEntries[j].entryType=gt_compound then
-        assert(not(P_compoundGate(paletteEntries[j].prototype)^.usesPrototype(paletteEntries[j].prototype)));
+        assert(not(P_compoundGate(paletteEntries[i].prototype)^.usesPrototype(paletteEntries[j].prototype)));
+
+    writeln('Challenge palette after finalization:');
+    for i:=0 to length(paletteEntries)-1 do begin
+      writeln('  ',i,' ',paletteEntries[i].entryType,' ',paletteEntries[i].initialAvailableCount,' ',paletteEntries[i].visible);
+    end;
+
+    {$endif}
+
   end;
 
 { T_workspacePalette }
@@ -459,8 +483,7 @@ DESTRUCTOR T_workspacePalette.destroy;
     setLength(paletteNames,0);
   end;
 
-FUNCTION T_workspacePalette.loadFromStream(
-  VAR stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_workspacePalette.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i:longint;
   begin
     filter:=stream.readLongint;
@@ -480,8 +503,7 @@ FUNCTION T_workspacePalette.loadFromStream(
     result:=stream.allOkay;
   end;
 
-PROCEDURE T_workspacePalette.saveToStream(
-  VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_workspacePalette.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
   VAR i:longint;
   begin
     stream.writeLongint(filter);
