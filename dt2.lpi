@@ -206,9 +206,6 @@
     </Linking>
     <Other>
       <CustomOptions Value="-ddebugMode"/>
-      <OtherDefines Count="1">
-        <Define0 Value="debugMode"/>
-      </OtherDefines>
     </Other>
   </CompilerOptions>
   <Debugging>

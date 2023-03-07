@@ -172,7 +172,6 @@ DESTRUCTOR T_challengePalette.destroy;
 FUNCTION T_challengePalette.loadFromStream(
   VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i:longint;
-      paletteEntryCount:longint;
   begin
     constructingChallenge:=false;
     allowConfiguration:=stream.readBoolean;
@@ -184,7 +183,9 @@ FUNCTION T_challengePalette.loadFromStream(
       sourcePaletteIndex:=i;
 
       entryType:=T_gateType(stream.readByte([byte(low(T_gateType))..byte(high(T_gateType))]));
+      {$ifdef debugMode}
       writeln('Reading palette entry #',i,' of type ',entryType);
+      {$endif}
       if entryType=gt_compound then begin
         new(P_compoundGate(prototype),create(@self));
         P_compoundGate(prototype)^.readPrototypeFromStream(stream,i);
@@ -364,7 +365,7 @@ PROCEDURE T_challengePalette.countUpGate(CONST gate: P_abstractGate);
     assert(idx>=0);
     if idx<0 then exit;
     inc(paletteEntries[idx].currentAvailableCount);
-    if (paletteEntries[idx].currentAvailableCount=1) then begin
+    if (paletteEntries[idx].currentAvailableCount=1) and (ui<>nil) then begin
       ensureVisualPaletteItems;
       checkSizes;
     end;
@@ -377,7 +378,7 @@ PROCEDURE T_challengePalette.countDownGate(CONST gate: P_abstractGate);
     assert(idx>=0);
     if idx<0 then exit;
     dec(paletteEntries[idx].currentAvailableCount);
-    if (paletteEntries[idx].currentAvailableCount<=0) then begin
+    if (paletteEntries[idx].currentAvailableCount<=0) and (ui<>nil)  then begin
       ensureVisualPaletteItems;
       checkSizes;
     end;
@@ -909,6 +910,7 @@ PROCEDURE T_palette.detachUI;
   begin
     for i:=0 to length(visualPaletteItems)-1 do dispose(visualPaletteItems[i],destroy);
     setLength(visualPaletteItems,0);
+    ui:=nil;
   end;
 
 PROCEDURE T_palette.attachUI(CONST uiAdapter: P_uiAdapter);

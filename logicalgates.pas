@@ -1928,7 +1928,7 @@ FUNCTION T_tendToTrue.equals(CONST other:P_abstractGate):boolean;
   end;
 
 FUNCTION T_abstractGate.behaviorEquals(CONST other: P_abstractGate): boolean;
-  VAR stepsUntilConfidence:longint=256;
+  VAR stepsUntilConfidence:longint=1024;
       stillSimulating:boolean;
       remainingSteps:longint;
 
@@ -1994,7 +1994,6 @@ FUNCTION T_abstractGate.behaviorEquals(CONST other: P_abstractGate): boolean;
 
     //Simulate...
     //The wider the input, the more steps should be invested until gates are considered to behave equally.
-    stepsUntilConfidence:=trunc(sqr(1+totalInputWidth)*4096);
     reset;
     other^.reset;
     setRandomInput;

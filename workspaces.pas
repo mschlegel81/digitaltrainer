@@ -45,10 +45,15 @@ TYPE
   end;
 
 IMPLEMENTATION
-USES sysutils;
+USES sysutils,FileUtil;
 FUNCTION workspaceFilename:string;
   begin
     result:=ChangeFileExt(paramStr(0),'.workspace');
+  end;
+
+FUNCTION workspaceBackupFilename:string;
+  begin
+    result:=ChangeFileExt(paramStr(0),'.workspace.backup');
   end;
 
 { T_workspace }
@@ -61,7 +66,9 @@ CONSTRUCTOR T_workspace.create;
     activeChallengeIndex:=-1;
     activeChallenge:=nil;
 
-    if not(loadFromFile(workspaceFilename)) then begin
+    if loadFromFile(workspaceFilename)
+    then CopyFile(workspaceFilename,workspaceBackupFilename)
+    else begin
       dispose(challenges,destroy);
       dispose(workspaceBoard,destroy);
       dispose(workspacePalette,destroy);

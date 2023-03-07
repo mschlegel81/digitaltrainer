@@ -12,7 +12,6 @@ USES
 
 TYPE
   { TDigitaltrainerMainForm }
-  //TODO: Add possibility to import/export challenges; Imported challenges should always be read-Only.
   //TODO: Add possibility to clear challenges;
 
   TDigitaltrainerMainForm = class(TForm)
@@ -263,15 +262,14 @@ PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miImportAddClick(Sender: TObject);
   VAR newChallengeSet:P_challengeSet;
-      challenge:P_challenge;
   begin
     if OpenDialog1.execute then begin
       new(newChallengeSet,create);
       if newChallengeSet^.loadFromFile(OpenDialog1.fileName) then begin
         newChallengeSet^.markAllAsPending;
-        for challenge in newChallengeSet^.challenge do workspace.getChallenges^.add(challenge);
+        workspace.getChallenges^.addAllAndClear(newChallengeSet);
       end;
-      freeMem(newChallengeSet,sizeOf(T_challengeSet));
+      dispose(newChallengeSet,destroy);
     end;
   end;
 

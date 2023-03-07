@@ -102,8 +102,7 @@ PROCEDURE T_visualWire.paint(CONST zoom: longint; CONST Canvas: TBGRACanvas);
     setLength(wrap,0);
   end;
 
-FUNCTION T_visualWire.isWirePosition(CONST gridX, gridY: longint; OUT
-  horizontalWire: boolean): boolean;
+FUNCTION T_visualWire.isWirePosition(CONST gridX, gridY: longint; OUT horizontalWire: boolean): boolean;
   VAR i:longint;
       orientation: T_wireDirection;
   begin

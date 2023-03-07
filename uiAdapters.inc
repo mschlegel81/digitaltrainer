@@ -144,6 +144,7 @@ CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape;
 DESTRUCTOR T_uiAdapter.destroy;
   begin
     clearUndoList;
+    FreeAndNil(uiElement.wireLayer);
     if helperState.Clipboard<>nil then dispose(helperState.Clipboard,destroy);
   end;
 

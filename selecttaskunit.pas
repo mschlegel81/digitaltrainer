@@ -100,7 +100,7 @@ PROCEDURE TSelectTaskForm.ChallengesGridSelection(Sender: TObject; aCol, aRow: i
     ChallengesMemo.text:=challengeSet^.challenge[aRow]^.challengeDescription;
     selectedChallengeIndex:=aRow;
     setEnableButton(StartTaskShape,StartTaskLabel,true);
-    setEnableButton(DeleteTaskShape,DeleteTaskLabel,challengeSet^.challenge[aRow]^.editable);
+    setEnableButton(DeleteTaskShape,DeleteTaskLabel,true);
     setEnableButton(EditTaskShape,EditTaskLabel,challengeSet^.challenge[aRow]^.editable);
     setEnableButton(MoveTaskUpShape,MoveTaskUpLabel,aRow>0);
     setEnableButton(MoveTaskDownShape,MoveTaskDownLabel,aRow<length(challengeSet^.challenge)-1);

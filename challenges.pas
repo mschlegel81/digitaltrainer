@@ -35,9 +35,16 @@ TYPE
   T_challenge=object(T_serializable)
   private
     challengeTestCreationThread:T_challengeTestCreationThread;
+    testRun:record
+      succeeded:boolean;
+      active:boolean;
+      testInputIndex:longint;
+      testStep:longint;
+    end;
     PROCEDURE updateTestCaseResults(CONST callback:F_caseUpdatedCallback; CONST resume:PBoolean; CONST initCounts:boolean=false);
   public
     marked:boolean; //for export dialog only
+
     challengeLevel      :byte;
     callengeCompleted   :boolean;
     resultTemplate      :P_visualBoard;
@@ -47,12 +54,6 @@ TYPE
       actuallyActive,  //during construction only
       maxTotalSteps:longint;
       outputs:T_wireValueArray; //during construction only
-    end;
-    testRun:record
-      succeeded:boolean;
-      active:boolean;
-      testInputIndex:longint;
-      testStep:longint;
     end;
 
     Interfaces: T_gateInterfaces; //during construction only
@@ -84,6 +85,8 @@ TYPE
     PROCEDURE generateTestCases(CONST allInputsThenScramble:boolean=false);
     PROCEDURE updateTestCaseResults;
     FUNCTION lastTestCasePrepared:longint;
+
+    FUNCTION equals(CONST c:P_challenge):boolean;
   end;
 
   { T_challengeSet }
@@ -98,7 +101,8 @@ TYPE
     FUNCTION getSerialVersion:dword; virtual;
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
-    PROCEDURE add(CONST c:P_challenge);
+    FUNCTION add(CONST c:P_challenge):boolean;
+    PROCEDURE addAllAndClear(CONST c:P_challengeSet);
     PROCEDURE moveChallenge(CONST index:longint; CONST up:boolean);
     FUNCTION extractForExport:P_challengeSet;
   end;
@@ -207,11 +211,22 @@ PROCEDURE T_challengeSet.saveToStream(VAR stream: T_bufferedOutputStreamWrapper)
     for i:=0 to length(challenge)-1 do challenge[i]^.saveToStream(stream);
   end;
 
-PROCEDURE T_challengeSet.add(CONST c: P_challenge);
+FUNCTION T_challengeSet.add(CONST c: P_challenge): boolean;
+  VAR q:P_challenge;
   begin
+    for q in challenge do if q^.equals(c) then exit(false);
+    result:=true;
     setLength(challenge,length(challenge)+1);
     challenge[length(challenge)-1]:=c;
     c^.challengeTestCreationThread.ensureStop;
+  end;
+
+PROCEDURE T_challengeSet.addAllAndClear(CONST c: P_challengeSet);
+  VAR i:longint;
+  begin
+    for i:=0 to length(c^.challenge)-1 do
+      if not(add(c^.challenge[i])) then dispose(c^.challenge[i],destroy);
+    setLength(c^.challenge,0);
   end;
 
 PROCEDURE T_challengeSet.moveChallenge(CONST index: longint; CONST up: boolean);
@@ -533,7 +548,27 @@ FUNCTION T_challenge.lastTestCasePrepared: longint;
     result:=challengeTestCreationThread.lastPreparedIndex;
   end;
 
-PROCEDURE T_challenge.updateTestCaseResults(CONST callback: F_caseUpdatedCallback; CONST resume: PBoolean; CONST initCounts: boolean);
+FUNCTION T_challenge.equals(CONST c: P_challenge): boolean;
+  VAR i,j:longint;
+  begin
+    result:=(c^.challengeLevel=challengeLevel)
+        and (c^.challengeTitle=challengeTitle)
+        and (c^.challengeDescription=challengeDescription)
+        and (c^.expectedBehavior^.behaviorEquals(expectedBehavior))
+        and (length(c^.tests)=length(tests));
+    if result then for i:=0 to length(tests)-1 do with tests[i] do begin
+      result:=result
+          and (c^.tests[i].maxTotalSteps=maxTotalSteps)
+          and (length(c^.tests[i].inputs)=length(inputs));
+      for j:=0 to length(tests[i].inputs)-1 do
+        result:=result
+           and (c^.tests[i].inputs[j]=inputs[j]);
+    end;
+  end;
+
+PROCEDURE T_challenge.updateTestCaseResults(
+  CONST callback: F_caseUpdatedCallback; CONST resume: PBoolean;
+  CONST initCounts: boolean);
   VAR i, stepsDone:longint;
   begin
     expectedBehavior^.reset;

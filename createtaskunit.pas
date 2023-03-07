@@ -29,7 +29,7 @@ TYPE
     TestInputsPanel: TPanel;
     generateTestCasesLabel: TLabel;
     generateTestCasesShape: TShape;
-    timer1: TTimer;
+    Timer1: TTimer;
     TitleEdit: TEdit;
     Label1: TLabel;
     Label2: TLabel;
@@ -313,7 +313,7 @@ PROCEDURE TCreateTaskForm.showFor(CONST board: P_visualBoard; CONST challenges: 
     TestCaseCountEdit.text:=intToStr(length(challenge^.tests));
     fillTable;
     lastUpdatedRow:=-1;
-    timer1.enabled:=true;
+    Timer1.enabled:=true;
     RadioPanel .visible:=true;
     RadioPanel1.visible:=true;
     Label4.visible:=true;
@@ -329,7 +329,7 @@ PROCEDURE TCreateTaskForm.showFor(CONST board: P_visualBoard; CONST challenges: 
       dispose(challenge,destroy);
     end;
     challenge:=nil;
-    timer1.enabled:=false;
+    Timer1.enabled:=false;
   end;
 
 PROCEDURE TCreateTaskForm.showForExistingChallenge(CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet );
@@ -347,7 +347,7 @@ PROCEDURE TCreateTaskForm.showForExistingChallenge(CONST originalChallengeIndex:
 
     fillTable;
     lastUpdatedRow:=-1;
-    timer1.enabled:=true;
+    Timer1.enabled:=true;
     challenge^.updateTestCaseResults;
 
     if ShowModal=mrOk then begin
@@ -359,7 +359,7 @@ PROCEDURE TCreateTaskForm.showForExistingChallenge(CONST originalChallengeIndex:
       challenges^.challenge[originalChallengeIndex]:=challenge;
     end else dispose(challenge,destroyPartial);
     challenge:=nil;
-    timer1.enabled:=false;
+    Timer1.enabled:=false;
   end;
 
 FINALIZATION

@@ -19,6 +19,7 @@ end;
 
 T_visualBoard=object(T_captionedAndIndexed)
   private
+    wiresCs:TRTLCriticalSection;
     associatedPalette:P_abstractPrototypeSource;
     myIndex:longint;
 
@@ -121,6 +122,7 @@ end;
 {$ifdef includeImplementation}
 CONSTRUCTOR T_visualBoard.create(CONST palette: P_abstractPrototypeSource);
   begin
+    initCriticalSection(wiresCs);
     associatedPalette:=palette;
     clear;
     wiringTask:=nil;
@@ -153,6 +155,9 @@ PROCEDURE T_visualBoard.clear;
 DESTRUCTOR T_visualBoard.destroy;
   begin
     clear;
+    enterCriticalSection(wiresCs);
+    leaveCriticalSection(wiresCs);
+    doneCriticalSection(wiresCs);
     detachUI;
   end;
 
@@ -434,8 +439,7 @@ PROCEDURE T_visualBoard.remove(CONST element: P_visualGate;
     remove(wrap,skipSaveUndo);
   end;
 
-PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray;
-  CONST skipSaveUndo: boolean);
+PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray; CONST skipSaveUndo: boolean);
   VAR
     element: P_visualGate;
     j, i: integer;
@@ -445,6 +449,7 @@ PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray;
       //For challenges with fixed number of gates, this has to be added to the palette again.
       associatedPalette^.countUpGate(element^.behavior);
       j:=0;
+      enterCriticalSection(wiresCs);
       for i:=0 to length(wires)-1 do begin
         wires[i].dropWiresAssociatedWith(element);
         if length(wires[i].sink)>0 then begin
@@ -453,6 +458,7 @@ PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray;
         end;
       end;
       setLength(wires,j);
+      leaveCriticalSection(wiresCs);
 
       dropWatchersAssociatedWith(element);
 
@@ -861,8 +867,7 @@ PROCEDURE T_visualBoard.enumerateIo;
     end;
   end;
 
-FUNCTION T_visualBoard.getWireGraph(CONST dropExistingWires: boolean
-  ): P_wireGraph;
+FUNCTION T_visualBoard.getWireGraph(CONST dropExistingWires: boolean): P_wireGraph;
   VAR graph:P_wireGraph;
   PROCEDURE punchOutGate(CONST gate:P_visualGate);
     VAR x,y:longint;
@@ -894,12 +899,12 @@ FUNCTION T_visualBoard.getWireGraph(CONST dropExistingWires: boolean
     for gate in inputs  do punchOutGate(gate);
     for gate in outputs do punchOutGate(gate);
     for gate in gates   do punchOutGate(gate);
-
     if not(dropExistingWires) then exit(graph);
+    enterCriticalSection(wiresCs);
     for i:=0 to length(wires)-1 do
     for j:=0 to length(wires[i].sink)-1 do
       graph^.dropWire(wires[i].sink[j].path);
-
+    leaveCriticalSection(wiresCs);
     result:=graph;
   end;
 
@@ -1061,12 +1066,14 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
     startTicks: qword;
   begin
     disposeTask(wiringTask);
+    enterCriticalSection(wiresCs);
     startTicks:=GetTickCount64;
     dropWiresReferringToNonexitentPorts;
     sortWires;
     if forced
     then startBackgroundTask
     else updateWirePaths;
+    leaveCriticalSection(wiresCs);
     wiresUpToDate:=false;
     {$ifdef debugMode}
     writeln('Rewiring (',forced,') took ',GetTickCount64-startTicks,' ticks');
@@ -1077,7 +1084,9 @@ PROCEDURE T_visualBoard.updateWiresFromTask;
   VAR k:longint;
   begin
     if wiringTask=nil then exit;
+    enterCriticalSection(wiresCs);
     for k:=0 to length(wiringTask^.toFind)-1 do wires[wiringTask^.toFind[k].index].setPaths(wiringTask^.toFind[k].foundPath);
+    leaveCriticalSection(wiresCs);
     disposeTask(wiringTask);
     wiresHaveChangedInBackground:=true;
   end;
@@ -1088,6 +1097,7 @@ PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
       canvasWidth,canvasHeight, zoom:longint;
   begin
     if not(wiresUpToDate and not(wiresHaveChangedInBackground)) and init then begin
+      enterCriticalSection(wiresCs);
       wiresHaveChangedInBackground:=false;
       //setup
       zoom:=ui^.getZoom;
@@ -1122,6 +1132,7 @@ PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
       ui^.uiElement.boardImage.Canvas.FillRect(0,0,ui^.uiElement.boardImage.width,ui^.uiElement.boardImage.height);
 
       wiresUpToDate:=true;
+      leaveCriticalSection(wiresCs);
     end;
     if draw then ui^.uiElement.wireLayer.draw(ui^.uiElement.boardImage.Canvas,
                                               ui^.uiElement.paletteWidth-ui^.uiElement.boardHorizontalScrollBar.position,
@@ -1257,11 +1268,14 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y:
           end;
         if gridPos[0]=gridX1 then ui^.uiElement.boardImage.Cursor:=crSizeWE else
         if gridPos[1]=gridY1 then ui^.uiElement.boardImage.Cursor:=crSizeNS else begin
+          enterCriticalSection(wiresCs);
           for i:=0 to length(wires)-1 do if wires[i].isWirePosition(gridPos[0],gridPos[1],horizontal) then begin
             if horizontal then ui^.uiElement.boardImage.Cursor:=crHSplit
                           else ui^.uiElement.boardImage.Cursor:=crVSplit;
+            leaveCriticalSection(wiresCs);
             exit;
           end;
+          leaveCriticalSection(wiresCs);
           ui^.uiElement.boardImage.Cursor:=crCross;
         end;
       end;
@@ -1448,6 +1462,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
     for g in gates   do if handleGateHit(g) then exit;
     for g in outputs do if handleGateHit(g) then exit;
 
+    enterCriticalSection(wiresCs);
     for i:=0 to length(wires)-1 do needToDropWire:=needToDropWire or wires[i].isWirePosition(gridPos[0],gridPos[1],horizontal);
     if needToDropWire then begin
       ui^.saveStateToUndoList;
@@ -1463,8 +1478,10 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
       paintBoard;
       ui^.repaintImage;
       ui^.callback.boardModifiedCallback();
+      leaveCriticalSection(wiresCs);
       exit;
     end;
+    leaveCriticalSection(wiresCs);
 
     if not(ssShift in Shift) then begin
       for g in inputs  do g^.marked:=false;
@@ -1477,8 +1494,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
 
   end;
 
-PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point;
-  CONST screenX, screenY: longint);
+PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point; CONST screenX, screenY: longint);
   VAR tgt :T_point;
       dist,distToClosest:double;
 
@@ -1504,6 +1520,7 @@ PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point;
     end;
 
   begin
+    enterCriticalSection(wiresCs);
     wireWidth:=ui^.draggedGate^.behavior^.outputWidth(ui^.dragData.outputIndex);
     graph:=getWireGraph(false);
 
@@ -1526,6 +1543,7 @@ PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point;
         end;
       end;
     end;
+    leaveCriticalSection(wiresCs);
     dispose(graph,destroy);
 
     if isInfinite(distToClosest) then exit;
@@ -1574,8 +1592,7 @@ FUNCTION T_visualBoard.getIndexInPalette: longint;
     result:=myIndex;
   end;
 
-PROCEDURE T_visualBoard.afterGatePropertiesEdited(
-  CONST editedGate: P_visualGate; CONST editedIsBoardElement: boolean);
+PROCEDURE T_visualBoard.afterGatePropertiesEdited(CONST editedGate: P_visualGate; CONST editedIsBoardElement: boolean);
   VAR g:P_visualGate;
   begin
     for g in gates do if g^.behavior^.equals(editedGate^.behavior) then g^.propertyEditDone(false,0,0);
