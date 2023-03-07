@@ -169,6 +169,7 @@ PROCEDURE T_uiAdapter.startDrag(CONST evtX, evtY: longint;
   CONST outputIndex: longint);
   begin
     state:=newState;
+    hideIoEdit;
     dragData.startX:=evtX;
     dragData.startY:=evtY;
     dragData.relPosX:=evtX;

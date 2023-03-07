@@ -19,6 +19,7 @@ T_visualWire=object
   PROCEDURE paint(CONST zoom:longint; CONST Canvas:TBGRACanvas);
   FUNCTION isWirePosition(CONST gridX,gridY:longint; OUT horizontalWire:boolean):boolean;
   PROCEDURE dropWiresTouchingPosition(CONST gridX,gridY:longint; CONST horizontalWire:boolean);
+  PROCEDURE setPaths(CONST paths:T_wirePathArray);
 end;
 
 {$endif}
@@ -113,8 +114,7 @@ FUNCTION T_visualWire.isWirePosition(CONST gridX, gridY: longint; OUT
     result:=false;
   end;
 
-PROCEDURE T_visualWire.dropWiresTouchingPosition(CONST gridX, gridY: longint;
-  CONST horizontalWire: boolean);
+PROCEDURE T_visualWire.dropWiresTouchingPosition(CONST gridX, gridY: longint; CONST horizontalWire: boolean);
   VAR i:longint;
       j:longint=0;
       orientation: T_wireDirection;
@@ -127,5 +127,12 @@ PROCEDURE T_visualWire.dropWiresTouchingPosition(CONST gridX, gridY: longint;
     end;
     setLength(sink,j);
   end;
+
+PROCEDURE T_visualWire.setPaths(CONST paths: T_wirePathArray);
+  VAR i:longint;
+  begin
+    for i:=0 to min(length(paths),length(sink))-1 do sink[i].path:=paths[i];
+  end;
+
 {$endif}
 

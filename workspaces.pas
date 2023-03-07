@@ -24,6 +24,8 @@ TYPE
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
 
+    PROCEDURE restartChallenge;
+    FUNCTION nextUncompletedChallenge:longint;
     FUNCTION startChallenge(CONST challengeIndex:longint):boolean;
     PROCEDURE setFreeEditMode;
     PROCEDURE challengeDeleted(CONST deletedChallengeIndex:longint);
@@ -37,6 +39,8 @@ TYPE
     PROCEDURE editPaletteEntry(CONST prototype:P_visualBoard; CONST uiAdapter:P_uiAdapter);
     PROCEDURE clearBoard(CONST uiAdapter: P_uiAdapter);
     PROPERTY  getChallenges:P_challengeSet read challenges;
+
+    FUNCTION getInfoLabelText:string;
   end;
 
 IMPLEMENTATION
@@ -105,6 +109,18 @@ PROCEDURE T_workspace.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
     stream.writeLongint(activeChallengeIndex);
   end;
 
+PROCEDURE T_workspace.restartChallenge;
+  begin
+    startChallenge(activeChallengeIndex);
+  end;
+
+FUNCTION T_workspace.nextUncompletedChallenge: longint;
+  VAR i:longint;
+  begin
+    result:=-1;
+    for i:=activeChallengeIndex+1 to length(challenges^.challenge)-1 do if not(challenges^.challenge[i]^.callengeCompleted) then exit(i);
+  end;
+
 FUNCTION T_workspace.startChallenge(CONST challengeIndex: longint): boolean;
   begin
     if (challengeIndex<0) or (challengeIndex>=length(challenges^.challenge)) then exit(false);
@@ -171,11 +187,18 @@ PROCEDURE T_workspace.clearBoard(CONST uiAdapter: P_uiAdapter);
     if activeChallenge<>nil then begin
       dispose(workspaceBoard,destroy);
       workspaceBoard:=activeChallenge^.resetChallenge;
-      workspaceBoard^.attachUI(uiAdapter);
     end else begin
       workspaceBoard^.clear;
       workspacePalette^.setFilter(maxLongint);
     end;
+    workspaceBoard^.attachUI(uiAdapter);
+  end;
+
+FUNCTION T_workspace.getInfoLabelText: string;
+  begin
+    if activeChallenge<>nil
+    then result:=activeChallenge^.getInfoLabelText
+    else result:=workspaceBoard ^.getInfoLabelText;
   end;
 
 end.

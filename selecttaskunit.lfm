@@ -30,7 +30,7 @@ object SelectTaskForm: TSelectTaskForm
     FixedCols = 0
     Flat = True
     Font.Color = clWhite
-    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColMoving, goDblClickAutoSize, goSmoothScroll]
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goRowSelect, goDblClickAutoSize, goSmoothScroll]
     ParentFont = False
     TabOrder = 0
     OnHeaderClick = ChallengesGridHeaderClick

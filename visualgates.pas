@@ -80,7 +80,6 @@ PROCEDURE T_visualGate.ioEditKeyPress(Sender: TObject; VAR key: char);
        ['0'..'9'    ,#8], //wr_decimal,
        ['0'..'9','-',#8]);//wr_2complement
   begin
-    writeln('IO_KEY_PRESS ',ord(key));
     if key=#13 then begin
       ioEditEditingDone(Sender);
       uiAdapter^.hideIoEdit;
@@ -232,8 +231,7 @@ FUNCTION T_visualGate.getInputPositionInGridSize(CONST index: longint): T_point;
     end;
   end;
 
-FUNCTION T_visualGate.getOutputPositionInGridSize(CONST index: longint
-  ): T_point;
+FUNCTION T_visualGate.getOutputPositionInGridSize(CONST index: longint): T_point;
   begin
     if ioLocations.p[gt_output,index].leftOrRight
     then begin

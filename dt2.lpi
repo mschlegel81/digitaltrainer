@@ -37,6 +37,11 @@
             <Debugging>
               <DebugInfoType Value="dsDwarf2"/>
             </Debugging>
+            <Options>
+              <Win32>
+                <GraphicApplication Value="True"/>
+              </Win32>
+            </Options>
           </Linking>
         </CompilerOptions>
       </Item>
@@ -147,6 +152,13 @@
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="selectTaskUnit"/>
       </Unit>
+      <Unit>
+        <Filename Value="taskfinishedunit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="TaskFinishedForm"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="taskFinishedUnit"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -181,6 +193,12 @@
         <TrashVariables Value="True"/>
       </Debugging>
     </Linking>
+    <Other>
+      <CustomOptions Value="-ddebugMode"/>
+      <OtherDefines Count="1">
+        <Define0 Value="debugMode"/>
+      </OtherDefines>
+    </Other>
   </CompilerOptions>
   <Debugging>
     <Exceptions>

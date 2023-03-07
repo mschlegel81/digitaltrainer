@@ -23,10 +23,6 @@ TYPE
   public
     challenge:P_challenge;
     initialRun,continueEvaluation,running:boolean;
-
-    //TODO: Thread should be part of the challenge itself;
-    //      Must be stopped when number of test cases is set;
-    //      There must be an external possibility for restarting
     CONSTRUCTOR create(CONST parent:P_challenge);
     DESTRUCTOR destroy;
     PROCEDURE restart;
@@ -52,6 +48,7 @@ TYPE
       outputs:T_wireValueArray; //during construction only
     end;
     testRun:record
+      succeeded:boolean;
       active:boolean;
       testInputIndex:longint;
       testStep:longint;
@@ -76,7 +73,9 @@ TYPE
     FUNCTION resetChallenge:P_visualBoard;
     PROCEDURE startTesting(CONST board:P_visualBoard);
     PROPERTY currentlyTesting:boolean read testRun.active;
+    PROPERTY testSucceeded:boolean read testRun.succeeded;
     FUNCTION testStep(CONST count, timeOutInTicks: longint; CONST board: P_visualBoard): longint;
+    FUNCTION getInfoLabelText:string;
 
     //For creation purposes...
     PROCEDURE initNewChallenge(CONST expectedAsVisual:P_visualBoard; CONST challengeBoardOption:T_challengeBoardOption; CONST challengePaletteOption:T_challengePaletteOption);
@@ -330,14 +329,15 @@ PROCEDURE T_challenge.startTesting(CONST board: P_visualBoard);
     board^.setInputs(tests[0].inputs);
   end;
 
-FUNCTION T_challenge.testStep(CONST count, timeOutInTicks: longint;
-  CONST board: P_visualBoard): longint;
+FUNCTION T_challenge.testStep(CONST count, timeOutInTicks: longint; CONST board: P_visualBoard): longint;
   VAR stepsToSimulate: longint;
   begin
     with testRun do stepsToSimulate:=tests[testInputIndex].maxTotalSteps-testStep;
     if count<stepsToSimulate then stepsToSimulate:=count;
+    {$ifdef debugMode}
     writeln('Tests to simulate: ',count,'/',stepsToSimulate);
     writeln('Simulating step ',testRun.testStep,' of test case #',testRun.testInputIndex);
+    {$endif}
 
     result:=board^.coSimulateSteps(stepsToSimulate,timeOutInTicks,expectedBehavior);
     testRun.testStep+=result;
@@ -347,13 +347,24 @@ FUNCTION T_challenge.testStep(CONST count, timeOutInTicks: longint;
         inc(testRun.testInputIndex);
         if testRun.testInputIndex>=length(tests) then begin
           testRun.active:=false;
+          testRun.succeeded:=true;
           callengeCompleted:=true;
         end else begin
           testRun.testStep:=0;
           board^.setInputs(tests[testRun.testInputIndex].inputs);
         end;
-      end else testRun.active:=false;
+      end else begin
+        testRun.active:=false;
+        testRun.succeeded:=false;
+      end;
     end;
+  end;
+
+FUNCTION T_challenge.getInfoLabelText: string;
+  begin
+    if testRun.active
+    then result:='Test '+intToStr(testRun.testInputIndex+1)+' von '+intToStr(length(tests))
+    else result:=challengeDescription;
   end;
 
 PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard;

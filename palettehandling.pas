@@ -311,7 +311,9 @@ PROCEDURE T_challengePalette.addPrototype(CONST prototypeIndex: longint; CONST b
     paletteEntries[i].sourcePaletteIndex:=prototypeIndex;
     paletteEntries[i].currentAvailableCount:=0;
     paletteEntries[i].initialAvailableCount:=0;
-    //writeln('Added palette entry #',i,': ',paletteEntries[i].entryType,' ',behavior^.gateType,' ',behavior^.getCaption,' ',prototypeIndex);
+    {$ifdef debugMode}
+    writeln('Added palette entry #',i,': ',paletteEntries[i].entryType,' ',behavior^.gateType,' ',behavior^.getCaption,' ',prototypeIndex);
+    {$endif}
   end;
 
 PROCEDURE T_challengePalette.ensureBaseGate(CONST gate: P_abstractGate; CONST visible: boolean);
@@ -329,7 +331,9 @@ PROCEDURE T_challengePalette.ensureBaseGate(CONST gate: P_abstractGate; CONST vi
     paletteEntries[idx].sourcePaletteIndex:=-1;
     paletteEntries[idx].currentAvailableCount:=0;
     paletteEntries[idx].initialAvailableCount:=0;
-    //writeln('Added palette entry #',idx,': ',paletteEntries[idx].entryType,' ',gate^.gateType,' ',gate^.getCaption);
+    {$ifdef debugMode}
+    writeln('Added palette entry #',idx,': ',paletteEntries[idx].entryType,' ',gate^.gateType,' ',gate^.getCaption);
+    {$endif}
   end;
 
 PROCEDURE T_challengePalette.countUpGate(CONST gate: P_abstractGate);

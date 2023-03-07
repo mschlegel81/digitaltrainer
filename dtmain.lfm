@@ -1,7 +1,7 @@
 object DigitaltrainerMainForm: TDigitaltrainerMainForm
-  Left = 208
+  Left = 784
   Height = 737
-  Top = 216
+  Top = 161
   Width = 1277
   Align = alTop
   Caption = 'Digitaltrainer'
@@ -21,7 +21,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Top = 0
     Width = 1277
     Align = alTop
-    AutoSize = True
     BorderSpacing.InnerBorder = 5
     BevelColor = clBlack
     BevelOuter = bvNone
@@ -260,6 +259,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       Top = 10
       Width = 691
       Anchors = [akTop, akLeft, akRight, akBottom]
+      AutoSize = False
       BorderSpacing.Left = 11
       BorderSpacing.Top = 10
       BorderSpacing.Right = 10
@@ -267,8 +267,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       Font.Color = clWhite
       ParentColor = False
       ParentFont = False
-      ParentShowHint = False
-      ShowHint = True
+      OptimalFill = True
     end
   end
   object PaletteScrollBar: TScrollBar
@@ -615,5 +614,11 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     OnTimer = SimulationTimerTimer
     Left = 250
     Top = 259
+  end
+  object WireTimer: TIdleTimer
+    Interval = 100
+    OnTimer = WireTimerTimer
+    Left = 669
+    Top = 240
   end
 end

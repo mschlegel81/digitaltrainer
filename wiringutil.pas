@@ -61,6 +61,40 @@ TYPE
       FUNCTION isWireAllowed(CONST path:T_wirePath):boolean;
   end;
 
+  F_simpleCallback=PROCEDURE of object;
+
+  P_wiringTask=^T_wiringTask;
+
+  { T_wiringTask }
+
+  T_wiringTask=object
+    private
+      graph:P_wireGraph;
+      onFinish:F_simpleCallback;
+      toBeDisposed,
+      running,
+      cancelled:boolean;
+    public
+      toFind:array of record
+        index:longint;
+        startPoint:T_point;
+        endPoints:T_wirePath;
+        foundPath:T_wirePathArray;
+      end;
+
+      CONSTRUCTOR create(CONST freshGraph:P_wireGraph; CONST onFinish_:F_simpleCallback);
+      DESTRUCTOR destroy;
+
+      PROCEDURE addStartPoint(CONST index:longint; CONST p:T_point);
+      PROCEDURE addEndPoint(CONST p:T_point);
+      PROCEDURE execute;
+      PROCEDURE executeInBackground;
+      PROPERTY isRunning:boolean read running;
+      PROCEDURE cancelAndDestroy;
+  end;
+
+PROCEDURE disposeTask(VAR wiringTask:P_wiringTask);
+
 FUNCTION pointOf(CONST x,y:longint):T_point;
 OPERATOR +(CONST x,y:T_point):T_point;
 OPERATOR -(CONST x,y:T_point):T_point;
@@ -111,6 +145,15 @@ FUNCTION lineCrossesRectangle(CONST a0, a1, rectangleOrigin,
          or linesIntersect(a0,a1,rectangleOrigin+rectangleExtend,pointOf(rectangleOrigin[0]+rectangleExtend[0],rectangleOrigin[1]))
          or linesIntersect(a0,a1,rectangleOrigin+rectangleExtend,pointOf(rectangleOrigin[0]                   ,rectangleOrigin[1]+rectangleExtend[1]))
          or linesIntersect(a0,a1,rectangleOrigin                ,pointOf(rectangleOrigin[0]                   ,rectangleOrigin[1]+rectangleExtend[1]));
+  end;
+
+PROCEDURE disposeTask(VAR wiringTask: P_wiringTask);
+  begin
+    if wiringTask=nil then exit;
+    if wiringTask^.running
+    then wiringTask^.cancelAndDestroy
+    else dispose(wiringTask,destroy);
+    wiringTask:=nil;
   end;
 
 FUNCTION pointOf(CONST x, y: longint): T_point;
@@ -213,6 +256,88 @@ FUNCTION wireStep(CONST start:T_point; CONST direction:T_wireDirection; CONST st
     result[1]:=start[1]+WIRE_DELTA[direction,1]*steps;
   end;
 
+CONSTRUCTOR T_wiringTask.create(CONST freshGraph: P_wireGraph; CONST onFinish_: F_simpleCallback);
+  begin
+    graph:=freshGraph;
+    onFinish:=onFinish_;
+    toBeDisposed:=false;
+    running:=false;
+    cancelled:=false;
+    setLength(toFind,0);
+  end;
+
+DESTRUCTOR T_wiringTask.destroy;
+  VAR i,j:longint;
+  begin
+    cancelled:=true;
+    while running do sleep(1);
+    dispose(graph,destroy);
+    for i:=0 to length(toFind)-1 do begin
+      setLength(toFind[i].endPoints,0);
+      for j:=0 to length(toFind[i].foundPath)-1 do setLength(toFind[i].foundPath[j],0);
+      setLength(toFind[i].foundPath,0);
+    end;
+    setLength(toFind,0);
+  end;
+
+PROCEDURE T_wiringTask.addStartPoint(CONST index: longint; CONST p: T_point);
+  VAR i:longint;
+  begin
+    i:=length(toFind);
+    setLength(toFind,i+1);
+    toFind[i].index:=index;
+    toFind[i].startPoint:=p;
+    setLength(toFind[i].endPoints,0);
+    setLength(toFind[i].foundPath,0);
+  end;
+
+PROCEDURE T_wiringTask.addEndPoint(CONST p:T_point);
+  VAR i:longint;
+  begin
+    with toFind[length(toFind)-1] do begin
+      i:=length(endPoints);
+      setLength(endPoints,i+1);
+      endPoints[i]:=p;
+    end;
+  end;
+
+PROCEDURE T_wiringTask.execute;
+  VAR i:longint;
+      path:T_wirePath;
+      startTicks: qword;
+  begin
+    startTicks:=GetTickCount64;
+    running:=true;
+    for i:=0 to length(toFind)-1 do if not(cancelled) then begin
+      toFind[i].foundPath:=graph^.findPaths(toFind[i].startPoint,toFind[i].endPoints,true);
+      for path in toFind[i].foundPath do graph^.dropWire(path);
+    end;
+    if not(cancelled) and (onFinish<>nil) then onFinish();
+    running:=false;
+    {$ifdef debugMode}
+    writeln('Wiring task executing took ',GetTickCount64-startTicks,' ticks');
+    {$endif}
+  end;
+
+FUNCTION wiringTaskThread(p:pointer):ptrint; Register;
+  begin
+    P_wiringTask(p)^.execute;
+    if P_wiringTask(p)^.toBeDisposed then dispose(P_wiringTask(p),destroy);
+  end;
+
+PROCEDURE T_wiringTask.executeInBackground;
+  begin
+    if running then exit;
+    running:=true;
+    beginThread(@wiringTaskThread,@self);
+  end;
+
+PROCEDURE T_wiringTask.cancelAndDestroy;
+  begin
+    cancelled   :=true;
+    toBeDisposed:=true;
+  end;
+
 CONSTRUCTOR T_wireGraph.create(CONST width_, height_: longint);
   begin
     width:=width_;
@@ -223,6 +348,7 @@ CONSTRUCTOR T_wireGraph.create(CONST width_, height_: longint);
 
 DESTRUCTOR T_wireGraph.destroy;
   begin
+
   end;
 
 PROCEDURE T_wireGraph.initDirections;
@@ -602,8 +728,6 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsTo
     while (pointToExamine1>pointToExamine0) and (not found or exhaustiveScan) do begin
       scan:=nextPointToExamine;
 
-//      writeln('From ',startPoint[0],',',startPoint[1],' via ',scan.p[0],',',scan.p[1],' towards ',endPoint[0],',',endPoint[1]);
-
       for i:=0 to scan.dirCount-1 do begin
         next:=scan.p+scan.dir[i];
         newCost:=map[scan.p[0]+scan.p[1]*width].score+DirectionCost[scan.dir[i]];
@@ -726,13 +850,11 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint: T_point; CONST endPoints: T_wir
 
     if (length(endPoints)>1) and exhaustiveScan then repeat
       score:=multipathEffectiveLength(result,-1,nextPath);
-//      writeln('Composite path score (-): ',score);
       anyImproved:=false;
       for swapTemp in initialRun do with swapTemp do begin
         if length(result[idx])>0 then begin
           nextPath:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),exhaustiveScan,mask);
           newScore:=multipathEffectiveLength(result,idx,nextPath);
-//          writeln('Composite path score (',idx,'): ',newScore);
           if newScore<score then begin
             setLength(result[idx],0);
             score:=newScore;
