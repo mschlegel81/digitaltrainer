@@ -8,6 +8,7 @@ object PaletteForm: TPaletteForm
   ClientWidth = 695
   Color = 7354424
   OnCreate = FormCreate
+  Position = poOwnerFormCenter
   LCLVersion = '2.2.2.0'
   object entriesGrid: TStringGrid
     AnchorSideLeft.Control = Owner

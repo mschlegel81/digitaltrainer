@@ -8,6 +8,7 @@ object SelectTaskForm: TSelectTaskForm
   ClientWidth = 557
   Color = 7354424
   OnShow = FormShow
+  Position = poOwnerFormCenter
   LCLVersion = '2.2.2.0'
   object ChallengesGrid: TStringGrid
     AnchorSideLeft.Control = Owner
