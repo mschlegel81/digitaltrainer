@@ -213,8 +213,7 @@ FUNCTION T_visualGate.clone: P_visualGate;
     result^.fixedPosition  :=false;
   end;
 
-PROCEDURE T_visualGate.propertyEditDone(CONST paletteElement: boolean;
-  CONST x0, y0: longint);
+PROCEDURE T_visualGate.propertyEditDone(CONST paletteElement: boolean; CONST x0, y0: longint);
   begin
     setupVisuals;
   end;

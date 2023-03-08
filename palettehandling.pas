@@ -150,7 +150,6 @@ FUNCTION T_challengePalette.IndexOf(CONST gate: P_abstractGate): longint;
            (not(paletteEntries[i].preconfigured) or gate^.equals(paletteEntries[i].prototype))
         then exit(i);
     end;
-    writeln('Could not find gate ',gate^.getCaption,' of type ',gate^.gateType);
     result:=-1;
   end;
 
@@ -815,7 +814,7 @@ PROCEDURE T_workspacePalette.setFilter(CONST newValue: longint);
     if (newValue>=0) and (newValue<length(paletteEntries)) and (paletteEntries[newValue].prototype=nil) then exit;
     changed:=filter<>newValue;
     filter:=newValue;
-    if changed then begin
+    if changed and (ui<>nil) then begin
       ensureVisualPaletteItems;
       checkSizes;
     end;

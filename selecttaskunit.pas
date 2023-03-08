@@ -129,7 +129,7 @@ PROCEDURE TSelectTaskForm.MoveTaskUpShapeMouseDown(Sender: TObject; button: TMou
   VAR newSelection: TGridRect;
   begin
     newSelection:=ChallengesGrid.selection;
-    challengeSet^.moveChallenge(selectedChallengeIndex,false);
+    challengeSet^.moveChallenge(selectedChallengeIndex,true);
     newSelection.top   :=selectedChallengeIndex-1+1;
     newSelection.Bottom:=newSelection.top;
     updateTable;

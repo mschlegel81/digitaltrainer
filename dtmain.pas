@@ -152,6 +152,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     addButton(propEditShape,propEditLabel);
     addButton(propOkShape,propOkLabel);
     addButton(propCancelShape,propCancelLabel);
+    addButton(TestShape,TestLabel);
 
     uiAdapter.create(selectionShape,
                      boardImage,
