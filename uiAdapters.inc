@@ -102,6 +102,7 @@ T_uiAdapter=object
     PROCEDURE palletteConnected(CONST paintEvent:F_procedure; CONST gateHitInfo:F_gateHitInfo);
     PROPERTY paletteComboBox:TComboBox read uiElement.paletteComboBox;
     FUNCTION paletteCanvas:TCanvas;
+    PROCEDURE updateBoardScrollbars;
     PROCEDURE setPaletteSize(CONST paletteWidthInGridSize,paletteHeightInGridSize:longint);
     FUNCTION paletteYOffset:longint;
     FUNCTION paletteWidth:longint;
@@ -345,42 +346,15 @@ FUNCTION T_uiAdapter.paletteCanvas: TCanvas;
     result:=uiElement.boardImage.Canvas;
   end;
 
-PROCEDURE T_uiAdapter.setPaletteSize(CONST paletteWidthInGridSize,
-  paletteHeightInGridSize: longint);
-  VAR paletteWidthInPixels,
-      paletteHeightInPixels:longint;
-      boardWidthInPixels,
+PROCEDURE T_uiAdapter.updateBoardScrollbars;
+  VAR boardWidthInPixels,
       boardHeightInPixels,
       effBoardImageHeight,
       effBoardImageWidth:longint;
   begin
-    if (uiElement.boardImage.picture.Bitmap.width <>uiElement.boardImage.width) or
-       (uiElement.boardImage.picture.Bitmap.height<>uiElement.boardImage.height)
-    then uiElement.boardImage.picture.Bitmap.setSize(uiElement.boardImage.width,uiElement.boardImage.height);
-
-    //Palette:
-    paletteWidthInPixels :=paletteWidthInGridSize *zoom;
-    paletteHeightInPixels:=paletteHeightInGridSize*zoom;
-
-    if uiElement.boardImage.height>paletteHeightInPixels then begin
-      uiElement.paletteScrollBar.visible:=false;
-      uiElement.paletteScrollBar.max     :=uiElement.boardImage.height;
-      uiElement.paletteScrollBar.PageSize:=uiElement.boardImage.height;
-      uiElement.paletteScrollBar.position:=0;
-    end else begin
-      uiElement.paletteScrollBar.visible:=true;
-      uiElement.paletteScrollBar.Left:=0;
-      uiElement.paletteScrollBar.max     :=paletteHeightInPixels;
-      uiElement.paletteScrollBar.PageSize:=uiElement.boardImage.height;
-    end;
-
-    uiElement.paletteWidth         :=paletteWidthInPixels;
-    uiElement.paletteComboBox.width:=paletteWidthInPixels-10;
-
-    if activeBoard=nil then exit;
     //Board:
-    boardWidthInPixels :=(activeBoard^.gridX1+4)*zoom;
-    boardHeightInPixels:=(activeBoard^.gridY1+4)*zoom;
+    boardWidthInPixels :=(activeBoard^.gridX1+5)*zoom;
+    boardHeightInPixels:=(activeBoard^.gridY1+5)*zoom;
     effBoardImageHeight:=uiElement.boardImage.height-uiElement.boardHorizontalScrollBar.height-uiElement.paletteWidth;
     effBoardImageWidth :=uiElement.boardImage.width -uiElement.boardVerticalScrollBar  .width;
 
@@ -404,7 +378,39 @@ PROCEDURE T_uiAdapter.setPaletteSize(CONST paletteWidthInGridSize,
       uiElement.boardHorizontalScrollBar.max     :=boardWidthInPixels;
       uiElement.boardHorizontalScrollBar.PageSize:=effBoardImageWidth;
     end;
+  end;
 
+PROCEDURE T_uiAdapter.setPaletteSize(CONST paletteWidthInGridSize, paletteHeightInGridSize: longint);
+  VAR paletteWidthInPixels,
+      paletteHeightInPixels:longint;
+
+  begin
+    if (uiElement.boardImage.picture.Bitmap.width <>uiElement.boardImage.width) or
+       (uiElement.boardImage.picture.Bitmap.height<>uiElement.boardImage.height)
+    then uiElement.boardImage.picture.Bitmap.setSize(uiElement.boardImage.width,uiElement.boardImage.height);
+
+    //Palette:
+    paletteWidthInPixels :=paletteWidthInGridSize *zoom;
+    paletteHeightInPixels:=paletteHeightInGridSize*zoom;
+
+    if uiElement.boardImage.height>paletteHeightInPixels then begin
+      uiElement.paletteScrollBar.visible:=false;
+      uiElement.paletteScrollBar.max     :=uiElement.boardImage.height;
+      uiElement.paletteScrollBar.PageSize:=uiElement.boardImage.height;
+      uiElement.paletteScrollBar.position:=0;
+    end else begin
+      if not uiElement.paletteScrollBar.visible
+      then uiElement.paletteScrollBar.position:=0;
+      uiElement.paletteScrollBar.visible:=true;
+      uiElement.paletteScrollBar.Left:=0;
+      uiElement.paletteScrollBar.max     :=paletteHeightInPixels;
+      uiElement.paletteScrollBar.PageSize:=uiElement.boardImage.height;
+    end;
+
+    uiElement.paletteWidth         :=paletteWidthInPixels;
+    uiElement.paletteComboBox.width:=paletteWidthInPixels-10;
+
+    if activeBoard<>nil then updateBoardScrollbars;
   end;
 
 FUNCTION T_uiAdapter.paletteYOffset: longint;

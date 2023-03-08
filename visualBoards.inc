@@ -222,6 +222,7 @@ PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft, movingBottom: boolean
     end;
 
   VAR gate:P_visualGate;
+      oldGridX1,oldGridY1,
       oldGridX0,oldGridY0:longint;
       delta: T_point;
   begin
@@ -229,6 +230,8 @@ PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft, movingBottom: boolean
     nonInY0:=maxLongint;
     oldGridX0:=gridX0; gridX0:=0;
     oldGridY0:=gridY0; gridY0:=0;
+    oldGridX1:=gridX1;
+    oldGridY1:=gridY1;
     for gate in inputs  do growIfNecessary(gate);
     for gate in outputs do growIfNecessary(gate);
     for gate in gates   do growIfNecessary(gate);
@@ -241,6 +244,7 @@ PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft, movingBottom: boolean
       gridX1+=delta[0];
       gridY1+=delta[1];
     end;
+    if ((gridX1<>oldGridX1) or (gridY1<>oldGridY1)) and (ui<>nil) then ui^.updateBoardScrollbars;
     wiresUpToDate:=false;
   end;
 

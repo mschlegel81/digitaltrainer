@@ -57,7 +57,7 @@ CONST
   {1/2->0}      ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_inputWidth]),
                 ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly]),
                 ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_romData]),
-                ([gpe_captionReadOnly]               ,          [gpe_captionReadOnly]));
+                ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly]));
 
 TYPE
   T_gatePropertyValue=record
