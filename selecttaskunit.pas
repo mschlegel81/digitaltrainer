@@ -138,8 +138,7 @@ PROCEDURE TSelectTaskForm.MoveTaskUpShapeMouseDown(Sender: TObject; button: TMou
   end;
 
 PROCEDURE TSelectTaskForm.StartTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
-  VAR
-    toBeExported: P_challengeSet;
+  VAR toBeExported: P_challengeSet;
   begin
     if exporting then begin
       if SaveDialog1.execute then begin

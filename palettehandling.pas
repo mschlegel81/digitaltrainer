@@ -8,6 +8,7 @@ USES
   Classes, sysutils,StdCtrls, ExtCtrls,logicalGates,visualGates,compoundGates, myGenerics,serializationUtil,wiringUtil;
 
 TYPE
+  //TODO: Implement UI for workspace palette import/export
   P_palette=^T_palette;
 
   { T_palette }
@@ -43,6 +44,7 @@ TYPE
   { T_workspacePalette }
 
   T_workspacePaletteEntry= record
+    markedForExport:boolean;
     visualSorting,
     subPaletteIndex:longint;
     entryType:T_gateType;
@@ -84,6 +86,11 @@ TYPE
 
     PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual;
     FUNCTION isWorkspacePalette:boolean; virtual;
+
+    PROCEDURE markAllEntriesForExport(CONST Selected:boolean);
+    PROCEDURE markEntryForExport(CONST index:longint; CONST Selected:boolean);
+    PROCEDURE exportSelected(CONST fileName:string);
+    PROCEDURE importPalette(CONST fileName:string);
   end;
 
   T_challengePaletteEntry=record
@@ -712,8 +719,7 @@ PROCEDURE T_workspacePalette.reassignEntry(CONST gate: P_abstractGate;
     removeSubPalette(previousPaletteIndex);
   end;
 
-PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard;
-  subPaletteIndex: longint; CONST subPaletteName: string);
+PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string);
   VAR i:longint;
       visualIndex:longint=0;
   begin
@@ -882,6 +888,67 @@ PROCEDURE T_workspacePalette.dropPaletteItem(CONST gatePtr: pointer);
 FUNCTION T_workspacePalette.isWorkspacePalette: boolean;
   begin
     result:=true;
+  end;
+
+PROCEDURE T_workspacePalette.markAllEntriesForExport(CONST Selected: boolean);
+  VAR i:longint;
+  begin
+    for i:=0 to length(paletteEntries)-1 do paletteEntries[i].markedForExport:=Selected;
+  end;
+
+PROCEDURE T_workspacePalette.markEntryForExport(CONST index: longint; CONST Selected: boolean);
+  VAR i:longint;
+      prototype: P_visualBoard;
+  begin
+    if (index<0) or (index>=length(paletteEntries)) then exit;
+    with paletteEntries[index] do if (entryType<>gt_compound) or (markedForExport=Selected) then begin
+      markedForExport:=Selected;
+      exit;
+    end;
+
+    prototype:=paletteEntries[index].prototype;
+    paletteEntries[index].markedForExport:=Selected;
+
+    if Selected then begin
+      //We want to mark. Additional marks may be required.
+      for i:=0 to index-1 do
+        if (paletteEntries[i].entryType=gt_compound) and
+           not(paletteEntries[i].markedForExport) and
+           prototype^.usesPrototype(paletteEntries[i].prototype)
+        then markEntryForExport(i,true);
+    end else begin
+      //We want to unmark...
+      for i:=index+1 to length(paletteEntries)-1 do
+        if (paletteEntries[i].entryType=gt_compound) and
+           (paletteEntries[i].markedForExport) and
+           paletteEntries[i].prototype^.usesPrototype(prototype)
+        then markEntryForExport(i,false);
+    end;
+  end;
+
+PROCEDURE T_workspacePalette.exportSelected(CONST fileName: string);
+  VAR temp:T_workspacePalette;
+      i:longint;
+  begin
+    temp.create;
+    for i:=0 to length(paletteEntries)-1 do if (paletteEntries[i].markedForExport) and (paletteEntries[i].entryType=gt_compound)
+      then temp.addBoard(paletteEntries[i].prototype,-1,paletteNames[paletteEntries[i].subPaletteIndex]);
+    temp.saveToFile(fileName);
+    temp.destroy;
+  end;
+
+PROCEDURE T_workspacePalette.importPalette(CONST fileName:string);
+  VAR temp:T_workspacePalette;
+      i:longint;
+  begin
+    temp.create;
+    if not(temp.loadFromFile(fileName)) then begin
+      temp.destroy;
+      exit;
+    end;
+    for i:=0 to length(temp.paletteEntries)-1 do if (temp.paletteEntries[i].entryType=gt_compound) then
+      addBoard(temp.paletteEntries[i].prototype,-1,temp.paletteNames[temp.paletteEntries[i].subPaletteIndex]);
+    temp.destroy;
   end;
 
 { T_palette }

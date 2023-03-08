@@ -31,7 +31,6 @@ TYPE
   end;
 
   { T_challenge }
-
   T_challenge=object(T_serializable)
   private
     challengeTestCreationThread:T_challengeTestCreationThread;
