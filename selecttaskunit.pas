@@ -20,12 +20,12 @@ TYPE
     EditTaskShape: TShape;
     MoveTaskDownLabel: TLabel;
     MoveTaskDownShape: TShape;
+    MoveTaskUpLabel: TLabel;
+    MoveTaskUpShape: TShape;
     SaveDialog1: TSaveDialog;
     StartTaskLabel: TLabel;
     DeleteTaskShape: TShape;
-    MoveTaskUpLabel: TLabel;
     StartTaskShape: TShape;
-    MoveTaskUpShape: TShape;
     PROCEDURE DeleteTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE EditTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE FormShow(Sender: TObject);

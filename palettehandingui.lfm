@@ -1,7 +1,7 @@
 object PaletteForm: TPaletteForm
-  Left = 577
+  Left = 1215
   Height = 590
-  Top = 181
+  Top = 191
   Width = 695
   Caption = 'Palette verwalten'
   ClientHeight = 590
@@ -12,13 +12,14 @@ object PaletteForm: TPaletteForm
   LCLVersion = '2.2.2.0'
   object entriesGrid: TStringGrid
     AnchorSideLeft.Control = Owner
-    AnchorSideTop.Control = Owner
+    AnchorSideTop.Control = SubPalettePanel
+    AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = ExportShape
     Left = 5
-    Height = 536
-    Top = 5
+    Height = 435
+    Top = 106
     Width = 685
     Anchors = [akTop, akLeft, akRight, akBottom]
     BorderSpacing.Left = 5
@@ -256,6 +257,127 @@ object PaletteForm: TPaletteForm
     ParentColor = False
     ParentFont = False
     OnMouseDown = MarkNoneShapeMouseDown
+  end
+  object SubPalettePanel: TPanel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 5
+    Height = 96
+    Top = 5
+    Width = 685
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BevelColor = clBlack
+    ClientHeight = 96
+    ClientWidth = 685
+    TabOrder = 1
+    object MoveTaskDownShape: TShape
+      AnchorSideTop.Control = MoveTaskUpShape
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = SubPalettePanel
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = Owner
+      AnchorSideBottom.Side = asrBottom
+      Left = 640
+      Height = 39
+      Top = 50
+      Width = 39
+      Anchors = [akTop, akRight]
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      BorderSpacing.Bottom = 4
+      Brush.Color = 6303792
+      Shape = stRoundRect
+    end
+    object MoveTaskDownLabel: TLabel
+      AnchorSideLeft.Control = MoveTaskDownShape
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = MoveTaskDownShape
+      AnchorSideTop.Side = asrCenter
+      Left = 655
+      Height = 21
+      Top = 59
+      Width = 8
+      Caption = '↓'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object MoveTaskUpShape: TShape
+      AnchorSideTop.Control = SubPalettePanel
+      AnchorSideRight.Control = SubPalettePanel
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = SubPalettePanel
+      AnchorSideBottom.Side = asrBottom
+      Left = 640
+      Height = 39
+      Top = 6
+      Width = 39
+      Anchors = [akTop, akRight]
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      BorderSpacing.Bottom = 4
+      Brush.Color = 6303792
+      Shape = stRoundRect
+    end
+    object MoveTaskUpLabel: TLabel
+      AnchorSideLeft.Control = MoveTaskUpShape
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = MoveTaskUpShape
+      AnchorSideTop.Side = asrCenter
+      Left = 655
+      Height = 21
+      Top = 15
+      Width = 8
+      Caption = '↑'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object SubPaletteStringGrid: TStringGrid
+      AnchorSideLeft.Control = SubPalettePanel
+      AnchorSideTop.Control = SubPalettePanel
+      AnchorSideRight.Control = MoveTaskDownShape
+      AnchorSideBottom.Control = SubPalettePanel
+      AnchorSideBottom.Side = asrBottom
+      Left = 6
+      Height = 84
+      Top = 6
+      Width = 629
+      Anchors = [akTop, akLeft, akRight, akBottom]
+      AutoFillColumns = True
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      BorderSpacing.Bottom = 5
+      Color = 8405056
+      ColCount = 1
+      FixedColor = 6303792
+      FixedCols = 0
+      Flat = True
+      Font.Color = clWhite
+      Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goEditing, goSmoothScroll]
+      ParentFont = False
+      TabOrder = 0
+      OnValidateEntry = SubPaletteStringGridValidateEntry
+      ColWidths = (
+        611
+      )
+    end
   end
   object OpenDialog1: TOpenDialog
     DefaultExt = '.palette'

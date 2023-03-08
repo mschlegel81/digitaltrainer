@@ -188,6 +188,41 @@ object SelectTaskForm: TSelectTaskForm
     ParentFont = False
     OnMouseDown = EditTaskShapeMouseDown
   end
+  object MoveTaskDownShape: TShape
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 469
+    Height = 39
+    Top = 352
+    Width = 39
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 4
+    Brush.Color = 6303792
+    OnMouseDown = MoveTaskDownShapeMouseDown
+    Shape = stRoundRect
+  end
+  object MoveTaskDownLabel: TLabel
+    AnchorSideLeft.Control = MoveTaskDownShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = MoveTaskDownShape
+    AnchorSideTop.Side = asrCenter
+    Left = 484
+    Height = 21
+    Top = 361
+    Width = 8
+    Caption = '↓'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = MoveTaskDownShapeMouseDown
+  end
   object MoveTaskUpShape: TShape
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
@@ -224,42 +259,6 @@ object SelectTaskForm: TSelectTaskForm
     ParentColor = False
     ParentFont = False
     OnMouseDown = MoveTaskUpShapeMouseDown
-  end
-  object MoveTaskDownShape: TShape
-    AnchorSideRight.Control = MoveTaskUpShape
-    AnchorSideBottom.Control = Owner
-    AnchorSideBottom.Side = asrBottom
-    Left = 469
-    Height = 39
-    Top = 352
-    Width = 39
-    Anchors = [akRight, akBottom]
-    BorderSpacing.Left = 5
-    BorderSpacing.Top = 5
-    BorderSpacing.Right = 5
-    BorderSpacing.Bottom = 4
-    Brush.Color = 6303792
-    OnMouseDown = MoveTaskDownShapeMouseDown
-    Shape = stRoundRect
-  end
-  object MoveTaskDownLabel: TLabel
-    AnchorSideLeft.Control = MoveTaskDownShape
-    AnchorSideLeft.Side = asrCenter
-    AnchorSideTop.Control = MoveTaskDownShape
-    AnchorSideTop.Side = asrCenter
-    Left = 484
-    Height = 21
-    Top = 361
-    Width = 8
-    Caption = '↓'
-    Font.CharSet = ANSI_CHARSET
-    Font.Color = clWhite
-    Font.Height = -16
-    Font.Pitch = fpVariable
-    Font.Quality = fqDraft
-    ParentColor = False
-    ParentFont = False
-    OnMouseDown = MoveTaskDownShapeMouseDown
   end
   object SaveDialog1: TSaveDialog
     DefaultExt = '.challenges'

@@ -24,7 +24,13 @@ TYPE
     ImportShape: TShape;
     DeleteShape: TShape;
     MarkNoneLabel: TLabel;
+    MoveTaskDownLabel: TLabel;
+    MoveTaskDownShape: TShape;
+    MoveTaskUpLabel: TLabel;
+    MoveTaskUpShape: TShape;
     OpenDialog1: TOpenDialog;
+    SubPaletteStringGrid: TStringGrid;
+    SubPalettePanel: TPanel;
     SaveDialog1: TSaveDialog;
     StartTaskLabel: TLabel;
     PROCEDURE entriesGridSelection(Sender: TObject; aCol, aRow: integer);
@@ -35,10 +41,13 @@ TYPE
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE ImportShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
+    PROCEDURE SubPaletteListBoxClick(Sender: TObject);
     PROCEDURE MarkAllShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
     PROCEDURE MarkNoneShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
+    PROCEDURE SubPaletteStringGridValidateEntry(Sender: TObject; aCol,
+      aRow: integer; CONST oldValue: string; VAR newValue: string);
   private
     palette:P_workspacePalette;
     lastClicked:longint;
@@ -95,6 +104,11 @@ PROCEDURE TPaletteForm.ImportShapeMouseDown(Sender: TObject; button: TMouseButto
     fillTable(true);
   end;
 
+PROCEDURE TPaletteForm.SubPaletteListBoxClick(Sender: TObject);
+begin
+
+end;
+
 PROCEDURE TPaletteForm.MarkAllShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     palette^.markAllEntriesForExport(true);
@@ -107,6 +121,11 @@ PROCEDURE TPaletteForm.MarkNoneShapeMouseDown(Sender: TObject; button: TMouseBut
     palette^.markAllEntriesForExport(false);
     fillTable;
     updateButtons;
+  end;
+
+PROCEDURE TPaletteForm.SubPaletteStringGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
+  begin
+    //TODO: Update Sub Palette Name in palette
   end;
 
 PROCEDURE TPaletteForm.fillTable(CONST initial: boolean);
