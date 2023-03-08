@@ -1,0 +1,271 @@
+object PaletteForm: TPaletteForm
+  Left = 577
+  Height = 590
+  Top = 181
+  Width = 695
+  Caption = 'Palette verwalten'
+  ClientHeight = 590
+  ClientWidth = 695
+  Color = 7354424
+  OnCreate = FormCreate
+  LCLVersion = '2.2.2.0'
+  object entriesGrid: TStringGrid
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = ExportShape
+    Left = 5
+    Height = 536
+    Top = 5
+    Width = 685
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Color = 8405056
+    ColCount = 4
+    FixedColor = 6303792
+    FixedCols = 0
+    Flat = True
+    Font.Color = clWhite
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing, goRowSelect, goDblClickAutoSize, goSmoothScroll]
+    ParentFont = False
+    TabOrder = 0
+    OnSelection = entriesGridSelection
+    ColWidths = (
+      64
+      64
+      147
+      64
+    )
+    Cells = (
+      5
+      0
+      0
+      'Beschriftung'
+      1
+      0
+      'Beschreibung'
+      2
+      0
+      'Palette'
+      2
+      1
+      '|||'
+      2
+      2
+      '||||||||||||||||||||'
+    )
+  end
+  object ExportShape: TShape
+    AnchorSideRight.Control = ImportShape
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 5
+    Height = 39
+    Top = 546
+    Width = 203
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = ExportShapeMouseDown
+    Shape = stRoundRect
+  end
+  object ExportLabel: TLabel
+    AnchorSideLeft.Control = ExportShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = ExportShape
+    AnchorSideTop.Side = asrCenter
+    Left = 20
+    Height = 21
+    Top = 555
+    Width = 172
+    Caption = 'Ausgewählte exportieren'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+  end
+  object StartTaskLabel: TLabel
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Side = asrCenter
+    Left = 210
+    Height = 21
+    Top = 181
+    Width = 110
+    Caption = 'Aufgabe starten'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+  end
+  object ImportShape: TShape
+    AnchorSideRight.Control = DeleteShape
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 213
+    Height = 39
+    Top = 546
+    Width = 163
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = ImportShapeMouseDown
+    Shape = stRoundRect
+  end
+  object ImportLabel: TLabel
+    AnchorSideLeft.Control = ImportShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = ImportShape
+    AnchorSideTop.Side = asrCenter
+    Left = 228
+    Height = 21
+    Top = 555
+    Width = 132
+    Caption = 'Palette importieren'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+  end
+  object DeleteShape: TShape
+    AnchorSideRight.Control = MarkAllShape
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 381
+    Height = 39
+    Top = 546
+    Width = 139
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = DeleteShapeMouseDown
+    Shape = stRoundRect
+  end
+  object DeleteLabel: TLabel
+    AnchorSideLeft.Control = DeleteShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = DeleteShape
+    AnchorSideTop.Side = asrCenter
+    Left = 397
+    Height = 21
+    Top = 555
+    Width = 106
+    Caption = 'Eintrag löschen'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = DeleteShapeMouseDown
+  end
+  object MarkAllShape: TShape
+    AnchorSideRight.Control = MarkNoneShape
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 525
+    Height = 39
+    Top = 546
+    Width = 80
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = MarkAllShapeMouseDown
+    Shape = stRoundRect
+  end
+  object MarkAllLabel: TLabel
+    AnchorSideLeft.Control = MarkAllShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = MarkAllShape
+    AnchorSideTop.Side = asrCenter
+    Left = 545
+    Height = 21
+    Top = 555
+    Width = 40
+    Caption = '✓ alle'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = MarkAllShapeMouseDown
+  end
+  object MarkNoneShape: TShape
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 610
+    Height = 39
+    Top = 546
+    Width = 80
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = MarkNoneShapeMouseDown
+    Shape = stRoundRect
+  end
+  object MarkNoneLabel: TLabel
+    AnchorSideLeft.Control = MarkNoneShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = MarkNoneShape
+    AnchorSideTop.Side = asrCenter
+    Left = 624
+    Height = 21
+    Top = 555
+    Width = 53
+    Caption = '✓ keine'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = MarkNoneShapeMouseDown
+  end
+  object OpenDialog1: TOpenDialog
+    DefaultExt = '.palette'
+    Filter = '.palette'
+    Options = [ofPathMustExist, ofFileMustExist, ofEnableSizing, ofViewDetail]
+    Left = 91
+    Top = 204
+  end
+  object SaveDialog1: TSaveDialog
+    DefaultExt = '.palette'
+    Filter = '.paeltte'
+    Options = [ofPathMustExist, ofEnableSizing, ofViewDetail]
+    Left = 161
+    Top = 159
+  end
+end

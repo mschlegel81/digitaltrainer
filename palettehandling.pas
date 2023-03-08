@@ -81,6 +81,8 @@ TYPE
     PROCEDURE updateEntry(CONST board:P_visualBoard; subPaletteIndex:longint; CONST subPaletteName:string);
     PROCEDURE deleteEntry(CONST prototype:P_captionedAndIndexed);
     FUNCTION  allowDeletion(CONST gate:P_abstractGate):boolean; virtual;
+    PROCEDURE deleteEntry(CONST index:longint);
+    FUNCTION  allowDeletion(CONST index:longint):boolean;
     PROCEDURE setFilter(CONST newValue:longint);
     PROCEDURE ensureIndexes;
 
@@ -88,6 +90,7 @@ TYPE
     FUNCTION isWorkspacePalette:boolean; virtual;
 
     PROCEDURE markAllEntriesForExport(CONST Selected:boolean);
+    PROCEDURE markEntryForExportToggle(CONST index:longint);
     PROCEDURE markEntryForExport(CONST index:longint; CONST Selected:boolean);
     PROCEDURE exportSelected(CONST fileName:string);
     PROCEDURE importPalette(CONST fileName:string);
@@ -719,7 +722,8 @@ PROCEDURE T_workspacePalette.reassignEntry(CONST gate: P_abstractGate;
     removeSubPalette(previousPaletteIndex);
   end;
 
-PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string);
+PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard;
+  subPaletteIndex: longint; CONST subPaletteName: string);
   VAR i:longint;
       visualIndex:longint=0;
   begin
@@ -777,8 +781,7 @@ PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard;
     ensureVisualPaletteItems;
   end;
 
-PROCEDURE T_workspacePalette.deleteEntry(CONST prototype: P_captionedAndIndexed
-  );
+PROCEDURE T_workspacePalette.deleteEntry(CONST prototype: P_captionedAndIndexed);
   VAR i,i0:longint;
   begin
     if ui^.isPrototypeInUse(prototype) then exit;
@@ -810,6 +813,36 @@ FUNCTION T_workspacePalette.allowDeletion(CONST gate: P_abstractGate): boolean;
     for i:=0 to length(paletteEntries)-1 do
       if (i<>prototype^.getIndexInPalette) and
          (paletteEntries[i].prototype<>nil) and
+         (paletteEntries[i].prototype^.usesPrototype(prototype)) then exit(false);
+    result:=true;
+  end;
+
+PROCEDURE T_workspacePalette.deleteEntry(CONST index: longint);
+  VAR
+    prototype: P_visualBoard;
+    i: integer;
+  begin
+    if (index<0) or (index>=length(paletteEntries)) or (paletteEntries[index].entryType<>gt_compound) then exit;
+    prototype:=paletteEntries[index].prototype;
+    if ui^.isPrototypeInUse(prototype) then exit;
+    for i:=index+1 to length(paletteEntries)-1 do
+      if (paletteEntries[i].prototype<>nil) and
+         (paletteEntries[i].prototype^.usesPrototype(prototype)) then exit;
+    dispose(paletteEntries[index].prototype,destroy);
+    for i:=index to length(paletteEntries)-2 do paletteEntries[i]:=paletteEntries[i+1];
+    setLength(paletteEntries,length(paletteEntries)-1);
+    reindex;
+  end;
+
+FUNCTION T_workspacePalette.allowDeletion(CONST index: longint): boolean;
+  VAR i:longint;
+      prototype: P_visualBoard;
+  begin
+    if (index<0) or (index>=length(paletteEntries)) or (paletteEntries[index].entryType<>gt_compound) then exit(false);
+    prototype:=paletteEntries[index].prototype;
+    if ui^.isPrototypeInUse(prototype) then exit(false);
+    for i:=index+1 to length(paletteEntries)-1 do
+      if (paletteEntries[i].prototype<>nil) and
          (paletteEntries[i].prototype^.usesPrototype(prototype)) then exit(false);
     result:=true;
   end;
@@ -896,7 +929,14 @@ PROCEDURE T_workspacePalette.markAllEntriesForExport(CONST Selected: boolean);
     for i:=0 to length(paletteEntries)-1 do paletteEntries[i].markedForExport:=Selected;
   end;
 
-PROCEDURE T_workspacePalette.markEntryForExport(CONST index: longint; CONST Selected: boolean);
+PROCEDURE T_workspacePalette.markEntryForExportToggle(CONST index: longint);
+  begin
+    if (index<0) or (index>=length(paletteEntries)) then exit;
+    markEntryForExport(index,not(paletteEntries[index].markedForExport));
+  end;
+
+PROCEDURE T_workspacePalette.markEntryForExport(CONST index: longint;
+  CONST Selected: boolean);
   VAR i:longint;
       prototype: P_visualBoard;
   begin
@@ -937,7 +977,7 @@ PROCEDURE T_workspacePalette.exportSelected(CONST fileName: string);
     temp.destroy;
   end;
 
-PROCEDURE T_workspacePalette.importPalette(CONST fileName:string);
+PROCEDURE T_workspacePalette.importPalette(CONST fileName: string);
   VAR temp:T_workspacePalette;
       i:longint;
   begin

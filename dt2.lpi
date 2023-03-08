@@ -170,6 +170,14 @@
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="romEditorUnit"/>
       </Unit>
+      <Unit>
+        <Filename Value="palettehandingui.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="PaletteForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="paletteHandingUi"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -206,6 +214,9 @@
     </Linking>
     <Other>
       <CustomOptions Value="-ddebugMode"/>
+      <OtherDefines Count="1">
+        <Define0 Value="debugMode"/>
+      </OtherDefines>
     </Other>
   </CompilerOptions>
   <Debugging>

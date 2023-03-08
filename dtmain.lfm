@@ -578,6 +578,13 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         Caption = 'Aufgaben &exportieren'
         OnClick = miExportChallengesClick
       end
+      object Separator2: TMenuItem
+        Caption = '-'
+      end
+      object miEditPalette: TMenuItem
+        Caption = 'Palette verwalten'
+        OnClick = miEditPaletteClick
+      end
     end
     object miEdit: TMenuItem
       Caption = 'Bearbeiten'

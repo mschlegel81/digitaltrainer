@@ -8,7 +8,7 @@ USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
   Buttons, StdCtrls, Menus, ValEdit, Grids, visualGates, logicalGates,
   challenges, paletteHandling, gateProperties, addToPaletteDialog, visuals,workspaces,
-  createTaskUnit,selectTaskUnit,taskFinishedUnit;
+  createTaskUnit,selectTaskUnit,taskFinishedUnit,paletteHandingUi;
 
 TYPE
   { TDigitaltrainerMainForm }
@@ -17,12 +17,14 @@ TYPE
   TDigitaltrainerMainForm = class(TForm)
     boardHorizontalScrollBar: TScrollBar;
     boardImage: TImage;
+    miEditPalette: TMenuItem;
     miImportOverwrite: TMenuItem;
     miImportAdd: TMenuItem;
     miExportChallenges: TMenuItem;
     miImportChallenges: TMenuItem;
     OpenDialog1: TOpenDialog;
     Separator1: TMenuItem;
+    Separator2: TMenuItem;
     WireTimer: TIdleTimer;
     ioEdit: TEdit;
     infoLabel: TLabel;
@@ -78,6 +80,7 @@ TYPE
     PROCEDURE miAddToPaletteClick(Sender: TObject);
     PROCEDURE miCopyClick(Sender: TObject);
     PROCEDURE miEditModeClick(Sender: TObject);
+    PROCEDURE miEditPaletteClick(Sender: TObject);
     PROCEDURE miExportChallengesClick(Sender: TObject);
     PROCEDURE miFullScreenClick(Sender: TObject);
     PROCEDURE miImportAddClick(Sender: TObject);
@@ -242,6 +245,11 @@ PROCEDURE TDigitaltrainerMainForm.miEditModeClick(Sender: TObject);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
     uiAdapter.paintAll;
     infoLabel.caption:=workspace.getInfoLabelText;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miEditPaletteClick(Sender: TObject);
+  begin
+    PaletteForm.showFor(workspace.getWorkspacePalette);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miExportChallengesClick(Sender: TObject);

@@ -42,6 +42,8 @@ TYPE
 
     FUNCTION getInfoLabelText:string;
     PROCEDURE replaceChallengeSet(CONST challengeSet:P_challengeSet);
+
+    PROPERTY getWorkspacePalette:P_workspacePalette read workspacePalette;
   end;
 
 IMPLEMENTATION
