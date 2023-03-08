@@ -1,7 +1,7 @@
 object PaletteForm: TPaletteForm
-  Left = 1215
+  Left = 355
   Height = 590
-  Top = 191
+  Top = 116
   Width = 695
   Caption = 'Palette verwalten'
   ClientHeight = 590
@@ -373,9 +373,16 @@ object PaletteForm: TPaletteForm
       Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goEditing, goSmoothScroll]
       ParentFont = False
       TabOrder = 0
+      OnSelection = SubPaletteStringGridSelection
       OnValidateEntry = SubPaletteStringGridValidateEntry
       ColWidths = (
         611
+      )
+      Cells = (
+        1
+        0
+        0
+        'Paletten-Titel'
       )
     end
   end

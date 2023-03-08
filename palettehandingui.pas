@@ -41,18 +41,19 @@ TYPE
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE ImportShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
-    PROCEDURE SubPaletteListBoxClick(Sender: TObject);
     PROCEDURE MarkAllShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
     PROCEDURE MarkNoneShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
+    PROCEDURE SubPaletteStringGridSelection(Sender: TObject; aCol, aRow: integer
+      );
     PROCEDURE SubPaletteStringGridValidateEntry(Sender: TObject; aCol,
       aRow: integer; CONST oldValue: string; VAR newValue: string);
   private
     palette:P_workspacePalette;
     lastClicked:longint;
+    lastClickedSubPalette:longint;
     PROCEDURE fillTable(CONST initial:boolean=false);
-    PROCEDURE fillRow(CONST i:longint);
     PROCEDURE updateButtons;
   public
     PROCEDURE showFor(CONST palette_:P_workspacePalette);
@@ -104,11 +105,6 @@ PROCEDURE TPaletteForm.ImportShapeMouseDown(Sender: TObject; button: TMouseButto
     fillTable(true);
   end;
 
-PROCEDURE TPaletteForm.SubPaletteListBoxClick(Sender: TObject);
-begin
-
-end;
-
 PROCEDURE TPaletteForm.MarkAllShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     palette^.markAllEntriesForExport(true);
@@ -123,43 +119,53 @@ PROCEDURE TPaletteForm.MarkNoneShapeMouseDown(Sender: TObject; button: TMouseBut
     updateButtons;
   end;
 
+PROCEDURE TPaletteForm.SubPaletteStringGridSelection(Sender: TObject; aCol, aRow: integer);
+  begin
+    lastClickedSubPalette:=aRow-1;
+  end;
+
 PROCEDURE TPaletteForm.SubPaletteStringGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
   begin
     //TODO: Update Sub Palette Name in palette
   end;
 
 PROCEDURE TPaletteForm.fillTable(CONST initial: boolean);
+  PROCEDURE fillRow(CONST i: longint);
+    VAR
+      tmp: string;
+    begin
+      with palette^.paletteEntries[i] do begin
+        if entryType=gt_compound
+        then tmp:=prototype^.getCaption
+        else tmp:=C_gateTypeName[entryType];
+        EntriesGrid.Cells[0,i+1]:=StringReplace(tmp,LineEnding,'\n',[rfReplaceAll]);
+
+        if entryType=gt_compound
+        then tmp:=prototype^.getDescription
+        else tmp:=C_gateDefaultDescription[entryType];
+        EntriesGrid.Cells[1,i+1]:=StringReplace(tmp,LineEnding,'\n',[rfReplaceAll]);
+
+        EntriesGrid.Cells[2,i+1]:=palette^.subPaletteNames[subPaletteIndex];
+        EntriesGrid.Cells[3,i+1]:=BoolToStr((entryType=gt_compound) and markedForExport,'✓','');
+      end;
+    end;
   VAR i:longint;
   begin
     entriesGrid.rowCount:=1+length(palette^.paletteEntries);
     //TODO: It would be nicer if the basic gates were not shown; but this would require a more complex handling of the index...
     for i:=0 to length(palette^.paletteEntries)-1 do fillRow(i);
+
+    SubPaletteStringGrid.rowCount:=1+length(palette^.paletteNames);
+    for i:=0 to length(palette^.paletteNames)-1 do SubPaletteStringGrid.Cells[0,i+1]:=palette^.paletteNames[i];
+
     if not(initial) then exit;
     entriesGrid.AutoSizeColumn(0);
     entriesGrid.AutoSizeColumn(2);
     entriesGrid.AutoSizeColumn(3);
+
     lastClicked:=-1;
+    lastClickedSubPalette:=-1;
     updateButtons;
-  end;
-
-PROCEDURE TPaletteForm.fillRow(CONST i: longint);
-  VAR
-    tmp: string;
-  begin
-    with palette^.paletteEntries[i] do begin
-      if entryType=gt_compound
-      then tmp:=prototype^.getCaption
-      else tmp:=C_gateTypeName[entryType];
-      EntriesGrid.Cells[0,i+1]:=StringReplace(tmp,LineEnding,'\n',[rfReplaceAll]);
-
-      if entryType=gt_compound
-      then tmp:=prototype^.getDescription
-      else tmp:=C_gateDefaultDescription[entryType];
-      EntriesGrid.Cells[1,i+1]:=StringReplace(tmp,LineEnding,'\n',[rfReplaceAll]);
-
-      EntriesGrid.Cells[2,i+1]:=palette^.subPaletteNames[subPaletteIndex];
-      EntriesGrid.Cells[3,i+1]:=BoolToStr((entryType=gt_compound) and markedForExport,'✓','');
-    end;
   end;
 
 PROCEDURE TPaletteForm.updateButtons;
