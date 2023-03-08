@@ -250,6 +250,8 @@ PROCEDURE TDigitaltrainerMainForm.miEditModeClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miEditPaletteClick(Sender: TObject);
   begin
     PaletteForm.showFor(workspace.getWorkspacePalette);
+    workspace.activePalette^.detachUI;
+    workspace.activePalette^.attachUI(@uiAdapter);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miExportChallengesClick(Sender: TObject);

@@ -45,6 +45,10 @@ TYPE
       Shift: TShiftState; X, Y: integer);
     PROCEDURE MarkNoneShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
+    PROCEDURE MoveTaskDownShapeMouseDown(Sender: TObject; button: TMouseButton;
+      Shift: TShiftState; X, Y: integer);
+    PROCEDURE MoveTaskUpShapeMouseDown(Sender: TObject; button: TMouseButton;
+      Shift: TShiftState; X, Y: integer);
     PROCEDURE SubPaletteStringGridSelection(Sender: TObject; aCol, aRow: integer
       );
     PROCEDURE SubPaletteStringGridValidateEntry(Sender: TObject; aCol,
@@ -83,9 +87,19 @@ PROCEDURE TPaletteForm.entriesGridSelection(Sender: TObject; aCol, aRow: integer
   end;
 
 PROCEDURE TPaletteForm.DeleteShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  VAR i:longint;
+      selection:TGridRect;
   begin
+    i:=lastClicked;
     palette^.deleteEntry(lastClicked);
     fillTable(true);
+    lastClicked:=i-1;
+    selection.Bottom:=lastClicked+1;
+    selection.top:=lastClicked+1;
+    selection.Left:=0;
+    selection.Right:=0;
+    entriesGrid.selection:=selection;
+    updateButtons;
   end;
 
 PROCEDURE TPaletteForm.ExportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -119,6 +133,32 @@ PROCEDURE TPaletteForm.MarkNoneShapeMouseDown(Sender: TObject; button: TMouseBut
     updateButtons;
   end;
 
+PROCEDURE TPaletteForm.MoveTaskDownShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  VAR selection:TGridRect;
+  begin
+    palette^.swapPaletteName(lastClickedSubPalette,false);
+    inc(lastClickedSubPalette);
+    fillTable;
+    selection.Bottom:=lastClickedSubPalette+1;
+    selection.top:=lastClickedSubPalette+1;
+    selection.Left:=0;
+    selection.Right:=0;
+    SubPaletteStringGrid.selection:=selection;
+  end;
+
+PROCEDURE TPaletteForm.MoveTaskUpShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  VAR selection:TGridRect;
+  begin
+    palette^.swapPaletteName(lastClickedSubPalette,true);
+    dec(lastClickedSubPalette);
+    fillTable;
+    selection.Bottom:=lastClickedSubPalette+1;
+    selection.top:=lastClickedSubPalette+1;
+    selection.Left:=0;
+    selection.Right:=0;
+    SubPaletteStringGrid.selection:=selection;
+  end;
+
 PROCEDURE TPaletteForm.SubPaletteStringGridSelection(Sender: TObject; aCol, aRow: integer);
   begin
     lastClickedSubPalette:=aRow-1;
@@ -126,7 +166,11 @@ PROCEDURE TPaletteForm.SubPaletteStringGridSelection(Sender: TObject; aCol, aRow
 
 PROCEDURE TPaletteForm.SubPaletteStringGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
   begin
-    //TODO: Update Sub Palette Name in palette
+    lastClickedSubPalette:=aRow-1;
+    if (lastClickedSubPalette<0) or (lastClickedSubPalette>=length(palette^.paletteNames))
+    then newValue:=oldValue
+    else palette^.paletteNames[lastClickedSubPalette]:=newValue;
+    fillTable;
   end;
 
 PROCEDURE TPaletteForm.fillTable(CONST initial: boolean);

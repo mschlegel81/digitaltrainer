@@ -94,6 +94,7 @@ TYPE
     PROCEDURE markEntryForExport(CONST index:longint; CONST Selected:boolean);
     PROCEDURE exportSelected(CONST fileName:string);
     PROCEDURE importPalette(CONST fileName:string);
+    PROCEDURE swapPaletteName(CONST index:longint; CONST up:boolean);
   end;
 
   T_challengePaletteEntry=record
@@ -1023,6 +1024,29 @@ PROCEDURE T_workspacePalette.importPalette(CONST fileName: string);
       for j:=0 to i-1 do updatedPrototypes[i]^.prototypeUpdated(temp.paletteEntries[j].prototype,updatedPrototypes[j]);
     end;
     temp.destroy;
+  end;
+
+PROCEDURE T_workspacePalette.swapPaletteName(CONST index: longint; CONST up: boolean);
+  VAR otherIndex:longint;
+      s:string;
+      k:longint;
+  begin
+    if up then begin
+      otherIndex:=index-1;
+      if otherIndex<0 then exit;
+    end else begin
+      otherIndex:=index+1;
+      if otherIndex>=length(paletteNames) then exit;
+    end;
+    s:=paletteNames[index];
+    paletteNames[index]:=paletteNames[otherIndex];
+    paletteNames[otherIndex]:=s;
+
+    for k:=0 to length(paletteEntries)-1 do
+      if paletteEntries[k].subPaletteIndex=index
+      then paletteEntries[k].subPaletteIndex:=otherIndex else
+      if paletteEntries[k].subPaletteIndex=otherIndex
+      then paletteEntries[k].subPaletteIndex:=index;
   end;
 
 { T_palette }
