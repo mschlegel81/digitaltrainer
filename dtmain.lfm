@@ -648,7 +648,8 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   end
   object OpenDialog1: TOpenDialog
     DefaultExt = '.challenges'
-    Filter = '.challenges'
+    Filter = 'Challenges|*.challenges'
+    FilterIndex = 0
     Left = 731
     Top = 281
   end

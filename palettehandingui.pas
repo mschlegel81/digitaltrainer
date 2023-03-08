@@ -144,7 +144,7 @@ PROCEDURE TPaletteForm.fillRow(CONST i: longint);
   end;
 
 PROCEDURE TPaletteForm.updateButtons;
-  VAR anyMarked:boolean;
+  VAR anyMarked:boolean=false;
       i:longint;
   begin
     for i:=0 to length(palette^.paletteEntries)-1 do with palette^.paletteEntries[i] do anyMarked:=anyMarked or (entryType=gt_compound) and markedForExport;

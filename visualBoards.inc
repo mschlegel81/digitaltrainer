@@ -117,6 +117,8 @@ T_visualBoard=object(T_captionedAndIndexed)
 
     FUNCTION getGateCount:T_gateCount;
     FUNCTION getInfoLabelText:string;
+
+    PROCEDURE moveToPalette(CONST newPalette:P_abstractPrototypeSource);
 end;
 {$endif}
 {$ifdef includeImplementation}
@@ -1964,6 +1966,12 @@ FUNCTION T_visualBoard.getInfoLabelText: string;
             lineFor([gt_input,gt_output,gt_adapter,gt_true,gt_false,gt_undeterminedToTrue,gt_undeterminedToFalse])+
             lineFor([gt_compound,gt_clock,gt_gatedClock,gt_ram,gt_rom,gt_7segmentDummy])+
             'Schritte simuliert: '+intToStr(simStepCounter);
+  end;
+
+PROCEDURE T_visualBoard.moveToPalette(CONST newPalette: P_abstractPrototypeSource);
+  VAR g:P_visualGate;
+  begin
+    associatedPalette:=newPalette;
   end;
 
 CONSTRUCTOR T_watcher.create(CONST gate_: P_visualGate; CONST input_: boolean; CONST ioIndex_: longint);

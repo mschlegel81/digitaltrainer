@@ -262,7 +262,8 @@ object SelectTaskForm: TSelectTaskForm
   end
   object SaveDialog1: TSaveDialog
     DefaultExt = '.challenges'
-    Filter = '.challenges'
+    Filter = 'Challenges|*.challenges'
+    FilterIndex = 0
     Left = 240
     Top = 119
   end

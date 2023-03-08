@@ -93,6 +93,7 @@ object PaletteForm: TPaletteForm
     Font.Quality = fqDraft
     ParentColor = False
     ParentFont = False
+    OnMouseDown = ExportShapeMouseDown
   end
   object StartTaskLabel: TLabel
     AnchorSideLeft.Side = asrCenter
@@ -144,6 +145,7 @@ object PaletteForm: TPaletteForm
     Font.Quality = fqDraft
     ParentColor = False
     ParentFont = False
+    OnMouseDown = ImportShapeMouseDown
   end
   object DeleteShape: TShape
     AnchorSideRight.Control = MarkAllShape
@@ -256,14 +258,16 @@ object PaletteForm: TPaletteForm
   end
   object OpenDialog1: TOpenDialog
     DefaultExt = '.palette'
-    Filter = '.palette'
+    Filter = 'Palette|*.palette'
+    FilterIndex = 0
     Options = [ofPathMustExist, ofFileMustExist, ofEnableSizing, ofViewDetail]
     Left = 91
     Top = 204
   end
   object SaveDialog1: TSaveDialog
     DefaultExt = '.palette'
-    Filter = '.paeltte'
+    Filter = 'Palette|*.palette'
+    FilterIndex = 0
     Options = [ofPathMustExist, ofEnableSizing, ofViewDetail]
     Left = 161
     Top = 159

@@ -77,7 +77,7 @@ TYPE
     FUNCTION findEntry(CONST gate:P_abstractGate):longint; virtual;
     PROCEDURE reassignEntry(CONST gate:P_abstractGate; CONST newPalette:string);
 
-    PROCEDURE addBoard   (CONST board:P_visualBoard; subPaletteIndex:longint; CONST subPaletteName:string);
+    FUNCTION  addBoard   (CONST board:P_visualBoard; subPaletteIndex:longint; CONST subPaletteName:string):P_visualBoard;
     PROCEDURE updateEntry(CONST board:P_visualBoard; subPaletteIndex:longint; CONST subPaletteName:string);
     PROCEDURE deleteEntry(CONST prototype:P_captionedAndIndexed);
     FUNCTION  allowDeletion(CONST gate:P_abstractGate):boolean; virtual;
@@ -327,8 +327,7 @@ FUNCTION T_challengePalette.hasPrototype(CONST prototypeIndex: longint
     end;
   end;
 
-PROCEDURE T_challengePalette.addPrototype(CONST prototypeIndex: longint;
-  CONST behavior: P_compoundGate; CONST visible: boolean);
+PROCEDURE T_challengePalette.addPrototype(CONST prototypeIndex: longint; CONST behavior: P_compoundGate; CONST visible: boolean);
   VAR i:longint;
   begin
     assert(constructingChallenge,'This should only be called during challenge creation');
@@ -722,8 +721,7 @@ PROCEDURE T_workspacePalette.reassignEntry(CONST gate: P_abstractGate;
     removeSubPalette(previousPaletteIndex);
   end;
 
-PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard;
-  subPaletteIndex: longint; CONST subPaletteName: string);
+FUNCTION T_workspacePalette.addBoard(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string): P_visualBoard;
   VAR i:longint;
       visualIndex:longint=0;
   begin
@@ -743,6 +741,7 @@ PROCEDURE T_workspacePalette.addBoard(CONST board: P_visualBoard;
 
     paletteEntries[i].entryType      :=gt_compound;
     paletteEntries[i].prototype      :=board^.clone;
+    result:=paletteEntries[i].prototype;
     paletteEntries[i].subPaletteIndex:=subPaletteIndex;
     paletteEntries[i].visualSorting  :=visualIndex;
     reindex;
@@ -781,7 +780,8 @@ PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard;
     ensureVisualPaletteItems;
   end;
 
-PROCEDURE T_workspacePalette.deleteEntry(CONST prototype: P_captionedAndIndexed);
+PROCEDURE T_workspacePalette.deleteEntry(CONST prototype: P_captionedAndIndexed
+  );
   VAR i,i0:longint;
   begin
     if ui^.isPrototypeInUse(prototype) then exit;
@@ -969,25 +969,59 @@ PROCEDURE T_workspacePalette.markEntryForExport(CONST index: longint;
 PROCEDURE T_workspacePalette.exportSelected(CONST fileName: string);
   VAR temp:T_workspacePalette;
       i:longint;
+      j:longint=0;
+      k:longint;
+
+      originalProtoypes:array of record
+        proto:P_visualBoard;
+        spi:longint;
+      end;
   begin
     temp.create;
+    setLength(temp.paletteNames,length(paletteNames));
+    for i:=0 to length(paletteNames)-1 do temp.paletteNames[i]:=paletteNames[i];
+    setLength(originalProtoypes,length(paletteEntries));
     for i:=0 to length(paletteEntries)-1 do if (paletteEntries[i].markedForExport) and (paletteEntries[i].entryType=gt_compound)
-      then temp.addBoard(paletteEntries[i].prototype,-1,paletteNames[paletteEntries[i].subPaletteIndex]);
+      then begin
+        originalProtoypes[j].proto:=paletteEntries[i].prototype;
+        originalProtoypes[j].spi  :=paletteEntries[i].subPaletteIndex;
+        inc(j);
+      end;
+    setLength(originalProtoypes,j);
+    setLength(temp.paletteEntries,j);
+    for i:=0 to length(temp.paletteEntries)-1 do with temp.paletteEntries[i] do begin
+      markedForExport:=false;
+      visualSorting:=i;
+      subPaletteIndex:=originalProtoypes[i].spi;
+      entryType:=gt_compound;
+      prototype:=originalProtoypes[i].proto^.clone;
+      prototype^.moveToPalette(@temp);
+      for j:=0 to i-1 do prototype^.prototypeUpdated(originalProtoypes[j].proto,temp.paletteEntries[j].prototype);
+    end;
+
+    temp.reindex;
     temp.saveToFile(fileName);
     temp.destroy;
+
+    reindex;
   end;
 
 PROCEDURE T_workspacePalette.importPalette(CONST fileName: string);
   VAR temp:T_workspacePalette;
-      i:longint;
+      i,j:longint;
+      updatedPrototypes:array of P_visualBoard;
   begin
     temp.create;
     if not(temp.loadFromFile(fileName)) then begin
       temp.destroy;
       exit;
     end;
-    for i:=0 to length(temp.paletteEntries)-1 do if (temp.paletteEntries[i].entryType=gt_compound) then
-      addBoard(temp.paletteEntries[i].prototype,-1,temp.paletteNames[temp.paletteEntries[i].subPaletteIndex]);
+    setLength(updatedPrototypes,length(temp.paletteEntries));
+    for i:=0 to length(temp.paletteEntries)-1 do if (temp.paletteEntries[i].entryType=gt_compound) then begin
+      updatedPrototypes[i]:=addBoard(temp.paletteEntries[i].prototype,-1,temp.paletteNames[temp.paletteEntries[i].subPaletteIndex]);
+      updatedPrototypes[i]^.moveToPalette(@self);
+      for j:=0 to i-1 do updatedPrototypes[i]^.prototypeUpdated(temp.paletteEntries[j].prototype,updatedPrototypes[j]);
+    end;
     temp.destroy;
   end;
 
