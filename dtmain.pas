@@ -17,14 +17,16 @@ TYPE
   TDigitaltrainerMainForm = class(TForm)
     boardHorizontalScrollBar: TScrollBar;
     boardImage: TImage;
-    miEditPalette: TMenuItem;
-    miImportOverwrite: TMenuItem;
-    miImportAdd: TMenuItem;
+    miMarkChallengesUnsolved: TMenuItem;
+    miChallengesMenu: TMenuItem;
     miExportChallenges: TMenuItem;
     miImportChallenges: TMenuItem;
+    miImportAdd: TMenuItem;
+    miImportOverwrite: TMenuItem;
+    miViewTasks: TMenuItem;
+    miEditPalette: TMenuItem;
     OpenDialog1: TOpenDialog;
     Separator1: TMenuItem;
-    Separator2: TMenuItem;
     WireTimer: TIdleTimer;
     ioEdit: TEdit;
     infoLabel: TLabel;
@@ -33,7 +35,6 @@ TYPE
     miPaste: TMenuItem;
     miCopy: TMenuItem;
     miEdit: TMenuItem;
-    miTasks: TMenuItem;
     propEditPanel: TPanel;
     propDeleteLabel: TLabel;
     propEditLabel: TLabel;
@@ -47,7 +48,7 @@ TYPE
     TestLabel: TLabel;
     TestShape: TShape;
     SubPaletteComboBox: TComboBox;
-    Label1: TLabel;
+    speedLabel: TLabel;
     miEditMode: TMenuItem;
     miNewBoard: TMenuItem;
     miSaveAsTask: TMenuItem;
@@ -85,6 +86,7 @@ TYPE
     PROCEDURE miFullScreenClick(Sender: TObject);
     PROCEDURE miImportAddClick(Sender: TObject);
     PROCEDURE miImportOverwriteClick(Sender: TObject);
+    PROCEDURE miMarkChallengesUnsolvedClick(Sender: TObject);
     PROCEDURE miNewBoardClick(Sender: TObject);
     PROCEDURE miPasteClick(Sender: TObject);
     PROCEDURE miRedoClick(Sender: TObject);
@@ -118,6 +120,7 @@ TYPE
     PROCEDURE showPropertyEditor(CONST gate:P_visualGate; CONST fromBoard:boolean; CONST mouseX,mouseY:longint);
     PROCEDURE boardChanged;
     PROCEDURE testFinished;
+    PROCEDURE updateUiElements;
   public
 
   end;
@@ -173,14 +176,8 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     workspace.create;
     workspace.activePalette^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
-    miCopy.enabled:=workspace.EditorMode;
-    miPaste.enabled:=workspace.EditorMode;
-    miEditMode.checked:=workspace.EditorMode;
-    setEnableButton(TestShape,TestLabel,not(workspace.EditorMode));
+    updateUiElements;
 
-    infoLabel.caption:=workspace.getInfoLabelText;
-
-    PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
     pauseByUser:=false;
 
     Application.AddOnKeyDownHandler(@FormKeyDown,false);
@@ -236,15 +233,10 @@ PROCEDURE TDigitaltrainerMainForm.miEditModeClick(Sender: TObject);
   begin
     if workspace.EditorMode then exit;
     workspace.setFreeEditMode;
-    miEditMode.checked:=true;
-    miCopy.enabled:=true;
-    miPaste.enabled:=true;
-    setEnableButton(TestShape,TestLabel,not(workspace.EditorMode));
-
     workspace.activePalette^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
     uiAdapter.paintAll;
-    infoLabel.caption:=workspace.getInfoLabelText;
+    updateUiElements;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miEditPaletteClick(Sender: TObject);
@@ -272,45 +264,35 @@ PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miImportAddClick(Sender: TObject);
-  VAR newChallengeSet:P_challengeSet;
   begin
-    if OpenDialog1.execute then begin
-      new(newChallengeSet,create);
-      if newChallengeSet^.loadFromFile(OpenDialog1.fileName) then begin
-        newChallengeSet^.markAllAsPending;
-        workspace.getChallenges^.addAllAndClear(newChallengeSet);
-      end;
-      dispose(newChallengeSet,destroy);
-    end;
+    if OpenDialog1.execute
+    then workspace.getChallenges^.importChallenges(OpenDialog1.fileName,false);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miImportOverwriteClick(Sender: TObject);
-  VAR newChallengeSet:P_challengeSet;
   begin
     if OpenDialog1.execute then begin
-      new(newChallengeSet,create);
-      if newChallengeSet^.loadFromFile(OpenDialog1.fileName) then begin
-        newChallengeSet^.markAllAsPending;
-        workspace.replaceChallengeSet(newChallengeSet);
-      end else dispose(newChallengeSet,destroy);
-      miEditModeClick(Sender);
+      workspace.getChallenges^.importChallenges(OpenDialog1.fileName,true);
+      workspace.setFreeEditMode;
       workspace.activePalette^.attachUI(@uiAdapter);
       workspace.activeBoard  ^.attachUI(@uiAdapter);
+      updateUiElements;
     end;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miMarkChallengesUnsolvedClick(Sender: TObject);
+  begin
+    workspace.getChallenges^.markAllAsPending;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miNewBoardClick(Sender: TObject);
   begin
     workspace.setFreeEditMode;
-    miEditMode.checked:=true;
-    miCopy.enabled:=true;
-    miPaste.enabled:=true;
-    setEnableButton(TestShape,TestLabel,not(workspace.EditorMode));
     workspace.clearBoard(@uiAdapter);
     workspace.activePalette^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
     uiAdapter.paintAll;
-    infoLabel.caption:=workspace.getInfoLabelText;
+    updateUiElements;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miPasteClick(Sender: TObject);
@@ -337,13 +319,10 @@ PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);
   begin
     if SelectTaskForm(@workspace).startTaskAfterShowing(workspace.getChallenges) and
        workspace.startChallenge(SelectTaskForm(@workspace).selectedChallengeIndex) then begin
-      miCopy.enabled:=false;
-      miPaste.enabled:=false;
-      miEditMode.checked:=false;
-      setEnableButton(TestShape,TestLabel,not(workspace.EditorMode));
       workspace.activePalette^.attachUI(@uiAdapter);
       workspace.activeBoard  ^.attachUI(@uiAdapter);
       uiAdapter.paintAll;
+      updateUiElements;
     end;
     workspace.activePalette^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
@@ -458,7 +437,7 @@ CONST SPEED_SETTING:array[0..34] of record
            (timerInterval: 354; simSteps:   1; labelCaption:'2.82Hz'),
            (timerInterval: 250; simSteps:   1; labelCaption:'4.00Hz'),
            (timerInterval: 177; simSteps:   1; labelCaption:'5.65Hz'),
-           (timerInterval: 125; simSteps:   1; labelCaption:'8.00Hz'),
+           (timerInterval: 125; simSteps:   1; labelCaption:'8.00Hz'),   //DEFAULT
            (timerInterval:  88; simSteps:   1; labelCaption:'11.36Hz'),
            (timerInterval:  62; simSteps:   1; labelCaption:'16.13Hz'),
            (timerInterval:  44; simSteps:   1; labelCaption:'22.73Hz'),
@@ -489,6 +468,7 @@ CONST SPEED_SETTING:array[0..34] of record
            (timerInterval:  40; simSteps:5243; labelCaption:'131.1kHz'));
 
 VAR lastSimTime:qword=0;
+    averageSpeed:double=8;
 PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
   VAR stepsSimulated: longint;
       stepsToSimulate:longint;
@@ -515,11 +495,13 @@ PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
 
     if elapsed>0 then begin
       speed:=stepsSimulated*1000 div elapsed;
+      averageSpeed:=averageSpeed*0.95+speed*0.05;
+      speed:=round(averageSpeed);
       if speed>1000 then begin
         speed:=speed div 1000;
-        Label1.caption:='Speed: '+intToStr(speed)+'kHz ('+SPEED_SETTING[speedTrackBar.position].labelCaption+')';
+        speedLabel.caption:='Speed: '+intToStr(speed)+'kHz ('+SPEED_SETTING[speedTrackBar.position].labelCaption+')';
       end else if speed>0 then begin
-        Label1.caption:='Speed: '+intToStr(speed)+'Hz ('+SPEED_SETTING[speedTrackBar.position].labelCaption+')';
+        speedLabel.caption:='Speed: '+intToStr(speed)+'Hz ('+SPEED_SETTING[speedTrackBar.position].labelCaption+')';
       end;
     end;
 
@@ -532,7 +514,8 @@ PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);
   begin
     SimulationTimer.interval:=SPEED_SETTING[speedTrackBar.position].timerInterval;
-    Label1.caption:='Speed: '+SPEED_SETTING[speedTrackBar.position].labelCaption;
+    speedLabel.caption:='Speed: '+SPEED_SETTING[speedTrackBar.position].labelCaption;
+    averageSpeed:=SPEED_SETTING[speedTrackBar.position].simSteps/SPEED_SETTING[speedTrackBar.position].timerInterval*1000;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.TestShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -632,6 +615,16 @@ PROCEDURE TDigitaltrainerMainForm.testFinished;
         uiAdapter.paintAll;
       end;
     end;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.updateUiElements;
+  begin
+    miCopy.enabled:=workspace.EditorMode;
+    miPaste.enabled:=workspace.EditorMode;
+    miEditMode.checked:=workspace.EditorMode;
+    setEnableButton(TestShape,TestLabel,not(workspace.EditorMode));
+    infoLabel.caption:=workspace.getInfoLabelText;
+    PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
   end;
 
 PROCEDURE TDigitaltrainerMainForm.AnimationTimerTimer(Sender: TObject);

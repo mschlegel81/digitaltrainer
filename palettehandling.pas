@@ -8,7 +8,6 @@ USES
   Classes, sysutils,StdCtrls, ExtCtrls,logicalGates,visualGates,compoundGates, myGenerics,serializationUtil,wiringUtil;
 
 TYPE
-  //TODO: Implement UI for workspace palette import/export
   P_palette=^T_palette;
 
   { T_palette }

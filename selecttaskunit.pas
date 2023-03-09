@@ -67,17 +67,23 @@ PROCEDURE TSelectTaskForm.FormShow(Sender: TObject);
   begin
   end;
 
-PROCEDURE TSelectTaskForm.DeleteTaskShapeMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TSelectTaskForm.DeleteTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR i:longint;
   begin
-    if (selectedChallengeIndex<0) or not(challengeSet^.challenge[selectedChallengeIndex]^.editable) then exit;
-    dispose(challengeSet^.challenge[selectedChallengeIndex],destroy);
-    for i:=selectedChallengeIndex+1 to length(challengeSet^.challenge)-1 do
-      challengeSet^.challenge[i-1]:=challengeSet^.challenge[i];
-    setLength(challengeSet^.challenge,length(challengeSet^.challenge)-1);
-    workspace^.challengeDeleted(selectedChallengeIndex);
-    updateTable;
+    if exporting then begin
+      if SaveDialog1.execute then begin
+        challengeSet^.exportSelected(SaveDialog1.fileName,false);
+        ModalResult:=mrOk;
+      end;
+    end else begin
+      if (selectedChallengeIndex<0) then exit;
+      dispose(challengeSet^.challenge[selectedChallengeIndex],destroy);
+      for i:=selectedChallengeIndex+1 to length(challengeSet^.challenge)-1 do
+        challengeSet^.challenge[i-1]:=challengeSet^.challenge[i];
+      setLength(challengeSet^.challenge,length(challengeSet^.challenge)-1);
+      workspace^.challengeDeleted(selectedChallengeIndex);
+      updateTable;
+    end;
   end;
 
 PROCEDURE TSelectTaskForm.EditTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -110,6 +116,7 @@ PROCEDURE TSelectTaskForm.ChallengesGridSelection(Sender: TObject; aCol, aRow: i
       ChallengesGrid.Cells[3,aRow+1]:=BoolToStr(challengeSet^.challenge[aRow]^.marked,checkMark,'');
       for i:=0 to length(challengeSet^.challenge)-1 do anySelected:=anySelected or challengeSet^.challenge[i]^.marked;
       setEnableButton(StartTaskShape,StartTaskLabel,anySelected);
+      setEnableButton(DeleteTaskShape,DeleteTaskLabel,anySelected);
     end;
   end;
 
@@ -138,14 +145,11 @@ PROCEDURE TSelectTaskForm.MoveTaskUpShapeMouseDown(Sender: TObject; button: TMou
   end;
 
 PROCEDURE TSelectTaskForm.StartTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
-  VAR toBeExported: P_challengeSet;
   begin
     if exporting then begin
       if SaveDialog1.execute then begin
-        toBeExported:=challengeSet^.extractForExport;
-        toBeExported^.saveToFile(SaveDialog1.fileName);
+        challengeSet^.exportSelected(SaveDialog1.fileName,true);
         ModalResult:=mrOk;
-        freeMem(toBeExported,sizeOf(T_challengeSet));
       end;
     end else ModalResult:=mrOk;
   end;
@@ -179,6 +183,7 @@ FUNCTION TSelectTaskForm.startTaskAfterShowing(CONST cSet: P_challengeSet): bool
   begin
     challengeSet:=cSet;
     StartTaskLabel.caption:='Aufgabe starten';
+    DeleteTaskLabel.caption:='Aufgabe löschen';
     exporting:=false;
     updateTable;
     result:=ShowModal=mrOk;
@@ -189,6 +194,7 @@ PROCEDURE TSelectTaskForm.showForExport(CONST cSet: P_challengeSet);
   begin
     for i:=0 to length(cset^.challenge)-1 do cSet^.challenge[i]^.marked:=false;
     StartTaskLabel.caption:='Exportieren';
+    DeleteTaskLabel.caption:='Exportieren (gesperrt)';
     challengeSet:=cSet;
     exporting:=true;
     updateTable;

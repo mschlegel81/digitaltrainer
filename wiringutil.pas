@@ -44,7 +44,7 @@ TYPE
       width,height:longint;
       allowed:array of T_wireDirectionSet;
 
-      FUNCTION findPath(CONST startPoint,endPoint:T_point; CONST pathsToPrimeWith:T_wirePathArray; CONST exhaustiveScan:boolean; CONST directionMask:T_wireDirectionSet=AllDirections):T_wirePath;
+      FUNCTION findPath(CONST startPoint,endPoint:T_point; CONST pathsToPrimeWith:T_wirePathArray; CONST exhaustiveScan:boolean):T_wirePath;
       PROCEDURE dropWireSection(CONST a,b:T_point; CONST diagonalsOnly:boolean=false);
     public
       CONSTRUCTOR create(CONST width_,height_:longint);
@@ -566,7 +566,7 @@ FUNCTION pathContains(CONST path: T_wirePath; CONST x, y: longint; OUT orientati
     result:=false;
   end;
 
-FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsToPrimeWith: T_wirePathArray; CONST exhaustiveScan: boolean; CONST directionMask: T_wireDirectionSet): T_wirePath;
+FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST pathsToPrimeWith: T_wirePathArray; CONST exhaustiveScan: boolean): T_wirePath;
   CONST UNVISITED=maxLongint;
   TYPE T_scan=record
          initial:boolean;
@@ -801,8 +801,19 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint: T_point; CONST endPoints: T_wir
       swapTemp:T_indexAndDist;
       i,j,k:longint;
       anyImproved: boolean;
-      mask:T_wireDirectionSet;
       pt:T_point;
+
+  FUNCTION averageEndPoint:T_point;
+    VAR p:T_point;
+        ax:double=0;
+        ay:double=0;
+    begin
+      for p in endPoints do begin
+        ax+=p[0];
+        ay+=p[1];
+      end;
+      result:=pointOf(round(ax/length(endPoints)),round(ay/length(endPoints)));
+    end;
 
   FUNCTION listExceptEntry(CONST list:T_wirePathArray; CONST indexToDrop:longint):T_wirePathArray;
     VAR i:longint;
@@ -818,17 +829,35 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint: T_point; CONST endPoints: T_wir
   VAR score:double;
       newScore:double;
   begin
-    //if (length(endPoints)>4)
-    //then mask:=StraightDirections
-    //else
-    mask:=AllDirections;
-
+    //TODO: Path search with multiple end points should be handled differently.
+    //        o                  o
+    //       /                  /
+    //#_____/        =>  #_____/
+    //      |\                 |
+    //o____/  \___o      o_____|____o
+    //It might make sense to use Pareto-Optimization and successively split off points...
+    //Idea: 0. Put all end points in one group; no paths have been found yet
+    //      1. Find some path to the average of all points; prime with previously found paths
+    //      2. Follow this path as long as the distance to all end points (in group) decreases
+    //         and add path to priming list.
+    //      3. If more than one end point...
+    //         3.a Split into subsets: the points where the distance (still) decreases and other
+    //         3.b If splitting fails (all points in the same group), split into single point groups
+    //      4. Repeat until arrived at single point groups
     setLength(initialRun,length(endPoints));
     setLength(result    ,length(endPoints));
+
+    if (length(endPoints)>1) then begin
+      pt:=averageEndPoint;
+      result[0]:=findPath(startPoint,pt,result,false);
+      for i:=1 to length(result)-1 do result[i]:=result[0];
+    end else
+    pt:=startPoint;
+
     for i:=0 to length(endPoints)-1 do begin
       setLength(result[i],0);
       initialRun[i].idx:=i;
-      initialRun[i].dist:=euklideanDistance(startPoint,endPoints[i]);
+      initialRun[i].dist:=euklideanDistance(pt,endPoints[i]);
       for j:=0 to i-1 do if initialRun[i].dist<initialRun[j].dist then begin
         swapTemp     :=initialRun[i];
         initialRun[i]:=initialRun[j];
@@ -837,7 +866,7 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint: T_point; CONST endPoints: T_wir
     end;
 
     for i:=0 to length(initialRun)-1 do with initialRun[i] do begin
-      result[idx]:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),exhaustiveScan,mask);
+      result[idx]:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),exhaustiveScan);
       for j:=i+1 to length(initialRun)-1 do begin
         for pt in result[idx] do initialRun[j].dist:=min(initialRun[j].dist,euklideanDistance(endPoints[initialRun[j].idx],pt));
         for k:=i+1 to j-1 do if initialRun[j].dist>initialRun[k].dist then begin
@@ -853,7 +882,7 @@ FUNCTION T_wireGraph.findPaths(CONST startPoint: T_point; CONST endPoints: T_wir
       anyImproved:=false;
       for swapTemp in initialRun do with swapTemp do begin
         if length(result[idx])>0 then begin
-          nextPath:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),exhaustiveScan,mask);
+          nextPath:=findPath(startPoint,endPoints[idx],listExceptEntry(result,idx),exhaustiveScan);
           newScore:=multipathEffectiveLength(result,idx,nextPath);
           if newScore<score then begin
             setLength(result[idx],0);

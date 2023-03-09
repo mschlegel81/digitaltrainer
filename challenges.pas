@@ -91,6 +91,9 @@ TYPE
   { T_challengeSet }
   P_challengeSet=^T_challengeSet;
   T_challengeSet=object(T_serializable)
+  private
+    PROCEDURE addCopyForExport(CONST c:P_challenge; CONST exportEditable:boolean);
+  public
     challenge:array of P_challenge;
 
     CONSTRUCTOR create;
@@ -101,9 +104,9 @@ TYPE
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
     FUNCTION add(CONST c:P_challenge):boolean;
-    PROCEDURE addAllAndClear(CONST c:P_challengeSet);
     PROCEDURE moveChallenge(CONST index:longint; CONST up:boolean);
-    FUNCTION extractForExport:P_challengeSet;
+    PROCEDURE exportSelected  (CONST fileName:string; CONST exportEditable:boolean);
+    PROCEDURE importChallenges(CONST fileName:string; CONST overwriteExisting:boolean);
   end;
 
 CONST checkMark='✓';
@@ -174,10 +177,7 @@ DESTRUCTOR T_challengeSet.destroy;
 PROCEDURE T_challengeSet.markAllAsPending;
   VAR i:longint;
   begin
-    for i:=0 to length(challenge)-1 do begin
-      challenge[i]^.callengeCompleted:=false;
-      challenge[i]^.editable         :=false;
-    end;
+    for i:=0 to length(challenge)-1 do challenge[i]^.callengeCompleted:=false;
   end;
 
 FUNCTION T_challengeSet.getSerialVersion: dword;
@@ -220,12 +220,11 @@ FUNCTION T_challengeSet.add(CONST c: P_challenge): boolean;
     c^.challengeTestCreationThread.ensureStop;
   end;
 
-PROCEDURE T_challengeSet.addAllAndClear(CONST c: P_challengeSet);
-  VAR i:longint;
+PROCEDURE T_challengeSet.addCopyForExport(CONST c:P_challenge; CONST exportEditable:boolean);
   begin
-    for i:=0 to length(c^.challenge)-1 do
-      if not(add(c^.challenge[i])) then dispose(c^.challenge[i],destroy);
-    setLength(c^.challenge,0);
+    setLength(challenge,length(challenge)+1);
+    challenge[length(challenge)-1]:=c^.partialClone;
+    if not(exportEditable) then challenge[length(challenge)-1]^.editable:=false;
   end;
 
 PROCEDURE T_challengeSet.moveChallenge(CONST index: longint; CONST up: boolean);
@@ -243,11 +242,41 @@ PROCEDURE T_challengeSet.moveChallenge(CONST index: longint; CONST up: boolean);
     end;
   end;
 
-FUNCTION T_challengeSet.extractForExport: P_challengeSet;
+PROCEDURE T_challengeSet.exportSelected(CONST fileName:string; CONST exportEditable:boolean);
   VAR i:longint;
+      temp:T_challengeSet;
   begin
-    new(result,create);
-    for i:=0 to length(challenge)-1 do if challenge[i]^.marked then result^.add(challenge[i]);
+    temp.create;
+    for i:=0 to length(challenge)-1 do if challenge[i]^.marked then temp.addCopyForExport(challenge[i],exportEditable);
+    temp.saveToFile(fileName);
+    for i:=0 to length(temp.challenge)-1 do dispose(temp.challenge[i],destroyPartial);
+    setLength(temp.challenge,0);
+    temp.destroy;
+  end;
+
+PROCEDURE T_challengeSet.importChallenges(CONST fileName:string; CONST overwriteExisting:boolean);
+  VAR i:longint;
+      temp:T_challengeSet;
+  begin
+    temp.create;
+    if not(temp.loadFromFile(fileName)) or (length(temp.challenge)=0) then begin
+      temp.destroy;
+      exit;
+    end;
+    temp.markAllAsPending;
+
+    if overwriteExisting then begin
+      for i:=0 to length(challenge)-1 do dispose(challenge[i],destroy);
+      setLength(challenge,length(temp.challenge));
+      for i:=0 to length(challenge)-1 do challenge[i]:=temp.challenge[i];
+    end else begin
+      for i:=0 to length(challenge)-1 do
+        if not add(temp.challenge[i])
+        then dispose(temp.challenge[i],destroy);
+    end;
+    setLength(temp.challenge,0);
+
+    temp.destroy;
   end;
 
 { T_challenge }
@@ -288,6 +317,9 @@ FUNCTION T_challenge.partialClone: P_challenge;
   VAR i, j: longint;
   begin
     new(result,create);
+    result^.editable:=editable;
+    result^.callengeCompleted:=callengeCompleted;
+
     result^.challengeLevel:=challengeLevel;
     result^.challengeTitle:=challengeTitle;
     result^.challengeDescription:=challengeDescription;
@@ -421,9 +453,7 @@ FUNCTION T_challenge.getInfoLabelText: string;
     else result:=challengeDescription;
   end;
 
-PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard;
-  CONST challengeBoardOption: T_challengeBoardOption;
-  CONST challengePaletteOption: T_challengePaletteOption);
+PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard; CONST challengeBoardOption: T_challengeBoardOption; CONST challengePaletteOption: T_challengePaletteOption);
   VAR
     totalInputBits:longint=0;
     i:longint;
