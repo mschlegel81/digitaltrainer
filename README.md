@@ -11,8 +11,7 @@ die in weiteren Schaltungen verwendet werden können.
 Für Lehrende gibt es die Möglichkeit, Aufgaben zu erstellen. Diese können dann von Schülern gelöst werden.
 
 ## Ausblick
-Für's erste bin ich mit dem Projekt halbwegs zufrieden. Ein paar Punkte müssen aber noch angepasst werden:
-* Exportieren/Importieren von Aufgaben
-* Ein Editor für den Inhalt von ROM-Bausteinen
+Für's erste bin ich mit dem Projekt halbwegs zufrieden. Ein paar Punkte müssen aber noch angepasst werden.
+Insbesondere die automatische Verkabelung könnte einige Verbesserungen vertragen.
 
 Ich bin dankbar für euer Feedback.
