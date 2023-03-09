@@ -115,6 +115,7 @@ TYPE
 
     PROCEDURE buttonClicked(Shape:TShape);
     PROCEDURE propertyValueChanged(Sender: TObject);
+    PROCEDURE repositionPropertyEditor(CONST mouseX,mouseY:longint);
     PROCEDURE showPropertyEditor(CONST gate:P_visualGate; CONST fromBoard:boolean; CONST mouseX,mouseY:longint);
     PROCEDURE boardChanged;
     PROCEDURE testFinished;
@@ -166,6 +167,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
                      paletteScrollBar,
                      ioEdit,
                      @showPropertyEditor,
+                     @repositionPropertyEditor,
                      @boardChanged,
                      @BeginFormUpdate,
                      @EndFormUpdate,
@@ -334,8 +336,15 @@ PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.PaletteScrollBarScroll(Sender: TObject; ScrollCode: TScrollCode; VAR ScrollPos: integer);
+  VAR g:P_visualGate;
   begin
     workspace.activePalette^.paint;
+    if uiAdapter.getState=uas_propertyEditFromPalette then begin
+      g:=uiAdapter.draggedGate;
+      repositionPropertyEditor(
+        g^.canvasPos[0]+g^.getGridWidth*uiAdapter.getZoom+boardImage.Left,
+        g^.canvasPos[1]                                  +boardImage.top);
+    end;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.PlayPauseShapeMouseDown(Sender: TObject;
@@ -561,9 +570,8 @@ PROCEDURE TDigitaltrainerMainForm.propertyValueChanged(Sender: TObject);
     setEnableButton(propOkShape,propOkLabel,true);
   end;
 
-PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate; CONST fromBoard: boolean; CONST mouseX, mouseY: longint);
+PROCEDURE TDigitaltrainerMainForm.repositionPropertyEditor(CONST mouseX,mouseY:longint);
   begin
-    propEditPanel.visible:=true;
     if mouseX>width-propEditPanel.width
     then propEditPanel.Left:=width-propEditPanel.width
     else propEditPanel.Left:=mouseX;
@@ -573,7 +581,12 @@ PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate; C
     if propEditPanel.Left+propEditPanel.width>width then propEditPanel.Left:=width-propEditPanel.width;
     if propEditPanel.top+propEditPanel.height>height then propEditPanel.top:=height-propEditPanel.height;
     propEditPanel.BringToFront;
+  end;
 
+PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate; CONST fromBoard: boolean; CONST mouseX, mouseY: longint);
+  begin
+    propEditPanel.visible:=true;
+    repositionPropertyEditor(mouseX,mouseY);
     if fromBoard
     then gateProperties.createForBoardEntry  (ValueListEditor1,@propertyValueChanged,gate^.getBehavior)
     else gateProperties.createForPaletteEntry(ValueListEditor1,@propertyValueChanged,gate^.getBehavior,workspace.activePalette);

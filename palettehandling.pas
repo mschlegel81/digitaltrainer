@@ -247,6 +247,7 @@ PROCEDURE T_challengePalette.selectSubPalette(CONST index: longint);
 
 PROCEDURE T_challengePalette.ensureVisualPaletteItems;
   VAR i,k:longint;
+      y0:longint=0;
       behavior: P_abstractGate;
   begin
     for i:=0 to length(visualPaletteItems)-1 do dispose(visualPaletteItems[i],destroy);
@@ -269,6 +270,10 @@ PROCEDURE T_challengePalette.ensureVisualPaletteItems;
       new(visualPaletteItems[k],create(behavior));
       visualPaletteItems[k]^.uiAdapter:=ui;
       if not(allowConfiguration) then visualPaletteItems[k]^.fixedProperties:=true;
+
+      visualPaletteItems[k]^.gridPos:=pointOf(1,y0);
+      y0+=visualPaletteItems[k]^.getGridHeight;
+
       inc(k);
     end;
     setLength(visualPaletteItems,k);
@@ -375,7 +380,6 @@ PROCEDURE T_challengePalette.countUpGate(CONST gate: P_abstractGate);
     inc(paletteEntries[idx].currentAvailableCount);
     if (paletteEntries[idx].currentAvailableCount=1) and (ui<>nil) then begin
       ensureVisualPaletteItems;
-      checkSizes;
     end;
   end;
 
@@ -388,7 +392,6 @@ PROCEDURE T_challengePalette.countDownGate(CONST gate: P_abstractGate);
     dec(paletteEntries[idx].currentAvailableCount);
     if (paletteEntries[idx].currentAvailableCount<=0) and (ui<>nil)  then begin
       ensureVisualPaletteItems;
-      checkSizes;
     end;
   end;
 

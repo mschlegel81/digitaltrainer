@@ -827,7 +827,6 @@ PROCEDURE T_visualBoard.enumerateIo;
   VAR i:longint;
       axis:longint;
       gateSet:T_visualGateArray;
-      startTicks: qword;
 
   PROCEDURE initGateSet(CONST axis:longint; CONST baseSet:T_visualGateArray);
     VAR k:longint;
@@ -962,7 +961,7 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
       end;
 
     VAR wireRank:array of longint;
-        i,j,maxGateRank,sourceRank,sinkRank:longint;
+        i,j,sourceRank:longint;
         anyChange:boolean;
 
         tempWire:T_visualWire;
@@ -1346,16 +1345,20 @@ PROCEDURE T_visualBoard.boardMouseUp(Sender: TObject; button: TMouseButton;
     end;
   end;
 
-PROCEDURE T_visualBoard.ScrollbarScroll(Sender: TObject;
-  ScrollCode: TScrollCode; VAR ScrollPos: integer);
+PROCEDURE T_visualBoard.ScrollbarScroll(Sender: TObject; ScrollCode: TScrollCode; VAR ScrollPos: integer);
+  Var g:P_visualGate;
   begin
     ui^.hideIoEdit;
-    paintBoard;
-    ui^.uiElement.boardImage.repaint;
+    ui^.paintAll;
+    if ui^.state=uas_propertyEditFromBoard then begin
+      g:=ui^.draggedGate;
+      ui^.callback.repositionPropertyEditorCallback(
+        g^.canvasPos[0]+ui^.uiElement.boardImage.Left+g^.gridWidth*ui^.zoom,
+        g^.canvasPos[1]+ui^.uiElement.boardImage.top);
+    end;
   end;
 
-PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
-  Shift: TShiftState; X, Y: integer);
+PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR gridPos: T_point;
   FUNCTION handleWatcherHit:boolean;
     VAR i,toDrop:longint;
@@ -1976,7 +1979,6 @@ FUNCTION T_visualBoard.getInfoLabelText: string;
   end;
 
 PROCEDURE T_visualBoard.moveToPalette(CONST newPalette: P_abstractPrototypeSource);
-  VAR g:P_visualGate;
   begin
     associatedPalette:=newPalette;
   end;

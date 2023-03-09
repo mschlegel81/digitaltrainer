@@ -11,6 +11,7 @@ T_uiState=(uas_initial,
            uas_draggingSelectionFrame);
 
 F_showPropertyEditorCallback=PROCEDURE (CONST gate:P_visualGate; CONST fromBoard:boolean; CONST mouseX,mouseY:longint) of object;
+F_repositionPropertyEditorCallback=PROCEDURE (CONST mouseX,mouseY:longint) of object;
 F_procedure=PROCEDURE() of object;
 F_setBoardCallback=PROCEDURE (CONST board:P_visualBoard) of object;
 F_gateHitInfo=FUNCTION (CONST gridPos:T_point; OUT gate:P_visualGate):boolean of object;
@@ -33,6 +34,7 @@ T_uiAdapter=object
 
     callback:record
       showPropertyEditorCallback:F_showPropertyEditorCallback;
+      repositionPropertyEditorCallback:F_repositionPropertyEditorCallback;
       boardModifiedCallback:F_procedure;
       BeginFormUpdate,EndFormUpdate:F_procedure;
       paletteItemAt:F_gateHitInfo;
@@ -69,6 +71,7 @@ T_uiAdapter=object
                              paletteScrollBar:TScrollBar;
                        CONST ioEdit:TEdit;
                        CONST showPropertyEditorCallback:F_showPropertyEditorCallback;
+                       CONST repositionPropertyEditorCallback:F_repositionPropertyEditorCallback;
                        CONST boardModifiedCallback:F_procedure;
                        CONST BeginFormUpdate,EndFormUpdate,ProcessMessages:F_procedure);
     DESTRUCTOR destroy;
@@ -118,12 +121,14 @@ T_uiAdapter=object
 {$ifdef includeImplementation}
 
 CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape;
-  CONST boardImage: TImage; CONST paletteComboBox: TComboBox;
-  CONST boardHorizontalScrollBar, boardVerticalScrollBar,
-  paletteScrollBar: TScrollBar; CONST ioEdit: TEdit;
-  CONST showPropertyEditorCallback: F_showPropertyEditorCallback;
-  CONST boardModifiedCallback: F_procedure; CONST BeginFormUpdate,
-  EndFormUpdate, ProcessMessages: F_procedure);
+                               CONST boardImage: TImage;
+                               CONST paletteComboBox: TComboBox;
+                               CONST boardHorizontalScrollBar, boardVerticalScrollBar, paletteScrollBar: TScrollBar;
+                               CONST ioEdit: TEdit;
+                               CONST showPropertyEditorCallback: F_showPropertyEditorCallback;
+                               CONST repositionPropertyEditorCallback:F_repositionPropertyEditorCallback;
+                               CONST boardModifiedCallback: F_procedure;
+                               CONST BeginFormUpdate, EndFormUpdate, ProcessMessages: F_procedure);
   begin
     uiElement.selectionShape          :=selectionShape;
     uiElement.boardImage              :=boardImage;
@@ -134,6 +139,7 @@ CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape;
     uiElement.paletteScrollBar        :=paletteScrollBar        ;
     uiElement.ioEdit                  :=ioEdit;
     callback.showPropertyEditorCallback:=showPropertyEditorCallback;
+    callback.repositionPropertyEditorCallback:=repositionPropertyEditorCallback;
     callback.boardModifiedCallback:=boardModifiedCallback;
     callback.BeginFormUpdate:=BeginFormUpdate;
     callback.EndFormUpdate:=EndFormUpdate;
@@ -149,8 +155,7 @@ DESTRUCTOR T_uiAdapter.destroy;
     if helperState.Clipboard<>nil then dispose(helperState.Clipboard,destroy);
   end;
 
-PROCEDURE T_uiAdapter.propertyEditorShown(CONST gate: P_visualGate;
-  CONST fromBoard: boolean);
+PROCEDURE T_uiAdapter.propertyEditorShown(CONST gate: P_visualGate; CONST fromBoard: boolean);
   begin
     if fromBoard
     then state:=uas_propertyEditFromBoard

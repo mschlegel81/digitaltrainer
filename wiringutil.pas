@@ -903,22 +903,8 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point): T_wirePath;
   end;
 
 FUNCTION T_wireGraph.findPaths(CONST startPoint: T_point; CONST endPoints: T_wirePath; CONST exhaustiveScan: boolean): T_wirePathArray;
-  TYPE T_indexAndDist=record
-         idx:longint;
-         dist:double;
-       end;
-
-  VAR nextPath:T_wirePath;
-      swapTemp:T_indexAndDist;
-      i,j,k:longint;
-      anyImproved: boolean;
-
-  VAR score:double;
-      newScore:double;
   begin
     if length(endPoints)>1 then exit(findMultiPath(startPoint,endPoints));
-    //TODO: Code Cleanup
-
     setLength(result,1);
     result[0]:=simplifyPath(findPath(startPoint,endPoints[0],exhaustiveScan));
   end;
