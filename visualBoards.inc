@@ -1053,7 +1053,6 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
       if (gridX1<4) or (gridY1<4) then exit; //Grid is too small anyway...
       if (ui=nil) then exit; //Nobody will care for the result in this case...
 
-
       for i:=0 to length(wires)-1 do wires[i].updatePathLength;
       setLength(wireOrder,length(wires));
       for i:=0 to length(wireOrder)-1 do begin

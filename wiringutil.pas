@@ -315,7 +315,7 @@ PROCEDURE T_wiringTask.execute;
     running:=true;
     for i:=0 to length(toFind)-1 do if not(cancelled) then begin
       toFind[i].foundPath:=graph^.findPaths(toFind[i].startPoint,toFind[i].endPoints,true);
-      for path in toFind[i].foundPath do graph^.dropWire(path);
+      for path in toFind[i].foundPath do graph^.dropWire(path,true);
     end;
     if not(cancelled) and (onFinish<>nil) then onFinish();
     running:=false;
@@ -572,360 +572,159 @@ FUNCTION pathContains(CONST path: T_wirePath; CONST x, y: longint; OUT orientati
   end;
 
 FUNCTION T_wireGraph.findMultiPath(CONST startPoint:T_point; CONST endPoints:T_wirePath):T_wirePathArray;
-  TYPE T_distances=array of double;
-       T_endPoint=record
+  //Basic Idea:
+  //Search naively.
+  //As soon as you encounter any end point:
+  //  - reconstruct the path to this end point
+  //  - mark all points in the path as "for free" (score=0), because this wire will be needed anyway.
+  //  - rescore all points in the path
+
+  CONST UNVISITED=maxLongint;
+  TYPE T_scan=record
+         initial:boolean;
          p:T_point;
-         index:longint;
+         directions:T_wireDirectionSet;
        end;
-       T_endPointSubSet=array of T_endPoint;
-       T_endPointSubSetArray=array of T_endPointSubSet;
 
-  FUNCTION continuePath(CONST priming:T_wirePath; CONST ep:T_endPointSubSet):T_wirePath;
-    CONST UNVISITED=maxLongint;
-    TYPE T_scan=record
-           initial:boolean;
-           p:T_point;
-           dirCount:longint;
-           dir    :array[0..7] of T_wireDirection;
-         end;
+  VAR pointToExamine:array of record p:T_point; initial:boolean; end;
+      pointToExamine1:longint=0;
+      pointToExamine0:longint=0;
+      found:array of boolean;
+      allFound:boolean=false;
 
-    FUNCTION calcDistancesFor(CONST p:T_point):T_distances;
-      VAR i:longint;
-      begin
-        setLength(result,length(ep));
-        for i:=0 to length(ep)-1 do result[i]:=euklideanDistance(p,ep[i].p);
-      end;
-
-    FUNCTION isParetoSuperior(CONST d1,d2:T_distances):boolean;
-      VAR i:longint;
-      begin
-        result:=false;
-        for i:=0 to length(d1)-1 do
-          if      d1[i]>d2[i] then exit(false)
-          else if d1[i]<d2[i] then result:=true;
-      end;
-
-    VAR pointToExamine:array of record p:T_point; initial:boolean; end;
-        pointToExamine1:longint=0;
-        pointToExamine0:longint=0;
-        bestPointFoundSoFar:T_point;
-        bestPointParetoDist:T_distances;
-        stepsSinceLastImprovement:longint=0;
-        stepsTotal:longint=0;
-        found:boolean=false;
-
-    PROCEDURE addPointToExamine(CONST p:T_point; CONST initial:boolean);
-      VAR i :longint;
-          pd:T_distances;
-      begin
-        pd:=calcDistancesFor(p);
-        if isParetoSuperior(pd,bestPointParetoDist) then begin
-          {$ifdef debugMode}
-          writeln('New best point at ',p[0],',',p[1],' after ',stepsSinceLastImprovement,'/',stepsTotal,' steps');
-          {$endif}
-          bestPointParetoDist:=pd;
-          bestPointFoundSoFar:=p;
-          stepsSinceLastImprovement:=0;
-        end else inc(stepsSinceLastImprovement);
-        inc(stepsTotal);
-
-        if pointToExamine1>=length(pointToExamine) then begin
-          if pointToExamine0>0 then begin
-            for i:=0 to length(pointToExamine)-pointToExamine0-1 do pointToExamine[i]:=pointToExamine[i+pointToExamine0];
-            dec(pointToExamine1,pointToExamine0);
-            pointToExamine0:=0;
-          end;
-          if pointToExamine1*2>length(pointToExamine) then setLength(pointToExamine,pointToExamine1*2);
-        end;
-        pointToExamine[pointToExamine1].p      :=p;
-        pointToExamine[pointToExamine1].initial:=initial;
-        inc(pointToExamine1);
-      end;
-
-    VAR map:array of record comeFrom:T_point; score:longint; end;
-    PROCEDURE prime;
-      VAR k,i:longint;
-      begin
-        addPointToExamine(priming[0],length(priming)=1);
-
-        with map[priming[0,0]+priming[0,1]*width] do begin
-          score:=0;
-          if length(priming)>1 then
-          comeFrom:=priming[1];
-        end;
-
-        for k:=1 to length(priming)-1 do with map[priming[k,0]+priming[k,1]*width] do begin
-          addPointToExamine(priming[k],k=length(priming)-1);
-          score:=0;
-          if length(priming)>k+1
-          then comeFrom:=priming[k+1];
-        end;
-
-        for i:=0 to length(ep)-1 do for k:=0 to length(priming)-1 do if priming[k]=ep[i].p then found:=true;
-      end;
-
-    VAR prevStep:T_wireDirection;
-        prevStepIsValid:boolean;
-    FUNCTION nextPointToExamine:T_scan;
-      VAR dir :T_wireDirection;
-          ds  :T_wireDirectionSet;
-          temp:array[-1..7] of record dtt:T_distances; dir:T_wireDirection; end;
-          j:longint;
-      begin
-        result.p      :=pointToExamine[pointToExamine0].p;
-        result.initial:=pointToExamine[pointToExamine0].initial;
-        inc(pointToExamine0);
-
-        ds:=allowed[result.p[0]+result.p[1]*width];
-        prevStep:=directionBetween(map[result.p[0]+result.p[1]*width].comeFrom     ,result.p,prevStepIsValid);
-        if prevStepIsValid and not(result.initial) then ds*=allowedSuccessiveDirection[prevStep];
-
-        result.dirCount:=0;
-        for dir in ds do begin
-          temp[result.dirCount].dir:=dir;
-          temp[result.dirCount].dtt:=calcDistancesFor(result.p+dir);
-          for j:=0 to result.dirCount-1 do
-          if isParetoSuperior(temp[result.dirCount].dtt,temp[j].dtt) then begin
-            temp[             -1]:=temp[result.dirCount];
-            temp[result.dirCount]:=temp[              j];
-            temp[              j]:=temp[             -1];
-          end;
-          inc(result.dirCount);
-        end;
-
-        //Quitting here, if no step yields an improvement breaks (e.g.) the wiring of the base flip flop
-        for j:=0 to result.dirCount-1 do result.dir[j]:=temp[j].dir;
-      end;
-
-    PROCEDURE rescore(CONST cf:T_point);
-      VAR x,y:longint;
-          newScore, cf_score:longint;
-          cf_dir: T_point;
-          directionIsValid: boolean;
-      begin
-        cf_score:=   map[cf[0]+cf[1]*width].score;
-        cf_dir  :=cf-map[cf[0]+cf[1]*width].comeFrom;
-
-        for y:=max(0,cf[1]-1) to min(height-1,cf[1]+1) do
-        for x:=max(0,cf[0]-1) to min(width -1,cf[0]+1) do
-        if map[x+y*width].comeFrom=cf then begin
-          newScore:=cf_score+DirectionCost[directionBetween(cf,pointOf(x,y),directionIsValid)];
-          if pointOf(x,y)-cf<>cf_dir then newScore+=ChangeDirectionPenalty;
-          if newScore<map[x+y*width].score then begin
-            map[x+y*width].score:=newScore;
-            rescore(pointOf(x,y));
-          end;
-        end;
-      end;
-
-    VAR i, newCost:longint;
-        scan: T_scan;
-        next: T_point;
-        needRescore: boolean;
+  PROCEDURE addPointToExamine(CONST p:T_point; CONST initial:boolean);
+    VAR i :longint;
     begin
-      setLength(pointToExamine,16);
-      setLength(map,width*height);
-      for i:=0 to length(map)-1 do with map[i] do begin score:=UNVISITED; comeFrom:=startPoint; end;
-
-      setLength(bestPointParetoDist,length(ep));
-      for i:=0 to length(bestPointParetoDist)-1 do bestPointParetoDist[i]:=maxLongint;
-
-      prime;
-      while (pointToExamine1>pointToExamine0) and not found do begin
-        //TODO: How do we find out if we can stop searching?!?
-        scan:=nextPointToExamine;
-//        writeln('                          scanning around ',scan.p[0],',',scan.p[1],' |',stepsSinceLastImprovement);
-        for i:=0 to scan.dirCount-1 do begin
-          next:=scan.p+scan.dir[i];
-          newCost:=map[scan.p[0]+scan.p[1]*width].score
-          +DirectionCost[scan.dir[i]];
-          if prevStepIsValid and (prevStep<>scan.dir[i]) and not(scan.initial) then newCost+=ChangeDirectionPenalty;
-          if newCost<map[next[0]+next[1]*width].score then begin
-            found:=found or ((length(ep)=1) and (next=ep[0].p));
-            with map[next[0]+next[1]*width] do begin
-              if score=UNVISITED then begin
-                needRescore:=false;
-                addPointToExamine(next,false);
-              end else needRescore:=true;
-              score:=newCost;
-              comeFrom:=scan.p;
-            end;
-            if needRescore then rescore(next);
-          end;
+      if pointToExamine1>=length(pointToExamine) then begin
+        if pointToExamine0>0 then begin
+          for i:=0 to length(pointToExamine)-pointToExamine0-1 do pointToExamine[i]:=pointToExamine[i+pointToExamine0];
+          dec(pointToExamine1,pointToExamine0);
+          pointToExamine0:=0;
         end;
+        if pointToExamine1*2>length(pointToExamine) then setLength(pointToExamine,pointToExamine1*2);
       end;
-      if found or (length(endPoints)>1) then begin
-        scan.p:=bestPointFoundSoFar;
-        next:=scan.p;
-        setLength(result,10);
-        if next=startPoint then begin
-          result[0]:=bestPointFoundSoFar;
-          i:=1;
-        end else i:=0;
-        while (next<>startPoint) do begin
-          if i>=length(result) then setLength(result,i*2);
-          result[i]:=scan.p; inc(i);
-          next:=scan.p;
-          scan.p:=map[scan.p[0]+scan.p[1]*width].comeFrom;
-        end;
-        setLength(result,i);
-
-        {$ifdef debugMode}
-        write('Found (partial) path after ',stepsTotal,' steps (',stepsSinceLastImprovement,'): ');
-        for i:=length(result)-1 downto 0 do write(result[i,0],',',result[i,1],'  ');
-        writeln;
-        {$endif}
-      end else begin
-        setLength(result,0);
-      end;
-      setLength(map,0);
+      pointToExamine[pointToExamine1].p      :=p;
+      pointToExamine[pointToExamine1].initial:=initial;
+      inc(pointToExamine1);
     end;
 
-  VAR multipathOutput:T_wirePathArray;
-  PROCEDURE continueRecursively(CONST priming:T_wirePath; CONST ends:T_endPointSubSet);
+  VAR map:array of record comeFrom:T_point; score:longint; end;
+  VAR prevStep:T_wireDirection;
+      prevStepIsValid:boolean;
+  FUNCTION nextPointToExamine:T_scan;
+    begin
+      result.p      :=pointToExamine[pointToExamine0].p;
+      result.initial:=pointToExamine[pointToExamine0].initial;
+      inc(pointToExamine0);
+      result.directions:=allowed[result.p[0]+result.p[1]*width];
+      prevStep:=directionBetween(map[result.p[0]+result.p[1]*width].comeFrom     ,result.p,prevStepIsValid);
+      if prevStepIsValid and not(result.initial) then result.directions*=allowedSuccessiveDirection[prevStep];
+    end;
 
-    VAR newPath:T_wirePath;
+  PROCEDURE rescore(CONST cf:T_point);
+    VAR x,y:longint;
+        newScore, cf_score:longint;
+        cf_dir: T_point;
+        directionIsValid: boolean;
+    begin
+      cf_score:=   map[cf[0]+cf[1]*width].score;
+      cf_dir  :=cf-map[cf[0]+cf[1]*width].comeFrom;
 
-    FUNCTION splitEnds(CONST startAt:T_point):T_endPointSubSetArray;
-      VAR dir:T_wireDirection;
-          splitInfo:array of record
-            bestDirection:T_wireDirection;
-            bestDistance:double;
-          end;
-          i,j,k:longint;
-          step: T_point;
-          d:double;
-          groupByDirection:array[T_wireDirection] of T_endPointSubSet;
-
-      begin
-        j:=0;
-        while (j<length(ends)) and (ends[j].p<>startAt) do inc(j);
-        if j<length(ends) then begin
-          {$ifdef debugMode}
-          writeln('Corner case splitting at ',startAt[0],',',startAt[1]);
-          {$endif}
-          //corner case: one of the end points actually is the start point
-          setLength(result,1);
-          setLength(result[0],length(ends)-1);
-          k:=0;
-          for i:=0 to length(ends)-1 do if i<>j then begin
-            result[0,k]:=ends[i];
-            inc(k);
-          end;
-
-          //This means that a result element has been found.
-          setLength(multipathOutput[ends[j].index],length(newPath));
-          for k:=0 to length(newPath)-1 do multipathOutput[ends[j].index,k]:=newPath[k];
-          exit(result);
-        end;
-
-        setLength(splitInfo,length(ends));
-        for i:=0 to length(splitInfo)-1 do splitInfo[i].bestDistance:=infinity;
-
-        for dir in allowed[startAt[0]+startAt[1]*width] do begin
-          step:=startAt+dir;
-          for i:=0 to length(splitInfo)-1 do begin
-            d:=euklideanDistance(step,ends[i].p);
-            if (d<splitInfo[i].bestDistance) then begin
-              splitInfo[i].bestDistance :=d;
-              splitInfo[i].bestDirection:=dir;
-            end;
-          end;
-        end;
-
-        for dir in T_wireDirection do setLength(groupByDirection[dir],0);
-        for i:=0 to length(ends)-1 do begin
-          dir:=splitInfo[i].bestDirection;
-          j:=length(groupByDirection[dir]);
-          setLength(groupByDirection[dir],j+1);
-          groupByDirection[dir,j]:=ends[i];
-        end;
-
-        i:=0;
-        setLength(result,8);
-        for dir in T_wireDirection do if length(groupByDirection[dir])>0 then begin
-          result[i]:=groupByDirection[dir];
-          inc(i);
-        end;
-        if i>1
-        then setLength(result,i)
-        else begin
-          {$ifdef debugMode}
-          write('No plausible splitting could be found for: ',startAt[0],',',startAt[1],' -> ');
-          for i:=0 to length(ends)-1 do write(ends[i].p[0],',',ends[i].p[1],'  ');
-          writeln;
-          {$endif}
-          setLength(result,length(ends));
-          for i:=0 to length(result)-1 do begin
-            setLength(result[i],1);
-            result[i,0]:=ends[i];
-          end;
+      for y:=max(0,cf[1]-1) to min(height-1,cf[1]+1) do
+      for x:=max(0,cf[0]-1) to min(width -1,cf[0]+1) do
+      if map[x+y*width].comeFrom=cf then begin
+        newScore:=cf_score+DirectionCost[directionBetween(cf,pointOf(x,y),directionIsValid)];
+        if pointOf(x,y)-cf<>cf_dir then newScore+=ChangeDirectionPenalty;
+        if newScore<map[x+y*width].score then begin
+          map[x+y*width].score:=newScore;
+          rescore(pointOf(x,y));
         end;
       end;
+    end;
 
-    VAR endsPart:T_endPointSubSet;
-
-        k:longint;
+  PROCEDURE foundPath(CONST index:longint; p:T_point);
+    VAR n:T_point;
+        i:longint=0;
+        j:longint;
     begin
+      found[index]:=true;
+      allFound:=true;
+      for i:=0 to length(found)-1 do allFound:=allFound and found[i];
+
+      setLength(result[index],10);
+      i:=0;
+      while (p<>startPoint) do begin
+        if i>=length(result[index]) then setLength(result[index],i*2);
+        result[index,i]:=p; inc(i);
+        with map[p[0]+p[1]*width] do begin
+          n:=comeFrom;
+          score:=0;
+        end;
+        if not(allFound) then rescore(p);
+        p:=n;
+      end;
+      setLength(result[index],i+1);
+      result[index,i]:=startPoint;
+      for i:=0 to (length(result[index])-1) div 2 do begin
+        j:=length(result[index])-1-i;
+        n              :=result[index,j];
+        result[index,j]:=result[index,i];
+        result[index,i]:=n;
+      end;
+      result[index]:=simplifyPath(result[index]);
+
       {$ifdef debugMode}
-      if length(priming)=0
-      then write('Looking for path: <no point> -> ')
-      else write('Looking for path: ',priming[0,0],',',priming[0,1],' -> ');
-      for k:=0 to length(ends)-1 do write(ends[k].p[0],',',ends[k].p[1],'  ');
+      write('found path #',index,': ');
+      for i:=0 to length(result[index])-1 do write(result[index,i,0],',',result[index,i,1],'  ');
       writeln;
       {$endif}
-
-      newPath:=continuePath(priming,ends);
-      if length(ends)=1
-      then begin
-        setLength(multipathOutput[ends[0].index],length(newPath));
-        for k:=0 to length(newPath)-1 do multipathOutput[ends[0].index,k]:=newPath[k];
-      end else if length(ends)=2 then begin
-        //It is really trivial here: continue towards each inidiviual end point
-        setLength(endsPart,1);
-        endsPart[0]:=ends[0]; continueRecursively(newPath,endsPart);
-        endsPart[0]:=ends[1]; continueRecursively(newPath,endsPart);
-      end else begin
-        for endsPart in splitEnds(newPath[0]) do continueRecursively(newPath,endsPart);
-      end;
     end;
 
-  VAR priming:T_wirePath;
-      ends:T_endPointSubSet;
-      i,j,k:longint;
-      tp:T_point;
+  VAR i, newCost:longint;
+      scan: T_scan;
+      next: T_point;
+      needRescore: boolean;
+      dir:T_wireDirection;
   begin
     {$ifdef debugMode}
-    writeln('New multi-path-scan from ',startPoint[0],',',startPoint[1]);
+    write('findMultiPath ',startPoint[0],',',startPoint[1],' -> ');
+    for i:=0 to length(endPoints)-1 do write(endPoints[i,0],',',endPoints[i,1],'  ');
+    writeln;
     {$endif}
 
-    setLength(priming,1); priming[0]:=startPoint;
-    setLength(multipathOutput,length(endPoints));
-    setLength(ends  ,length(endPoints));
-    for i:=0 to length(ends)-1 do with ends[i] do begin
-      p:=endPoints[i];
-      index:=      i;
-    end;
-    continueRecursively(priming,ends);
+    setLength(pointToExamine,16);
+    setLength(map,width*height);
+    for i:=0 to length(map)-1 do with map[i] do begin score:=UNVISITED; comeFrom:=startPoint; end;
 
-    //Finally, all result paths must still be reversed and simplified...
     setLength(result,length(endPoints));
-    for k:=0 to length(multipathOutput)-1 do begin
-      for i:=0 to (length(multipathOutput[k])-1) div 2 do begin
-        j:=length(multipathOutput[k])-1-i;
-        tp:=multipathOutput[k,j];
-        multipathOutput[k,j]:=multipathOutput[k,i];
-        multipathOutput[k,i]:=tp;
+    for i:=0 to length(result)-1 do setLength(result[i],0);
+
+    setLength(found,length(endPoints));
+    for i:=0 to length(endPoints)-1 do found[i]:=false;
+
+    addPointToExamine(startPoint,true);
+    map[startPoint[0]+startPoint[1]*width].score:=0;
+    while (pointToExamine1>pointToExamine0) and not allFound do begin
+      scan:=nextPointToExamine;
+      for dir in scan.directions do begin
+        next:=scan.p+dir;
+        newCost:=map[scan.p[0]+scan.p[1]*width].score+DirectionCost[dir];
+        if prevStepIsValid and (prevStep<>dir) and not(scan.initial) then newCost+=ChangeDirectionPenalty;
+        if newCost<map[next[0]+next[1]*width].score then begin
+          with map[next[0]+next[1]*width] do begin
+            if score=UNVISITED then begin
+              needRescore:=false;
+              addPointToExamine(next,false);
+            end else needRescore:=true;
+            score:=newCost;
+            comeFrom:=scan.p;
+          end;
+          for i:=0 to length(endPoints)-1 do if next=endPoints[i] then foundPath(i,next);
+          if needRescore then rescore(next);
+        end;
       end;
-      result[k]:=simplifyPath(multipathOutput[k]);
-
-      {$ifdef debugMode}
-      writeln('Path scan ',startPoint[0],',',startPoint[1],' -> ',endPoints[k,0],',',endPoints[k,1],' finished with path:');
-      for i:=0 to length(result[k])-1 do write(result[k,i,0],',',result[k,i,1],'  ');
-      writeln;
-      {$endif}
-
     end;
+    setLength(map,0);
   end;
 
 FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST exhaustiveScan: boolean): T_wirePath;
