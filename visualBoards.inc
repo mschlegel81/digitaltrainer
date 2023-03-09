@@ -1540,7 +1540,7 @@ PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point; CONST screenX
       tgt:=g^.getInputPositionInGridSize(i)+g^.gridPos;
       dist:=euklideanDistance(ui^.gridToCanvas(tgt),pointOf(screenX,screenY));
       if dist<distToClosest then begin
-        newWirePath:=graph^.findPath(wireStart,tgt,wiresStartingAt(ui^.draggedGate,ui^.dragData.outputIndex));
+        newWirePath:=graph^.findPath(wireStart,tgt{,wiresStartingAt(ui^.draggedGate,ui^.dragData.outputIndex)});
         if length(newWirePath)>0 then begin
           wirePath:=newWirePath;
           ui^.dragData.dragTarget:=g;

@@ -12,8 +12,6 @@ USES
 
 TYPE
   { TDigitaltrainerMainForm }
-  //TODO: Add possibility to clear challenges;
-
   TDigitaltrainerMainForm = class(TForm)
     boardHorizontalScrollBar: TScrollBar;
     boardImage: TImage;
