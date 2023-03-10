@@ -63,6 +63,7 @@ T_uiAdapter=object
       redoList:array of P_visualBoard;
     end;
     wiringInBackground:boolean;
+    PROCEDURE boardImageMouseWheel(Sender: TObject;  Shift: TShiftState; WheelDelta: integer; MousePos: TPoint;  VAR Handled: boolean);
   public
     CONSTRUCTOR create(CONST selectionShape:TShape;
                        CONST boardImage:TImage;
@@ -145,6 +146,7 @@ CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape;
     callback.BeginFormUpdate:=BeginFormUpdate;
     callback.EndFormUpdate:=EndFormUpdate;
     callback.ProcessMessages:=ProcessMessages;
+    uiElement.boardImage.OnMouseWheel:=@boardImageMouseWheel;
     zoom:=30;
     state:=uas_initial;
     wiringInBackground:=false;
@@ -155,6 +157,29 @@ DESTRUCTOR T_uiAdapter.destroy;
     clearUndoList;
     FreeAndNil(uiElement.wireLayer);
     if helperState.Clipboard<>nil then dispose(helperState.Clipboard,destroy);
+  end;
+
+PROCEDURE T_uiAdapter.boardImageMouseWheel(Sender: TObject;  Shift: TShiftState; WheelDelta: integer; MousePos: TPoint;  VAR Handled: boolean);
+  VAR g: P_visualGate;
+  begin
+    if MousePos.X<paletteWidth
+    then begin
+      if uiElement.paletteScrollBar.visible then begin
+        uiElement.paletteScrollBar.position:=uiElement.paletteScrollBar.position-WheelDelta;
+        //TODO: This is also implemented in the main form. How can we deduplicate this?
+        paintAll;
+        if state=uas_propertyEditFromPalette then begin
+          g:=draggedGate;
+          callback.repositionPropertyEditorCallback(
+            g^.canvasPos[0]+g^.getGridWidth*zoom+uiElement.boardImage.Left,
+            g^.canvasPos[1]                     +uiElement.boardImage.top);
+        end;
+      end;
+    end else begin
+      if uiElement.boardVerticalScrollBar.visible
+      then uiElement.boardVerticalScrollBar.position:=uiElement.boardVerticalScrollBar.position-WheelDelta;
+      activeBoard^.ScrollbarScroll(nil,scTrack,WheelDelta);
+    end;
   end;
 
 PROCEDURE T_uiAdapter.propertyEditorShown(CONST gate: P_visualGate; CONST fromBoard: boolean);
