@@ -1346,7 +1346,7 @@ PROCEDURE T_visualBoard.boardMouseUp(Sender: TObject; button: TMouseButton;
   end;
 
 PROCEDURE T_visualBoard.ScrollbarScroll(Sender: TObject; ScrollCode: TScrollCode; VAR ScrollPos: integer);
-  Var g:P_visualGate;
+  VAR g:P_visualGate;
   begin
     ui^.hideIoEdit;
     ui^.paintAll;

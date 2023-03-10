@@ -6,3 +6,5 @@
 *.workspace
 
 /dt2.lps
+
+*.backup
