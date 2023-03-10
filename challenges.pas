@@ -30,32 +30,49 @@ TYPE
     PROPERTY getLastPreparedIndex:longint read lastPreparedIndex;
   end;
 
+  { T_testCreator }
+  //TODO : Create UI for board testing...
+
+  T_testCreator=object(T_serializable)
+    private
+      challengeTestCreationThread:T_challengeTestCreationThread;
+      PROCEDURE updateTestCaseResults(CONST callback:F_caseUpdatedCallback; CONST resume:PBoolean; CONST initCounts:boolean=false);
+    public
+      expectedBehavior    :P_compoundGate;
+      tests:array of record
+        inputs:T_wireValueArray;
+        actuallyActive,
+        maxTotalSteps:longint;
+        outputs:T_wireValueArray;
+      end;
+
+      Interfaces: T_gateInterfaces;
+
+      CONSTRUCTOR createAsChallengeBasis;
+      CONSTRUCTOR createForAnalysis(CONST visualBoard:P_visualBoard);
+      DESTRUCTOR destroy;
+
+      PROCEDURE setNumberOfTestCases(CONST count:longint);
+      PROCEDURE generateTestCases(CONST allInputsThenScramble:boolean=false);
+      PROCEDURE updateTestCaseResults;
+      FUNCTION lastTestCasePrepared:longint;
+  end;
+
   { T_challenge }
-  T_challenge=object(T_serializable)
+  T_challenge=object(T_testCreator)
   private
-    challengeTestCreationThread:T_challengeTestCreationThread;
     testRun:record
       succeeded:boolean;
       active:boolean;
       testInputIndex:longint;
       testStep:longint;
     end;
-    PROCEDURE updateTestCaseResults(CONST callback:F_caseUpdatedCallback; CONST resume:PBoolean; CONST initCounts:boolean=false);
   public
     marked:boolean; //for export dialog only
 
     challengeLevel      :byte;
     callengeCompleted   :boolean;
     resultTemplate      :P_visualBoard;
-    expectedBehavior    :P_compoundGate;
-    tests:array of record
-      inputs:T_wireValueArray;
-      actuallyActive,  //during construction only
-      maxTotalSteps:longint;
-      outputs:T_wireValueArray; //during construction only
-    end;
-
-    Interfaces: T_gateInterfaces; //during construction only
 
     editable:boolean;
     palette             :P_challengePalette;
@@ -80,10 +97,6 @@ TYPE
 
     //For creation purposes...
     PROCEDURE initNewChallenge(CONST expectedAsVisual:P_visualBoard; CONST challengeBoardOption:T_challengeBoardOption; CONST challengePaletteOption:T_challengePaletteOption);
-    PROCEDURE setNumberOfTestCases(CONST count:longint);
-    PROCEDURE generateTestCases(CONST allInputsThenScramble:boolean=false);
-    PROCEDURE updateTestCaseResults;
-    FUNCTION lastTestCasePrepared:longint;
 
     FUNCTION equals(CONST c:P_challenge):boolean;
   end;
@@ -283,6 +296,8 @@ PROCEDURE T_challengeSet.importChallenges(CONST fileName:string; CONST overwrite
 
 CONSTRUCTOR T_challenge.create;
   begin
+    inherited createAsChallengeBasis;
+
     challengeLevel      :=255;
     callengeCompleted   :=false;
     challengeTitle      :='';
@@ -291,18 +306,13 @@ CONSTRUCTOR T_challenge.create;
     new(palette,create);
     new(resultTemplate  ,create(palette));
     new(expectedBehavior,create(palette));
-    setLength(tests,0);
-    challengeTestCreationThread.create(@self);
     testRun.active:=false;
   end;
 
 DESTRUCTOR T_challenge.destroy;
-  VAR i:longint;
   begin
-    challengeTestCreationThread.destroy;
-    for i:=0 to length(tests)-1 do setLength(tests[i].inputs,0); setLength(tests,0);
+    inherited;
     dispose(resultTemplate,destroy);
-    dispose(expectedBehavior,destroy);
     dispose(palette,destroy);
   end;
 
@@ -511,7 +521,7 @@ FUNCTION undeterminedOutput(CONST Interfaces:T_gateInterfaces):T_wireValueArray;
     end;
   end;
 
-PROCEDURE T_challenge.setNumberOfTestCases(CONST count: longint);
+procedure T_testCreator.setNumberOfTestCases(const count: longint);
   VAR oldCount,i:longint;
   begin
     challengeTestCreationThread.ensureStop;
@@ -527,7 +537,7 @@ PROCEDURE T_challenge.setNumberOfTestCases(CONST count: longint);
     then challengeTestCreationThread.restart;
   end;
 
-PROCEDURE T_challenge.generateTestCases(CONST allInputsThenScramble: boolean);
+procedure T_testCreator.generateTestCases(const allInputsThenScramble: boolean);
   FUNCTION inputsByIndex(index:longint):T_wireValueArray;
     VAR k,i:longint;
     begin
@@ -567,12 +577,12 @@ PROCEDURE T_challenge.generateTestCases(CONST allInputsThenScramble: boolean);
     challengeTestCreationThread.restart;
   end;
 
-PROCEDURE T_challenge.updateTestCaseResults;
+procedure T_testCreator.updateTestCaseResults;
   begin
     challengeTestCreationThread.restart;
   end;
 
-FUNCTION T_challenge.lastTestCasePrepared: longint;
+function T_testCreator.lastTestCasePrepared: longint;
   begin
     result:=challengeTestCreationThread.lastPreparedIndex;
   end;
@@ -595,9 +605,9 @@ FUNCTION T_challenge.equals(CONST c: P_challenge): boolean;
     end;
   end;
 
-PROCEDURE T_challenge.updateTestCaseResults(
-  CONST callback: F_caseUpdatedCallback; CONST resume: PBoolean;
-  CONST initCounts: boolean);
+procedure T_testCreator.updateTestCaseResults(
+  const callback: F_caseUpdatedCallback; const resume: PBoolean;
+  const initCounts: boolean);
   VAR i, stepsDone:longint;
   begin
     expectedBehavior^.reset;
@@ -613,6 +623,27 @@ PROCEDURE T_challenge.updateTestCaseResults(
       if callback<>nil then callback(i);
     end;
     if (resume<>nil) and not(resume^) and (callback<>nil) then callback(length(tests)-1);
+  end;
+
+constructor T_testCreator.createAsChallengeBasis;
+  begin
+    setLength(tests,0);
+    challengeTestCreationThread.create(@self);
+  end;
+
+constructor T_testCreator.createForAnalysis(const visualBoard: P_visualBoard);
+  begin
+    createAsChallengeBasis;
+    expectedBehavior:=visualBoard^.extractBehavior;
+    interfaces:=visualBoard^.getInterfaces;
+  end;
+
+destructor T_testCreator.destroy;
+  var i: Integer;
+  begin
+    challengeTestCreationThread.destroy;
+    for i:=0 to length(tests)-1 do setLength(tests[i].inputs,0); setLength(tests,0);
+    dispose(expectedBehavior,destroy);
   end;
 
 end.
