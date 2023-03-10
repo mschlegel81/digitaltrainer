@@ -11,7 +11,7 @@ T_uiState=(uas_initial,
            uas_draggingSelectionFrame);
 
 F_showPropertyEditorCallback=PROCEDURE (CONST gate:P_visualGate; CONST fromBoard:boolean; CONST mouseX,mouseY:longint) of object;
-F_repositionPropertyEditorCallback=PROCEDURE (CONST mouseX,mouseY:longint) of object;
+F_repositionPropertyEditorCallback=PROCEDURE (CONST mouseX,mouseY:longint; CONST hideEditor:boolean) of object;
 F_procedure=PROCEDURE() of object;
 F_setBoardCallback=PROCEDURE (CONST board:P_visualBoard) of object;
 F_gateHitInfo=FUNCTION (CONST gridPos:T_point; OUT gate:P_visualGate):boolean of object;
@@ -172,7 +172,8 @@ PROCEDURE T_uiAdapter.boardImageMouseWheel(Sender: TObject;  Shift: TShiftState;
           g:=draggedGate;
           callback.repositionPropertyEditorCallback(
             g^.canvasPos[0]+g^.getGridWidth*zoom+uiElement.boardImage.Left,
-            g^.canvasPos[1]                     +uiElement.boardImage.top);
+            g^.canvasPos[1]                     +uiElement.boardImage.top,
+            false);
         end;
       end;
     end else begin

@@ -1269,26 +1269,32 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y:
       end
 
       else begin
-        for g in inputs  do if g^.isAtGridPos(gridPos,hoverInfo) then
-          begin
-            ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
-            if (hoverInfo.subElement=block) and (hoverInfo.ioIndex>0)
-            then ui^.uiElement.boardImage.Cursor:=crIBeam
-            else ui^.uiElement.boardImage.Cursor:=crCross;
-            exit;
-          end;
-        for g in gates   do if g^.isAtGridPos(gridPos,hoverInfo) then
-          begin
-            ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
-            ui^.uiElement.boardImage.Cursor:=crCross;
-            exit;
-          end;
-        for g in outputs do if g^.isAtGridPos(gridPos,hoverInfo) then
-          begin
-            ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
-            ui^.uiElement.boardImage.Cursor:=crCross;
-            exit;
-          end;
+        if x>ui^.paletteWidth then begin
+          for g in inputs do if g^.isAtGridPos(gridPos,hoverInfo) then
+            begin
+              ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
+              if (hoverInfo.subElement=block) and (hoverInfo.ioIndex>0)
+              then ui^.uiElement.boardImage.Cursor:=crIBeam
+              else ui^.uiElement.boardImage.Cursor:=crCross;
+              exit;
+            end;
+          for g in gates   do if g^.isAtGridPos(gridPos,hoverInfo) then
+            begin
+              ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
+              ui^.uiElement.boardImage.Cursor:=crCross;
+              exit;
+            end;
+          for g in outputs do if g^.isAtGridPos(gridPos,hoverInfo) then
+            begin
+              ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
+              ui^.uiElement.boardImage.Cursor:=crCross;
+              exit;
+            end;
+        end else begin
+          g:=P_visualGate(associatedPalette^.getGateAtScreenPosition(x,y));
+          if g<>nil then ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
+        end;
+
         if gridPos[0]=gridX1 then ui^.uiElement.boardImage.Cursor:=crSizeWE else
         if gridPos[1]=gridY1 then ui^.uiElement.boardImage.Cursor:=crSizeNS else begin
           enterCriticalSection(wiresCs);
@@ -1306,8 +1312,7 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y:
 
   end;
 
-PROCEDURE T_visualBoard.boardMouseUp(Sender: TObject; button: TMouseButton;
-  Shift: TShiftState; X, Y: integer);
+PROCEDURE T_visualBoard.boardMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR x0,x1,y0,y1,i:longint;
   PROCEDURE mark(CONST gate:P_visualGate);
     begin
@@ -1369,7 +1374,7 @@ PROCEDURE T_visualBoard.ScrollbarScroll(Sender: TObject; ScrollCode: TScrollCode
       g:=ui^.draggedGate;
       ui^.callback.repositionPropertyEditorCallback(
         g^.canvasPos[0]+ui^.uiElement.boardImage.Left+g^.gridWidth*ui^.zoom,
-        g^.canvasPos[1]+ui^.uiElement.boardImage.top);
+        g^.canvasPos[1]+ui^.uiElement.boardImage.top,false);
     end;
   end;
 
@@ -1461,6 +1466,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
       needToDropWire:boolean=false;
       horizontal: boolean;
   begin
+    ui^.callback.repositionPropertyEditorCallback(x,y,true);
     if x<ui^.paletteWidth then begin
       gridPos:=pointOf(round(x/ui^.getZoom),
                        round((y-ui^.paletteYOffset)/ui^.getZoom));
@@ -1534,6 +1540,7 @@ PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point; CONST screenX
 
       connectible:T_visualGateArray;
       Canvas: TCanvas;
+      w: P_watcher;
 
   FUNCTION wiresStartingAt(CONST gate:P_visualGate; CONST outputIndex:longint):T_wirePathArray;
     VAR i,j:longint;
@@ -1587,6 +1594,7 @@ PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point; CONST screenX
     for g in inputs  do g^.paintAll(Canvas);
     for g in gates   do g^.paintAll(Canvas);
     for g in outputs do g^.paintAll(Canvas);
+    for w in watchers do w^.paint(ui,Canvas);
     wiresUpToDate:=false;
 
     ui^.callback.paintPalette();

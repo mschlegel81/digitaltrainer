@@ -115,7 +115,7 @@ TYPE
 
     PROCEDURE buttonClicked(Shape:TShape);
     PROCEDURE propertyValueChanged(Sender: TObject);
-    PROCEDURE repositionPropertyEditor(CONST mouseX,mouseY:longint);
+    PROCEDURE repositionPropertyEditor(CONST mouseX,mouseY:longint; CONST hideEditor:boolean);
     PROCEDURE showPropertyEditor(CONST gate:P_visualGate; CONST fromBoard:boolean; CONST mouseX,mouseY:longint);
     PROCEDURE boardChanged;
     PROCEDURE testFinished;
@@ -343,7 +343,7 @@ PROCEDURE TDigitaltrainerMainForm.PaletteScrollBarScroll(Sender: TObject; Scroll
       g:=uiAdapter.draggedGate;
       repositionPropertyEditor(
         g^.canvasPos[0]+g^.getGridWidth*uiAdapter.getZoom+boardImage.Left,
-        g^.canvasPos[1]                                  +boardImage.top);
+        g^.canvasPos[1]                                  +boardImage.top,false);
     end;
   end;
 
@@ -358,8 +358,7 @@ PROCEDURE TDigitaltrainerMainForm.PlayPauseShapeMouseDown(Sender: TObject;
     PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
   end;
 
-PROCEDURE TDigitaltrainerMainForm.propCancelShapeMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TDigitaltrainerMainForm.propCancelShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     buttonClicked(propCancelShape);
     ValueListEditor1.OnValidateEntry:=nil;
@@ -368,8 +367,7 @@ PROCEDURE TDigitaltrainerMainForm.propCancelShapeMouseDown(Sender: TObject;
     uiAdapter.resetState;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     buttonClicked(propDeleteButton);
     ValueListEditor1.OnValidateEntry:=nil;
@@ -568,8 +566,13 @@ PROCEDURE TDigitaltrainerMainForm.propertyValueChanged(Sender: TObject);
     setEnableButton(propOkShape,propOkLabel,true);
   end;
 
-PROCEDURE TDigitaltrainerMainForm.repositionPropertyEditor(CONST mouseX,mouseY:longint);
+PROCEDURE TDigitaltrainerMainForm.repositionPropertyEditor(CONST mouseX,mouseY:longint; CONST hideEditor:boolean);
   begin
+    if hideEditor and propEditPanel.visible then begin
+      propCancelShapeMouseDown(nil,mbLeft,[],mouseX,mouseY);
+      exit;
+    end;
+
     if mouseX>width-propEditPanel.width
     then propEditPanel.Left:=width-propEditPanel.width
     else propEditPanel.Left:=mouseX;
@@ -585,7 +588,7 @@ PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate; C
   VAR deletionHintText:string;
   begin
     propEditPanel.visible:=true;
-    repositionPropertyEditor(mouseX,mouseY);
+    repositionPropertyEditor(mouseX,mouseY,false);
     if fromBoard
     then gateProperties.createForBoardEntry  (ValueListEditor1,@propertyValueChanged,gate^.getBehavior,workspace.activePalette)
     else gateProperties.createForPaletteEntry(ValueListEditor1,@propertyValueChanged,gate^.getBehavior,workspace.activePalette);

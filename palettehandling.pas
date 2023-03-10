@@ -26,6 +26,7 @@ TYPE
     PROCEDURE ensureVisualPaletteItems; virtual; abstract;
     PROCEDURE detachUI;
     PROCEDURE attachUI(CONST uiAdapter:P_uiAdapter);
+    FUNCTION getGateAtScreenPosition(CONST x,y:longint):pointer; virtual;
     FUNCTION isGateHit(CONST gridPos:T_point; OUT gate:P_visualGate):boolean;
     PROCEDURE comboBoxSelect(Sender:TObject);
     FUNCTION allowDeletion(CONST gate:P_abstractGate; OUT reasonForFalse:string):boolean; virtual;
@@ -1127,8 +1128,22 @@ PROCEDURE T_palette.attachUI(CONST uiAdapter: P_uiAdapter);
     ui^.palletteConnected(@paint,@isGateHit);
   end;
 
-FUNCTION T_palette.isGateHit(CONST gridPos: T_point; OUT gate: P_visualGate
-  ): boolean;
+FUNCTION T_palette.getGateAtScreenPosition(CONST x,y:longint):pointer;
+  VAR g: P_visualGate;
+      zoom,yOffset:longint;
+      gridPos: T_point;
+      info: T_hoverInfo;
+  begin
+    result:=nil;
+    zoom:=ui^.getZoom;
+    yOffset:=ui^.paletteYOffset;
+    gridPos:=pointOf(
+      round((x        )/zoom),
+      round((y-yOffset)/zoom));
+    for g in visualPaletteItems do if g^.isAtGridPos(gridPos,info) then exit(g);
+  end;
+
+FUNCTION T_palette.isGateHit(CONST gridPos: T_point; OUT gate: P_visualGate): boolean;
   VAR g:P_visualGate;
      hoverInfo: T_hoverInfo;
   begin

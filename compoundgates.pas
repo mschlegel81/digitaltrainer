@@ -34,7 +34,7 @@ TYPE
     FUNCTION readGate(VAR stream:T_bufferedInputStreamWrapper):P_abstractGate; virtual; abstract;
     FUNCTION obtainGate(CONST prototypeIndex:longint):P_compoundGate; virtual; abstract;
     PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual; abstract;
-
+    FUNCTION getGateAtScreenPosition(CONST x,y:longint):pointer; virtual; abstract;
     FUNCTION hasPrototype(CONST prototypeIndex:longint):boolean; virtual; abstract;
     PROCEDURE addPrototype(CONST prototypeIndex:longint; CONST behavior:P_compoundGate; CONST visible:boolean); virtual; abstract;
     PROCEDURE ensureBaseGate(CONST gate:P_abstractGate; CONST visible:boolean); virtual; abstract;
