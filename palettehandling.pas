@@ -5,7 +5,7 @@ UNIT paletteHandling;
 INTERFACE
 
 USES
-  Classes, sysutils,StdCtrls, ExtCtrls,logicalGates,visualGates,compoundGates, myGenerics,serializationUtil,wiringUtil;
+  Classes, sysutils,StdCtrls,logicalGates,visualGates,compoundGates, myGenerics,serializationUtil,wiringUtil;
 
 TYPE
   P_palette=^T_palette;
@@ -28,7 +28,7 @@ TYPE
     PROCEDURE attachUI(CONST uiAdapter:P_uiAdapter);
     FUNCTION isGateHit(CONST gridPos:T_point; OUT gate:P_visualGate):boolean;
     PROCEDURE comboBoxSelect(Sender:TObject);
-    FUNCTION allowDeletion(CONST gate:P_abstractGate):boolean; virtual;
+    FUNCTION allowDeletion(CONST gate:P_abstractGate; OUT reasonForFalse:string):boolean; virtual;
     PROCEDURE paint;
     PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual;
     FUNCTION findEntry(CONST gate:P_abstractGate):longint; virtual; abstract;
@@ -79,7 +79,7 @@ TYPE
     FUNCTION  addBoard   (CONST board:P_visualBoard; subPaletteIndex:longint; CONST subPaletteName:string):P_visualBoard;
     PROCEDURE updateEntry(CONST board:P_visualBoard; subPaletteIndex:longint; CONST subPaletteName:string);
     PROCEDURE deleteEntry(CONST prototype:P_captionedAndIndexed);
-    FUNCTION  allowDeletion(CONST gate:P_abstractGate):boolean; virtual;
+    FUNCTION  allowDeletion(CONST gate:P_abstractGate; OUT reasonForFalse:string):boolean; virtual;
     PROCEDURE deleteEntry(CONST index:longint);
     FUNCTION  allowDeletion(CONST index:longint):boolean;
     PROCEDURE setFilter(CONST newValue:longint);
@@ -783,11 +783,11 @@ PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard;
     ensureVisualPaletteItems;
   end;
 
-PROCEDURE T_workspacePalette.deleteEntry(CONST prototype: P_captionedAndIndexed
-  );
+PROCEDURE T_workspacePalette.deleteEntry(CONST prototype: P_captionedAndIndexed);
   VAR i,i0:longint;
+      d0, d1, d2: boolean;
   begin
-    if ui^.isPrototypeInUse(prototype) then exit;
+    if ui^.isPrototypeInUse(prototype,d0,d1,d2) then exit;
     i0:=prototype^.getIndexInPalette;
     for i:=0 to length(paletteEntries)-1 do
       if (i<>i0) and
@@ -803,31 +803,57 @@ PROCEDURE T_workspacePalette.deleteEntry(CONST prototype: P_captionedAndIndexed
     ui^.paintAll;
   end;
 
-FUNCTION T_workspacePalette.allowDeletion(CONST gate: P_abstractGate): boolean;
+FUNCTION T_workspacePalette.allowDeletion(CONST gate: P_abstractGate; OUT reasonForFalse:string): boolean;
   VAR i:longint;
       prototype: P_visualBoard;
+      usedByUndoList, usedByClipboard, usedByActiveBoard: boolean;
+  PROCEDURE addReason(CONST s:string);
+    begin
+      if reasonForFalse='' then reasonForFalse:='Das Baulement wird noch verwendet von:';
+      reasonForFalse+=LineEnding+'  '+s;
+    end;
+
   begin
-    if gate^.gateType<>gt_compound then exit(false);
-    if P_compoundGate(gate)^.prototype=nil then exit(false);
-    if not(P_compoundGate(gate)^.prototype^.isVisualBoard) then exit(false);
+    reasonForFalse:='';
+    result:=true;
+    if gate^.gateType<>gt_compound then begin
+      reasonForFalse:='Grundelemente können nicht gelöscht werden.';
+      exit(false);
+    end;
+    if P_compoundGate(gate)^.prototype=nil then begin
+      reasonForFalse:='DAS HIER SOLLTE NIE ANGEZEIGT WERDEN! (prototype=nil)';
+      exit(false);
+    end;
+    if not(P_compoundGate(gate)^.prototype^.isVisualBoard) then begin
+      reasonForFalse:='DAS HIER SOLLTE NIE ANGEZEIGT WERDEN! (non visual prototype)';
+      exit(false);
+    end;
     prototype:=P_visualBoard(P_compoundGate(gate)^.prototype);
 
-    if ui^.isPrototypeInUse(prototype) then exit(false);
+    if ui^.isPrototypeInUse(prototype,usedByActiveBoard,usedByClipboard,usedByUndoList) then begin
+      if usedByUndoList then addReason('der aktuellen Schaltung');
+      if usedByClipboard then addReason('der Zwischenablage');
+      if usedByUndoList then addReason('der Undo-Liste');
+      result:=false;
+    end;
     for i:=0 to length(paletteEntries)-1 do
       if (i<>prototype^.getIndexInPalette) and
          (paletteEntries[i].prototype<>nil) and
-         (paletteEntries[i].prototype^.usesPrototype(prototype)) then exit(false);
-    result:=true;
+         (paletteEntries[i].prototype^.usesPrototype(prototype)) then begin
+      addReason(StringReplace(paletteEntries[i].prototype^.getCaption,LineEnding,'\n',[rfReplaceAll]));
+      result:=false;
+    end;
   end;
 
 PROCEDURE T_workspacePalette.deleteEntry(CONST index: longint);
   VAR
     prototype: P_visualBoard;
     i: integer;
+    d0, d1, d2: boolean;
   begin
     if (index<0) or (index>=length(paletteEntries)) or (paletteEntries[index].entryType<>gt_compound) then exit;
     prototype:=paletteEntries[index].prototype;
-    if ui^.isPrototypeInUse(prototype) then exit;
+    if ui^.isPrototypeInUse(prototype,d0,d1,d2) then exit;
     for i:=index+1 to length(paletteEntries)-1 do
       if (paletteEntries[i].prototype<>nil) and
          (paletteEntries[i].prototype^.usesPrototype(prototype)) then exit;
@@ -840,10 +866,11 @@ PROCEDURE T_workspacePalette.deleteEntry(CONST index: longint);
 FUNCTION T_workspacePalette.allowDeletion(CONST index: longint): boolean;
   VAR i:longint;
       prototype: P_visualBoard;
+      d0, d1, d2: boolean;
   begin
     if (index<0) or (index>=length(paletteEntries)) or (paletteEntries[index].entryType<>gt_compound) then exit(false);
     prototype:=paletteEntries[index].prototype;
-    if ui^.isPrototypeInUse(prototype) then exit(false);
+    if ui^.isPrototypeInUse(prototype,d0,d1,d2) then exit(false);
     for i:=index+1 to length(paletteEntries)-1 do
       if (paletteEntries[i].prototype<>nil) and
          (paletteEntries[i].prototype^.usesPrototype(prototype)) then exit(false);
@@ -973,7 +1000,6 @@ PROCEDURE T_workspacePalette.exportSelected(CONST fileName: string);
   VAR temp:T_workspacePalette;
       i:longint;
       j:longint=0;
-      k:longint;
 
       originalProtoypes:array of record
         proto:P_visualBoard;
@@ -1118,8 +1144,9 @@ PROCEDURE T_palette.comboBoxSelect(Sender: TObject);
     ui^.repaintImage;
   end;
 
-FUNCTION T_palette.allowDeletion(CONST gate: P_abstractGate): boolean;
+FUNCTION T_palette.allowDeletion(CONST gate: P_abstractGate; OUT reasonForFalse:string): boolean;
   begin
+    reasonForFalse:='Aus dieser Palette kann nichts gelöscht werden.';
     result:=false;
   end;
 

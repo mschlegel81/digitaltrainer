@@ -582,11 +582,12 @@ PROCEDURE TDigitaltrainerMainForm.repositionPropertyEditor(CONST mouseX,mouseY:l
   end;
 
 PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate; CONST fromBoard: boolean; CONST mouseX, mouseY: longint);
+  VAR deletionHintText:string;
   begin
     propEditPanel.visible:=true;
     repositionPropertyEditor(mouseX,mouseY);
     if fromBoard
-    then gateProperties.createForBoardEntry  (ValueListEditor1,@propertyValueChanged,gate^.getBehavior)
+    then gateProperties.createForBoardEntry  (ValueListEditor1,@propertyValueChanged,gate^.getBehavior,workspace.activePalette)
     else gateProperties.createForPaletteEntry(ValueListEditor1,@propertyValueChanged,gate^.getBehavior,workspace.activePalette);
 
     uiAdapter.propertyEditorShown(gate,fromBoard);
@@ -594,7 +595,13 @@ PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate; C
     setEnableButton(propDeleteButton,propDeleteLabel,
       fromBoard or ((gate^.getBehavior^.gateType=gt_compound) and
                     (workspace.activeBoard^.getIndexInPalette<0) and
-                    (workspace.activePalette^.allowDeletion(gate^.getBehavior))));
+                    (workspace.activePalette^.allowDeletion(gate^.getBehavior,deletionHintText))));
+    if not(propDeleteButton.enabled) then begin
+      propDeleteButton.ShowHint:=true;
+      propDeleteButton.Hint:=deletionHintText;
+      propDeleteLabel.ShowHint:=true;
+      propDeleteLabel.Hint:=deletionHintText;
+    end;
     setEnableButton(propOkShape     ,propOkLabel    ,false);
   end;
 

@@ -95,7 +95,7 @@ T_uiAdapter=object
     PROCEDURE saveStateToUndoList;
     FUNCTION performUndo(CONST setBoard:F_setBoardCallback):boolean;
     FUNCTION performRedo(CONST setBoard:F_setBoardCallback):boolean;
-    FUNCTION isPrototypeInUse(CONST prototype: P_captionedAndIndexed):boolean;
+    FUNCTION isPrototypeInUse(CONST prototype: P_captionedAndIndexed; OUT usedByActiveBoard,usedByClipboard,usedByUndoList:boolean):boolean;
     PROCEDURE prototypeUpdated(CONST oldPrototype,newPrototype:P_visualBoard);
 
     FUNCTION boardOrigin:T_point;
@@ -316,16 +316,19 @@ FUNCTION T_uiAdapter.performRedo(CONST setBoard: F_setBoardCallback): boolean;
     end else result:=false;
   end;
 
-FUNCTION T_uiAdapter.isPrototypeInUse(CONST prototype: P_captionedAndIndexed): boolean;
+FUNCTION T_uiAdapter.isPrototypeInUse(CONST prototype: P_captionedAndIndexed; OUT usedByActiveBoard,usedByClipboard,usedByUndoList:boolean):boolean;
   VAR b:P_visualBoard;
   begin
-    if (activeBoard<>nil) and (activeBoard^.usesPrototype(prototype)) then exit(true);
+    usedByActiveBoard:=false;
+    usedByClipboard:=false;
+    usedByUndoList:=false;
+    if (activeBoard<>nil) and (activeBoard^.usesPrototype(prototype)) then usedByActiveBoard:=true;
     with helperState do begin
-      if (Clipboard<>nil) and Clipboard^.usesPrototype(prototype) then exit(true);
-      for b in undoList do if b^.usesPrototype(prototype) then exit(true);
-      for b in redoList do if b^.usesPrototype(prototype) then exit(true);
+      if (Clipboard<>nil) and Clipboard^.usesPrototype(prototype) then usedByClipboard:=true;
+      for b in undoList do if b^.usesPrototype(prototype) then begin usedByUndoList:=true; exit(true); end;
+      for b in redoList do if b^.usesPrototype(prototype) then begin usedByUndoList:=true; exit(true); end;
     end;
-    result:=false;
+    result:=usedByUndoList or usedByClipboard or usedByActiveBoard;
   end;
 
 PROCEDURE T_uiAdapter.prototypeUpdated(CONST oldPrototype, newPrototype: P_visualBoard);
