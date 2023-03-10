@@ -893,8 +893,7 @@ FUNCTION T_sprite.screenHeight: longint;
     result:=Bitmap.height;
   end;
 
-PROCEDURE T_sprite.renderAt(CONST Canvas: TCanvas; CONST zoom: longint;
-  CONST screenPosition: T_point);
+PROCEDURE T_sprite.renderAt(CONST Canvas: TCanvas; CONST zoom: longint; CONST screenPosition: T_point);
   begin
     if zoom<>preparedForZoom then setZoom(zoom);
     if (screenPosition[0]-screenOffset[0]>Canvas.width) or
@@ -909,8 +908,8 @@ PROCEDURE T_sprite.renderAt(CONST Canvas: TCanvas; CONST zoom: longint;
 
 FUNCTION T_sprite.isAtPixel(CONST p: T_point): boolean;
   begin
-    result:=(p[0]>=-screenOffset[0]) and (p[0]<=Bitmap.width-screenOffset[0]) and
-            (p[1]>=-screenOffset[1]) and (p[1]<=Bitmap.width-screenOffset[1]);
+    result:=(p[0]>=-screenOffset[0]) and (p[0]<=Bitmap.width -screenOffset[0]) and
+            (p[1]>=-screenOffset[1]) and (p[1]<=Bitmap.height-screenOffset[1]);
   end;
 
 INITIALIZATION

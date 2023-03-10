@@ -7,7 +7,7 @@ INTERFACE
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
   Buttons, StdCtrls, Menus, ValEdit, Grids, visualGates, logicalGates,
-  challenges, paletteHandling, gateProperties, addToPaletteDialog, visuals,workspaces,
+  paletteHandling, gateProperties, addToPaletteDialog, visuals,workspaces,
   createTaskUnit,selectTaskUnit,taskFinishedUnit,paletteHandingUi;
 
 TYPE
@@ -402,9 +402,7 @@ PROCEDURE TDigitaltrainerMainForm.propOkShapeMouseDown(Sender: TObject; button: 
     buttonClicked(propOkShape);
     propEditPanel.visible:=false;
     if gateProperties.applyValues then begin
-      uiAdapter.draggedGate^.propertyEditDone(not(gateProperties.arePropertiesForBoard),
-        boardImage.Left-boardHorizontalScrollBar.position,
-        boardImage.top -boardVerticalScrollBar.position);
+      uiAdapter.draggedGate^.propertyEditDone;
       workspace.activeBoard^.afterGatePropertiesEdited(uiAdapter.draggedGate,gateProperties.arePropertiesForBoard);
       if not(gateProperties.arePropertiesForBoard) then begin
         workspace.activePalette^.ensureVisualPaletteItems;

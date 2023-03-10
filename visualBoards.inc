@@ -1607,7 +1607,7 @@ FUNCTION T_visualBoard.getIndexInPalette: longint;
 PROCEDURE T_visualBoard.afterGatePropertiesEdited(CONST editedGate: P_visualGate; CONST editedIsBoardElement: boolean);
   VAR g:P_visualGate;
   begin
-    for g in gates do if g^.behavior^.equals(editedGate^.behavior) then g^.propertyEditDone(false,0,0);
+    for g in gates do if g^.behavior^.equals(editedGate^.behavior) then g^.propertyEditDone();
     if editedIsBoardElement then begin
       repositionElement(editedGate,true,true);
       dropWatchersAssociatedWith(editedGate);

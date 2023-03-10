@@ -112,7 +112,7 @@ TYPE
 CONST checkMark='✓';
 
 IMPLEMENTATION
-USES sysutils,math;
+USES sysutils;
 
 { T_challengeTestCreationThread }
 

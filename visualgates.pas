@@ -50,7 +50,7 @@ TYPE
       PROCEDURE paintAll(CONST Canvas:TCanvas);
       PROCEDURE paintAll(CONST Canvas:TCanvas; CONST zoom:longint);
       FUNCTION  clone:P_visualGate;
-      PROCEDURE propertyEditDone(CONST paletteElement:boolean; CONST x0,y0:longint);
+      PROCEDURE propertyEditDone;
 
       FUNCTION getInputPositionInGridSize (CONST index:longint):T_point;
       FUNCTION getOutputPositionInGridSize(CONST index:longint):T_point;
@@ -213,7 +213,7 @@ FUNCTION T_visualGate.clone: P_visualGate;
     result^.fixedPosition  :=false;
   end;
 
-PROCEDURE T_visualGate.propertyEditDone(CONST paletteElement: boolean; CONST x0, y0: longint);
+PROCEDURE T_visualGate.propertyEditDone();
   begin
     setupVisuals;
   end;
