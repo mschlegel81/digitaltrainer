@@ -1272,6 +1272,7 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y:
         if x>ui^.paletteWidth then begin
           for g in inputs do if g^.isAtGridPos(gridPos,hoverInfo) then
             begin
+              ui^.uiElement.boardImage.ShowHint:=true;
               ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
               if (hoverInfo.subElement=block) and (hoverInfo.ioIndex>0)
               then ui^.uiElement.boardImage.Cursor:=crIBeam
@@ -1280,19 +1281,24 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y:
             end;
           for g in gates   do if g^.isAtGridPos(gridPos,hoverInfo) then
             begin
+              ui^.uiElement.boardImage.ShowHint:=true;
               ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
               ui^.uiElement.boardImage.Cursor:=crCross;
               exit;
             end;
           for g in outputs do if g^.isAtGridPos(gridPos,hoverInfo) then
             begin
+              ui^.uiElement.boardImage.ShowHint:=true;
               ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
               ui^.uiElement.boardImage.Cursor:=crCross;
               exit;
             end;
+          ui^.uiElement.boardImage.ShowHint:=false;
         end else begin
+          ui^.uiElement.boardImage.Cursor:=crCross;
           g:=P_visualGate(associatedPalette^.getGateAtScreenPosition(x,y));
           if g<>nil then ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
+          ui^.uiElement.boardImage.ShowHint:=(g<>nil);
         end;
 
         if gridPos[0]=gridX1 then ui^.uiElement.boardImage.Cursor:=crSizeWE else
