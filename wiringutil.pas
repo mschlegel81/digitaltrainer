@@ -81,6 +81,7 @@ TYPE
         endPoints:T_wirePath;
         foundPath:T_wirePathArray;
       end;
+      execTime:qword;
 
       CONSTRUCTOR create(CONST freshGraph:P_wireGraph; CONST onFinish_:F_simpleCallback);
       DESTRUCTOR destroy;
@@ -317,10 +318,11 @@ PROCEDURE T_wiringTask.execute;
       toFind[i].foundPath:=graph^.findPaths(toFind[i].startPoint,toFind[i].endPoints,true);
       for path in toFind[i].foundPath do graph^.dropWire(path,true);
     end;
+    execTime:=GetTickCount64-startTicks;
     if not(cancelled) and (onFinish<>nil) then onFinish();
     running:=false;
     {$ifdef debugMode}
-    writeln('Wiring task executing took ',GetTickCount64-startTicks,' ticks');
+    writeln('Wiring task executing took ',execTime,' ticks');
     {$endif}
   end;
 

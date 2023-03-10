@@ -1067,15 +1067,24 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
         for j:=0 to length(wires[i].sink)-1 do
           wiringTask^.addEndPoint(wires[i].sink[j].gate^.getInputPositionInGridSize(wires[i].sink[j].gateInputIndex)+wires[i].sink[j].gate^.gridPos);
       end;
-      wiringTask^.executeInBackground;
+      if ui^.wiringInBackground
+      then wiringTask^.executeInBackground
+      else begin
+        wiringTask^.execute;
+        dispose(wiringTask,destroy);
+        wiringTask:=nil;
+      end;
     end;
 
-  VAR
-    startTicks: qword;
+  {$ifdef debugMode}
+  VAR startTicks: qword;
+  {$endif}
   begin
     disposeTask(wiringTask);
     enterCriticalSection(wiresCs);
+    {$ifdef debugMode}
     startTicks:=GetTickCount64;
+    {$endif}
     dropWiresReferringToNonexitentPorts;
     sortWires;
     if forced
@@ -1090,13 +1099,19 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
 
 PROCEDURE T_visualBoard.updateWiresFromTask;
   VAR k:longint;
+      wantToWireInBackground:boolean;
   begin
-    if wiringTask=nil then exit;
+    if (wiringTask=nil) or (ui=nil) then exit;
     enterCriticalSection(wiresCs);
     for k:=0 to length(wiringTask^.toFind)-1 do wires[wiringTask^.toFind[k].index].setPaths(wiringTask^.toFind[k].foundPath);
     leaveCriticalSection(wiresCs);
-    disposeTask(wiringTask);
-    wiresHaveChangedInBackground:=true;
+    wantToWireInBackground:=wiringTask^.execTime>100;
+    if ui^.wiringInBackground then begin
+      disposeTask(wiringTask);
+      wiringTask:=nil;
+      wiresHaveChangedInBackground:=true;
+    end;
+    ui^.wiringInBackground:=wantToWireInBackground;
   end;
 
 PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);

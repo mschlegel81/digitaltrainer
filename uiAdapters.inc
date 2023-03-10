@@ -62,6 +62,7 @@ T_uiAdapter=object
       undoList,
       redoList:array of P_visualBoard;
     end;
+    wiringInBackground:boolean;
   public
     CONSTRUCTOR create(CONST selectionShape:TShape;
                        CONST boardImage:TImage;
@@ -146,6 +147,7 @@ CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape;
     callback.ProcessMessages:=ProcessMessages;
     zoom:=30;
     state:=uas_initial;
+    wiringInBackground:=false;
   end;
 
 DESTRUCTOR T_uiAdapter.destroy;
@@ -235,6 +237,7 @@ PROCEDURE T_uiAdapter.zoomOut;
 PROCEDURE T_uiAdapter.resetState;
   begin
     state:=uas_initial;
+    wiringInBackground:=false;
   end;
 
 PROCEDURE T_uiAdapter.clearUndoList;
