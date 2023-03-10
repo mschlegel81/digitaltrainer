@@ -5,7 +5,7 @@
     <PathDelim Value="\"/>
     <General>
       <SessionStorage Value="InProjectDir"/>
-      <Title Value="dt2"/>
+      <Title Value="Digitaltrainer"/>
       <Scaled Value="True"/>
       <ResourceType Value="res"/>
       <UseXPManifest Value="True"/>
