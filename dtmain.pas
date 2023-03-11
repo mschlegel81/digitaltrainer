@@ -267,18 +267,17 @@ PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miImportAddClick(Sender: TObject);
   begin
-    if OpenDialog1.execute
-    then workspace.getChallenges^.importChallenges(OpenDialog1.fileName,false);
+    if OpenDialog1.execute and workspace.getChallenges^.importChallenges(OpenDialog1.fileName,false) then miTasksClick(Sender);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miImportOverwriteClick(Sender: TObject);
   begin
-    if OpenDialog1.execute then begin
-      workspace.getChallenges^.importChallenges(OpenDialog1.fileName,true);
+    if OpenDialog1.execute and workspace.getChallenges^.importChallenges(OpenDialog1.fileName,true) then begin
       workspace.setFreeEditMode;
       workspace.activePalette^.attachUI(@uiAdapter);
       workspace.activeBoard  ^.attachUI(@uiAdapter);
       updateUiElements;
+      miTasksClick(Sender);
     end;
   end;
 

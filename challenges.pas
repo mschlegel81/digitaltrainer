@@ -31,7 +31,6 @@ TYPE
   end;
 
   { T_testCreator }
-  //TODO : Create UI for board testing...
   T_testCreator=object(T_serializable)
     private
       challengeTestCreationThread:T_testCreationThread;
@@ -119,7 +118,7 @@ TYPE
     FUNCTION add(CONST c:P_challenge):boolean;
     PROCEDURE moveChallenge(CONST index:longint; CONST up:boolean);
     PROCEDURE exportSelected  (CONST fileName:string; CONST exportEditable:boolean);
-    PROCEDURE importChallenges(CONST fileName:string; CONST overwriteExisting:boolean);
+    FUNCTION importChallenges(CONST fileName:string; CONST overwriteExisting:boolean):boolean;
   end;
 
 CONST checkMark='✓';
@@ -267,29 +266,28 @@ PROCEDURE T_challengeSet.exportSelected(CONST fileName:string; CONST exportEdita
     temp.destroy;
   end;
 
-PROCEDURE T_challengeSet.importChallenges(CONST fileName:string; CONST overwriteExisting:boolean);
+FUNCTION T_challengeSet.importChallenges(CONST fileName:string; CONST overwriteExisting:boolean):boolean;
   VAR i:longint;
       temp:T_challengeSet;
   begin
     temp.create;
     if not(temp.loadFromFile(fileName)) or (length(temp.challenge)=0) then begin
       temp.destroy;
-      exit;
+      exit(false);
     end;
     temp.markAllAsPending;
-
     if overwriteExisting then begin
       for i:=0 to length(challenge)-1 do dispose(challenge[i],destroy);
       setLength(challenge,length(temp.challenge));
       for i:=0 to length(challenge)-1 do challenge[i]:=temp.challenge[i];
     end else begin
-      for i:=0 to length(challenge)-1 do
+      for i:=0 to length(temp.challenge)-1 do
         if not add(temp.challenge[i])
         then dispose(temp.challenge[i],destroy);
     end;
     setLength(temp.challenge,0);
-
     temp.destroy;
+    result:=true;
   end;
 
 { T_challenge }
