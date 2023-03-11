@@ -93,7 +93,7 @@ PROCEDURE TTestCreationFrame.updateTableRow(CONST j: longint);
   VAR i,k:longint;
       gateInterface: T_gateInterface;
   begin
-    if (j<0) or (j=length(testGenerator^.tests)-1) then begin
+    if (j<0) then begin
       fillTable;
       exit;
     end;
@@ -110,6 +110,7 @@ PROCEDURE TTestCreationFrame.updateTableRow(CONST j: longint);
       TestCasesStringGrid.Cells[i,j+1]:=getWireString(testGenerator^.tests[j].outputs[k],gateInterface.representation);
       inc(i); inc(k);
     end;
+    if (j=length(testGenerator^.tests)-1) then TestCasesStringGrid.AutoSizeColumns;
     Application.ProcessMessages;
   end;
 

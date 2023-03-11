@@ -15,6 +15,7 @@ TYPE
   TDigitaltrainerMainForm = class(TForm)
     boardHorizontalScrollBar: TScrollBar;
     boardImage: TImage;
+    miTestBoard: TMenuItem;
     miMarkChallengesUnsolved: TMenuItem;
     miChallengesMenu: TMenuItem;
     miExportChallenges: TMenuItem;
@@ -90,6 +91,7 @@ TYPE
     PROCEDURE miRedoClick(Sender: TObject);
     PROCEDURE miSaveAsTaskClick(Sender: TObject);
     PROCEDURE miTasksClick(Sender: TObject);
+    PROCEDURE miTestBoardClick(Sender: TObject);
     PROCEDURE miUndoClick(Sender: TObject);
     PROCEDURE PaletteScrollBarScroll(Sender: TObject; ScrollCode: TScrollCode; VAR ScrollPos: integer);
     PROCEDURE PlayPauseShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -128,7 +130,7 @@ VAR
   DigitaltrainerMainForm: TDigitaltrainerMainForm;
 
 IMPLEMENTATION
-USES compoundGates;
+USES compoundGates, boardTestUnit;
 CONST playPauseGlyph:array[false..true] of string=('⏵','⏸');
 
 {$R *.lfm}
@@ -327,6 +329,11 @@ PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);
     workspace.activePalette^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
     infoLabel.caption:=workspace.getInfoLabelText;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miTestBoardClick(Sender: TObject);
+  begin
+    BoardTestForm.showForBoard(workspace.activeBoard);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);

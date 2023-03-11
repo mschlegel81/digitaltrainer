@@ -186,6 +186,14 @@
         <ResourceBaseClass Value="Frame"/>
         <UnitName Value="testFrameUI"/>
       </Unit>
+      <Unit>
+        <Filename Value="boardtestunit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="BoardTestForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="boardTestUnit"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

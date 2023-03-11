@@ -604,9 +604,7 @@ FUNCTION T_challenge.equals(CONST c: P_challenge): boolean;
     end;
   end;
 
-PROCEDURE T_testCreator.updateTestCaseResults(
-  CONST callback: F_caseUpdatedCallback; CONST resume: PBoolean;
-  CONST initCounts: boolean);
+PROCEDURE T_testCreator.updateTestCaseResults(CONST callback: F_caseUpdatedCallback; CONST resume: PBoolean; CONST initCounts: boolean);
   VAR i, stepsDone:longint;
   begin
     expectedBehavior^.reset;
@@ -643,6 +641,8 @@ DESTRUCTOR T_testCreator.destroy;
     challengeTestCreationThread.destroy;
     for i:=0 to length(tests)-1 do setLength(tests[i].inputs,0); setLength(tests,0);
     dispose(expectedBehavior,destroy);
+    setLength(Interfaces.inputs,0);
+    setLength(Interfaces.outputs,0);
   end;
 
 end.

@@ -560,6 +560,11 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         Caption = 'Als &Aufgabe speichern'
         OnClick = miSaveAsTaskClick
       end
+      object miTestBoard: TMenuItem
+        Caption = '&Testen'
+        ShortCut = 16468
+        OnClick = miTestBoardClick
+      end
       object Separator1: TMenuItem
         Caption = '-'
       end
