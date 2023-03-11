@@ -178,6 +178,14 @@
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="paletteHandingUi"/>
       </Unit>
+      <Unit>
+        <Filename Value="testframeui.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="TestCreationFrame"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Frame"/>
+        <UnitName Value="testFrameUI"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

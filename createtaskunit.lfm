@@ -1,7 +1,7 @@
 object CreateTaskForm: TCreateTaskForm
-  Left = 207
+  Left = 1205
   Height = 553
-  Top = 610
+  Top = 373
   Width = 556
   Caption = 'Aufgabe erstellen'
   ClientHeight = 553
@@ -198,139 +198,16 @@ object CreateTaskForm: TCreateTaskForm
   end
   object Label5: TLabel
     AnchorSideLeft.Control = Owner
-    AnchorSideTop.Control = TestInputsPanel
+    AnchorSideTop.Control = TestCreationFrame1
     Left = 4
     Height = 15
-    Top = 301
+    Top = 302
     Width = 74
     BorderSpacing.Left = 4
     Caption = 'Test-Eingaben'
     Font.Color = clWhite
     ParentColor = False
     ParentFont = False
-  end
-  object TestInputsPanel: TPanel
-    AnchorSideLeft.Control = Label3
-    AnchorSideLeft.Side = asrBottom
-    AnchorSideTop.Control = DifficultyTrackBar
-    AnchorSideTop.Side = asrBottom
-    AnchorSideRight.Control = Owner
-    AnchorSideRight.Side = asrBottom
-    AnchorSideBottom.Control = addTaskShape
-    Left = 107
-    Height = 216
-    Top = 301
-    Width = 445
-    Anchors = [akTop, akLeft, akRight, akBottom]
-    BorderSpacing.Left = 4
-    BorderSpacing.Top = 4
-    BorderSpacing.Right = 4
-    BorderSpacing.Bottom = 4
-    BorderWidth = 5
-    ClientHeight = 216
-    ClientWidth = 445
-    Color = 7354424
-    ParentColor = False
-    TabOrder = 4
-    object Label6: TLabel
-      AnchorSideLeft.Control = TestInputsPanel
-      AnchorSideTop.Control = TestInputsPanel
-      Left = 6
-      Height = 15
-      Top = 10
-      Width = 36
-      BorderSpacing.Top = 4
-      Caption = 'Anzahl'
-      Font.Color = clWhite
-      ParentColor = False
-      ParentFont = False
-    end
-    object TestCaseCountEdit: TEdit
-      AnchorSideLeft.Control = Label6
-      AnchorSideLeft.Side = asrBottom
-      AnchorSideTop.Control = TestInputsPanel
-      Left = 46
-      Height = 23
-      Top = 10
-      Width = 80
-      BorderSpacing.Left = 4
-      BorderSpacing.Top = 4
-      Color = 7354424
-      Font.Color = clWhite
-      NumbersOnly = True
-      OnEditingDone = TestCaseCountEditEditingDone
-      ParentFont = False
-      TabOrder = 0
-      Text = '16'
-    end
-    object TestCasesStringGrid: TStringGrid
-      AnchorSideLeft.Control = TestInputsPanel
-      AnchorSideTop.Control = generateTestCasesShape
-      AnchorSideTop.Side = asrBottom
-      AnchorSideRight.Control = TestInputsPanel
-      AnchorSideRight.Side = asrBottom
-      AnchorSideBottom.Control = TestInputsPanel
-      AnchorSideBottom.Side = asrBottom
-      Left = 10
-      Height = 164
-      Top = 42
-      Width = 425
-      Anchors = [akTop, akLeft, akRight, akBottom]
-      BorderSpacing.Left = 4
-      BorderSpacing.Top = 4
-      BorderSpacing.Right = 4
-      BorderSpacing.Bottom = 4
-      Color = 8405056
-      FixedColor = 7354424
-      FixedCols = 0
-      Flat = True
-      Font.Color = clWhite
-      Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goEditing, goSmoothScroll]
-      ParentFont = False
-      TabOrder = 1
-      OnEditingDone = TestCasesStringGridEditingDone
-      OnHeaderClick = TestCasesStringGridHeaderClick
-      OnValidateEntry = TestCasesStringGridValidateEntry
-    end
-    object generateTestCasesShape: TShape
-      AnchorSideLeft.Side = asrBottom
-      AnchorSideTop.Control = TestInputsPanel
-      AnchorSideRight.Control = TestInputsPanel
-      AnchorSideRight.Side = asrBottom
-      Left = 306
-      Height = 28
-      Top = 10
-      Width = 129
-      Anchors = [akTop, akRight]
-      BorderSpacing.Left = 15
-      BorderSpacing.Top = 4
-      BorderSpacing.Right = 4
-      Brush.Color = 6303792
-      OnMouseDown = generateTestCasesShapeMouseDown
-      Shape = stRoundRect
-    end
-    object generateTestCasesLabel: TLabel
-      AnchorSideLeft.Control = generateTestCasesShape
-      AnchorSideLeft.Side = asrCenter
-      AnchorSideTop.Control = generateTestCasesShape
-      AnchorSideTop.Side = asrCenter
-      AnchorSideRight.Side = asrBottom
-      Left = 338
-      Height = 21
-      Top = 14
-      Width = 64
-      BorderSpacing.Top = 5
-      BorderSpacing.Right = 5
-      Caption = 'erzeugen'
-      Font.CharSet = ANSI_CHARSET
-      Font.Color = clWhite
-      Font.Height = -16
-      Font.Pitch = fpVariable
-      Font.Quality = fqDraft
-      ParentColor = False
-      ParentFont = False
-      OnMouseDown = generateTestCasesShapeMouseDown
-    end
   end
   object RadioPanel1: TPanel
     AnchorSideLeft.Control = Label3
@@ -353,7 +230,7 @@ object CreateTaskForm: TCreateTaskForm
     ClientWidth = 445
     Color = 16744576
     ParentColor = False
-    TabOrder = 5
+    TabOrder = 4
     object rbPreconfiguredPaletteWithCounts: TRadioButton
       Left = 6
       Height = 19
@@ -422,7 +299,6 @@ object CreateTaskForm: TCreateTaskForm
   end
   object addTaskShape: TShape
     AnchorSideLeft.Side = asrBottom
-    AnchorSideTop.Control = TestInputsPanel
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = Owner
@@ -462,10 +338,41 @@ object CreateTaskForm: TCreateTaskForm
     ParentFont = False
     OnMouseDown = addTaskShapeMouseDown
   end
-  object Timer1: TTimer
-    OnTimer = Timer1Timer
-    OnStartTimer = Timer1StartTimer
-    Left = 98
-    Top = 75
+  inline TestCreationFrame1: TTestCreationFrame
+    AnchorSideLeft.Control = RadioPanel1
+    AnchorSideTop.Control = DifficultyTrackBar
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = addTaskShape
+    Left = 107
+    Height = 214
+    Top = 302
+    Width = 444
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    ClientHeight = 214
+    ClientWidth = 444
+    TabOrder = 5
+    inherited TestInputsPanel: TPanel
+      Height = 206
+      Width = 436
+      Anchors = [akTop, akRight, akBottom]
+      ClientHeight = 206
+      ClientWidth = 436
+      inherited TestCasesStringGrid: TStringGrid
+        Height = 154
+        Width = 416
+      end
+      inherited generateTestCasesShape: TShape
+        Left = 267
+        Anchors = [akTop]
+      end
+      inherited generateTestCasesLabel: TLabel
+        Left = 299
+      end
+    end
   end
 end

@@ -9,21 +9,21 @@ USES
 
 TYPE
   P_challenge=^T_challenge;
+  P_testCreator=^T_testCreator;
 
   F_caseUpdatedCallback=PROCEDURE(CONST index:longint) of object;
+  P_TestCreationThread=^T_testCreationThread;
 
-  P_challengeTestCreationThread=^T_challengeTestCreationThread;
+  { T_testCreationThread }
 
-  { T_challengeTestCreationThread }
-
-  T_challengeTestCreationThread=object
+  T_testCreationThread=object
   private
     lastPreparedIndex:longint;
     PROCEDURE setLastPreparedIndex(CONST index:longint);
   public
-    challenge:P_challenge;
+    parent:P_testCreator;
     initialRun,continueEvaluation,running:boolean;
-    CONSTRUCTOR create(CONST parent:P_challenge);
+    CONSTRUCTOR create(CONST parent_:P_testCreator);
     DESTRUCTOR destroy;
     PROCEDURE restart;
     PROCEDURE ensureStop;
@@ -32,10 +32,9 @@ TYPE
 
   { T_testCreator }
   //TODO : Create UI for board testing...
-
   T_testCreator=object(T_serializable)
     private
-      challengeTestCreationThread:T_challengeTestCreationThread;
+      challengeTestCreationThread:T_testCreationThread;
       PROCEDURE updateTestCaseResults(CONST callback:F_caseUpdatedCallback; CONST resume:PBoolean; CONST initCounts:boolean=false);
     public
       expectedBehavior    :P_compoundGate;
@@ -127,45 +126,45 @@ CONST checkMark='✓';
 IMPLEMENTATION
 USES sysutils;
 
-{ T_challengeTestCreationThread }
+{ T_testCreationThread }
 
-PROCEDURE T_challengeTestCreationThread.setLastPreparedIndex(CONST index: longint);
+PROCEDURE T_testCreationThread.setLastPreparedIndex(CONST index: longint);
   begin
     lastPreparedIndex:=index;
   end;
 
-CONSTRUCTOR T_challengeTestCreationThread.create(CONST parent: P_challenge);
+CONSTRUCTOR T_testCreationThread.create(CONST parent_: P_testCreator);
   begin
-    challenge:=parent;
+    parent:=parent_;
     initialRun:=true;
     continueEvaluation:=true;
     running:=false;
     lastPreparedIndex:=-1;
   end;
 
-DESTRUCTOR T_challengeTestCreationThread.destroy;
+DESTRUCTOR T_testCreationThread.destroy;
   begin
     ensureStop;
   end;
 
 FUNCTION challengeTestCreation(p:pointer):ptrint; Register;
   begin
-    with P_challengeTestCreationThread(p)^ do begin
-      challenge^.updateTestCaseResults(@setLastPreparedIndex,@continueEvaluation,initialRun);
+    with P_TestCreationThread(p)^ do begin
+      parent^.updateTestCaseResults(@setLastPreparedIndex,@continueEvaluation,initialRun);
       if continueEvaluation then initialRun:=false;
       running:=false;
     end;
     result:=0;
   end;
 
-PROCEDURE T_challengeTestCreationThread.restart;
+PROCEDURE T_testCreationThread.restart;
   begin
     ensureStop;
     running:=true; continueEvaluation:=true;
     beginThread(@challengeTestCreation,@self);
   end;
 
-PROCEDURE T_challengeTestCreationThread.ensureStop;
+PROCEDURE T_testCreationThread.ensureStop;
   begin
     while running do begin
       continueEvaluation:=false;
@@ -521,7 +520,7 @@ FUNCTION undeterminedOutput(CONST Interfaces:T_gateInterfaces):T_wireValueArray;
     end;
   end;
 
-procedure T_testCreator.setNumberOfTestCases(const count: longint);
+PROCEDURE T_testCreator.setNumberOfTestCases(CONST count: longint);
   VAR oldCount,i:longint;
   begin
     challengeTestCreationThread.ensureStop;
@@ -537,7 +536,7 @@ procedure T_testCreator.setNumberOfTestCases(const count: longint);
     then challengeTestCreationThread.restart;
   end;
 
-procedure T_testCreator.generateTestCases(const allInputsThenScramble: boolean);
+PROCEDURE T_testCreator.generateTestCases(CONST allInputsThenScramble: boolean);
   FUNCTION inputsByIndex(index:longint):T_wireValueArray;
     VAR k,i:longint;
     begin
@@ -577,12 +576,12 @@ procedure T_testCreator.generateTestCases(const allInputsThenScramble: boolean);
     challengeTestCreationThread.restart;
   end;
 
-procedure T_testCreator.updateTestCaseResults;
+PROCEDURE T_testCreator.updateTestCaseResults;
   begin
     challengeTestCreationThread.restart;
   end;
 
-function T_testCreator.lastTestCasePrepared: longint;
+FUNCTION T_testCreator.lastTestCasePrepared: longint;
   begin
     result:=challengeTestCreationThread.lastPreparedIndex;
   end;
@@ -605,9 +604,9 @@ FUNCTION T_challenge.equals(CONST c: P_challenge): boolean;
     end;
   end;
 
-procedure T_testCreator.updateTestCaseResults(
-  const callback: F_caseUpdatedCallback; const resume: PBoolean;
-  const initCounts: boolean);
+PROCEDURE T_testCreator.updateTestCaseResults(
+  CONST callback: F_caseUpdatedCallback; CONST resume: PBoolean;
+  CONST initCounts: boolean);
   VAR i, stepsDone:longint;
   begin
     expectedBehavior^.reset;
@@ -625,21 +624,21 @@ procedure T_testCreator.updateTestCaseResults(
     if (resume<>nil) and not(resume^) and (callback<>nil) then callback(length(tests)-1);
   end;
 
-constructor T_testCreator.createAsChallengeBasis;
+CONSTRUCTOR T_testCreator.createAsChallengeBasis;
   begin
     setLength(tests,0);
     challengeTestCreationThread.create(@self);
   end;
 
-constructor T_testCreator.createForAnalysis(const visualBoard: P_visualBoard);
+CONSTRUCTOR T_testCreator.createForAnalysis(CONST visualBoard: P_visualBoard);
   begin
     createAsChallengeBasis;
     expectedBehavior:=visualBoard^.extractBehavior;
-    interfaces:=visualBoard^.getInterfaces;
+    Interfaces:=visualBoard^.getInterfaces;
   end;
 
-destructor T_testCreator.destroy;
-  var i: Integer;
+DESTRUCTOR T_testCreator.destroy;
+  VAR i: integer;
   begin
     challengeTestCreationThread.destroy;
     for i:=0 to length(tests)-1 do setLength(tests[i].inputs,0); setLength(tests,0);
