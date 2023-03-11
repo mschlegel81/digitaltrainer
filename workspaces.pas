@@ -94,28 +94,34 @@ DESTRUCTOR T_workspace.destroy;
 
 FUNCTION T_workspace.getSerialVersion: dword;
   begin
-    result:=serialVersionOf('T_workspace',1);
+    result:=serialVersionOf('T_workspace',2);
   end;
 
 FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
   begin
-    result:=inherited and
-    workspacePalette^.loadFromStream(stream) and
-    workspaceBoard  ^.loadFromStream(stream,false) and
-    challenges      ^.loadFromStream(stream);
+    result:=inherited and challenges^.loadFromStream(stream);
     activeChallengeIndex:=stream.readLongint;
-    if (activeChallengeIndex>=0) and (activeChallengeIndex<length(challenges^.challenge))
-    then activeChallenge:=challenges^.challenge[activeChallengeIndex]
-    else activeChallenge:=nil;
+
+    if result and stream.allOkay then begin
+      if (activeChallengeIndex>=0) and (activeChallengeIndex<length(challenges^.challenge))
+      then begin
+        activeChallenge:=challenges^.challenge[activeChallengeIndex];
+        workspaceBoard^.moveToPalette(activeChallenge^.palette);
+      end else activeChallenge:=nil;
+
+      result:=result and
+      workspacePalette^.loadFromStream(stream) and
+      workspaceBoard  ^.loadFromStream(stream,false);
+    end else result:=false;
   end;
 
 PROCEDURE T_workspace.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
   begin
     inherited;
-    workspacePalette^.saveToStream(stream);
-    workspaceBoard^.saveToStream(stream,false);
     challenges^.saveToStream(stream);
     stream.writeLongint(activeChallengeIndex);
+    workspacePalette^.saveToStream(stream);
+    workspaceBoard^.saveToStream(stream,false);
   end;
 
 PROCEDURE T_workspace.restartChallenge;
