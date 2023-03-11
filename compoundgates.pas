@@ -316,8 +316,7 @@ FUNCTION T_compoundGate.simulateStep: boolean;
     lastStepBusy:=result;
   end;
 
-FUNCTION T_compoundGate.simulateSteps(CONST count: longint;
-  CONST inputWires: T_wireValueArray; OUT stepsDone: longint): T_wireValueArray;
+FUNCTION T_compoundGate.simulateSteps(CONST count: longint; CONST inputWires: T_wireValueArray; OUT stepsDone: longint): T_wireValueArray;
   VAR i:longint;
       changed:boolean=true;
       g: P_abstractGate;

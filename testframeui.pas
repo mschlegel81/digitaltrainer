@@ -15,11 +15,14 @@ TYPE
     generateTestCasesLabel: TLabel;
     generateTestCasesShape: TShape;
     Label6: TLabel;
+    Label7: TLabel;
     TestCaseCountEdit: TEdit;
+    StepCountEdit: TEdit;
     TestCasesStringGrid: TStringGrid;
     TestInputsPanel: TPanel;
     Timer1: TTimer;
     PROCEDURE generateTestCasesShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE StepCountEditEditingDone(Sender: TObject);
     PROCEDURE TestCaseCountEditEditingDone(Sender: TObject);
     PROCEDURE TestCasesStringGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);
     PROCEDURE TestCasesStringGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
@@ -60,6 +63,7 @@ PROCEDURE TTestCreationFrame.TestCasesStringGridValidateEntry(Sender: TObject; a
       end else begin
         testGenerator^.tests[aRow-1].maxTotalSteps:=newStepCount;
         lastUpdatedRow:=-1;
+        //TODO: Restart of test generator is only necessary if editing an editor before (or equal to) the current test step
         testGenerator^.updateTestCaseResults;
       end;
       exit;
@@ -80,6 +84,8 @@ PROCEDURE TTestCreationFrame.Timer1Timer(Sender: TObject);
   VAR i, newUpdatedRow: longint;
   begin
     if testGenerator=nil then exit;
+    if TestCasesStringGrid.editor.showing then exit;
+
     newUpdatedRow:=testGenerator^.lastTestCasePrepared;
     if (newUpdatedRow<>lastUpdatedRow) then begin
       if (lastUpdatedRow<0) or (newUpdatedRow<lastUpdatedRow)
@@ -191,6 +197,25 @@ PROCEDURE TTestCreationFrame.generateTestCasesShapeMouseDown(Sender: TObject; bu
   begin
     lastUpdatedRow:=-1;
     testGenerator^.generateTestCases;
+  end;
+
+PROCEDURE TTestCreationFrame.StepCountEditEditingDone(Sender: TObject);
+  VAR newCount: int64;
+      i:longint;
+  begin
+    newCount:=StrToInt64Def(StepCountEdit.text,-1);
+    if newCount>maxLongint
+    then begin
+      newCount:=maxLongint;
+      StepCountEdit.text:=intToStr(maxLongint);
+    end else if (newCount<=0) then begin
+      StepCountEdit.text:='';
+      exit;
+    end;
+    for i:=0 to length(testGenerator^.tests)-1 do testGenerator^.tests[i].maxTotalSteps:=newCount;
+    testGenerator^.reInitStepCounts;
+    testGenerator^.updateTestCaseResults;
+    lastUpdatedRow:=-1;
   end;
 
 PROCEDURE TTestCreationFrame.TestCasesStringGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);

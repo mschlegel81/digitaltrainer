@@ -1,21 +1,26 @@
 object BoardTestForm: TBoardTestForm
-  Left = 1739
-  Height = 240
-  Top = 255
+  Left = 1205
+  Height = 393
+  Top = 500
   Width = 320
   Caption = 'Schaltung testen'
-  ClientHeight = 240
+  ClientHeight = 393
   ClientWidth = 320
   Position = poOwnerFormCenter
   LCLVersion = '2.2.2.0'
   inline TestCreationFrame1: TTestCreationFrame
+    Height = 393
     Width = 320
     Align = alClient
+    ClientHeight = 393
     ClientWidth = 320
     inherited TestInputsPanel: TPanel
+      Height = 385
       Width = 312
+      ClientHeight = 385
       ClientWidth = 312
       inherited TestCasesStringGrid: TStringGrid
+        Height = 333
         Width = 292
       end
       inherited generateTestCasesShape: TShape

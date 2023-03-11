@@ -2,20 +2,20 @@ object TestCreationFrame: TTestCreationFrame
   Left = 0
   Height = 240
   Top = 0
-  Width = 370
+  Width = 700
   ClientHeight = 240
-  ClientWidth = 370
+  ClientWidth = 700
   Color = 7354424
   ParentBackground = False
   ParentColor = False
   TabOrder = 0
-  DesignLeft = 510
-  DesignTop = 119
+  DesignLeft = 1139
+  DesignTop = 638
   object TestInputsPanel: TPanel
     Left = 4
     Height = 232
     Top = 4
-    Width = 362
+    Width = 692
     Align = alClient
     BorderSpacing.Left = 4
     BorderSpacing.Top = 4
@@ -23,7 +23,7 @@ object TestCreationFrame: TTestCreationFrame
     BorderSpacing.Bottom = 4
     BorderWidth = 5
     ClientHeight = 232
-    ClientWidth = 362
+    ClientWidth = 692
     Color = 7354424
     ParentColor = False
     TabOrder = 0
@@ -69,7 +69,7 @@ object TestCreationFrame: TTestCreationFrame
       Left = 10
       Height = 180
       Top = 42
-      Width = 342
+      Width = 672
       Anchors = [akTop, akLeft, akRight, akBottom]
       BorderSpacing.Left = 4
       BorderSpacing.Top = 4
@@ -80,7 +80,7 @@ object TestCreationFrame: TTestCreationFrame
       FixedCols = 0
       Flat = True
       Font.Color = clWhite
-      Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goEditing, goSmoothScroll]
+      Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goColSizing, goEditing, goDblClickAutoSize, goSmoothScroll]
       ParentFont = False
       TabOrder = 1
       OnHeaderClick = TestCasesStringGridHeaderClick
@@ -91,7 +91,7 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideTop.Control = TestInputsPanel
       AnchorSideRight.Control = TestInputsPanel
       AnchorSideRight.Side = asrBottom
-      Left = 223
+      Left = 553
       Height = 28
       Top = 10
       Width = 129
@@ -109,7 +109,7 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideTop.Control = generateTestCasesShape
       AnchorSideTop.Side = asrCenter
       AnchorSideRight.Side = asrBottom
-      Left = 255
+      Left = 585
       Height = 21
       Top = 14
       Width = 64
@@ -124,6 +124,38 @@ object TestCreationFrame: TTestCreationFrame
       ParentColor = False
       ParentFont = False
       OnMouseDown = generateTestCasesShapeMouseDown
+    end
+    object StepCountEdit: TEdit
+      AnchorSideLeft.Control = Label7
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = TestInputsPanel
+      Left = 258
+      Height = 23
+      Top = 10
+      Width = 80
+      BorderSpacing.Left = 4
+      BorderSpacing.Top = 4
+      Color = 7354424
+      Font.Color = clWhite
+      NumbersOnly = True
+      OnEditingDone = StepCountEditEditingDone
+      ParentFont = False
+      TabOrder = 2
+    end
+    object Label7: TLabel
+      AnchorSideLeft.Control = TestCaseCountEdit
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = TestInputsPanel
+      Left = 136
+      Height = 15
+      Top = 10
+      Width = 118
+      BorderSpacing.Left = 10
+      BorderSpacing.Top = 4
+      Caption = 'Schritte für alle setzen:'
+      Font.Color = clWhite
+      ParentColor = False
+      ParentFont = False
     end
   end
   object Timer1: TTimer

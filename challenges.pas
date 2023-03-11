@@ -53,6 +53,7 @@ TYPE
 
       PROCEDURE setNumberOfTestCases(CONST count:longint);
       PROCEDURE generateTestCases(CONST allInputsThenScramble:boolean=false);
+      PROCEDURE reInitStepCounts;
       PROCEDURE updateTestCaseResults;
       FUNCTION lastTestCasePrepared:longint;
   end;
@@ -574,6 +575,12 @@ PROCEDURE T_testCreator.generateTestCases(CONST allInputsThenScramble: boolean);
       end;
     end;
     challengeTestCreationThread.restart;
+  end;
+
+PROCEDURE T_testCreator.reInitStepCounts;
+  begin
+    challengeTestCreationThread.ensureStop;
+    challengeTestCreationThread.initialRun:=true;
   end;
 
 PROCEDURE T_testCreator.updateTestCaseResults;
