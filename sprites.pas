@@ -115,7 +115,7 @@ FUNCTION getIoTextSprite(CONST wireValue:T_wireValue; mode:T_multibitWireReprese
 FUNCTION get7SegmentSprite(CONST wireValue: T_wireValue; CONST marked:boolean):P_sprite;
 FUNCTION getWatcherSprite(CONST ioLabel_:shortstring; CONST ioIndex:longint; CONST wireValue:T_wireValue; CONST isInput,leftOrRight:boolean):P_sprite;
 IMPLEMENTATION
-USES sysutils,myStringUtil,types,Classes,math;
+USES sysutils,types,Classes,math,strutils;
 VAR ioSpriteMap,
     blockSpriteMap,
     ioBlockSpriteMap,
@@ -710,6 +710,48 @@ PROCEDURE T_sprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; CONST
         textHeight+=extend.cy;
         if extend.cx>maxTextWidth then maxTextWidth:=extend.cx;
       end;
+    end;
+
+  FUNCTION split(CONST s:ansistring; CONST splitters:T_arrayOfString; CONST retainSplitters:boolean=false):T_arrayOfString;
+    PROCEDURE nextSplitterPos(CONST startSearchAt:longint; OUT splitterStart,splitterEnd:longint); inline;
+      VAR splitter:string;
+          i:longint;
+      begin
+        splitterStart:=length(s)+1;
+        splitterEnd:=splitterStart;
+        for splitter in splitters do if length(splitter)>0 then begin
+          i:=PosEx(splitter,s,startSearchAt);
+          if (i>0) and (i<splitterStart) then begin
+            splitterStart:=i;
+            splitterEnd:=i+length(splitter);
+          end;
+        end;
+      end;
+
+    VAR resultLen:longint=0;
+    PROCEDURE appendToResult(CONST part:string); inline;
+      begin
+        if length(result)<resultLen+1 then setLength(result,round(length(result)*1.2)+2);
+        result[resultLen]:=part;
+        inc(resultLen);
+      end;
+
+    VAR partStart:longint=1;
+        splitterStart,splitterEnd:longint;
+        endsOnSplitter:boolean=false;
+    begin
+      setLength(result,0);
+      nextSplitterPos(partStart,splitterStart,splitterEnd);
+      endsOnSplitter:=splitterEnd>splitterStart;
+      while(partStart<=length(s)) do begin
+        appendToResult(copy(s,partStart,splitterStart-partStart));
+        partStart:=splitterEnd;
+        endsOnSplitter:=splitterEnd>splitterStart;
+        if endsOnSplitter and retainSplitters then appendToResult(copy(s,splitterStart,splitterEnd-splitterStart));
+        nextSplitterPos(partStart,splitterStart,splitterEnd);
+      end;
+      if endsOnSplitter and not retainSplitters then appendToResult('');
+      setLength(result,resultLen);
     end;
 
   begin

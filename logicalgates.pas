@@ -483,13 +483,12 @@ FUNCTION getDecimalValue     (CONST wire:T_wireValue; OUT valid:boolean):longint
 FUNCTION get2ComplementValue (CONST wire:T_wireValue; OUT valid:boolean):longint;
 
 FUNCTION gatesTotal(CONST gateCount:T_gateCount):longint;
-FUNCTION gateCountReport(CONST gateCount:T_gateCount):string;
 
 FUNCTION serialize(CONST wireValue: T_wireValue): qword;
 FUNCTION deserialize(n: qword): T_wireValue;
 
 IMPLEMENTATION
-USES sysutils,myStringUtil;
+USES sysutils;
 FUNCTION getBinaryString(CONST wire: T_wireValue): shortstring;
   VAR i:longint;
   begin
@@ -625,16 +624,6 @@ FUNCTION gatesTotal(CONST gateCount: T_gateCount): longint;
   begin
     result:=0;
     for gt in T_gateType do result+=gateCount[gt];
-  end;
-
-FUNCTION gateCountReport(CONST gateCount: T_gateCount): string;
-  VAR gt:T_gateType;
-  begin
-    result:='';
-    for gt in T_gateType do if gateCount[gt]>0 then begin
-      if result<>'' then result+=LineEnding;
-      result+=C_gateTypeName[gt]+C_tabChar+intToStr(gateCount[gt]);
-    end;
   end;
 
 FUNCTION parseWireBin(CONST s: string; CONST width: byte): T_wireValue;
