@@ -652,7 +652,8 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
   TYPE T_scan=record
          initial:boolean;
          p:T_point;
-         directions:T_wireDirectionSet;
+         direction:array[0..7] of T_wireDirection;
+         directionCount:longint;
        end;
 
   VAR pointToExamine:array of record p:T_point; initial:boolean; end;
@@ -681,13 +682,25 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
   VAR prevStep:T_wireDirection;
       prevStepIsValid:boolean;
   FUNCTION nextPointToExamine:T_scan;
+    VAR dirs:T_wireDirectionSet;
+        d:T_wireDirection;
     begin
       result.p      :=pointToExamine[pointToExamine0].p;
       result.initial:=pointToExamine[pointToExamine0].initial;
       inc(pointToExamine0);
-      result.directions:=allowed[result.p[0]+result.p[1]*width];
+      dirs:=allowed[result.p[0]+result.p[1]*width];
       prevStep:=directionBetween(map[result.p[0]+result.p[1]*width].comeFrom     ,result.p,prevStepIsValid);
-      if prevStepIsValid and not(result.initial) then result.directions*=allowedSuccessiveDirection[prevStep];
+
+      result.directionCount:=0;
+      if prevStepIsValid and (prevStep in dirs) then begin
+        result.direction[result.directionCount]:=prevStep;
+        inc(result.directionCount);
+        Exclude(dirs,prevStep);
+      end;
+      for d in dirs do begin
+        result.direction[result.directionCount]:=d;
+        inc(result.directionCount);
+      end;
     end;
 
   PROCEDURE rescore(CONST cf:T_point);
@@ -706,7 +719,7 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
         oldScore:=map[n[0]+n[1]*width].score;
         if oldScore<>UNVISITED then begin
           newScore:=cf_score+DirectionCost[n_dir];
-          if newScore<oldScore then begin
+          if (newScore<oldScore) or (newScore=oldScore) and (n_dir=cf_dir) then begin
             map[n[0]+n[1]*width].score:=newScore;
             map[n[0]+n[1]*width].comeFrom:=cf;
             rescore(n);
@@ -803,7 +816,7 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
       end;
     end;
 
-  VAR i, newCost:longint;
+  VAR i,k, newCost:longint;
       scan: T_scan;
       next: T_point;
       needRescore: boolean;
@@ -829,7 +842,9 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
     map[startPoint[0]+startPoint[1]*width].score:=0;
     while (pointToExamine1>pointToExamine0) and ((not allFound) or exhaustiveScan) do begin
       scan:=nextPointToExamine;
-      for dir in scan.directions do begin
+      for k:=0 to scan.directionCount-1 do begin
+      //for dir in scan.directions do begin
+        dir:=scan.direction[k];
         next:=scan.p+dir;
         newCost:=map[scan.p[0]+scan.p[1]*width].score+DirectionCost[dir];
         if newCost<map[next[0]+next[1]*width].score then begin
