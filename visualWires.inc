@@ -11,9 +11,7 @@ T_visualWire=object
     gateInputIndex:longint;
     path:T_wirePath;
   end;
-  pathLength:double;
 
-  PROCEDURE updatePathLength;
   PROCEDURE dropWiresAssociatedWith(CONST gate:P_visualGate);
   FUNCTION simulateStep:boolean;
   PROCEDURE paint(CONST zoom:longint; CONST Canvas:TBGRACanvas);
@@ -49,19 +47,6 @@ PROCEDURE paintWire(CONST zoom:longint; CONST Canvas:TBGRACanvas; CONST bitWidth
         for j:=1 to length(path[i])-1 do Canvas.LineTo(path[i,j,0]*zoom,path[i,j,1]*zoom);
       end;
     end;
-  end;
-
-PROCEDURE T_visualWire.updatePathLength;
-  VAR i:longint;
-      startPosition: T_point;
-      allPaths:T_wirePathArray;
-  begin
-    setLength(allPaths,length(sink));
-    for i:=0 to length(sink)-1 do allPaths[i]:=sink[i].path;
-    pathLength:=multipathEffectiveLength(allPaths);
-    startPosition:=source^.getOutputPositionInGridSize(sourceOutputIndex)+source^.gridPos;
-    for i:=0 to length(sink)-1 do with sink[i] do if length(path)=0
-    then pathLength+=2*euklideanDistance(startPosition,gate^.getInputPositionInGridSize(gateInputIndex)+gate^.gridPos);
   end;
 
 PROCEDURE T_visualWire.dropWiresAssociatedWith(CONST gate: P_visualGate);

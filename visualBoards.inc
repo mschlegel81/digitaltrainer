@@ -1009,20 +1009,10 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
         paths: T_wirePathArray;
         wireNeedsUpdate: boolean;
 
-        wireOrder:array of longint;
-
     begin
-      for i:=0 to length(wires)-1 do wires[i].updatePathLength;
-      setLength(wireOrder,length(wires));
-      for i:=0 to length(wireOrder)-1 do begin
-        wireOrder[i]:=i;
-        for j:=0 to i-1 do if wires[wireOrder[j]].pathLength<wires[wireOrder[i]].pathLength then begin
-          k:=wireOrder[i]; wireOrder[i]:=wireOrder[j]; wireOrder[j]:=k;
-        end;
-      end;
 
       graph:=getWireGraph(false);
-      for i in wireOrder do begin
+      for i:=0 to length(wires)-1 do begin
         startPoint:=wires[i].source^.getOutputPositionInGridSize(wires[i].sourceOutputIndex)+wires[i].source^.gridPos;
         setLength(endPoints,length(wires[i].sink));
 
@@ -1046,23 +1036,13 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
     end;
 
   PROCEDURE startBackgroundTask;
-    VAR i,j,k: longint;
-        wireOrder:array of longint;
+    VAR i,j: longint;
     begin
       if (gridX1<4) or (gridY1<4) then exit; //Grid is too small anyway...
       if (ui=nil) then exit; //Nobody will care for the result in this case...
 
-      for i:=0 to length(wires)-1 do wires[i].updatePathLength;
-      setLength(wireOrder,length(wires));
-      for i:=0 to length(wireOrder)-1 do begin
-        wireOrder[i]:=i;
-        for j:=0 to i-1 do if wires[wireOrder[j]].pathLength<wires[wireOrder[i]].pathLength then begin
-          k:=wireOrder[i]; wireOrder[i]:=wireOrder[j]; wireOrder[j]:=k;
-        end;
-      end;
-
       new(wiringTask,create(getWireGraph(false),@updateWiresFromTask));
-      for i in wireOrder do begin
+      for i:=0 to length(wires)-1 do begin
         wiringTask^.addStartPoint(i,wires[i].source^.getOutputPositionInGridSize(wires[i].sourceOutputIndex)+wires[i].source^.gridPos);
         for j:=0 to length(wires[i].sink)-1 do
           wiringTask^.addEndPoint(wires[i].sink[j].gate^.getInputPositionInGridSize(wires[i].sink[j].gateInputIndex)+wires[i].sink[j].gate^.gridPos);
