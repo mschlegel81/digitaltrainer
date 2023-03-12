@@ -13,14 +13,14 @@ object PaletteForm: TPaletteForm
   LCLVersion = '2.2.2.0'
   object entriesGrid: TStringGrid
     AnchorSideLeft.Control = Owner
-    AnchorSideTop.Control = SubPalettePanel
+    AnchorSideTop.Control = Splitter1
     AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = ExportShape
     Left = 6
-    Height = 545
-    Top = 132
+    Height = 539
+    Top = 138
     Width = 857
     Anchors = [akTop, akLeft, akRight, akBottom]
     BorderSpacing.Left = 6
@@ -260,15 +260,11 @@ object PaletteForm: TPaletteForm
     OnMouseDown = MarkNoneShapeMouseDown
   end
   object SubPalettePanel: TPanel
-    AnchorSideLeft.Control = Owner
-    AnchorSideTop.Control = Owner
-    AnchorSideRight.Control = Owner
-    AnchorSideRight.Side = asrBottom
     Left = 6
     Height = 120
     Top = 6
     Width = 857
-    Anchors = [akTop, akLeft, akRight]
+    Align = alTop
     BorderSpacing.Left = 6
     BorderSpacing.Top = 6
     BorderSpacing.Right = 6
@@ -390,6 +386,15 @@ object PaletteForm: TPaletteForm
         'Paletten-Titel'
       )
     end
+  end
+  object Splitter1: TSplitter
+    Cursor = crVSplit
+    Left = 0
+    Height = 6
+    Top = 126
+    Width = 869
+    Align = alTop
+    ResizeAnchor = akTop
   end
   object OpenDialog1: TOpenDialog
     DefaultExt = '.palette'

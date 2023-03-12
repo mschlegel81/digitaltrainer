@@ -29,6 +29,7 @@ TYPE
     MoveTaskUpLabel: TLabel;
     MoveTaskUpShape: TShape;
     OpenDialog1: TOpenDialog;
+    Splitter1: TSplitter;
     SubPaletteStringGrid: TStringGrid;
     SubPalettePanel: TPanel;
     SaveDialog1: TSaveDialog;
