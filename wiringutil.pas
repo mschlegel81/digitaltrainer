@@ -316,7 +316,7 @@ PROCEDURE T_wiringTask.execute;
     running:=true;
     for i:=0 to length(toFind)-1 do if not(cancelled) then begin
       toFind[i].foundPath:=graph^.findPaths(toFind[i].startPoint,toFind[i].endPoints,true);
-      for path in toFind[i].foundPath do graph^.dropWire(path,true);
+      for path in toFind[i].foundPath do graph^.dropWire(path);
     end;
     execTime:=GetTickCount64-startTicks;
     if not(cancelled) and (onFinish<>nil) then onFinish();
@@ -412,6 +412,7 @@ FUNCTION allPointsBetween(CONST startP, endP: T_point; OUT dir: T_wireDirection)
     if not(validDirectionFound) then begin
       setLength(result,0);
       dir:=wd_left;
+      exit;
     end;
     p:=startP;
     for i:=0 to len do begin
@@ -465,7 +466,6 @@ CONST DirectionCost:array[T_wireDirection] of longint=(2,3,
                                                        2,3,
                                                        2,3,
                                                        2,3);
-      ChangeDirectionPenalty=4;
 
 FUNCTION pathTotalLength(CONST path: T_wirePath): double;
   VAR i:longint;
@@ -624,62 +624,112 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint:T_point; CONST endPoints:T_w
     end;
 
   PROCEDURE rescore(CONST cf:T_point);
-    VAR x,y:longint;
-        newScore, cf_score:longint;
-        cf_dir: T_point;
-        directionIsValid: boolean;
+    VAR n:T_point;
+        oldScore, newScore, cf_score:longint;
+        cf_dir,n_dir: T_wireDirection;
+        validDirection: boolean;
+        dirs:T_wireDirectionSet;
     begin
-      cf_score:=   map[cf[0]+cf[1]*width].score;
-      cf_dir  :=cf-map[cf[0]+cf[1]*width].comeFrom;
+      cf_score:=map[cf[0]+cf[1]*width].score;
+      cf_dir  :=directionBetween(cf,map[cf[0]+cf[1]*width].comeFrom,validDirection);
 
-      for y:=max(0,cf[1]-1) to min(height-1,cf[1]+1) do
-      for x:=max(0,cf[0]-1) to min(width -1,cf[0]+1) do
-      if map[x+y*width].comeFrom=cf then begin
-        newScore:=cf_score+DirectionCost[directionBetween(cf,pointOf(x,y),directionIsValid)];
-        if pointOf(x,y)-cf<>cf_dir then newScore+=ChangeDirectionPenalty;
-        if newScore<map[x+y*width].score then begin
-          map[x+y*width].score:=newScore;
-          rescore(pointOf(x,y));
+      dirs:=allowed[cf[0]+cf[1]*width];
+      for n_dir in dirs do begin
+        n:=cf+n_dir;
+        oldScore:=map[n[0]+n[1]*width].score;
+        if oldScore<>UNVISITED then begin
+          newScore:=cf_score+DirectionCost[n_dir];
+          if newScore<oldScore then begin
+            map[n[0]+n[1]*width].score:=newScore;
+            map[n[0]+n[1]*width].comeFrom:=cf;
+            rescore(n);
+          end;
         end;
       end;
     end;
 
+  FUNCTION reconstructPath(p:T_point):T_wirePath;
+    VAR i:longint;
+    begin
+      setLength(result,maxNormDistance(p,startPoint));
+      i:=0;
+      while (p<>startPoint) do begin
+        if i>=length(result) then setLength(result,i*2);
+        result[i]:=p; inc(i);
+        p:=map[p[0]+p[1]*width].comeFrom;
+      end;
+      setLength(result,i+1);
+      result[i]:=startPoint;
+    end;
+
   PROCEDURE foundPath(CONST index:longint; p:T_point);
-    VAR n:T_point;
-        i:longint=0;
-        j:longint;
+    VAR i:longint=0;
     begin
       found[index]:=true;
       allFound:=true;
       for i:=0 to length(found)-1 do allFound:=allFound and found[i];
-
-      setLength(result[index],10);
-      i:=0;
-      while (p<>startPoint) do begin
-        if i>=length(result[index]) then setLength(result[index],i*2);
-        result[index,i]:=p; inc(i);
-        with map[p[0]+p[1]*width] do begin
-          n:=comeFrom;
-          score:=0;
-        end;
-        if not(allFound) then rescore(p);
-        p:=n;
-      end;
-      setLength(result[index],i+1);
-      result[index,i]:=startPoint;
-      for i:=0 to (length(result[index])-1) div 2 do begin
-        j:=length(result[index])-1-i;
-        n              :=result[index,j];
-        result[index,j]:=result[index,i];
-        result[index,i]:=n;
-      end;
-      result[index]:=simplifyPath(result[index]);
-
+      result[index]:=reconstructPath(p);
       {$ifdef debugMode}
       write('found path #',index,': ');
       for i:=0 to length(result[index])-1 do write(result[index,i,0],',',result[index,i,1],'  ');
       writeln;
       {$endif}
+    end;
+
+  PROCEDURE finalizeResult;
+    TYPE T_sortOrder=record
+           first,last:boolean;
+           index:longint;
+           L:double;
+         end;
+    VAR SortOrder:array of T_sortOrder;
+        tmp:T_sortOrder;
+        i,j,k:longint;
+        n: T_point;
+        pointsToRescore:T_wirePath;
+    begin
+      //Fix paths; the shortest one first
+      setLength(SortOrder,length(result));
+      for i:=0 to length(result)-1 do begin
+        SortOrder[i].first:=false;
+        SortOrder[i].last :=false;
+        SortOrder[i].index:=i;
+        SortOrder[i].L:=map[endPoints[i,0]+endPoints[i,1]*width].score;
+        for j:=0 to i-1 do if SortOrder[j].L>SortOrder[i].L then begin
+          tmp:=SortOrder[i];
+          SortOrder[i]:=SortOrder[j];
+          SortOrder[j]:=tmp;
+        end;
+      end;
+      SortOrder[0].first:=true;
+      SortOrder[length(SortOrder)-1].last:=true;
+      k:=0;
+      for tmp in SortOrder do with tmp do begin
+        if not(first) then result[index]:=reconstructPath(endPoints[index]);
+        if not(last) then begin
+          setLength(pointsToRescore,length(result[index]));
+          i:=0;
+          for n in result[index] do begin
+            if map[n[0]+n[1]*width].score>0 then begin
+              pointsToRescore[i]:=n; inc(i);
+            end;
+            map[n[0]+n[1]*width].score:=0;
+          end;
+          for j:=i-1 downto 0 do rescore(pointsToRescore[j]);
+        end;
+        k+=1;
+      end;
+
+      //Reverse and simplify all...
+      for k:=0 to length(result)-1 do if length(result[k])>0 then begin
+        for i:=0 to (length(result[k])-1) div 2 do begin
+          j:=length(result[k])-1-i;
+          n          :=result[k,j];
+          result[k,j]:=result[k,i];
+          result[k,i]:=n;
+        end;
+        result[k]:=simplifyPath(result[k]);
+      end;
     end;
 
   VAR i, newCost:longint;
@@ -711,7 +761,6 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint:T_point; CONST endPoints:T_w
       for dir in scan.directions do begin
         next:=scan.p+dir;
         newCost:=map[scan.p[0]+scan.p[1]*width].score+DirectionCost[dir];
-        if prevStepIsValid and (prevStep<>dir) and not(scan.initial) then newCost+=ChangeDirectionPenalty;
         if newCost<map[next[0]+next[1]*width].score then begin
           with map[next[0]+next[1]*width] do begin
             if score=UNVISITED then begin
@@ -726,6 +775,7 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint:T_point; CONST endPoints:T_w
         end;
       end;
     end;
+    finalizeResult;
     setLength(map,0);
   end;
 
@@ -791,12 +841,9 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST exhaust
     end;
 
   PROCEDURE prime;
-    VAR path:T_wirePath;
-        k:longint;
+    VAR k:longint;
         point:T_point;
-        aggregatedCost:longint;
         dir:T_wireDirection;
-        directionIsValid: boolean;
     begin
       addPointToExamine(startPoint,true);
       map[startPoint[0]+startPoint[1]*width].score:=0;
@@ -814,17 +861,13 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST exhaust
   PROCEDURE rescore(CONST cf:T_point);
     VAR x,y:longint;
         newScore, cf_score:longint;
-        cf_dir: T_point;
         directionIsValid: boolean;
     begin
       cf_score:=   map[cf[0]+cf[1]*width].score;
-      cf_dir  :=cf-map[cf[0]+cf[1]*width].comeFrom;
-
       for y:=max(0,cf[1]-1) to min(height-1,cf[1]+1) do
       for x:=max(0,cf[0]-1) to min(width -1,cf[0]+1) do
       if map[x+y*width].comeFrom=cf then begin
         newScore:=cf_score+DirectionCost[directionBetween(cf,pointOf(x,y),directionIsValid)];
-        if pointOf(x,y)-cf<>cf_dir then newScore+=ChangeDirectionPenalty;
         if newScore<map[x+y*width].score then begin
           map[x+y*width].score:=newScore;
           rescore(pointOf(x,y));
@@ -856,7 +899,6 @@ FUNCTION T_wireGraph.findPath(CONST startPoint, endPoint: T_point; CONST exhaust
       for i:=0 to scan.dirCount-1 do begin
         next:=scan.p+scan.dir[i];
         newCost:=map[scan.p[0]+scan.p[1]*width].score+DirectionCost[scan.dir[i]];
-        if directionIsValid and (prevStep<>scan.dir[i]) and not(scan.initial) then newCost+=ChangeDirectionPenalty;
         if newCost<map[next[0]+next[1]*width].score then begin
           found:=found or (next=endPoint);
 

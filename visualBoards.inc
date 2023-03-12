@@ -1639,6 +1639,7 @@ PROCEDURE T_visualBoard.afterGatePropertiesEdited(CONST editedGate: P_visualGate
     for g in gates do if g^.behavior^.equals(editedGate^.behavior) then g^.propertyEditDone();
     if editedIsBoardElement then begin
       repositionElement(editedGate,true,true);
+      checkBoardExtend(false,false);
       dropWatchersAssociatedWith(editedGate);
     end;
     rewire(true);
