@@ -1,0 +1,61 @@
+#!/usr/bin/mnh_light
+IGNORED_CODES:=[1002,1008,1021,1022,1023,
+               3018,3019,3100,3104,
+               4056,4035,4055,
+               5036,5044,
+               9015,9022,6058];
+ALWAYS_IGNORED_CODES:=[1023,1022,1021,1008,3104,9022,9015,1002,6058];
+
+IGNORED_PATTERNS:=['3rd_party',
+                  'mnhcustomform.*\(5092\)',
+                  'myGenerics.*\(5092\)',
+                  '/ide/.*\(5024\)',
+                  '\(5066\).*Symbol "UTF8CharacterLength" is deprecated: "Use UTF8CodepointSize instead."',
+                  '/core/litvar.*\(5024\).*"(adapters|lengthLimit|minusLocation|threadContext|relation|other|literalRecycler)"',
+                  '/core/litvar.*\(5058\).*"stringSingletonsCs"',
+                  '/core/func_defines\.inc.*\(5024\)',
+                  '/core/tokenArray\.pas.*\(5023\).*"strutils"',
+                  '/consoles/substitute_funcs\.pas.*\(5024\)',
+                  '/core/funcs_interpolators\.pas.*\(5024\)',
+                  '/core/out_adapters\.pas.*\(5024\)',
+                  '/core/profiling\.pas.*\(5024\)',
+                  '/core/profiling\.pas.*\(5092\).*"locationToIdMap"',
+                  '/core/operators.*\(5059\)',
+                  '/core/funcs_files.*\(6018\)',
+                  'igSrc.*\(5024\).*"(ix|iy|c|style|nameMode|parameters)"',
+                  '/core/listProcessing.*\(5089\).*"nextToEnqueue"',
+                  'editors/mnhCompletion.*\(5092\).*"sourceValue"',
+                  '/core/tokenArray.*\(5023\).*"strutils"'];
+
+splitMessage(message:String)->begin
+  local errorCode:=message.matchComposite('\(....\)').trailing[0];
+  local fileLine :=message.matchComposite('\(\d*,\d*\)').trailing[0];
+  errorCode.isVoid OR fileLine.isVoid ? return void : void;
+  local parts:=message.split([fileLine,errorCode]);
+  local numericLine:=fileLine.unbrace.split(",").softCast;
+  [replace(parts[0],'/./','/'),//filename
+   "(",numericLine[0],",",numericLine[1],")\t",
+   parts[1],//message type
+   "\t",errorCode,"\t"]|parts.tail(2);
+end;
+
+private currentViolations(doFilter:Boolean)->'build.log'.fileLines
+  .pEach(line,line.matches('\('&(doFilter ? IGNORED_CODES: ALWAYS_IGNORED_CODES)&'\)').agg(OR) ? void : line)
+  .replace('\','/')
+  .pEach(line,line.replace(['/media/',DEV_ROOT.extractFileDirectory],'').replace('\','/'))
+  .{doFilter ? $L.pEach(line,line.matches(IGNORED_PATTERNS).agg(OR) ? void : line) : $L}
+  .map(::splitMessage)
+  .elementFrequency
+  .map({$x[1]|"\vx\t"|$x[0]})
+  .sort(6).sort(4).sort(2)
+  .map(::join);
+
+//*Check for new violations
+main->currentViolations(true)
+  .{$violations.size=0 ? print("No violations found after filtering") : $violations.join("\n").print}
+  orElse print('For all warnings use ',myPath.extractFileName,' unfiltered');
+
+main('unfiltered')->printf("%s",currentViolations(false));
+
+
+DEV_ROOT:=myPath.extractFileDirectory.extractFileDirectory.replace('/','\');
