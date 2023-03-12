@@ -58,7 +58,7 @@ PROCEDURE TTestCreationFrame.TestCasesStringGridValidateEntry(Sender: TObject; a
     //Editing number of steps...
     if aCol=length(testGenerator^.Interfaces.inputs) then begin
       newStepCount:=strToIntDef(newValue,-1);
-      if (newStepCount<=1) then begin
+      if (newStepCount<1) then begin
         newValue:=oldValue;
       end else begin
         testGenerator^.tests[aRow-1].maxTotalSteps:=newStepCount;

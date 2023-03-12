@@ -197,6 +197,7 @@ PROCEDURE TDigitaltrainerMainForm.FormKeyDown(Sender: TObject; VAR key: word; Sh
        Sender.ClassNameIs('TEdit') or
        Sender.ClassNameIs('TPickListCellEditor') or
        Sender.ClassNameIs('TStringCellEditor') or
+       Sender.ClassNameIs('TStringGrid') or
        Sender.ClassNameIs('TMemo') then exit;
     {$ifdef debugMode}
     writeln('FormKeyDown by "',Sender.ClassName,'" key=',key);
