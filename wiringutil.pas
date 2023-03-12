@@ -308,13 +308,46 @@ PROCEDURE T_wiringTask.addEndPoint(CONST p:T_point);
   end;
 
 PROCEDURE T_wiringTask.execute;
-  VAR i:longint;
+  FUNCTION isBefore(CONST k0,k1:longint):boolean;
+    VAR d0,d1,d:double;
+        i:longint;
+
+    begin
+      //wire entries with single connections first
+      if (length(toFind[k0].endPoints)<=1) and (length(toFind[k1].endPoints)> 1) then exit(true);
+      if (length(toFind[k0].endPoints)> 1) and (length(toFind[k1].endPoints)<=1) then exit(false);
+
+      //wire entries with the shortest single path first
+      d0:=Infinity;
+      with toFind[k0] do begin
+        for i:=0 to length(endPoints)-1 do d:=euklideanDistance(startPoint,endPoints[i]);
+        if d<d0 then d0:=d;
+      end;
+      d1:=Infinity;
+      with toFind[k1] do begin
+        for i:=0 to length(endPoints)-1 do d:=euklideanDistance(startPoint,endPoints[i]);
+        if d<d1 then d1:=d;
+      end;
+      result:=d0<d1;
+    end;
+
+  VAR i,j,tmp:longint;
       path:T_wirePath;
       startTicks: qword;
+      wiringOrder:array of longint;
+
   begin
     startTicks:=GetTickCount64;
+    setLength(wiringOrder,length(toFind));
+    for i:=0 to length(wiringOrder)-1 do begin
+      wiringOrder[i]:=i;
+      for j:=0 to i-1 do if isBefore(wiringOrder[i],wiringOrder[j]) then begin
+        tmp:=wiringOrder[i]; wiringOrder[i]:=wiringOrder[j]; wiringOrder[j]:=tmp;
+      end;
+    end;
+
     running:=true;
-    for i:=0 to length(toFind)-1 do if not(cancelled) then begin
+    for i in wiringOrder do if not(cancelled) then begin
       toFind[i].foundPath:=graph^.findPaths(toFind[i].startPoint,toFind[i].endPoints,true);
       for path in toFind[i].foundPath do graph^.dropWire(path);
     end;
