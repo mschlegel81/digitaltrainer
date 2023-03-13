@@ -649,6 +649,7 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
          direction:array[0..7] of T_wireDirection;
          directionCount:longint;
        end;
+       T_mapEntry=record comeFrom:T_point; score:longint; end;
 
   VAR pointToExamine:array of record p:T_point; initial:boolean; end;
       pointToExamine1:longint=0;
@@ -672,7 +673,7 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
       inc(pointToExamine1);
     end;
 
-  VAR map:array of record comeFrom:T_point; score:longint; end;
+  VAR map:array of T_mapEntry;
   VAR prevStep:T_wireDirection;
       prevStepIsValid:boolean;
   FUNCTION nextPointToExamine:T_scan;
@@ -704,7 +705,7 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
         dirs:T_wireDirectionSet;
     begin
       cf_score:=map[cf[0]+cf[1]*width].score;
-      cf_dir  :=directionBetween(cf,map[cf[0]+cf[1]*width].comeFrom,validDirection);
+      cf_dir  :=directionBetween(map[cf[0]+cf[1]*width].comeFrom,cf,validDirection);
 
       dirs:=allowed[cf[0]+cf[1]*width];
       for n_dir in dirs do begin
@@ -779,11 +780,11 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
           SortOrder[j]:=tmp;
         end;
       end;
-      SortOrder[0].first:=true;
+      SortOrder[                  0].first:=true;
       SortOrder[length(SortOrder)-1].last:=true;
-      k:=0;
+
       for tmp in SortOrder do with tmp do begin
-        if not(first) then result[index]:=reconstructPath(endPoints[index]);
+        if not(first) or exhaustiveScan then result[index]:=reconstructPath(endPoints[index]);
         if not(last) then begin
           setLength(pointsToRescore,length(result[index]));
           i:=0;
@@ -795,7 +796,6 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
           end;
           for j:=i-1 downto 0 do rescore(pointsToRescore[j]);
         end;
-        k+=1;
       end;
 
       //Reverse and simplify all...
