@@ -528,11 +528,6 @@ PROCEDURE T_wireGraph.dropWire(CONST path: T_wirePath;
     for i:=0 to length(path)-2 do dropWireSection(path[i],path[i+1],diagonalsOnly);
   end;
 
-CONST DirectionCost:array[T_wireDirection] of longint=(2,3,
-                                                       2,3,
-                                                       2,3,
-                                                       2,3);
-
 FUNCTION pathTotalLength(CONST path: T_wirePath): double;
   VAR i:longint;
   begin
@@ -639,16 +634,15 @@ FUNCTION pathContains(CONST path: T_wirePath; CONST x, y: longint; OUT orientati
     result:=false;
   end;
 
-CONST NO_COME_FROM:T_point=(-1,-1);
 FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T_wirePath; CONST exhaustiveScan:boolean): T_wirePathArray;
-  //Basic Idea:
-  //Search naively until all points are found.
-  //Reconstruct shortest path first:
-  // - Reconstruct path
-  // - For all points along the path set score=0
-  // - Rescore
+  CONST NO_COME_FROM:T_point=(-1,-1);
+        UNVISITED=maxLongint;
+        DirectionCost:array[T_wireDirection] of longint=(2,3,
+                                                         2,3,
+                                                         2,3,
+                                                         2,3);
+        ChangeDirectionPenalty=2;
 
-  CONST UNVISITED=maxLongint;
   TYPE T_scan=record
          initial:boolean;
          p:T_point;
@@ -690,7 +684,6 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
       inc(pointToExamine0);
       dirs:=allowed[result.p[0]+result.p[1]*width];
       prevStep:=directionBetween(map[result.p[0]+result.p[1]*width].comeFrom     ,result.p,prevStepIsValid);
-
       result.directionCount:=0;
       if prevStepIsValid and (prevStep in dirs) then begin
         result.direction[result.directionCount]:=prevStep;
@@ -719,6 +712,7 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
         oldScore:=map[n[0]+n[1]*width].score;
         if oldScore<>UNVISITED then begin
           newScore:=cf_score+DirectionCost[n_dir];
+          if n_dir<>cf_dir then newScore+=ChangeDirectionPenalty;
           if (newScore<oldScore) or (newScore=oldScore) and (n_dir=cf_dir) then begin
             map[n[0]+n[1]*width].score:=newScore;
             map[n[0]+n[1]*width].comeFrom:=cf;
@@ -843,10 +837,11 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
     while (pointToExamine1>pointToExamine0) and ((not allFound) or exhaustiveScan) do begin
       scan:=nextPointToExamine;
       for k:=0 to scan.directionCount-1 do begin
-      //for dir in scan.directions do begin
         dir:=scan.direction[k];
         next:=scan.p+dir;
         newCost:=map[scan.p[0]+scan.p[1]*width].score+DirectionCost[dir];
+        if prevStepIsValid and (prevStep<>dir) then newCost+=ChangeDirectionPenalty;
+
         if newCost<map[next[0]+next[1]*width].score then begin
           with map[next[0]+next[1]*width] do begin
             if score=UNVISITED then begin
