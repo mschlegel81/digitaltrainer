@@ -901,9 +901,6 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
               else inc(jb);
             end;
             x:=ja*ja+jb*jb;
-            {$ifdef debugMode}
-            writeln('    Split along ',splitNormal[0],',',splitNormal[1],' would yield a ',ja,':',jb,'-split; Score=',x);
-            {$endif}
             if x<bestX then begin
               bestSplitNormal:=splitNormal;
               bestX:=x;
@@ -911,7 +908,6 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
           end;
 
           splitNormal:=bestSplitNormal;
-          writeln('    Splitting along ',splitNormal[0],',',splitNormal[1]);
           setLength(subSetA,length(indexes)); ja:=0;
           setLength(subSetB,length(indexes)); jb:=0;
           for k in indexes do if length(wiringResult[k])>i then begin
