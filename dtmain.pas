@@ -8,7 +8,7 @@ USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
   Buttons, StdCtrls, Menus, ValEdit, Grids, visualGates, logicalGates,
   paletteHandling, gateProperties, addToPaletteDialog, visuals,workspaces,
-  createTaskUnit,selectTaskUnit,taskFinishedUnit,paletteHandingUi;
+  createTaskUnit,selectTaskUnit,taskFinishedUnit,paletteHandingUi, types;
 
 TYPE
   { TDigitaltrainerMainForm }
@@ -103,6 +103,8 @@ TYPE
     PROCEDURE selectionShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE SimulationTimerTimer(Sender: TObject);
     PROCEDURE speedTrackBarChange(Sender: TObject);
+    PROCEDURE SubPaletteComboBoxDrawItem(control: TWinControl; index: integer;
+      ARect: TRect; state: TOwnerDrawState);
     PROCEDURE TestShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE WireTimerTimer(Sender: TObject);
     PROCEDURE ZoomInShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -526,6 +528,13 @@ PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);
     SimulationTimer.interval:=SPEED_SETTING[speedTrackBar.position].timerInterval;
     speedLabel.caption:='Speed: '+SPEED_SETTING[speedTrackBar.position].labelCaption;
     averageSpeed:=SPEED_SETTING[speedTrackBar.position].simSteps/SPEED_SETTING[speedTrackBar.position].timerInterval*1000;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.SubPaletteComboBoxDrawItem(control: TWinControl; index: integer; ARect: TRect; state: TOwnerDrawState);
+  begin
+    if not(control is TComboBox) then exit;
+    SubPaletteComboBox.Canvas.FillRect(ARect);                                                 //first paint normal background
+    SubPaletteComboBox.Canvas.TextRect(ARect, 5, ARect.top, SubPaletteComboBox.items[index]);  //paint item text
   end;
 
 PROCEDURE TDigitaltrainerMainForm.TestShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);

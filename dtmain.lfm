@@ -287,16 +287,21 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     AnchorSideTop.Control = BoardImage
     AnchorSideRight.Side = asrBottom
     Left = 19
-    Height = 23
+    Height = 21
     Top = 82
     Width = 151
+    AutoComplete = True
+    AutoCompleteText = [cbactEnabled, cbactEndOfLineComplete, cbactSearchAscending]
     BorderSpacing.Left = 2
     BorderSpacing.Top = 2
     BorderSpacing.Right = 5
     Color = 6303792
+    DropDownCount = 50
     Font.Color = clWhite
     ItemHeight = 15
+    OnDrawItem = SubPaletteComboBoxDrawItem
     ParentFont = False
+    Style = csOwnerDrawEditableFixed
     TabOrder = 2
   end
   object BoardVerticalScrollbar: TScrollBar
