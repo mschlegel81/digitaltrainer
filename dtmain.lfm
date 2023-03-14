@@ -1,7 +1,7 @@
 object DigitaltrainerMainForm: TDigitaltrainerMainForm
-  Left = 873
+  Left = 1371
   Height = 737
-  Top = 389
+  Top = 314
   Width = 1277
   Align = alTop
   Caption = 'Digitaltrainer'
@@ -282,6 +282,25 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     OnKeyDown = FormKeyDown
     OnScroll = PaletteScrollBarScroll
   end
+  object BoardImage: TImage
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = Panel1
+    AnchorSideRight.Control = Panel1
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Cursor = crCross
+    Left = 17
+    Height = 637
+    Top = 80
+    Width = 1260
+    AntialiasingMode = amOn
+    Align = alClient
+    ParentShowHint = False
+    ShowHint = True
+    StretchOutEnabled = False
+    StretchInEnabled = False
+  end
   object SubPaletteComboBox: TComboBox
     AnchorSideLeft.Control = BoardImage
     AnchorSideTop.Control = BoardImage
@@ -332,25 +351,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Anchors = [akLeft, akRight, akBottom]
     PageSize = 0
     TabOrder = 4
-  end
-  object BoardImage: TImage
-    AnchorSideLeft.Side = asrBottom
-    AnchorSideTop.Control = Panel1
-    AnchorSideRight.Control = Panel1
-    AnchorSideRight.Side = asrBottom
-    AnchorSideBottom.Control = Owner
-    AnchorSideBottom.Side = asrBottom
-    Cursor = crCross
-    Left = 17
-    Height = 637
-    Top = 80
-    Width = 1260
-    AntialiasingMode = amOn
-    Align = alClient
-    ParentShowHint = False
-    ShowHint = True
-    StretchOutEnabled = False
-    StretchInEnabled = False
   end
   object propEditPanel: TPanel
     Left = 216
