@@ -1007,31 +1007,36 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
         startPoint: T_point;
         endPoints: T_wirePath;
         paths: T_wirePathArray;
-        wireNeedsUpdate: boolean;
-
+        wireNeedsUpdate: array of boolean;
     begin
-
       graph:=getWireGraph(false);
+      setLength(wireNeedsUpdate,length(wires));
+
       for i:=0 to length(wires)-1 do begin
         startPoint:=wires[i].source^.getOutputPositionInGridSize(wires[i].sourceOutputIndex)+wires[i].source^.gridPos;
         setLength(endPoints,length(wires[i].sink));
-
         for j:=0 to length(endPoints)-1 do endPoints[j]:=wires[i].sink[j].gate^.getInputPositionInGridSize(wires[i].sink[j].gateInputIndex)+wires[i].sink[j].gate^.gridPos;
-        wireNeedsUpdate:=false;
+        wireNeedsUpdate[i]:=false;
         for j:=0 to length(wires[i].sink)-1 do
-          wireNeedsUpdate:=wireNeedsUpdate
+          wireNeedsUpdate[i]:=wireNeedsUpdate[i]
             or (length(wires[i].sink[j].path)<1)
             or (wires[i].sink[j].path[0]<>startPoint)
             or (wires[i].sink[j].path[length(wires[i].sink[j].path)-1]<>endPoints[j]);
 
-        if wireNeedsUpdate then begin
-          paths:=graph^.findPaths(startPoint,endPoints,false);
-          for j:=0 to length(paths)-1 do begin
-            wires[i].sink[j].path:=paths[j];
-            graph^.dropWire(paths[j]);
-          end;
-        end else for j:=0 to length(wires[i].sink)-1 do graph^.dropWire(wires[i].sink[j].path,true);
+        if not(wireNeedsUpdate[i]) then for j:=0 to length(wires[i].sink)-1 do graph^.dropWire(wires[i].sink[j].path,true);
       end;
+      for i:=0 to length(wires)-1 do if wireNeedsUpdate[i] then begin
+        startPoint:=wires[i].source^.getOutputPositionInGridSize(wires[i].sourceOutputIndex)+wires[i].source^.gridPos;
+        setLength(endPoints,length(wires[i].sink));
+        for j:=0 to length(endPoints)-1 do endPoints[j]:=wires[i].sink[j].gate^.getInputPositionInGridSize(wires[i].sink[j].gateInputIndex)+wires[i].sink[j].gate^.gridPos;
+
+        paths:=graph^.findPaths(startPoint,endPoints,false);
+        for j:=0 to length(paths)-1 do begin
+          wires[i].sink[j].path:=paths[j];
+          graph^.dropWire(paths[j]);
+        end;
+      end;
+
       dispose(graph,destroy);
     end;
 
@@ -1056,15 +1061,11 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
       end;
     end;
 
-  {$ifdef debugMode}
-  VAR startTicks: qword;
-  {$endif}
+  {$ifdef debugMode} VAR startTicks: qword; {$endif}
   begin
+    {$ifdef debugMode} startTicks:=GetTickCount64; {$endif}
     disposeTask(wiringTask);
     enterCriticalSection(wiresCs);
-    {$ifdef debugMode}
-    startTicks:=GetTickCount64;
-    {$endif}
     dropWiresReferringToNonexitentPorts;
     sortWires;
     if forced
@@ -1072,9 +1073,7 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
     else updateWirePaths;
     leaveCriticalSection(wiresCs);
     wiresUpToDate:=false;
-    {$ifdef debugMode}
-    writeln('Rewiring (',forced,') took ',GetTickCount64-startTicks,' ticks');
-    {$endif}
+    {$ifdef debugMode} writeln('Rewiring (',forced,') took ',GetTickCount64-startTicks,' ticks'); {$endif}
   end;
 
 PROCEDURE T_visualBoard.updateWiresFromTask;
