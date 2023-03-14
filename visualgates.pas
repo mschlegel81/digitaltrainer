@@ -56,9 +56,6 @@ TYPE
       FUNCTION getOutputPositionInGridSize(CONST index:longint):T_point;
 
       FUNCTION overlaps(CONST other:P_visualGate):boolean;
-
-      //PROCEDURE setPaletteEntryMouseActions();
-      //PROCEDURE setBoardElementMouseActions;
       PROPERTY  getBehavior:P_abstractGate read behavior;
 
       PROPERTY getGridWidth:longint read gridWidth;

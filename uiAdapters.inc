@@ -149,7 +149,7 @@ CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape;
     uiElement.boardImage.OnMouseWheel:=@boardImageMouseWheel;
     zoom:=30;
     state:=uas_initial;
-    wiringInBackground:=false;
+    wiringInBackground:=true;
   end;
 
 DESTRUCTOR T_uiAdapter.destroy;
@@ -263,7 +263,7 @@ PROCEDURE T_uiAdapter.zoomOut;
 PROCEDURE T_uiAdapter.resetState;
   begin
     state:=uas_initial;
-    wiringInBackground:=false;
+    wiringInBackground:=true;
   end;
 
 PROCEDURE T_uiAdapter.clearUndoList;
