@@ -801,38 +801,31 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
   PROCEDURE finalizeResult;
     VAR wiringResult:T_wirePathArray;
 
-    PROCEDURE printScoreMap(CONST mark:T_point);
-      VAR i,j:longint;
-          s:longint;
-          m:longint;
-      begin
-        m:=mark[0]+mark[1]*width;
-        j:=0;
-        for i:=0 to length(map)-1 do begin
-          s:=map[i].score;
-          if i=m then begin
-            if s>=100 then write('[XX]') else write('[',s:2,']');
-          end else begin
-            if s>=100 then write(' XX ') else write(' ',s:2,' ');
-          end;
-          inc(j);
-          if j=width then begin
-            writeln;
-            j:=0;
-          end;
-        end;
-      end;
-
-    PROCEDURE pathWasUsed(CONST path:T_wirePath);
-      VAR p:T_point;
-      begin
-        for p in path do map[p[0]+p[1]*width].score:=0;
-        for p in path do rescore(p);
-      end;
+    //PROCEDURE printScoreMap(CONST mark:T_point);
+    //  VAR i,j:longint;
+    //      s:longint;
+    //      m:longint;
+    //  begin
+    //    m:=mark[0]+mark[1]*width;
+    //    j:=0;
+    //    for i:=0 to length(map)-1 do begin
+    //      s:=map[i].score;
+    //      if i=m then begin
+    //        if s>=100 then write('[XX]') else write('[',s:2,']');
+    //      end else begin
+    //        if s>=100 then write(' XX ') else write(' ',s:2,' ');
+    //      end;
+    //      inc(j);
+    //      if j=width then begin
+    //        writeln;
+    //        j:=0;
+    //      end;
+    //    end;
+    //  end;
 
     PROCEDURE rescoreCommonHead(CONST i0:longint; CONST head:T_wirePath; CONST indexes:T_arrayOfLongint);
-      VAR i,ja,jb,k:longint;
-          p,splitNormal:T_point;
+      VAR i,k:longint;
+          p:T_point;
           step:T_wireDirection;
           consensus:boolean=true;
       FUNCTION paretoStep:boolean;
@@ -877,21 +870,72 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
           end;
           {$ifdef debugMode}
           writeln;
-          writeln('Score map: ');
-          printScoreMap(p);
+          //writeln('Score map: ');
+          //printScoreMap(p);
           {$endif}
 
           for i in indexes do begin
             wiringResult[i]:=reconstructPath(endPoints[i],newHead,earlyExit);
             if earlyExit then begin
-              pathWasUsed(wiringResult[i]);
               dropValues(subSetA,i);
               dropValues(subSetB,i);
             end;
           end;
         end;
 
+      PROCEDURE findSubSets;
+        CONST SPLIT_NORMALS:array[0..9] of T_point=((1,0),(0,1),(-1,1),(1,1),
+                                                    (1,2),(2,1),(-1,2),(2,-1),(1,-2),(-2,1)
+                                                    );
+
+        VAR splitNormal,bestSplitNormal:T_point;
+            bestX:longint=maxLongint;
+            x,ja,jb:longint;
+
+        begin
+          for splitNormal in SPLIT_NORMALS do begin
+            ja:=0; jb:=0;
+            for k in indexes do if length(wiringResult[k])>i then begin
+              if (wiringResult[k,length(wiringResult[k])-i-1]-p)*splitNormal>0
+              then inc(ja)
+              else inc(jb);
+            end;
+            x:=ja*ja+jb*jb;
+            {$ifdef debugMode}
+            writeln('    Split along ',splitNormal[0],',',splitNormal[1],' would yield a ',ja,':',jb,'-split; Score=',x);
+            {$endif}
+            if x<bestX then begin
+              bestSplitNormal:=splitNormal;
+              bestX:=x;
+            end;
+          end;
+
+          splitNormal:=bestSplitNormal;
+          writeln('    Splitting along ',splitNormal[0],',',splitNormal[1]);
+          setLength(subSetA,length(indexes)); ja:=0;
+          setLength(subSetB,length(indexes)); jb:=0;
+          for k in indexes do if length(wiringResult[k])>i then begin
+            if (wiringResult[k,length(wiringResult[k])-i-1]-p)*splitNormal>0
+            then begin subSetA[ja]:=k; inc(ja); end
+            else begin subSetB[jb]:=k; inc(jb); end;
+          end;
+          setLength(subSetA,ja);
+          setLength(subSetB,jb);
+        end;
+
       begin
+        {$ifdef debugMode}
+        writeln('==============================================================');
+        write  ('# HEAD SCAN: ');
+        for p in head do write(p[0],',',p[1],'  ');
+        writeln;
+        for k in indexes do begin
+          write('# Path #',k,': ');
+          for p in wiringResult[k] do write(p[0],',',p[1],'  ');
+          writeln;
+        end;
+        {$endif}
+
         setLength(newHead,length(head));
         for i:=0 to length(head)-1 do newHead[i]:=head[i];
         setLength(newPoints,0);
@@ -919,11 +963,17 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
           inc(i);
         until not(consensus);
 
-        if (length(newPoints)>0) and (length(newPoints)+length(head)>1) then begin
-          p   :=                 newPoints[length(newPoints)-1];
-          if length(newPoints)=1
-          then step:=directionBetween(head     [length(head     )-1],p,consensus)
-          else step:=directionBetween(newPoints[length(newPoints)-2],p,consensus);
+        if (length(newPoints)+length(head)>1) then begin
+          if (length(newPoints)=0)
+          then begin
+            p:=                    head[length(head)-1];
+            step:=directionBetween(head[length(head)-2],p,consensus)
+          end else begin
+            p:=newPoints[length(newPoints)-1];
+            if length(newPoints)>1
+            then step:=directionBetween(newPoints[length(newPoints)-2],p,consensus)
+            else step:=directionBetween(head     [length(head     )-1],p,consensus);
+          end;
 
           while paretoStep do begin
             p+=step;
@@ -936,21 +986,15 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
             inc(i);
           end;
           if length(indexes)<=2 then begin
+            {$ifdef debugMode}
+            writeln('Only two paths are left...');
+            {$endif}
             updatePath;
-            for k in indexes do pathWasUsed(wiringResult[k]);
             exit;
           end;
 
-          setLength(subSetA,length(indexes)); ja:=0;
-          setLength(subSetB,length(indexes)); jb:=0;
-          splitNormal:=pointOf(-WIRE_DELTA[step,1],WIRE_DELTA[step,0]);
-
-          for k in indexes do if length(wiringResult[k])>i then begin
-            if (wiringResult[k,length(wiringResult[k])-i-1]-p)*splitNormal>0
-            then begin subSetA[ja]:=k; inc(ja); end
-            else begin subSetB[jb]:=k; inc(jb); end;
-          end;
-          if ((ja<=0) or (jb<=0)) and (ja+jb=length(indexes)) then begin
+          findSubSets;
+          if ((length(subSetB)<=0) or (length(subSetA)<=0)) and (length(subSetA)+length(subSetB)=length(indexes)) then begin
             {$ifdef debugMode}
             writeln('NEED ANOTHER IMPLEMENTATION HERE!');
             for k in indexes do if length(wiringResult[k])>i then begin
@@ -959,18 +1003,21 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
             end;
             {$endif}
             updatePath;
-            for k in indexes do pathWasUsed(wiringResult[k]);
             exit;
           end else begin
-            setLength(subSetA,ja);
-            setLength(subSetB,jb);
             updatePath;
-            if length(subSetA)>1 then rescoreCommonHead(i-1,newHead,subSetA) else for k in subSetA do pathWasUsed(wiringResult[k]);
-            if length(subSetB)>1 then rescoreCommonHead(i-1,newHead,subSetB) else for k in subSetB do pathWasUsed(wiringResult[k]);
+            {$ifdef debugMode}
+            writeln('Splitting up into sub sets');
+            {$endif}
+
+            if length(subSetA)>1 then rescoreCommonHead(i-1,newHead,subSetA);
+            if length(subSetB)>1 then rescoreCommonHead(i-1,newHead,subSetB);
           end;
         end else begin
+          {$ifdef debugMode}
+          writeln('Fallback: no consensus points found');
+          {$endif}
           updatePath;
-          for k in indexes do pathWasUsed(wiringResult[k]);
         end;
       end;
 
@@ -978,63 +1025,15 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
         n: T_point;
         allIndexes:T_arrayOfLongint;
         emptyHead:T_wirePath;
-        mapBackup:array of T_mapEntry;
-        el0_,
-        el0,el1:double;
-    TYPE T_sortOrder=record
-           first,last:boolean;
-           index:longint;
-           L:double;
-         end;
-    VAR SortOrder:array of T_sortOrder;
-        tmp:T_sortOrder;
     begin
-
       if (length(endPoints)>1) and exhaustiveScan then begin
         wiringResult:=result;
-        setLength(mapBackup,length(map)); for i:=0 to length(map)-1 do mapBackup[i]:=map[i];
         setLength(allIndexes,length(result));
         for i:=0 to length(allIndexes)-1 do allIndexes[i]:=i;
         setLength(emptyHead,0);
         rescoreCommonHead(0,emptyHead,allIndexes);
-        for i:=0 to length(map)-1 do map[i]:=mapBackup[i];
-        el0_:=multipathEffectiveLength(wiringResult);
-
-        //Fix paths; the shortest one first
-        setLength(SortOrder,length(result));
-        for i:=0 to length(result)-1 do begin
-          SortOrder[i].first:=false;
-          SortOrder[i].last :=false;
-          SortOrder[i].index:=i;
-          SortOrder[i].L:=map[endPoints[i,0]+endPoints[i,1]*width].score;
-          for j:=0 to i-1 do if SortOrder[j].L>SortOrder[i].L then begin
-            tmp:=SortOrder[i];
-            SortOrder[i]:=SortOrder[j];
-            SortOrder[j]:=tmp;
-          end;
-        end;
-        SortOrder[                  0].first:=true;
-        SortOrder[length(SortOrder)-1].last:=true;
-        for tmp in SortOrder do with tmp do begin
-          result[index]:=reconstructPath(endPoints[index]);
-          if not(last) then begin
-            setLength(emptyHead,length(result[index]));
-            i:=0;
-            for n in result[index] do begin
-              if map[n[0]+n[1]*width].score>0 then begin
-                emptyHead[i]:=n; inc(i);
-              end;
-            end;
-            for j:=i-1 downto 0 do rescore(emptyHead[j]);
-          end;
-        end;
-        el0:=multipathEffectiveLength(wiringResult);
-        el1:=multipathEffectiveLength(result);
-        writeln(el0,' ',el0_,' ',el1);
-        if el0<el1
-        then result:=wiringResult;
+        result:=wiringResult;
       end;
-
       //Reverse and simplify all...
       for k:=0 to length(result)-1 do if length(result[k])>0 then begin
         for i:=0 to (length(result[k])-1) div 2 do begin
