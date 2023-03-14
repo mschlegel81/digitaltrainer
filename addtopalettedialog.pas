@@ -6,7 +6,7 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, StdCtrls, ExtCtrls,
-  paletteHandling,visualGates,visuals;
+  paletteHandling,visualGates,visuals, types;
 
 TYPE
 
@@ -27,6 +27,8 @@ TYPE
     propOkShape1: TShape;
     PROCEDURE CaptionEditEditingDone(Sender: TObject);
     PROCEDURE DescriptionMemoEditingDone(Sender: TObject);
+    PROCEDURE PaletteComboboxDrawItem(control: TWinControl; index: integer;
+      ARect: TRect; state: TOwnerDrawState);
     PROCEDURE propCancelShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
     PROCEDURE propOkShape1MouseDown(Sender: TObject; button: TMouseButton;
@@ -68,6 +70,13 @@ PROCEDURE TAddToPaletteForm.CaptionEditEditingDone(Sender: TObject);
 PROCEDURE TAddToPaletteForm.DescriptionMemoEditingDone(Sender: TObject);
   begin
     currentBoard^.setDescription(DescriptionMemo.text);
+  end;
+
+PROCEDURE TAddToPaletteForm.PaletteComboboxDrawItem(control: TWinControl; index: integer; ARect: TRect; state: TOwnerDrawState);
+  begin
+    if not(control is TComboBox) then exit;
+    paletteComboBox.Canvas.FillRect(ARect);                                                 //first paint normal background
+    paletteComboBox.Canvas.TextRect(ARect, 5, ARect.top, paletteComboBox.items[index]);  //paint item text
   end;
 
 PROCEDURE TAddToPaletteForm.propCancelShapeMouseDown(Sender: TObject;
