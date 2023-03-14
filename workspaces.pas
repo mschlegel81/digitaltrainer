@@ -3,7 +3,7 @@ UNIT workspaces;
 {$mode objfpc}{$H+}
 
 INTERFACE
-USES serializationUtil,visualGates,compoundGates,paletteHandling,challenges;
+USES serializationUtil,visualGates,paletteHandling,challenges;
 
 TYPE
 

@@ -5,7 +5,7 @@ UNIT boardTestUnit;
 INTERFACE
 
 USES
-  Classes, sysutils, Forms, Controls, Graphics, Dialogs, challenges, visualGates, testFrameUI;
+  sysutils, Forms, Controls, challenges, visualGates, testFrameUI;
 
 TYPE
 
@@ -21,7 +21,6 @@ TYPE
 
 FUNCTION BoardTestForm: TBoardTestForm;
 IMPLEMENTATION
-USES compoundGates;
 VAR myBoardTestForm: TBoardTestForm=nil;
 FUNCTION BoardTestForm: TBoardTestForm;
   begin

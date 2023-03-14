@@ -606,6 +606,7 @@ FUNCTION deserialize(n: qword): T_wireValue;
   CONST WIRE_VALUE_OF:array[0..2] of T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
   VAR i: integer;
   begin
+    Initialize(result);
     case byte(n and 3) of
       0: result.width:=1;
       1: result.width:=4;
@@ -676,6 +677,7 @@ FUNCTION parseWire2Complement(CONST s: string; CONST width: byte): T_wireValue;
 
 FUNCTION parseWire(CONST s: string; CONST width: byte; CONST mode: T_multibitWireRepresentation): T_wireValue;
   begin
+    Initialize(result);
     case mode of
       wr_binary     : result:=parseWireBin(s,width);
       wr_decimal    : result:=parseWireDecimal(s,width);
@@ -979,7 +981,6 @@ FUNCTION T_romGate.getOutput(CONST index: longint): T_wireValue;
   end;
 
 FUNCTION T_romGate.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
-  VAR i:longint;
   begin
     result:=value<>readAdr;
     readAdr:=value;

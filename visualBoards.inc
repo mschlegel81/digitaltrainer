@@ -1003,7 +1003,7 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
 
   PROCEDURE updateWirePaths;
     VAR graph: P_wireGraph;
-        i, j, k: integer;
+        i, j: integer;
         startPoint: T_point;
         endPoints: T_wirePath;
         paths: T_wirePathArray;
