@@ -180,11 +180,11 @@ PROCEDURE spriteAllocated;
     if (allocationCounter mod 1000=0) or (now>lastCleanupTime+oneMinute) then begin
       {$ifdef debugMode}
       writeln('Sprites allocated total: ',allocationCounter);
-      writeln('         before cleanup: ',ioSpriteMap.size+blockSpriteMap.size+ioBlockSpriteMap.size+ioTextSpriteMap.size);
+      writeln('         before cleanup: ',ioSpriteMap.size+blockSpriteMap.size+ioBlockSpriteMap.size+ioTextSpriteMap.size+sevSegSpriteMap.size+watcherSpriteMap.size);
       {$endif}
       dropOldSprites(oneMinute);
       {$ifdef debugMode}
-      writeln('          after cleanup: ',ioSpriteMap.size+blockSpriteMap.size+ioBlockSpriteMap.size+ioTextSpriteMap.size);
+      writeln('          after cleanup: ',ioSpriteMap.size+blockSpriteMap.size+ioBlockSpriteMap.size+ioTextSpriteMap.size+sevSegSpriteMap.size+watcherSpriteMap.size);
       {$endif}
       lastCleanupTime:=now;
     end;

@@ -99,7 +99,7 @@ T_visualBoard=object(T_captionedAndIndexed)
     PROCEDURE addWire(CONST sourceGate:P_visualGate; CONST sourceOutputIndex:longint;
                       CONST sinkGate:P_visualGate; CONST sinkInputIndex:longint);
 
-    PROCEDURE reset;
+    PROCEDURE reset(CONST includeInputs:boolean=false);
     FUNCTION coSimulateSteps(CONST count,timeOutInTicks: longint; CONST expectedBehavior:P_abstractGate):longint;
     FUNCTION simulateSteps(CONST count,timeOutInTicks: longint):longint;
     FUNCTION outputsMatch(CONST expected:P_compoundGate):boolean;
@@ -264,9 +264,9 @@ PROCEDURE T_visualBoard.attachUI(CONST uiAdapter: P_uiAdapter);
     wiresUpToDate:=false;
     ui:=uiAdapter;
     uiAdapter^.activeBoard:=@self;
-    for e in inputs  do begin e^.uiAdapter:=uiAdapter; e^.behavior^.reset; end;
-    for e in outputs do begin e^.uiAdapter:=uiAdapter; e^.behavior^.reset; end;
-    for e in gates   do begin e^.uiAdapter:=uiAdapter; e^.behavior^.reset; end;
+    for e in inputs  do begin e^.uiAdapter:=uiAdapter; end;
+    for e in outputs do begin e^.uiAdapter:=uiAdapter; end;
+    for e in gates   do begin e^.uiAdapter:=uiAdapter; end;
     checkBoardExtend(false,false);
     rewire(true);
     ui^.resetState;
@@ -275,7 +275,6 @@ PROCEDURE T_visualBoard.attachUI(CONST uiAdapter: P_uiAdapter);
     ui^.uiElement.boardImage.OnMouseUp  :=@boardMouseUp;
     ui^.uiElement.boardHorizontalScrollBar.OnScroll:=@ScrollbarScroll;
     ui^.uiElement.boardVerticalScrollBar  .OnScroll:=@ScrollbarScroll;
-    reset;
   end;
 
 PROCEDURE T_visualBoard.elementAdded(CONST newElement: P_visualGate;
@@ -295,6 +294,7 @@ PROCEDURE T_visualBoard.elementAdded(CONST newElement: P_visualGate;
       if element^.behavior^.gateType in [gt_input,gt_output] then enumerateIo;
       repositionElement(element,true,true);
     end;
+    ui^.callback.boardModifiedCallback();
   end;
 
 PROCEDURE T_visualBoard.repositionElement(CONST element: P_visualGate;
@@ -477,6 +477,7 @@ PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray; CONST skipSave
     end;
     enumerateIo;
     rewire(true);
+    ui^.callback.boardModifiedCallback();
   end;
 
 FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper; CONST includeFixing: boolean): boolean;
@@ -1662,10 +1663,12 @@ PROCEDURE T_visualBoard.addWire(CONST sourceGate: P_visualGate; CONST sourceOutp
     ui^.callback.boardModifiedCallback();
   end;
 
-PROCEDURE T_visualBoard.reset;
+PROCEDURE T_visualBoard.reset(CONST includeInputs:boolean);
   VAR g:P_visualGate;
   begin
     simStepCounter:=0;
+    if includeInputs then
+    for g in inputs  do g^.getBehavior^.reset;
     for g in outputs do g^.getBehavior^.reset;
     for g in gates   do g^.getBehavior^.reset;
   end;
@@ -1984,9 +1987,8 @@ FUNCTION T_visualBoard.getInfoLabelText: string;
   begin
     gateCount:=getGateCount;
     result:='Elemente insgesamt: '+intToStr(gatesTotal(gateCount))+LineEnding+
-            lineFor([gt_notGate,gt_andGate,gt_orGate,gt_xorGate,gt_nandGate,gt_norGate,gt_xorGate])+
-            lineFor([gt_input,gt_output,gt_adapter,gt_true,gt_false,gt_undeterminedToTrue,gt_undeterminedToFalse])+
-            lineFor([gt_compound,gt_clock,gt_gatedClock,gt_ram,gt_rom,gt_7segmentDummy])+
+            lineFor([gt_input,gt_output,gt_notGate,gt_andGate,gt_orGate,gt_xorGate,gt_nandGate,gt_norGate,gt_xorGate])+
+            lineFor([gt_adapter,gt_true,gt_false,gt_undeterminedToTrue,gt_undeterminedToFalse,gt_compound,gt_clock,gt_gatedClock,gt_ram,gt_rom,gt_7segmentDummy])+
             'Schritte simuliert: '+intToStr(simStepCounter);
   end;
 

@@ -180,6 +180,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     workspace.create;
     workspace.activePalette^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
+    workspace.activeBoard  ^.reset(true);
     updateUiElements;
 
     pauseByUser:=false;
@@ -331,6 +332,7 @@ PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);
        workspace.startChallenge(SelectTaskForm(@workspace).selectedChallengeIndex) then begin
       workspace.activePalette^.attachUI(@uiAdapter);
       workspace.activeBoard  ^.attachUI(@uiAdapter);
+      workspace.activeBoard  ^.reset(true);
       uiAdapter.paintAll;
       updateUiElements;
     end;
