@@ -319,7 +319,7 @@ PROCEDURE T_wiringTask.addEndPoint(CONST p:T_point);
 
 PROCEDURE T_wiringTask.execute;
   FUNCTION isBefore(CONST k0,k1:longint):boolean;
-    VAR d0,d1,d:double;
+    VAR d0,d1,d:longint;
         i:longint;
 
     begin
@@ -332,16 +332,8 @@ PROCEDURE T_wiringTask.execute;
       if (length(toFind[k0].endPoints)<length(toFind[k1].endPoints)) then exit(false);
 
       //wire entries with the shortest single path first
-      d0:=infinity;
-      with toFind[k0] do begin
-        for i:=0 to length(endPoints)-1 do d:=euklideanDistance(startPoint,endPoints[i]);
-        if d<d0 then d0:=d;
-      end;
-      d1:=infinity;
-      with toFind[k1] do begin
-        for i:=0 to length(endPoints)-1 do d:=euklideanDistance(startPoint,endPoints[i]);
-        if d<d1 then d1:=d;
-      end;
+      d0:=maxLongint; with toFind[k0] do begin for i:=0 to length(endPoints)-1 do d:=absNormDistance(startPoint,endPoints[i]); if d<d0 then d0:=d; end;
+      d1:=maxLongint; with toFind[k1] do begin for i:=0 to length(endPoints)-1 do d:=absNormDistance(startPoint,endPoints[i]); if d<d1 then d1:=d; end;
       result:=d0<d1;
     end;
 
