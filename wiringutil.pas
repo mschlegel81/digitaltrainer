@@ -735,7 +735,6 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
   FUNCTION reconstructPath(p:T_point):T_wirePath;
     VAR i:longint;
     begin
-      writeln('Start path reconstruction @',p[0],',',p[1]);
       setLength(result,maxNormDistance(p,startPoint));
       i:=0;
       while (p<>startPoint) do begin
@@ -746,7 +745,6 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
           setLength(result,0);
           exit;
         end;
-        writeln('           reconstruction @',p[0],',',p[1]);
       end;
       setLength(result,i+1);
       result[i]:=startPoint;
@@ -812,7 +810,7 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
 
       begin
         i:=i0;
-        //TODO: Extend this approch. How? Repeat (after rewiring) for sub set of paths?
+
         setLength(toRescore,0);
         repeat
           p:=NO_COME_FROM;
@@ -880,16 +878,31 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
       end;
 
     VAR i,j,k:longint;
-        n: T_point;
+        n,q: T_point;
         allIndexes:T_indexes;
     begin
-      wiringResult:=result;
+
       if (length(endPoints)>1) and exhaustiveScan then begin
+        wiringResult:=result;
+        i:=0;
+        for j:=1 to length(endPoints)-1 do
+          if map[endPoints[j,0]+endPoints[j,1]*width].score<
+             map[endPoints[i,0]+endPoints[i,1]*width].score
+          then i:=j;
+        q:=NO_COME_FROM;
+        for n in result[i] do begin
+          if q<>NO_COME_FROM then map[q[0]+q[1]*width].comeFrom:=n;
+          map[n[0]+n[1]*width].score:=0;
+          q:=n;
+        end;
+        for n in result[i] do rescore(n);
+        for j:=0 to length(endPoints)-1 do if j<>i then wiringResult[j]:=reconstructPath(endPoints[j]);
+
         setLength(allIndexes,length(result));
         for i:=0 to length(allIndexes)-1 do allIndexes[i]:=i;
         rescoreCommonHead(0,allIndexes);
+        result:=wiringResult;
       end;
-      result:=wiringResult;
 
       //Reverse and simplify all...
       for k:=0 to length(result)-1 do if length(result[k])>0 then begin
