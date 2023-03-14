@@ -204,6 +204,14 @@ OPERATOR=(CONST x, y: T_point): boolean;
     result:=(x[0]=y[0]) and (x[1]=y[1]);
   end;
 
+PROCEDURE append(VAR x:T_wirePath; CONST y:T_wirePath);
+  VAR i0,i:longint;
+  begin
+    i0:=length(x);
+    setLength(x,i0+length(y));
+    for i:=0 to length(y)-1 do x[i+i0]:=y[i];
+  end;
+
 PROCEDURE writePointToStream(VAR stream: T_bufferedOutputStreamWrapper;
   CONST p: T_point);
   begin
@@ -726,6 +734,7 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
   FUNCTION reconstructPath(p:T_point):T_wirePath;
     VAR i:longint;
     begin
+      writeln('Start path reconstruction @',p[0],',',p[1]);
       setLength(result,maxNormDistance(p,startPoint));
       i:=0;
       while (p<>startPoint) do begin
@@ -736,6 +745,7 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
           setLength(result,0);
           exit;
         end;
+        writeln('           reconstruction @',p[0],',',p[1]);
       end;
       setLength(result,i+1);
       result[i]:=startPoint;
@@ -765,37 +775,120 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
         tmp:T_sortOrder;
         i,j,k:longint;
         n: T_point;
-        pointsToRescore:T_wirePath;
-    begin
-      //Fix paths; the shortest one first
-      setLength(SortOrder,length(result));
-      for i:=0 to length(result)-1 do begin
-        SortOrder[i].first:=false;
-        SortOrder[i].last :=false;
-        SortOrder[i].index:=i;
-        SortOrder[i].L:=map[endPoints[i,0]+endPoints[i,1]*width].score;
-        for j:=0 to i-1 do if SortOrder[j].L>SortOrder[i].L then begin
-          tmp:=SortOrder[i];
-          SortOrder[i]:=SortOrder[j];
-          SortOrder[j]:=tmp;
-        end;
-      end;
-      SortOrder[                  0].first:=true;
-      SortOrder[length(SortOrder)-1].last:=true;
 
-      for tmp in SortOrder do with tmp do begin
-        if not(first) or exhaustiveScan then result[index]:=reconstructPath(endPoints[index]);
-        if not(last) then begin
-          setLength(pointsToRescore,length(result[index]));
-          i:=0;
-          for n in result[index] do begin
-            if map[n[0]+n[1]*width].score>0 then begin
-              pointsToRescore[i]:=n; inc(i);
-            end;
-            map[n[0]+n[1]*width].score:=0;
+    PROCEDURE rescoreCommonHead(CONST i0,score0:longint; CONST arr:T_wirePathArray);
+      VAR i,ja,jb,k:longint;
+          p,splitNormal:T_point;
+          step:T_wireDirection;
+          consensus:boolean=true;
+      FUNCTION paretoStep:boolean;
+        VAR endPoint:T_point;
+            dp,dps:double;
+            k:longint;
+            checked:longint=0;
+        begin
+          if not(step in allowed[p[0]+p[1]*width]) then exit(false);
+          for k:=0 to length(arr)-1 do if length(arr[k])>i+1 then begin
+            checked+=1;
+            endPoint:=arr[k,length(arr[k])-1-i];
+            dp :=euklideanDistance(endPoint,p);
+            dps:=euklideanDistance(endPoint,p+step);
+            if dps>dp then exit(false);
           end;
-          for j:=i-1 downto 0 do rescore(pointsToRescore[j]);
+          result:=checked>=2;
         end;
+
+      VAR subSetA,subSetB:T_wirePathArray;
+          toRescore:T_wirePath;
+
+      PROCEDURE updatePath;
+        VAR i:longint;
+            p:T_point;
+        begin
+          for i:=0 to length(toRescore)-1 do begin
+            p:=toRescore[i];
+            with map[p[0]+p[1]*width] do begin
+              score:=0;
+              if i>0 then comeFrom:=toRescore[i-1];
+            end;
+          end;
+          for p in toRescore do rescore(p);
+        end;
+
+      begin
+        i:=i0;
+        //TODO: Extend this approch. How? Repeat (after rewiring) for sub set of paths?
+        setLength(toRescore,0);
+        repeat
+          p:=NO_COME_FROM;
+          consensus:=true;
+          for k:=0 to length(arr)-1 do if (length(arr[k])>i) then begin
+            if p=NO_COME_FROM
+            then    p:=arr[k,length(arr[k])-1-i]
+            else if p<>arr[k,length(arr[k])-1-i] then consensus:=false;
+          end;
+          consensus:=consensus and (p<>NO_COME_FROM);
+          if consensus then begin
+            k:=length(toRescore);
+            setLength(toRescore,k+1);
+            toRescore[k]:=p;
+            {$ifdef debugMode}
+            writeln('Consensus point: ',p[0],',',p[1]);
+            {$endif}
+          end;
+          inc(i);
+        until not(consensus);
+
+        if length(toRescore)>1 then begin
+          p   :=                 toRescore[length(toRescore)-1];
+          step:=directionBetween(toRescore[length(toRescore)-2],p,consensus);
+
+          while paretoStep do begin
+            p+=step;
+            k:=length(toRescore);
+            setLength(toRescore,k+1);
+            toRescore[k]:=p;
+            {$ifdef debugMode}
+            writeln('   Pareto point: ',p[0],',',p[1]);
+            {$endif}
+            inc(i);
+          end;
+          if length(arr)<=2 then begin
+            updatePath;
+            exit;
+          end;
+
+          setLength(subSetA,length(arr)); ja:=0;
+          setLength(subSetB,length(arr)); jb:=0;
+          splitNormal:=pointOf(-WIRE_DELTA[step,1],WIRE_DELTA[step,0]);
+
+          for k:=0 to length(arr)-1 do if length(arr[k])>i then begin
+            if (arr[k,length(arr[k])-i-1]-p)*splitNormal>0
+            then begin subSetA[ja]:=arr[k]; inc(ja); end
+            else begin subSetB[jb]:=arr[k]; inc(jb); end;
+          end;
+          if (ja<=0) or (jb<=0) and (ja+jb=length(arr)) then begin
+            {$ifdef debugMode}
+            writeln('NEED ANOTHER IMPLEMENTATION HERE!');
+            {$endif}
+            updatePath;
+            exit;
+          end else begin
+            setLength(subSetA,ja);
+            setLength(subSetB,jb);
+            updatePath;
+            if ja>=1 then rescoreCommonHead(i,score0+length(toRescore),subSetA);
+            if jb>=1 then rescoreCommonHead(i,score0+length(toRescore),subSetB);
+          end;
+        end else
+          updatePath;
+
+      end;
+
+    begin
+      if (length(endPoints)>1) and exhaustiveScan then begin
+        rescoreCommonHead(0,0,result);
+        for k:=0 to length(result)-1 do result[k]:=reconstructPath(endPoints[k]);
       end;
 
       //Reverse and simplify all...
