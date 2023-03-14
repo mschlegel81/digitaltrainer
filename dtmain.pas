@@ -290,11 +290,17 @@ PROCEDURE TDigitaltrainerMainForm.miMarkChallengesUnsolvedClick(Sender: TObject)
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miNewBoardClick(Sender: TObject);
+  VAR fullInit:boolean;
   begin
-    workspace.setFreeEditMode;
-    workspace.clearBoard(@uiAdapter);
-    workspace.activePalette^.attachUI(@uiAdapter);
-    workspace.activeBoard  ^.attachUI(@uiAdapter);
+    fullInit:=workspace.getActiveChallenge<>nil;
+    if fullInit then workspace.setFreeEditMode;
+                     workspace.clearBoard(@uiAdapter);
+    if fullInit then workspace.activePalette^.attachUI(@uiAdapter)
+                else begin
+                       workspace.activePalette^.ensureVisualPaletteItems;
+                       workspace.activePalette^.checkSizes;
+                     end;
+    if fullInit then workspace.activeBoard  ^.attachUI(@uiAdapter);
     uiAdapter.paintAll;
     updateUiElements;
   end;

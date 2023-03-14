@@ -111,13 +111,13 @@ T_uiAdapter=object
     PROCEDURE setPaletteSize(CONST paletteWidthInGridSize,paletteHeightInGridSize:longint);
     FUNCTION paletteYOffset:longint;
     FUNCTION paletteWidth:longint;
+    PROCEDURE paletteIndexChanged;
 
     PROCEDURE showIoEdit(CONST gate:P_visualGate);
     PROCEDURE hideIoEdit;
 
     PROCEDURE paintAll;
     PROCEDURE repaintImage;
-    PROCEDURE donePainting;
   end;
 {$endif}
 {$ifdef includeImplementation}
@@ -166,6 +166,8 @@ PROCEDURE T_uiAdapter.boardImageMouseWheel(Sender: TObject;  Shift: TShiftState;
     then begin
       if uiElement.paletteScrollBar.visible then begin
         uiElement.paletteScrollBar.position:=uiElement.paletteScrollBar.position-WheelDelta;
+        if   uiElement.paletteScrollBar.position> uiElement.paletteScrollBar.max-uiElement.paletteScrollBar.PageSize
+        then uiElement.paletteScrollBar.position:=uiElement.paletteScrollBar.max-uiElement.paletteScrollBar.PageSize;
         //TODO: This is also implemented in the main form. How can we deduplicate this?
         paintAll;
         if state=uas_propertyEditFromPalette then begin
@@ -178,7 +180,11 @@ PROCEDURE T_uiAdapter.boardImageMouseWheel(Sender: TObject;  Shift: TShiftState;
       end;
     end else begin
       if uiElement.boardVerticalScrollBar.visible
-      then uiElement.boardVerticalScrollBar.position:=uiElement.boardVerticalScrollBar.position-WheelDelta;
+      then begin
+        uiElement.boardVerticalScrollBar.position:=uiElement.boardVerticalScrollBar.position-WheelDelta;
+        if   uiElement.boardVerticalScrollBar.position> uiElement.boardVerticalScrollBar.max-uiElement.boardVerticalScrollBar.PageSize
+        then uiElement.boardVerticalScrollBar.position:=uiElement.boardVerticalScrollBar.max-uiElement.boardVerticalScrollBar.PageSize;
+      end;
       activeBoard^.ScrollbarScroll(nil,scTrack,WheelDelta);
     end;
   end;
@@ -397,8 +403,8 @@ PROCEDURE T_uiAdapter.updateBoardScrollbars;
 
     if effBoardImageHeight>boardHeightInPixels then begin
       uiElement.boardVerticalScrollBar.visible:=false;
-      uiElement.boardVerticalScrollBar.max     :=effBoardImageHeight;
       uiElement.boardVerticalScrollBar.PageSize:=effBoardImageHeight;
+      uiElement.boardVerticalScrollBar.max     :=0;
       uiElement.boardVerticalScrollBar.position:=0;
     end else begin
       uiElement.boardVerticalScrollBar.visible:=true;
@@ -407,7 +413,7 @@ PROCEDURE T_uiAdapter.updateBoardScrollbars;
     end;
     if effBoardImageWidth>boardWidthInPixels then begin
       uiElement.boardHorizontalScrollBar.visible:=false;
-      uiElement.boardHorizontalScrollBar.max     :=effBoardImageWidth;
+      uiElement.boardHorizontalScrollBar.max     :=0;
       uiElement.boardHorizontalScrollBar.PageSize:=effBoardImageWidth;
       uiElement.boardHorizontalScrollBar.position:=0;
     end else begin
@@ -432,16 +438,16 @@ PROCEDURE T_uiAdapter.setPaletteSize(CONST paletteWidthInGridSize, paletteHeight
 
     if uiElement.boardImage.height>paletteHeightInPixels then begin
       uiElement.paletteScrollBar.visible:=false;
-      uiElement.paletteScrollBar.max     :=uiElement.boardImage.height;
       uiElement.paletteScrollBar.PageSize:=uiElement.boardImage.height;
+      uiElement.paletteScrollBar.max     :=uiElement.boardImage.height;
       uiElement.paletteScrollBar.position:=0;
     end else begin
       if not uiElement.paletteScrollBar.visible
       then uiElement.paletteScrollBar.position:=0;
       uiElement.paletteScrollBar.visible:=true;
       uiElement.paletteScrollBar.Left:=0;
-      uiElement.paletteScrollBar.max     :=paletteHeightInPixels;
       uiElement.paletteScrollBar.PageSize:=uiElement.boardImage.height;
+      uiElement.paletteScrollBar.max     :=paletteHeightInPixels;
     end;
 
     uiElement.paletteWidth         :=paletteWidthInPixels;
@@ -460,6 +466,11 @@ FUNCTION T_uiAdapter.paletteYOffset: longint;
 FUNCTION T_uiAdapter.paletteWidth: longint;
   begin
     result:=uiElement.paletteWidth;
+  end;
+
+PROCEDURE T_uiAdapter.paletteIndexChanged;
+  begin
+    uiElement.paletteScrollBar.position:=0;
   end;
 
 PROCEDURE T_uiAdapter.showIoEdit(CONST gate: P_visualGate);
@@ -495,11 +506,6 @@ PROCEDURE T_uiAdapter.paintAll;
 PROCEDURE T_uiAdapter.repaintImage;
   begin
     uiElement.boardImage.repaint;
-  end;
-
-PROCEDURE T_uiAdapter.donePainting;
-  begin
-    uiElement.boardImage.Invalidate;
   end;
 
 {$endif}

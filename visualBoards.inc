@@ -425,7 +425,10 @@ PROCEDURE T_visualBoard.repositionElement(CONST elements: T_visualGateArray;
           end;
           element^.setupVisuals;
         end;
-        else reposition;
+        else begin
+          checkBoardExtend(false,false);
+          reposition;
+        end;
       end;
       inc(elementIndex);
     end;

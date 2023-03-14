@@ -602,6 +602,7 @@ PROCEDURE T_workspacePalette.selectSubPalette(CONST index: longint);
     if index=lastSubPaletteIndex then exit;
     if index<0 then ui^.paletteComboBox.ItemIndex:=lastSubPaletteIndex
     else begin
+      ui^.paletteIndexChanged;
       lastSubPaletteIndex:=index;
       ensureVisualPaletteItems;
       checkSizes;
@@ -1153,10 +1154,13 @@ FUNCTION T_palette.isGateHit(CONST gridPos: T_point; OUT gate: P_visualGate): bo
   end;
 
 PROCEDURE T_palette.comboBoxSelect(Sender: TObject);
+  {$ifdef debugMode} VAR startTime:qword; {$endif}
   begin
+    {$ifdef debugMode} startTime:=GetTickCount64; {$endif}
     selectSubPalette(ui^.paletteComboBox.ItemIndex);
     ui^.paintAll;
     ui^.repaintImage;
+    {$ifdef debugMode} writeln('Palette switch took ',GetTickCount64-startTime,' ticks'); {$endif}
   end;
 
 FUNCTION T_palette.allowDeletion(CONST gate: P_abstractGate; OUT reasonForFalse:string): boolean;
