@@ -1290,6 +1290,7 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y:
           for i:=0 to length(wires)-1 do if wires[i].isWirePosition(gridPos[0],gridPos[1],horizontal) then begin
             if horizontal then ui^.uiElement.boardImage.Cursor:=crHSplit
                           else ui^.uiElement.boardImage.Cursor:=crVSplit;
+            //TODO: Highlight wire(s) on hover
             leaveCriticalSection(wiresCs);
             exit;
           end;

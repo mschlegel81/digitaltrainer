@@ -219,6 +219,7 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
     if workspace.EditorMode and AddToPaletteForm.showFor(P_workspacePalette(workspace.activePalette),workspace.activeBoard) then begin
+      repositionPropertyEditor(0,0,true);
       workspace.activePalette^.attachUI(@uiAdapter);
       workspace.activePalette^.checkSizes;
       workspace.activeBoard^.clear;
@@ -237,6 +238,7 @@ PROCEDURE TDigitaltrainerMainForm.miCopyClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miEditModeClick(Sender: TObject);
   begin
     if workspace.EditorMode then exit;
+    repositionPropertyEditor(0,0,false);
     workspace.setFreeEditMode;
     workspace.activePalette^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
@@ -403,7 +405,6 @@ PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject;button:
     if not(gateProperties.arePropertiesForBoard)
     then begin
       AddToPaletteForm.setSubpalette(workspace.activePalette^.lastSubPaletteIndex);
-
       workspace.editPaletteEntry(P_visualBoard(P_compoundGate(uiAdapter.draggedGate^.getBehavior)^.prototype),@uiAdapter);
     end;
     gateProperties.destroy;
@@ -440,11 +441,10 @@ PROCEDURE TDigitaltrainerMainForm.ResetShapeMouseDown(Sender: TObject;
     infoLabel.caption:=workspace.getInfoLabelText;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.selectionShapeMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
-begin
-  uiAdapter.endSelectionDrag;
-end;
+PROCEDURE TDigitaltrainerMainForm.selectionShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  begin
+    uiAdapter.endSelectionDrag;
+  end;
 
 CONST SPEED_SETTING:array[0..34] of record
         timerInterval,
@@ -493,7 +493,7 @@ PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
       stepsToSimulate, timeForSimlulation:longint;
       elapsed, speed: qword;
   begin
-    if uiAdapter.getState<>uas_initial then exit;
+    if (uiAdapter.getState<>uas_initial) or (propEditPanel.visible) then exit;
     stepsToSimulate   :=SPEED_SETTING[speedTrackBar.position].simSteps;
     timeForSimlulation:=SPEED_SETTING[speedTrackBar.position].timerInterval;
     if workspace.EditorMode

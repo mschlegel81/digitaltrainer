@@ -107,8 +107,7 @@ IMPLEMENTATION
 USES sysutils,romEditorUnit,StdCtrls;
 { T_gatePropertyValues }
 
-FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum
-  ): T_gatePropertyValue;
+FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum): T_gatePropertyValue;
   begin
     result.n:=0;
     result.s:='';

@@ -11,7 +11,7 @@ USES
 TYPE
 
   { TRomEditorForm }
-
+  //TODO: Add import/export functionality (csv)
   TRomEditorForm = class(TForm)
     propRemDataLabel: TLabel;
     propRemDataShape: TShape;
