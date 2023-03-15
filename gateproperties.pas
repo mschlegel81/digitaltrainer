@@ -1,7 +1,7 @@
 UNIT gateProperties;
 {$mode objfpc}{$H+}
 INTERFACE
-USES logicalGates,compoundGates, myGenerics,paletteHandling,ValEdit,Classes;
+USES logicalGates,compoundGates, myGenerics,paletteHandling,ValEdit,Classes,Grids,Controls;
 TYPE
   T_gatePropertyType=(pt_number,pt_string,pt_wireWidth,pt_connectionCount,pt_enumWithOptionForNewEntry,pt_data);
   T_gatePropertyEnum=(gpe_captionReadOnly,
@@ -57,7 +57,7 @@ CONST
   {gt_gatedCl..}([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_subpaletteReadOnly,gpe_intervalGreaterZero]),
   {1/2->1}      ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_subpaletteReadOnly,gpe_inputWidth]),
   {1/2->0}      ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_subpaletteReadOnly,gpe_inputWidth]),
-                ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_subpaletteReadOnly]),
+                ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_subpaletteReadOnly,gpe_romData]),
                 ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_subpaletteReadOnly,gpe_romData]),
                 ([gpe_captionReadOnly,gpe_subPalette],          [gpe_captionReadOnly,gpe_subpaletteReadOnly]));
 
@@ -83,7 +83,9 @@ TYPE
         modified:boolean;
       end;
       editingBoard:boolean;
+      myEditor:TValueListEditor;
       PROCEDURE EditButtonClick(Sender: TObject; aCol, aRow: integer);
+      PROCEDURE EditorSelectEditor(Sender: TObject; aCol, aRow: integer; VAR editor: TWinControl);
       FUNCTION fetchValue(CONST prop:T_gatePropertyEnum):T_gatePropertyValue;
       PROCEDURE applyValue(CONST prop:T_gatePropertyEnum; CONST value:T_gatePropertyValue);
       FUNCTION isPropertyValidInCurrentContext(CONST gatePropertyEnum:T_gatePropertyEnum):boolean;
@@ -102,7 +104,7 @@ TYPE
   end;
 
 IMPLEMENTATION
-USES sysutils,romEditorUnit;
+USES sysutils,romEditorUnit,StdCtrls;
 { T_gatePropertyValues }
 
 FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum
@@ -169,6 +171,17 @@ PROCEDURE T_gatePropertyValues.EditButtonClick(Sender: TObject; aCol,
     if RomEditorForm.showFor(entry[i].value.romContents) then begin
       entry[i].modified:=true;
       onAccept(Sender);
+    end;
+  end;
+
+PROCEDURE T_gatePropertyValues.EditorSelectEditor(Sender: TObject; aCol, aRow: integer; VAR editor: TWinControl);
+  begin
+    if (editor is TPickListCellEditor) then begin
+      TPickListCellEditor(editor).color:=$00703838;
+      TPickListCellEditor(editor).Font.color:=$00FFFFFF;
+      TPickListCellEditor(editor).style:=csOwnerDrawEditableFixed;
+      TPickListCellEditor(editor).AutoComplete:=true;
+      TPickListCellEditor(editor).AutoCompleteText:=[cbactEnabled,cbactEndOfLineComplete,cbactSearchAscending];
     end;
   end;
 
@@ -241,10 +254,10 @@ PROCEDURE T_gatePropertyValues.ValueListEditorValidateEntry(Sender: TObject;
   end;
 
 PROCEDURE T_gatePropertyValues.connectEditor(editor: TValueListEditor);
-  VAR
-    i: integer;
-    s: string;
+  VAR i: integer;
+      s: string;
   begin
+    myEditor:=editor;
     editor.OnValidateEntry:=@ValueListEditorValidateEntry;
     editor.OnButtonClick:=@EditButtonClick;
     editor.clear;
@@ -274,6 +287,7 @@ PROCEDURE T_gatePropertyValues.connectEditor(editor: TValueListEditor);
     end;
     editor.editor.color:=$00703838;
     editor.editor.Font.color:=$00FFFFFF;
+    editor.OnSelectEditor:=@EditorSelectEditor;
     editor.AutoSizeColumn(0);
   end;
 

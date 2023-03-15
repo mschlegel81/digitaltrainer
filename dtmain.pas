@@ -103,8 +103,7 @@ TYPE
     PROCEDURE selectionShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE SimulationTimerTimer(Sender: TObject);
     PROCEDURE speedTrackBarChange(Sender: TObject);
-    PROCEDURE SubPaletteComboBoxDrawItem(control: TWinControl; index: integer;
-      ARect: TRect; state: TOwnerDrawState);
+    PROCEDURE SubPaletteComboBoxDrawItem(control: TWinControl; index: integer; ARect: TRect; state: TOwnerDrawState);
     PROCEDURE TestShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE WireTimerTimer(Sender: TObject);
     PROCEDURE ZoomInShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -491,22 +490,23 @@ VAR lastSimTime:qword=0;
     averageSpeed:double=8;
 PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
   VAR stepsSimulated: longint;
-      stepsToSimulate:longint;
+      stepsToSimulate, timeForSimlulation:longint;
       elapsed, speed: qword;
   begin
     if uiAdapter.getState<>uas_initial then exit;
-    stepsToSimulate:=SPEED_SETTING[speedTrackBar.position].simSteps;
+    stepsToSimulate   :=SPEED_SETTING[speedTrackBar.position].simSteps;
+    timeForSimlulation:=SPEED_SETTING[speedTrackBar.position].timerInterval;
     if workspace.EditorMode
-    then stepsSimulated:=workspace.activeBoard^.simulateSteps  (stepsToSimulate,SPEED_SETTING[speedTrackBar.position].timerInterval)
+    then stepsSimulated:=workspace.activeBoard^.simulateSteps  (stepsToSimulate,timeForSimlulation)
     else begin
       if workspace.getActiveChallenge^.currentlyTesting
       then begin
-        stepsSimulated:=workspace.getActiveChallenge^.testStep(stepsToSimulate,SPEED_SETTING[speedTrackBar.position].timerInterval,workspace.activeBoard);
+        stepsSimulated:=workspace.getActiveChallenge^.testStep(stepsToSimulate,timeForSimlulation,workspace.activeBoard);
         uiAdapter.paintAll;
         if not(workspace.getActiveChallenge^.currentlyTesting)
         then testFinished;
       end
-      else stepsSimulated:=workspace.activeBoard^.coSimulateSteps(stepsToSimulate,SPEED_SETTING[speedTrackBar.position].timerInterval,workspace.getActiveChallenge^.expectedBehavior);
+      else stepsSimulated:=workspace.activeBoard^.coSimulateSteps(stepsToSimulate,timeForSimlulation,workspace.getActiveChallenge^.expectedBehavior);
     end;
     infoLabel.caption:=workspace.getInfoLabelText;
 
@@ -534,7 +534,7 @@ PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.speedTrackBarChange(Sender: TObject);
   begin
     SimulationTimer.interval:=SPEED_SETTING[speedTrackBar.position].timerInterval;
-    speedLabel.caption:='Speed: '+SPEED_SETTING[speedTrackBar.position].labelCaption;
+    speedLabel.caption:='Speed: ('+SPEED_SETTING[speedTrackBar.position].labelCaption+')';
     averageSpeed:=SPEED_SETTING[speedTrackBar.position].simSteps/SPEED_SETTING[speedTrackBar.position].timerInterval*1000;
   end;
 
