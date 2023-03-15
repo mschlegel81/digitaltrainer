@@ -192,7 +192,7 @@ FUNCTION TSelectTaskForm.startTaskAfterShowing(CONST cSet: P_challengeSet): bool
 PROCEDURE TSelectTaskForm.showForExport(CONST cSet: P_challengeSet);
   VAR i:longint;
   begin
-    for i:=0 to length(cset^.challenge)-1 do cSet^.challenge[i]^.marked:=false;
+    for i:=0 to length(cSet^.challenge)-1 do cSet^.challenge[i]^.marked:=false;
     StartTaskLabel.caption:='Exportieren';
     DeleteTaskLabel.caption:='Exportieren (gesperrt)';
     challengeSet:=cSet;

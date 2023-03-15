@@ -183,15 +183,15 @@ PROCEDURE TPaletteForm.fillTable(CONST initial: boolean);
         if entryType=gt_compound
         then tmp:=prototype^.getCaption
         else tmp:=C_gateTypeName[entryType];
-        EntriesGrid.Cells[0,i+1]:=StringReplace(tmp,LineEnding,'\n',[rfReplaceAll]);
+        entriesGrid.Cells[0,i+1]:=StringReplace(tmp,LineEnding,'\n',[rfReplaceAll]);
 
         if entryType=gt_compound
         then tmp:=prototype^.getDescription
         else tmp:=C_gateDefaultDescription[entryType];
-        EntriesGrid.Cells[1,i+1]:=StringReplace(tmp,LineEnding,'\n',[rfReplaceAll]);
+        entriesGrid.Cells[1,i+1]:=StringReplace(tmp,LineEnding,'\n',[rfReplaceAll]);
 
-        EntriesGrid.Cells[2,i+1]:=palette^.subPaletteNames[subPaletteIndex];
-        EntriesGrid.Cells[3,i+1]:=BoolToStr((entryType=gt_compound) and markedForExport,'✓','');
+        entriesGrid.Cells[2,i+1]:=palette^.subPaletteNames[subPaletteIndex];
+        entriesGrid.Cells[3,i+1]:=BoolToStr((entryType=gt_compound) and markedForExport,'✓','');
       end;
     end;
   VAR i:longint;

@@ -10,14 +10,16 @@ T_visualWire=object
     gate:P_visualGate;
     gateInputIndex:longint;
     path:T_wirePath;
+    hoveringOver:boolean;
   end;
 
   PROCEDURE dropWiresAssociatedWith(CONST gate:P_visualGate);
   FUNCTION simulateStep:boolean;
   PROCEDURE paint(CONST zoom:longint; CONST Canvas:TBGRACanvas);
-  FUNCTION isWirePosition(CONST gridX,gridY:longint; OUT horizontalWire:boolean):boolean;
+  FUNCTION isWirePosition(CONST gridX,gridY:longint; CONST markHover:boolean; OUT horizontalWire:boolean):boolean;
   PROCEDURE dropWiresTouchingPosition(CONST gridX,gridY:longint; CONST horizontalWire:boolean);
   PROCEDURE setPaths(CONST paths:T_wirePathArray);
+  PROCEDURE unhoverAll;
 end;
 
 {$endif}
@@ -39,9 +41,9 @@ PROCEDURE paintWire(CONST zoom:longint; CONST Canvas:TBGRACanvas; CONST bitWidth
     for run:=0 to 1 do begin
       Canvas.Pen.width:=w;
       w-=surround;
-      if run=0         then Canvas.Pen.color:=BOARD_COLOR
-      else if preview  then Canvas.Pen.color:=MARK_COLOR
-                       else Canvas.Pen.color:=WIRE_COLOR;
+      if run=0        then Canvas.Pen.color:=BOARD_COLOR
+      else if preview then Canvas.Pen.color:=MARK_COLOR
+                      else Canvas.Pen.color:=WIRE_COLOR;
       for i:=0 to length(path)-1 do if length(path[i])>1 then begin
                                          Canvas.MoveTo(path[i,0,0]*zoom,path[i,0,1]*zoom);
         for j:=1 to length(path[i])-1 do Canvas.LineTo(path[i,j,0]*zoom,path[i,j,1]*zoom);
@@ -76,25 +78,55 @@ FUNCTION T_visualWire.simulateStep: boolean;
   end;
 
 PROCEDURE T_visualWire.paint(CONST zoom: longint; CONST Canvas: TBGRACanvas);
-  VAR wrap:T_wirePathArray;
-      i:longint;
+  VAR w:longint=1;
+      run:byte;
+      i,j:longint;
+      surround:longint;
   begin
-    setLength(wrap,length(sink));
-    for i:=0 to length(wrap)-1 do wrap[i]:=sink[i].path;
-    paintWire(zoom,Canvas,
-              source^.behavior^.outputWidth(sourceOutputIndex),
-              wrap);
-    setLength(wrap,0);
+    surround:=zoom div 2;
+    bitWidth:=source^.behavior^.outputWidth(sourceOutputIndex);
+    case bitWidth of
+       1..3: w:=(1*zoom) shr 4;
+       4..7: w:=(2*zoom) shr 4;
+      8..15: w:=(3*zoom) shr 4;
+       else  w:=(4*zoom) shr 4;
+    end;
+
+
+
+    if w<1 then w:=1; w+=surround;
+    for run:=0 to 2 do begin
+
+      if run=0 then begin
+        Canvas.Pen.width:=w;
+        Canvas.Pen.color:=BOARD_COLOR;
+      end;
+      if run=1 then begin
+        w-=surround;
+        Canvas.Pen.color:=MARK_COLOR
+        Canvas.Pen.width:=w;
+      end;
+      if run=2 then
+        Canvas.Pen.color:=WIRE_COLOR;
+
+      for i:=0 to length(sink)-1 do
+      if (length(sink[i].path)>1) and ((run=0) or (sink[i].hoveringOver) and (run=1))
+      then begin
+                                              Canvas.MoveTo(sink[i].path[0,0]*zoom,sink[i].path[0,1]*zoom);
+        for j:=1 to length(sink[i].path)-1 do Canvas.LineTo(sink[i].path[j,0]*zoom,sink[i].path[j,1]*zoom);
+      end;
+    end;
   end;
 
-FUNCTION T_visualWire.isWirePosition(CONST gridX, gridY: longint; OUT horizontalWire: boolean): boolean;
+
+FUNCTION T_visualWire.isWirePosition(CONST gridX, gridY: longint; CONST markHover:boolean;  OUT horizontalWire: boolean): boolean;
   VAR i:longint;
       orientation: T_wireDirection;
   begin
     for i:=0 to length(sink)-1 do if pathContains(sink[i].path,gridX,gridY,orientation) then begin
       horizontalWire:=orientation in [wd_left,wd_right];
-      exit(true);
-    end;
+      sink[i].hoveringOver:=markHover;
+    end else sink[i].hoveringOver:=false;
     result:=false;
   end;
 
@@ -116,6 +148,12 @@ PROCEDURE T_visualWire.setPaths(CONST paths: T_wirePathArray);
   VAR i:longint;
   begin
     for i:=0 to min(length(paths),length(sink))-1 do sink[i].path:=paths[i];
+  end;
+
+PROCEDURE T_visualWire.unhoverAll;
+  VAR i:longint;
+  begin
+    for i:=0 to min(length(sink))-1 do sink[i].hoveringOver:=false;
   end;
 
 {$endif}
