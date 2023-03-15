@@ -1,12 +1,14 @@
 object RomEditorForm: TRomEditorForm
   Left = 931
-  Height = 222
+  Height = 278
   Top = 413
-  Width = 320
+  Width = 400
   Caption = 'ROM Editor'
-  ClientHeight = 222
-  ClientWidth = 320
+  ClientHeight = 253
+  ClientWidth = 400
   Color = 7354424
+  DesignTimePPI = 120
+  Menu = MainMenu1
   OnCreate = FormCreate
   LCLVersion = '2.2.2.0'
   object StringGrid1: TStringGrid
@@ -15,17 +17,30 @@ object RomEditorForm: TRomEditorForm
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = propOkShape
-    Left = 5
-    Height = 169
-    Top = 5
-    Width = 310
+    Left = 6
+    Height = 187
+    Top = 6
+    Width = 388
     Anchors = [akTop, akLeft, akRight, akBottom]
-    BorderSpacing.Left = 5
-    BorderSpacing.Top = 5
-    BorderSpacing.Right = 5
-    BorderSpacing.Bottom = 5
+    BorderSpacing.Left = 6
+    BorderSpacing.Top = 6
+    BorderSpacing.Right = 6
+    BorderSpacing.Bottom = 6
     Color = 8405056
     ColCount = 4
+    Columns = <    
+      item
+        Alignment = taRightJustify
+        Title.Caption = 'bin'
+      end    
+      item
+        Alignment = taRightJustify
+        Title.Caption = 'dec'
+      end    
+      item
+        Alignment = taRightJustify
+        Title.Caption = '2cmp'
+      end>
     FixedColor = 6303792
     Flat = True
     Font.Color = clWhite
@@ -34,19 +49,13 @@ object RomEditorForm: TRomEditorForm
     TabOrder = 0
     OnValidateEntry = StringGrid1ValidateEntry
     Cells = (
-      4
+      2
       0
       0
       'Adresse'
       1
       0
       'Daten (bin)'
-      2
-      0
-      'Daten (dec)'
-      3
-      0
-      'Daten (2cmp)'
     )
   end
   object propOkShape: TShape
@@ -56,14 +65,14 @@ object RomEditorForm: TRomEditorForm
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 91
-    Height = 38
-    Top = 179
-    Width = 224
+    Left = 114
+    Height = 48
+    Top = 199
+    Width = 280
     Anchors = [akLeft, akRight, akBottom]
-    BorderSpacing.Left = 5
-    BorderSpacing.Right = 5
-    BorderSpacing.Bottom = 5
+    BorderSpacing.Left = 6
+    BorderSpacing.Right = 6
+    BorderSpacing.Bottom = 6
     Brush.Color = 6303792
     OnMouseDown = propOkShapeMouseDown
     Shape = stRoundRect
@@ -73,14 +82,14 @@ object RomEditorForm: TRomEditorForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = propOkShape
     AnchorSideTop.Side = asrCenter
-    Left = 158
-    Height = 21
-    Top = 188
-    Width = 91
+    Left = 198
+    Height = 28
+    Top = 209
+    Width = 113
     Caption = 'Übernehmen'
     Font.CharSet = ANSI_CHARSET
     Font.Color = clWhite
-    Font.Height = -16
+    Font.Height = -20
     Font.Pitch = fpVariable
     Font.Quality = fqDraft
     ParentColor = False
@@ -92,13 +101,13 @@ object RomEditorForm: TRomEditorForm
     AnchorSideLeft.Side = asrBottom
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 48
-    Height = 38
-    Top = 179
-    Width = 38
+    Left = 60
+    Height = 48
+    Top = 199
+    Width = 48
     Anchors = [akLeft, akBottom]
-    BorderSpacing.Left = 5
-    BorderSpacing.Bottom = 5
+    BorderSpacing.Left = 6
+    BorderSpacing.Bottom = 6
     Brush.Color = 6303792
     OnMouseDown = propAddDataShapeMouseDown
     Shape = stRoundRect
@@ -108,14 +117,14 @@ object RomEditorForm: TRomEditorForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = propAddDataShape
     AnchorSideTop.Side = asrCenter
-    Left = 62
-    Height = 21
-    Top = 188
-    Width = 11
+    Left = 77
+    Height = 28
+    Top = 209
+    Width = 14
     Caption = '+'
     Font.CharSet = ANSI_CHARSET
     Font.Color = clWhite
-    Font.Height = -16
+    Font.Height = -20
     Font.Pitch = fpVariable
     Font.Quality = fqDraft
     ParentColor = False
@@ -126,13 +135,13 @@ object RomEditorForm: TRomEditorForm
     AnchorSideLeft.Control = Owner
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 5
-    Height = 38
-    Top = 179
-    Width = 38
+    Left = 6
+    Height = 48
+    Top = 199
+    Width = 48
     Anchors = [akLeft, akBottom]
-    BorderSpacing.Left = 5
-    BorderSpacing.Bottom = 5
+    BorderSpacing.Left = 6
+    BorderSpacing.Bottom = 6
     Brush.Color = 6303792
     OnMouseDown = propRemDataShapeMouseDown
     Shape = stRoundRect
@@ -142,18 +151,46 @@ object RomEditorForm: TRomEditorForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = propRemDataShape
     AnchorSideTop.Side = asrCenter
-    Left = 21
-    Height = 21
-    Top = 188
-    Width = 6
+    Left = 26
+    Height = 28
+    Top = 209
+    Width = 8
     Caption = '-'
     Font.CharSet = ANSI_CHARSET
     Font.Color = clWhite
-    Font.Height = -16
+    Font.Height = -20
     Font.Pitch = fpVariable
     Font.Quality = fqDraft
     ParentColor = False
     ParentFont = False
     OnMouseDown = propRemDataShapeMouseDown
+  end
+  object MainMenu1: TMainMenu
+    Left = 102
+    Top = 140
+    object miImport: TMenuItem
+      Caption = '&Importieren'
+      OnClick = miImportClick
+    end
+    object miExport: TMenuItem
+      Caption = '&Exportieren'
+      OnClick = miExportClick
+    end
+  end
+  object OpenDialog1: TOpenDialog
+    DefaultExt = '.csv'
+    Filter = 'CSV|*.csv'
+    FilterIndex = 0
+    Options = [ofPathMustExist, ofEnableSizing, ofViewDetail]
+    Left = 123
+    Top = 62
+  end
+  object SaveDialog1: TSaveDialog
+    DefaultExt = '.csv'
+    Filter = 'CSV|*.csv'
+    FilterIndex = 0
+    Options = [ofOverwritePrompt, ofPathMustExist, ofEnableSizing, ofViewDetail]
+    Left = 219
+    Top = 82
   end
 end
