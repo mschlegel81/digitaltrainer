@@ -47,6 +47,7 @@ T_visualBoard=object(T_captionedAndIndexed)
     PROCEDURE reshapeGrid(CONST newGridX1,newGridY1:longint; CONST byMouseEvent:boolean);
     PROCEDURE dropWatchersAssociatedWith(CONST gate:P_visualGate);
     PROCEDURE deleteMarkedGates;
+    PROCEDURE unhoverAllWires;
   public
     wiresHaveChangedInBackground:boolean;
     CONSTRUCTOR create(CONST palette:P_abstractPrototypeSource);
@@ -924,6 +925,7 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
       io:=0;
       for i:=0 to length(wires)-1 do begin
         with wires[i] do begin
+          unhoverAll;
           if sourceOutputIndex>=source^.behavior^.numberOfOutputs then setLength(sink,0);
           jo:=0;
           for j:=0 to length(sink)-1 do
@@ -1132,17 +1134,18 @@ PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
       //Draw wires:
       for i:=0 to length(wires)-1 do wires[i].paint(zoom,Canvas);
 
+      wiresUpToDate:=true;
+      leaveCriticalSection(wiresCs);
+    end;
+    if draw then begin
       ui^.uiElement.boardImage.Canvas.Brush.color:=BOARD_COLOR;
       ui^.uiElement.boardImage.Canvas.Brush.style:=bsSolid;
       ui^.uiElement.boardImage.Canvas.Pen.style:=psClear;
       ui^.uiElement.boardImage.Canvas.FillRect(0,0,ui^.uiElement.boardImage.width,ui^.uiElement.boardImage.height);
-
-      wiresUpToDate:=true;
-      leaveCriticalSection(wiresCs);
+      ui^.uiElement.wireLayer.draw(ui^.uiElement.boardImage.Canvas,
+                                   ui^.uiElement.paletteWidth-ui^.uiElement.boardHorizontalScrollBar.position,
+                                                             -ui^.uiElement.boardVerticalScrollBar  .position);
     end;
-    if draw then ui^.uiElement.wireLayer.draw(ui^.uiElement.boardImage.Canvas,
-                                              ui^.uiElement.paletteWidth-ui^.uiElement.boardHorizontalScrollBar.position,
-                                                                        -ui^.uiElement.boardVerticalScrollBar  .position);
   end;
 
 PROCEDURE T_visualBoard.reshapeGrid(CONST newGridX1, newGridY1: longint;
@@ -1196,15 +1199,29 @@ PROCEDURE T_visualBoard.deleteMarkedGates;
     end;
   end;
 
+PROCEDURE T_visualBoard.unhoverAllWires;
+  VAR i:longint;
+      changed:boolean=false;
+  begin
+    for i:=0 to length(wires)-1 do if wires[i].unhoverAll then changed:=true;
+    if changed then begin
+      wiresUpToDate:=false;
+      ui^.paintAll;
+    end;
+  end;
+
 PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y: integer);
   VAR gridPos:T_point;
       i:longint;
-      horizontal: boolean;
+      horizontal, hoverChanged: boolean;
       g:P_visualGate;
       hoverInfo: T_hoverInfo;
       posDelta:T_point;
+      anyWireHover:boolean=false;
+
   begin
     gridPos:=ui^.canvasToGrid(x,y);
+    if ui^.state<>uas_initial then unhoverAllWires;
     case ui^.state of
       uas_draggingGridOutputX0: begin
         ui^.uiElement.boardImage.Cursor:=crSizeWE;
@@ -1260,6 +1277,7 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y:
               if (hoverInfo.subElement=block) and (hoverInfo.ioIndex>0)
               then ui^.uiElement.boardImage.Cursor:=crIBeam
               else ui^.uiElement.boardImage.Cursor:=crCross;
+              unhoverAllWires;
               exit;
             end;
           for g in gates   do if g^.isAtGridPos(gridPos,hoverInfo) then
@@ -1267,6 +1285,7 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y:
               ui^.uiElement.boardImage.ShowHint:=true;
               ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
               ui^.uiElement.boardImage.Cursor:=crCross;
+              unhoverAllWires;
               exit;
             end;
           for g in outputs do if g^.isAtGridPos(gridPos,hoverInfo) then
@@ -1274,6 +1293,7 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y:
               ui^.uiElement.boardImage.ShowHint:=true;
               ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
               ui^.uiElement.boardImage.Cursor:=crCross;
+              unhoverAllWires;
               exit;
             end;
           ui^.uiElement.boardImage.ShowHint:=false;
@@ -1287,14 +1307,21 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y:
         if gridPos[0]=gridX1 then ui^.uiElement.boardImage.Cursor:=crSizeWE else
         if gridPos[1]=gridY1 then ui^.uiElement.boardImage.Cursor:=crSizeNS else begin
           enterCriticalSection(wiresCs);
-          for i:=0 to length(wires)-1 do if wires[i].isWirePosition(gridPos[0],gridPos[1],horizontal) then begin
+          for i:=0 to length(wires)-1 do if wires[i].isWirePosition(gridPos[0],gridPos[1],true,hoverChanged,horizontal) then begin
             if horizontal then ui^.uiElement.boardImage.Cursor:=crHSplit
                           else ui^.uiElement.boardImage.Cursor:=crVSplit;
-            //TODO: Highlight wire(s) on hover
-            leaveCriticalSection(wiresCs);
-            exit;
+            anyWireHover:=true;
           end;
           leaveCriticalSection(wiresCs);
+        end;
+        if anyWireHover then begin
+          wiresUpToDate:=false;
+          ui^.paintAll;
+        end else begin
+          if hoverChanged then begin
+            wiresUpToDate:=false;
+            ui^.paintAll;
+          end;
           ui^.uiElement.boardImage.Cursor:=crCross;
         end;
       end;
@@ -1454,7 +1481,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
       i: longint;
       j: longint=0;
       needToDropWire:boolean=false;
-      horizontal: boolean;
+      horizontal, dummy: boolean;
   begin
     ui^.callback.repositionPropertyEditorCallback(x,y,true);
     if x<ui^.paletteWidth then begin
@@ -1486,7 +1513,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
     for g in outputs do if handleGateHit(g) then exit;
 
     enterCriticalSection(wiresCs);
-    for i:=0 to length(wires)-1 do needToDropWire:=needToDropWire or wires[i].isWirePosition(gridPos[0],gridPos[1],horizontal);
+    for i:=0 to length(wires)-1 do needToDropWire:=needToDropWire or wires[i].isWirePosition(gridPos[0],gridPos[1],false,dummy,horizontal);
     if needToDropWire then begin
       ui^.saveStateToUndoList;
       for i:=0 to length(wires)-1 do begin
