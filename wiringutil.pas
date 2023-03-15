@@ -112,7 +112,6 @@ FUNCTION readPoint(VAR stream: T_bufferedInputStreamWrapper):T_point;
 FUNCTION maxNormDistance(CONST x,y:T_point):longint;
 FUNCTION euklideanDistance(CONST x, y: T_point): double;
 FUNCTION pathTotalLength(CONST path:T_wirePath):double;
-FUNCTION multipathEffectiveLength(CONST list:T_wirePathArray; CONST indexToReplace:longint; CONST replacement:T_wirePath):double;
 FUNCTION multipathEffectiveLength(CONST list:T_wirePathArray):double;
 
 FUNCTION linesIntersect(CONST a0,a1,b0,b1:T_point):boolean;
@@ -537,7 +536,7 @@ FUNCTION pathTotalLength(CONST path: T_wirePath): double;
     for i:=0 to length(path)-2 do result+=euklideanDistance(path[i],path[i+1]);
   end;
 
-FUNCTION multipathEffectiveLength(CONST list:T_wirePathArray; CONST indexToReplace:longint; CONST replacement:T_wirePath):double;
+FUNCTION multipathEffectiveLength(CONST list:T_wirePathArray):double;
   VAR stepsCounted:array of record p0,p1:T_point; end;
       k:longint=0;
       pathLength:double=0;
@@ -555,6 +554,7 @@ FUNCTION multipathEffectiveLength(CONST list:T_wirePathArray; CONST indexToRepla
         if k>=length(stepsCounted) then setLength(stepsCounted,length(stepsCounted)*2);
         stepsCounted[k].p0:=prevPoint;
         stepsCounted[k].p1:=nextPoint;
+        inc(k);
         pathLength+=euklideanDistance(prevPoint,nextPoint);
       end;
       prevPoint:=nextPoint;
@@ -571,18 +571,9 @@ FUNCTION multipathEffectiveLength(CONST list:T_wirePathArray; CONST indexToRepla
   VAR i:longint;
   begin
     setLength(stepsCounted,16);
-    for i:=0 to length(list)-1 do if i=indexToReplace then countPath(replacement) else countPath(list[i]);
+    for i:=0 to length(list)-1 do countPath(list[i]);
     result:=pathLength;
     setLength(stepsCounted,0);
-  end;
-
-FUNCTION multipathEffectiveLength(CONST list: T_wirePathArray): double;
-  begin
-    if length(list)=0
-    then result:=0
-    else if length(list)=1
-         then result:=pathTotalLength(list[0])
-         else result:=multipathEffectiveLength(list,-1,list[0]);
   end;
 
 FUNCTION simplifyPath(CONST path:T_wirePath):T_wirePath;
@@ -1017,18 +1008,98 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
         end;
       end;
 
+    PROCEDURE deepClone(CONST source:T_wirePathArray; VAR target:T_wirePathArray);
+      VAR i,j:longint;
+      begin
+        setLength(target,length(source));
+        for i:=0 to length(source)-1 do begin
+          setLength(target[i],length(source[i]));
+          for j:=0 to length(source[i])-1 do target[i,j]:=source[i,j];
+        end;
+      end;
+
     VAR i,j,k:longint;
         n: T_point;
         allIndexes:T_arrayOfLongint;
         emptyHead:T_wirePath;
+        mapCopy:array of T_mapEntry;
+    TYPE T_sortOrder=record
+           first,last:boolean;
+           index:longint;
+           L:double;
+         end;
+    VAR SortOrder:array of T_sortOrder;
+        tmp:T_sortOrder;
     begin
       if (length(endPoints)>1) and exhaustiveScan then begin
-        wiringResult:=result;
+        //BACKUP
+        deepClone(result,wiringResult);
+        setLength(mapCopy,length(map));
+        for i:=0 to length(map)-1 do mapCopy[i]:=map[i];
+
+        //OPTIMIZATION APPROACH 1: Consensus wiring
         setLength(allIndexes,length(result));
         for i:=0 to length(allIndexes)-1 do allIndexes[i]:=i;
         setLength(emptyHead,0);
         rescoreCommonHead(0,emptyHead,allIndexes);
-        result:=wiringResult;
+
+        //RESTORE
+        for i:=0 to length(map)-1 do map[i]:=mapCopy[i];
+
+        //OPTIMIZATION APPROACH 2: Iterative, shortest first
+        setLength(SortOrder,length(result));
+        for i:=0 to length(result)-1 do begin
+          SortOrder[i].first:=false;
+          SortOrder[i].last :=false;
+          SortOrder[i].index:=i;
+          SortOrder[i].L:=map[endPoints[i,0]+endPoints[i,1]*width].score;
+          for j:=0 to i-1 do if SortOrder[j].L>SortOrder[i].L then begin
+            tmp:=SortOrder[i];
+            SortOrder[i]:=SortOrder[j];
+            SortOrder[j]:=tmp;
+          end;
+        end;
+        SortOrder[                  0].first:=true;
+        SortOrder[length(SortOrder)-1].last:=true;
+        for tmp in SortOrder do with tmp do begin
+          result[index]:=reconstructPath(endPoints[index]);
+          if not(last) then begin
+            setLength(emptyHead,length(result[index]));
+            i:=0;
+            for n in result[index] do begin
+              if map[n[0]+n[1]*width].score>0 then begin
+                emptyHead[i]:=n; inc(i);
+              end;
+            end;
+            for j:=i-1 downto 0 do rescore(emptyHead[j]);
+          end;
+        end;
+
+        //PICK THE ONE WITH THE SHORTEST LENGTH:
+        if multipathEffectiveLength(result)<multipathEffectiveLength(wiringResult)
+        then deepClone(result,wiringResult);
+
+        //RESTORE
+        for i:=0 to length(map)-1 do map[i]:=mapCopy[i];
+
+        //OPTIMIZATION APPROACH 3: Iterative, longest first
+        for k:=length(SortOrder)-1 downto 0 do with SortOrder[k] do begin
+          result[index]:=reconstructPath(endPoints[index]);
+          if k>0 then begin
+            setLength(emptyHead,length(result[index]));
+            i:=0;
+            for n in result[index] do begin
+              if map[n[0]+n[1]*width].score>0 then begin
+                emptyHead[i]:=n; inc(i);
+              end;
+            end;
+            for j:=i-1 downto 0 do rescore(emptyHead[j]);
+          end;
+        end;
+
+        //PICK THE ONE WITH THE SHORTEST LENGTH:
+        if multipathEffectiveLength(result)>multipathEffectiveLength(wiringResult)
+        then result:=wiringResult;
       end;
       //Reverse and simplify all...
       for k:=0 to length(result)-1 do if length(result[k])>0 then begin
