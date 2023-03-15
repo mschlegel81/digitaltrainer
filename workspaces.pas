@@ -194,6 +194,7 @@ PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard;
     workspacePalette^.setFilter(prototype^.getIndexInPalette);
     workspaceBoard:=prototype^.clone;
     workspaceBoard^.attachUI(uiAdapter);
+    workspaceBoard^.reset(true);
     uiAdapter^.paintAll;
   end;
 
