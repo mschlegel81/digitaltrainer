@@ -398,8 +398,8 @@ PROCEDURE T_uiAdapter.updateBoardScrollbars;
     //Board:
     boardWidthInPixels :=(activeBoard^.gridX1+5)*zoom;
     boardHeightInPixels:=(activeBoard^.gridY1+5)*zoom;
-    effBoardImageHeight:=uiElement.boardImage.height-uiElement.boardHorizontalScrollBar.height-uiElement.paletteWidth;
-    effBoardImageWidth :=uiElement.boardImage.width -uiElement.boardVerticalScrollBar  .width;
+    effBoardImageHeight:=uiElement.boardImage.height-uiElement.boardHorizontalScrollBar.height;
+    effBoardImageWidth :=uiElement.boardImage.width -uiElement.boardVerticalScrollBar  .width-uiElement.paletteWidth;
 
     if effBoardImageHeight>boardHeightInPixels then begin
       uiElement.boardVerticalScrollBar.visible:=false;

@@ -1775,17 +1775,7 @@ FUNCTION T_visualBoard.simulateSteps(CONST count, timeOutInTicks: longint): long
       if changed then inc(result);
     end;
     inc(simStepCounter,result);
-    if result>0 then begin
-      Canvas:=ui^.uiElement.boardImage.Canvas;
-      for g in inputs   do g^.paintAll(Canvas);
-      for g in gates    do g^.paintAll(Canvas);
-      for g in outputs  do begin
-        g^.outputMark:=iom_none;
-        g^.paintAll(Canvas);
-      end;
-      for w in watchers do w^.paint(ui,Canvas);
-      ui^.uiElement.boardImage.repaint;
-    end;
+    if result>0 then ui^.paintAll;
   end;
 
 FUNCTION T_visualBoard.startMultiDrag(CONST primaryGate: P_visualGate): boolean;
