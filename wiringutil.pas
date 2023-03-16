@@ -44,7 +44,7 @@ TYPE
       width,height:longint;
       allowed:array of T_wireDirectionSet;
 
-      PROCEDURE dropWireSection(CONST a,b:T_point; CONST diagonalsOnly:boolean=false);
+      PROCEDURE dropWireSection(CONST a,b:T_point);
       FUNCTION findMultiPath(CONST startPoint:T_point; CONST endPoints:T_wirePath; CONST exhaustiveScan:boolean):T_wirePathArray;
     public
       CONSTRUCTOR create(CONST width_,height_:longint);
@@ -264,12 +264,6 @@ FUNCTION directionBetween(CONST x, y: T_point; OUT valid:boolean): T_wireDirecti
     end;
   end;
 
-FUNCTION wireStep(CONST start:T_point; CONST direction:T_wireDirection; CONST steps:longint):T_point;
-  begin
-    result[0]:=start[0]+WIRE_DELTA[direction,0]*steps;
-    result[1]:=start[1]+WIRE_DELTA[direction,1]*steps;
-  end;
-
 CONSTRUCTOR T_wiringTask.create(CONST freshGraph: P_wireGraph; CONST onFinish_: F_simpleCallback);
   begin
     graph:=freshGraph;
@@ -365,7 +359,7 @@ PROCEDURE T_wiringTask.execute;
         for path in toFind[i].foundPath do
           if length(path)=0
           then searchOk:=false
-          else workGraph^.dropWire(path);
+          else workGraph^.dropWire(path,true);
         if searchOk
         then inc(toFind[i].successfulSearches)
         else allOk:=false;
@@ -398,6 +392,7 @@ PROCEDURE T_wiringTask.executeInBackground;
 
 PROCEDURE T_wiringTask.cancelAndDestroy;
   begin
+    onFinish    :=nil;
     cancelled   :=true;
     toBeDisposed:=true;
   end;
@@ -485,17 +480,13 @@ FUNCTION allPointsBetween(CONST startP, endP: T_point; OUT dir: T_wireDirection)
     end;
   end;
 
-PROCEDURE T_wireGraph.dropWireSection(CONST a, b: T_point;
-  CONST diagonalsOnly: boolean);
-  //CONST DIRECTIONS_TO_DROP:array[T_wireDirection] of T_wireDirectionSet=(
-  //{wd_left     }[wd_left,wd_leftDown,        wd_rightDown,wd_right,wd_rightUp,      wd_leftUp],
-  //{wd_leftDown }[wd_left,wd_leftDown,wd_down,             wd_right,wd_rightUp,wd_up          ],
-  //{wd_down     }[        wd_leftDown,wd_down,wd_rightDown,         wd_rightUp,wd_up,wd_leftUp],
-  //{wd_rightDown}[wd_left,            wd_down,wd_rightDown,wd_right,           wd_up,wd_leftUp],
-  //{wd_right    }[wd_left,wd_leftDown,        wd_rightDown,wd_right,wd_rightUp,      wd_leftUp],
-  //{wd_rightUp  }[wd_left,wd_leftDown,wd_down,             wd_right,wd_rightUp,wd_up          ],
-  //{wd_up       }[        wd_leftDown,wd_down,wd_rightDown,         wd_rightUp,wd_up,wd_leftUp],
-  //{wd_leftUp   }[wd_left,            wd_down,wd_rightDown,wd_right,           wd_up,wd_leftUp]);
+PROCEDURE T_wireGraph.dropWireSection(CONST a, b: T_point);
+  FUNCTION wireStep(CONST start:T_point; CONST direction:T_wireDirection; CONST steps:longint):T_point;
+    begin
+      result[0]:=start[0]+WIRE_DELTA[direction,0]*steps;
+      result[1]:=start[1]+WIRE_DELTA[direction,1]*steps;
+    end;
+
   CONST DIRECTIONS_TO_DROP:array[T_wireDirection] of T_wireDirectionSet=(
   {wd_left     }[wd_left,wd_right],
   {wd_leftDown }[wd_leftDown,wd_rightUp],
@@ -511,21 +502,19 @@ PROCEDURE T_wireGraph.dropWireSection(CONST a, b: T_point;
       validDirectionFound:boolean;
   begin
     len:=maxNormDistance(a,b);
-    if len>1 then begin
-      dir:=directionBetween(a,b,validDirectionFound);
-      if validDirectionFound then
-      for i:=1 to len-1 do dropEdges(wireStep(a,dir,i),DIRECTIONS_TO_DROP[dir]);
-    end;
-    if diagonalsOnly then exit;
-    dropNode(a);
-    dropNode(b);
+    if len<1 then exit;
+    dir:=directionBetween(a,b,validDirectionFound);
+    if not validDirectionFound then exit;
+    for i:=0 to len do dropEdges(wireStep(a,dir,i),DIRECTIONS_TO_DROP[dir]);
+
   end;
 
-PROCEDURE T_wireGraph.dropWire(CONST path: T_wirePath;
-  CONST diagonalsOnly: boolean);
+PROCEDURE T_wireGraph.dropWire(CONST path: T_wirePath; CONST diagonalsOnly: boolean);
   VAR i:longint;
   begin
-    for i:=0 to length(path)-2 do dropWireSection(path[i],path[i+1],diagonalsOnly);
+    for i:=0 to length(path)-2 do dropWireSection(path[i],path[i+1]);
+    if diagonalsOnly then exit;
+    for i:=0 to length(path)-1 do dropNode(path[i]);
   end;
 
 FUNCTION pathTotalLength(CONST path: T_wirePath): double;
