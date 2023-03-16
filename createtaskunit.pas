@@ -123,7 +123,7 @@ PROCEDURE TCreateTaskForm.showFor(CONST board: P_visualBoard; CONST challenges: 
     new(challenge,create);
     challenge^.challengeLevel:=minimumDifficulty;
     challenge^.initNewChallenge(board,boardOption,paletteOption);
-    TestCreationFrame1.setTestGenerator(challenge);
+    TestCreationFrame1.setTestGenerator(challenge,MAX_NUMBER_OF_CHALLENGE_CHECKS);
 
     RadioPanel .visible:=true;
     RadioPanel1.visible:=true;
@@ -155,7 +155,7 @@ PROCEDURE TCreateTaskForm.showForExistingChallenge(CONST originalChallengeIndex:
     TitleEdit.text:=challenge^.challengeTitle;
     DescriptionMemo.text:=challenge^.challengeDescription;
     DifficultyTrackBar.position:=challenge^.challengeLevel;
-    TestCreationFrame1.setTestGenerator(challenge);
+    TestCreationFrame1.setTestGenerator(challenge,MAX_NUMBER_OF_CHALLENGE_CHECKS);
 
     challenge^.updateTestCaseResults;
 

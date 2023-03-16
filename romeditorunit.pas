@@ -13,6 +13,8 @@ TYPE
   { TRomEditorForm }
   TRomEditorForm = class(TForm)
     MainMenu1: TMainMenu;
+    miExportToCsv: TMenuItem;
+    miExportToClipboard: TMenuItem;
     miExport: TMenuItem;
     miImport: TMenuItem;
     OpenDialog1: TOpenDialog;
@@ -26,6 +28,7 @@ TYPE
     StringGrid1: TStringGrid;
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE miExportClick(Sender: TObject);
+    PROCEDURE miExportToClipboardClick(Sender: TObject);
     PROCEDURE miImportClick(Sender: TObject);
     PROCEDURE propAddDataShapeMouseDown(Sender: TObject; button: TMouseButton;  Shift: TShiftState; X, Y: integer);
     PROCEDURE propOkShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -76,9 +79,13 @@ PROCEDURE TRomEditorForm.FormCreate(Sender: TObject);
 
 PROCEDURE TRomEditorForm.miExportClick(Sender: TObject);
   begin
-    if SaveDialog1.execute then begin
-      StringGrid1.SaveToCSVFile(SaveDialog1.fileName,';');
-    end;
+    if SaveDialog1.execute
+    then StringGrid1.SaveToCSVFile(SaveDialog1.fileName,';');
+  end;
+
+PROCEDURE TRomEditorForm.miExportToClipboardClick(Sender: TObject);
+  begin
+    StringGrid1.CopyToClipboard();
   end;
 
 PROCEDURE TRomEditorForm.miImportClick(Sender: TObject);

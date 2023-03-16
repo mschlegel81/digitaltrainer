@@ -13,7 +13,9 @@ TYPE
 
   TTestCreationFrame = class(TFrame)
     generateTestCasesLabel: TLabel;
+    generateTestCasesLabel1: TLabel;
     generateTestCasesShape: TShape;
+    generateTestCasesShape1: TShape;
     Label6: TLabel;
     Label7: TLabel;
     TestCaseCountEdit: TEdit;
@@ -21,6 +23,8 @@ TYPE
     TestCasesStringGrid: TStringGrid;
     TestInputsPanel: TPanel;
     Timer1: TTimer;
+    PROCEDURE generateTestCasesShape1MouseDown(Sender: TObject;
+      button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE generateTestCasesShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE StepCountEditEditingDone(Sender: TObject);
     PROCEDURE TestCaseCountEditEditingDone(Sender: TObject);
@@ -30,11 +34,15 @@ TYPE
   private
     testGenerator:P_testCreator;
     lastUpdatedRow:longint;
+    maximumNumberOfTestCases:longint;
     PROCEDURE updateTableRow(CONST j:longint);
   public
     PROCEDURE fillTable;
-    PROCEDURE setTestGenerator(CONST generator:P_testCreator);
+    PROCEDURE setTestGenerator(CONST generator:P_testCreator; CONST maxTestCases:longint);
     PROCEDURE detachTestGenerator;
+    PROCEDURE importTable(CONST fileName:string);
+    PROCEDURE exportTable(CONST fileName:string);
+    PROCEDURE copyToClipboard;
   end;
 
 IMPLEMENTATION
@@ -165,8 +173,9 @@ PROCEDURE TTestCreationFrame.fillTable;
 
   end;
 
-PROCEDURE TTestCreationFrame.setTestGenerator(CONST generator: P_testCreator);
+PROCEDURE TTestCreationFrame.setTestGenerator(CONST generator: P_testCreator; CONST maxTestCases:longint);
   begin
+    maximumNumberOfTestCases:=maxTestCases;
     testGenerator:=generator;
     TestCasesStringGrid.editor.Font.color:=clWhite;
     TestCasesStringGrid.editor.color:=clBlack;
@@ -185,7 +194,7 @@ PROCEDURE TTestCreationFrame.TestCaseCountEditEditingDone(Sender: TObject);
   VAR newCount: longint;
   begin
     newCount:=strToIntDef(TestCaseCountEdit.text,-1);
-    if (newCount>256) or (newCount<=0) or (newCount=length(testGenerator^.tests)) then begin
+    if (newCount>maximumNumberOfTestCases) or (newCount<=0) or (newCount=length(testGenerator^.tests)) then begin
       TestCaseCountEdit.text:=intToStr(length(testGenerator^.tests));
       exit;
     end;
@@ -193,10 +202,32 @@ PROCEDURE TTestCreationFrame.TestCaseCountEditEditingDone(Sender: TObject);
     lastUpdatedRow:=-1;
   end;
 
+PROCEDURE TTestCreationFrame.importTable(CONST fileName:string);
+  begin
+    //TODO: This is tricky; we have to find out how the columns are encoded. Read and interpret header?
+    //TestCasesStringGrid.LoadFromCSVFile(OpenDialog1.fileName,';',false,1);
+  end;
+
+PROCEDURE TTestCreationFrame.exportTable(CONST fileName:string);
+  begin
+    TestCasesStringGrid.SaveToCSVFile(fileName,';');
+  end;
+
+PROCEDURE TTestCreationFrame.copyToClipboard;
+  begin
+    TestCasesStringGrid.CopyToClipboard;
+  end;
+
 PROCEDURE TTestCreationFrame.generateTestCasesShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     lastUpdatedRow:=-1;
     testGenerator^.generateTestCases;
+  end;
+
+PROCEDURE TTestCreationFrame.generateTestCasesShape1MouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  begin
+    lastUpdatedRow:=-1;
+    testGenerator^.generateTestCases(true,false);
   end;
 
 PROCEDURE TTestCreationFrame.StepCountEditEditingDone(Sender: TObject);

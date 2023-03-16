@@ -1,34 +1,64 @@
 object BoardTestForm: TBoardTestForm
-  Left = 1205
+  Left = 757
   Height = 393
-  Top = 500
-  Width = 320
+  Top = 577
+  Width = 645
   Caption = 'Schaltung testen'
-  ClientHeight = 393
-  ClientWidth = 320
+  ClientHeight = 373
+  ClientWidth = 645
+  Menu = MainMenu1
   Position = poOwnerFormCenter
   LCLVersion = '2.2.2.0'
   inline TestCreationFrame1: TTestCreationFrame
-    Height = 393
-    Width = 320
+    Height = 373
+    Width = 645
     Align = alClient
-    ClientHeight = 393
-    ClientWidth = 320
+    ClientHeight = 373
+    ClientWidth = 645
     inherited TestInputsPanel: TPanel
-      Height = 385
-      Width = 312
-      ClientHeight = 385
-      ClientWidth = 312
+      Height = 365
+      Width = 637
+      ClientHeight = 365
+      ClientWidth = 637
       inherited TestCasesStringGrid: TStringGrid
-        Height = 333
-        Width = 292
+        Height = 313
+        Width = 617
       end
       inherited generateTestCasesShape: TShape
-        Left = 173
+        Left = 498
       end
       inherited generateTestCasesLabel: TLabel
-        Left = 205
+        Left = 530
+      end
+      inherited generateTestCasesShape1: TShape
+        Left = 354
+      end
+      inherited generateTestCasesLabel1: TLabel
+        Left = 380
       end
     end
+  end
+  object MainMenu1: TMainMenu
+    Left = 254
+    Top = 188
+    object miExport: TMenuItem
+      Caption = '&Exportieren'
+      object miExportToCsv: TMenuItem
+        Caption = '&Datei (csv)...'
+        OnClick = miExportToCsvClick
+      end
+      object miExportToClipboard: TMenuItem
+        Caption = '&Zwischenablage'
+        OnClick = miExportToClipboardClick
+      end
+    end
+  end
+  object SaveDialog1: TSaveDialog
+    DefaultExt = '.csv'
+    Filter = 'CSV|*.csv'
+    FilterIndex = 0
+    Options = [ofOverwritePrompt, ofPathMustExist, ofEnableSizing, ofViewDetail]
+    Left = 203
+    Top = 94
   end
 end

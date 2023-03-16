@@ -1,19 +1,20 @@
 object TestCreationFrame: TTestCreationFrame
   Left = 0
-  Height = 240
+  Height = 378
   Top = 0
   Width = 700
-  ClientHeight = 240
+  ClientHeight = 378
   ClientWidth = 700
   Color = 7354424
+  LCLVersion = '2.2.2.0'
   ParentBackground = False
   ParentColor = False
   TabOrder = 0
-  DesignLeft = 1139
-  DesignTop = 638
+  DesignLeft = 708
+  DesignTop = 422
   object TestInputsPanel: TPanel
     Left = 4
-    Height = 232
+    Height = 370
     Top = 4
     Width = 692
     Align = alClient
@@ -22,7 +23,7 @@ object TestCreationFrame: TTestCreationFrame
     BorderSpacing.Right = 4
     BorderSpacing.Bottom = 4
     BorderWidth = 5
-    ClientHeight = 232
+    ClientHeight = 370
     ClientWidth = 692
     Color = 7354424
     ParentColor = False
@@ -67,7 +68,7 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideBottom.Control = TestInputsPanel
       AnchorSideBottom.Side = asrBottom
       Left = 10
-      Height = 180
+      Height = 318
       Top = 42
       Width = 672
       Anchors = [akTop, akLeft, akRight, akBottom]
@@ -156,6 +157,44 @@ object TestCreationFrame: TTestCreationFrame
       Font.Color = clWhite
       ParentColor = False
       ParentFont = False
+    end
+    object generateTestCasesShape1: TShape
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = TestInputsPanel
+      AnchorSideRight.Control = generateTestCasesShape
+      Left = 409
+      Height = 28
+      Top = 10
+      Width = 129
+      Anchors = [akTop, akRight]
+      BorderSpacing.Left = 15
+      BorderSpacing.Top = 4
+      BorderSpacing.Right = 4
+      Brush.Color = 6303792
+      OnMouseDown = generateTestCasesShape1MouseDown
+      Shape = stRoundRect
+    end
+    object generateTestCasesLabel1: TLabel
+      AnchorSideLeft.Control = generateTestCasesShape1
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = generateTestCasesShape1
+      AnchorSideTop.Side = asrCenter
+      AnchorSideRight.Side = asrBottom
+      Left = 435
+      Height = 21
+      Top = 14
+      Width = 77
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      Caption = 'fortlaufend'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+      OnMouseDown = generateTestCasesShape1MouseDown
     end
   end
   object Timer1: TTimer

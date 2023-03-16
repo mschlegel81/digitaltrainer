@@ -6,6 +6,7 @@ INTERFACE
 
 USES
   compoundGates,logicalGates,visualGates,serializationUtil,paletteHandling;
+CONST MAX_NUMBER_OF_CHALLENGE_CHECKS=256;
 
 TYPE
   P_challenge=^T_challenge;
@@ -51,7 +52,7 @@ TYPE
       DESTRUCTOR destroy;
 
       PROCEDURE setNumberOfTestCases(CONST count:longint);
-      PROCEDURE generateTestCases(CONST allInputsThenScramble:boolean=false);
+      PROCEDURE generateTestCases(CONST continuous:boolean=false; CONST scramble:boolean=true);
       PROCEDURE reInitStepCounts;
       PROCEDURE updateTestCaseResults;
       FUNCTION lastTestCasePrepared:longint;
@@ -535,7 +536,7 @@ PROCEDURE T_testCreator.setNumberOfTestCases(CONST count: longint);
     then challengeTestCreationThread.restart;
   end;
 
-PROCEDURE T_testCreator.generateTestCases(CONST allInputsThenScramble: boolean);
+PROCEDURE T_testCreator.generateTestCases(CONST continuous:boolean=false; CONST scramble:boolean=true);
   FUNCTION inputsByIndex(index:longint):T_wireValueArray;
     VAR k,i:longint;
     begin
@@ -554,17 +555,19 @@ PROCEDURE T_testCreator.generateTestCases(CONST allInputsThenScramble: boolean);
   VAR i,j,k:longint;
 
   begin
-    if allInputsThenScramble then begin
+    if continuous then begin
       for i:=0 to length(tests)-1 do begin
         tests[i].inputs:=inputsByIndex(i);
         tests[i].outputs:=undeterminedOutput(Interfaces);
         tests[i].maxTotalSteps:=1000;
       end;
-      k:=length(tests); setLength(tests,k+1);
-      for i:=1 to length(tests)-1 do for j:=0 to i-1 do if random<0.5 then begin
-        tests[k]:=tests[i]; tests[i]:=tests[j]; tests[j]:=tests[k];
+      if scramble then begin
+        k:=length(tests); setLength(tests,k+1);
+        for i:=1 to length(tests)-1 do for j:=0 to i-1 do if random<0.5 then begin
+          tests[k]:=tests[i]; tests[i]:=tests[j]; tests[j]:=tests[k];
+        end;
+        setLength(tests,k);
       end;
-      setLength(tests,k);
     end else begin
       for i:=0 to length(tests)-1 do begin
         tests[i].inputs:=randomInput(Interfaces);
