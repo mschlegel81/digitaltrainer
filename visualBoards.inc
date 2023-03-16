@@ -56,7 +56,7 @@ T_visualBoard=object(T_captionedAndIndexed)
 
     PROCEDURE handleInputKey(CONST key:word; CONST shiftPressed:boolean);
     PROCEDURE setIndexInPalette(CONST index:longint);
-    PROCEDURE checkBoardExtend(CONST movingLeft,movingBottom:boolean);
+    PROCEDURE checkBoardExtend(CONST movingLeft,movingBottom:boolean; CONST autoshrink:boolean=false);
 
     PROCEDURE detachUI;
     PROCEDURE attachUI(CONST uiAdapter:P_uiAdapter);
@@ -192,7 +192,7 @@ PROCEDURE T_visualBoard.setIndexInPalette(CONST index: longint);
     myIndex:=index;
   end;
 
-PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft, movingBottom: boolean);
+PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft, movingBottom: boolean; CONST autoshrink:boolean=false);
   VAR nonInX0,nonInY0:longint;
   PROCEDURE growIfNecessary(CONST gate:P_visualGate);
     VAR corner:T_point;
@@ -207,8 +207,8 @@ PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft, movingBottom: boolean
       end;
       if gate^.behavior^.gateType=gt_output then begin
         if gate^.ioLocations.numberOfTopInputs>0
-        then begin corner[0]+=gate^.gridWidth;  if movingBottom then corner[1]:=0; end
-        else begin corner[1]+=gate^.gridHeight; if movingLeft   then corner[0]:=0; end;
+        then begin corner[0]+=gate^.gridWidth;  if movingBottom or autoshrink then corner[1]:=0; end
+        else begin corner[1]+=gate^.gridHeight; if movingLeft   or autoshrink then corner[0]:=0; end;
       end else begin
         corner[0]+=gate^.gridWidth;  if gate^.ioLocations.numberOfRightOutputs >0 then inc(corner[0]);
         corner[1]+=gate^.gridHeight; if gate^.ioLocations.numberOfBottomOutputs>0 then inc(corner[1]);
@@ -233,9 +233,17 @@ PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft, movingBottom: boolean
     oldGridY0:=gridY0; gridY0:=0;
     oldGridX1:=gridX1;
     oldGridY1:=gridY1;
+    if autoshrink then begin
+      gridX1:=gridX0;
+      gridY1:=gridY0;
+    end;
     for gate in inputs  do growIfNecessary(gate);
     for gate in outputs do growIfNecessary(gate);
     for gate in gates   do growIfNecessary(gate);
+    if autoshrink then begin
+      gridX1+=1;
+      gridY1+=1;
+    end;
     if (gridX0<>oldGridX0) or (gridY0<>oldGridY0) then begin
       delta:=pointOf(gridX0-oldGridX0,gridY0-oldGridY0);
       if nonInX0>=gridX0 then delta[0]:=0;
@@ -246,6 +254,11 @@ PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft, movingBottom: boolean
       gridY1+=delta[1];
     end;
     if ((gridX1<>oldGridX1) or (gridY1<>oldGridY1)) and (ui<>nil) then ui^.updateBoardScrollbars;
+    for gate in outputs do begin
+      if P_outputGate(gate^.behavior)^.onLeftOrRightSide
+      then gate^.gridPos[0]:=gridX1
+      else gate^.gridPos[1]:=gridY1;
+    end;
     wiresUpToDate:=false;
   end;
 
@@ -440,8 +453,7 @@ PROCEDURE T_visualBoard.repositionElement(CONST elements: T_visualGateArray;
     ui^.uiElement.boardImage.repaint;
   end;
 
-PROCEDURE T_visualBoard.remove(CONST element: P_visualGate;
-  CONST skipSaveUndo: boolean);
+PROCEDURE T_visualBoard.remove(CONST element: P_visualGate; CONST skipSaveUndo: boolean);
   VAR wrap:T_visualGateArray;
   begin
     setLength(wrap,1);
@@ -1148,8 +1160,7 @@ PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
     end;
   end;
 
-PROCEDURE T_visualBoard.reshapeGrid(CONST newGridX1, newGridY1: longint;
-  CONST byMouseEvent: boolean);
+PROCEDURE T_visualBoard.reshapeGrid(CONST newGridX1, newGridY1: longint; CONST byMouseEvent: boolean);
   VAR gate:P_visualGate;
       movingBottom,
       movingLeft: boolean;
@@ -1160,11 +1171,6 @@ PROCEDURE T_visualBoard.reshapeGrid(CONST newGridX1, newGridY1: longint;
     gridX1:=newGridX1;
     gridY1:=newGridY1;
     checkBoardExtend(movingLeft,movingBottom);
-    for gate in outputs do begin
-      if P_outputGate(gate^.behavior)^.onLeftOrRightSide
-      then gate^.gridPos[0]:=gridX1
-      else gate^.gridPos[1]:=gridY1;
-    end;
     rewire(false);
   end;
 

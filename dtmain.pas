@@ -15,6 +15,7 @@ TYPE
   TDigitaltrainerMainForm = class(TForm)
     boardHorizontalScrollBar: TScrollBar;
     boardImage: TImage;
+    miShrink: TMenuItem;
     miTestBoard: TMenuItem;
     miMarkChallengesUnsolved: TMenuItem;
     miChallengesMenu: TMenuItem;
@@ -90,6 +91,7 @@ TYPE
     PROCEDURE miPasteClick(Sender: TObject);
     PROCEDURE miRedoClick(Sender: TObject);
     PROCEDURE miSaveAsTaskClick(Sender: TObject);
+    PROCEDURE miShrinkClick(Sender: TObject);
     PROCEDURE miTasksClick(Sender: TObject);
     PROCEDURE miTestBoardClick(Sender: TObject);
     PROCEDURE miUndoClick(Sender: TObject);
@@ -325,6 +327,11 @@ PROCEDURE TDigitaltrainerMainForm.miSaveAsTaskClick(Sender: TObject);
   begin
     if workspace.EditorMode then CreateTaskForm.showFor(workspace.activeBoard,workspace.getChallenges);
     infoLabel.caption:=workspace.getInfoLabelText;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miShrinkClick(Sender: TObject);
+  begin
+    workspace.activeBoard^.checkBoardExtend(false,false,true);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);

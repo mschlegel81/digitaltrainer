@@ -626,6 +626,10 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         ShortCut = 16473
         OnClick = miRedoClick
       end
+      object miShrink: TMenuItem
+        Caption = '&Schrumpfen'
+        OnClick = miShrinkClick
+      end
     end
     object miView: TMenuItem
       Caption = '&Ansicht'
