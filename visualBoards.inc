@@ -1270,13 +1270,16 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y:
 
       else begin
         if x>ui^.paletteWidth then begin
+          //Check hover over board gates
           for g in inputs do if g^.isAtGridPos(gridPos,hoverInfo) then
             begin
               ui^.uiElement.boardImage.ShowHint:=true;
               ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
               if (hoverInfo.subElement=block) and (hoverInfo.ioIndex>0)
               then ui^.uiElement.boardImage.Cursor:=crIBeam
-              else ui^.uiElement.boardImage.Cursor:=crCross;
+              else if (hoverInfo.subElement=outputConnector)
+              then ui^.uiElement.boardImage.Cursor:=crCross
+              else ui^.uiElement.boardImage.Cursor:=crHandPoint;
               unhoverAllWires;
               exit;
             end;
@@ -1284,7 +1287,9 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y:
             begin
               ui^.uiElement.boardImage.ShowHint:=true;
               ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
-              ui^.uiElement.boardImage.Cursor:=crCross;
+              if (hoverInfo.subElement=outputConnector)
+              then ui^.uiElement.boardImage.Cursor:=crCross
+              else ui^.uiElement.boardImage.Cursor:=crHandPoint;
               unhoverAllWires;
               exit;
             end;
@@ -1292,28 +1297,43 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y:
             begin
               ui^.uiElement.boardImage.ShowHint:=true;
               ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
-              ui^.uiElement.boardImage.Cursor:=crCross;
+              if (hoverInfo.subElement=outputConnector)
+              then ui^.uiElement.boardImage.Cursor:=crCross
+              else ui^.uiElement.boardImage.Cursor:=crHandPoint;
               unhoverAllWires;
               exit;
             end;
           ui^.uiElement.boardImage.ShowHint:=false;
         end else begin
-          ui^.uiElement.boardImage.Cursor:=crCross;
+          //Check hover over palette gates
           g:=P_visualGate(associatedPalette^.getGateAtScreenPosition(x,y));
-          if g<>nil then ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
+          if g<>nil then begin
+            ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
+            ui^.uiElement.boardImage.Cursor:=crHandPoint;
+          end else ui^.uiElement.boardImage.Cursor:=crCross;
           ui^.uiElement.boardImage.ShowHint:=(g<>nil);
+          exit;
         end;
 
-        if gridPos[0]=gridX1 then ui^.uiElement.boardImage.Cursor:=crSizeWE else
-        if gridPos[1]=gridY1 then ui^.uiElement.boardImage.Cursor:=crSizeNS else begin
-          enterCriticalSection(wiresCs);
-          for i:=0 to length(wires)-1 do if wires[i].isWirePosition(gridPos[0],gridPos[1],true,hoverChanged,horizontal) then begin
-            if horizontal then ui^.uiElement.boardImage.Cursor:=crHSplit
-                          else ui^.uiElement.boardImage.Cursor:=crVSplit;
-            anyWireHover:=true;
-          end;
-          leaveCriticalSection(wiresCs);
+        //Check hover over right board boundary
+        if gridPos[0]=gridX1 then begin
+          ui^.uiElement.boardImage.Cursor:=crSizeWE;
+          exit;
         end;
+        //Check hover over lower board boundary
+        if gridPos[1]=gridY1 then begin
+          ui^.uiElement.boardImage.Cursor:=crSizeNS;
+          exit;
+        end;
+        //Check hover over wires
+        enterCriticalSection(wiresCs);
+        for i:=0 to length(wires)-1 do if wires[i].isWirePosition(gridPos[0],gridPos[1],true,hoverChanged,horizontal) then begin
+          if horizontal then ui^.uiElement.boardImage.Cursor:=crHSplit
+                        else ui^.uiElement.boardImage.Cursor:=crVSplit;
+          anyWireHover:=true;
+        end;
+        leaveCriticalSection(wiresCs);
+        //Handle hover over wires
         if anyWireHover then begin
           wiresUpToDate:=false;
           ui^.paintAll;
