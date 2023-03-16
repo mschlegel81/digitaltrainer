@@ -1494,8 +1494,10 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
         end;
         outputConnector:begin
           if button=mbLeft
-          then ui^.startDrag(x,y,g,uas_draggingWire,hoverInfo.ioIndex)
-          else addWatcher(g,false,hoverInfo.ioIndex);
+          then begin
+            ui^.startDrag(x,y,g,uas_draggingWire,hoverInfo.ioIndex);
+            paintWirePreview(ui^.draggedGate^.getOutputPositionInGridSize(ui^.dragData.outputIndex)+ui^.draggedGate^.gridPos,x,y);
+          end else addWatcher(g,false,hoverInfo.ioIndex);
         end;
         inputConnector:
           if button<>mbLeft
