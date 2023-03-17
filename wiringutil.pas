@@ -1020,7 +1020,7 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
     VAR SortOrder:array of T_sortOrder;
         tmp:T_sortOrder;
     begin
-      if (length(endPoints)>1) and exhaustiveScan then begin
+      if (length(endPoints)>1) then begin
         //BACKUP
         deepClone(result,wiringResult);
         setLength(mapCopy,length(map));
@@ -1032,63 +1032,67 @@ FUNCTION T_wireGraph.findMultiPath(CONST startPoint: T_point; CONST endPoints: T
         setLength(emptyHead,0);
         rescoreCommonHead(0,emptyHead,allIndexes);
 
-        //RESTORE
-        for i:=0 to length(map)-1 do map[i]:=mapCopy[i];
+        if not(exhaustiveScan)
+        then result:=wiringResult
+        else begin
+          //RESTORE
+          for i:=0 to length(map)-1 do map[i]:=mapCopy[i];
 
-        //OPTIMIZATION APPROACH 2: Iterative, shortest first
-        setLength(SortOrder,length(result));
-        for i:=0 to length(result)-1 do begin
-          SortOrder[i].first:=false;
-          SortOrder[i].last :=false;
-          SortOrder[i].index:=i;
-          SortOrder[i].L:=map[endPoints[i,0]+endPoints[i,1]*width].score;
-          for j:=0 to i-1 do if SortOrder[j].L>SortOrder[i].L then begin
-            tmp:=SortOrder[i];
-            SortOrder[i]:=SortOrder[j];
-            SortOrder[j]:=tmp;
-          end;
-        end;
-        SortOrder[                  0].first:=true;
-        SortOrder[length(SortOrder)-1].last:=true;
-        for tmp in SortOrder do with tmp do begin
-          result[index]:=reconstructPath(endPoints[index]);
-          if not(last) then begin
-            setLength(emptyHead,length(result[index]));
-            i:=0;
-            for n in result[index] do begin
-              if map[n[0]+n[1]*width].score>0 then begin
-                emptyHead[i]:=n; inc(i);
-              end;
+          //OPTIMIZATION APPROACH 2: Iterative, shortest first
+          setLength(SortOrder,length(result));
+          for i:=0 to length(result)-1 do begin
+            SortOrder[i].first:=false;
+            SortOrder[i].last :=false;
+            SortOrder[i].index:=i;
+            SortOrder[i].L:=map[endPoints[i,0]+endPoints[i,1]*width].score;
+            for j:=0 to i-1 do if SortOrder[j].L>SortOrder[i].L then begin
+              tmp:=SortOrder[i];
+              SortOrder[i]:=SortOrder[j];
+              SortOrder[j]:=tmp;
             end;
-            for j:=i-1 downto 0 do rescore(emptyHead[j]);
           end;
-        end;
-
-        //PICK THE ONE WITH THE SHORTEST LENGTH:
-        if multipathEffectiveLength(result)<multipathEffectiveLength(wiringResult)
-        then deepClone(result,wiringResult);
-
-        //RESTORE
-        for i:=0 to length(map)-1 do map[i]:=mapCopy[i];
-
-        //OPTIMIZATION APPROACH 3: Iterative, longest first
-        for k:=length(SortOrder)-1 downto 0 do with SortOrder[k] do begin
-          result[index]:=reconstructPath(endPoints[index]);
-          if k>0 then begin
-            setLength(emptyHead,length(result[index]));
-            i:=0;
-            for n in result[index] do begin
-              if map[n[0]+n[1]*width].score>0 then begin
-                emptyHead[i]:=n; inc(i);
+          SortOrder[                  0].first:=true;
+          SortOrder[length(SortOrder)-1].last:=true;
+          for tmp in SortOrder do with tmp do begin
+            result[index]:=reconstructPath(endPoints[index]);
+            if not(last) then begin
+              setLength(emptyHead,length(result[index]));
+              i:=0;
+              for n in result[index] do begin
+                if map[n[0]+n[1]*width].score>0 then begin
+                  emptyHead[i]:=n; inc(i);
+                end;
               end;
+              for j:=i-1 downto 0 do rescore(emptyHead[j]);
             end;
-            for j:=i-1 downto 0 do rescore(emptyHead[j]);
           end;
-        end;
 
-        //PICK THE ONE WITH THE SHORTEST LENGTH:
-        if multipathEffectiveLength(result)>multipathEffectiveLength(wiringResult)
-        then result:=wiringResult;
+          //PICK THE ONE WITH THE SHORTEST LENGTH:
+          if multipathEffectiveLength(result)<multipathEffectiveLength(wiringResult)
+          then deepClone(result,wiringResult);
+
+          //RESTORE
+          for i:=0 to length(map)-1 do map[i]:=mapCopy[i];
+
+          //OPTIMIZATION APPROACH 3: Iterative, longest first
+          for k:=length(SortOrder)-1 downto 0 do with SortOrder[k] do begin
+            result[index]:=reconstructPath(endPoints[index]);
+            if k>0 then begin
+              setLength(emptyHead,length(result[index]));
+              i:=0;
+              for n in result[index] do begin
+                if map[n[0]+n[1]*width].score>0 then begin
+                  emptyHead[i]:=n; inc(i);
+                end;
+              end;
+              for j:=i-1 downto 0 do rescore(emptyHead[j]);
+            end;
+          end;
+
+          //PICK THE ONE WITH THE SHORTEST LENGTH:
+          if multipathEffectiveLength(result)>multipathEffectiveLength(wiringResult)
+          then result:=wiringResult;
+        end;
       end;
       //Reverse and simplify all...
       for k:=0 to length(result)-1 do if length(result[k])>0 then begin
