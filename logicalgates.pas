@@ -101,6 +101,7 @@ TYPE
   end;
 
   T_wireValueArray=array of T_wireValue;
+  T_romContents=array of word;
 
   { T_captionedAndIndexed }
 
@@ -409,9 +410,9 @@ TYPE
 
    P_RomGate=^T_romGate;
    T_romGate=object(T_abstractGate)
-     data:T_wireValueArray;
-     decodedAdress:longint;
+     data:T_romContents;
      readAdr:T_wireValue;
+     outValue:T_wireValue;
 
      CONSTRUCTOR create;
      DESTRUCTOR destroy; virtual;
@@ -486,6 +487,9 @@ FUNCTION gatesTotal(CONST gateCount:T_gateCount):longint;
 
 FUNCTION serialize(CONST wireValue: T_wireValue): qword;
 FUNCTION deserialize(n: qword): T_wireValue;
+
+FUNCTION wordToWire16(w:word):T_wireValue;
+FUNCTION wire16ToWord(CONST w:T_wireValue):word;
 
 IMPLEMENTATION
 USES sysutils;
@@ -617,6 +621,27 @@ FUNCTION deserialize(n: qword): T_wireValue;
     for i:=0 to result.width-1 do begin
       result.bit[i]:=WIRE_VALUE_OF[n mod 3];
       n:=n div 3;
+    end;
+  end;
+
+FUNCTION wordToWire16(w: word): T_wireValue;
+  VAR i:longint;
+  begin
+    result.width:=16;
+    for i:=0 to 15 do begin
+      if odd(w) then result.bit[i]:=tsv_true
+                else result.bit[i]:=tsv_false;
+      w:=w shr 1;
+    end;
+  end;
+
+FUNCTION wire16ToWord(CONST w: T_wireValue): word;
+  VAR i:longint;
+  begin
+    result:=0;
+    for i:=15 downto 0 do begin
+      result:=result shl 1;
+      if w.bit[i]=tsv_true then inc(result);
     end;
   end;
 
@@ -829,9 +854,9 @@ FUNCTION T_ramGate.simulateStep: boolean;
         i0:=length(data);
         if writeIndex>=i0 then begin
           setLength(data,writeIndex+1);
-          for i:=i0 to writeIndex-1 do data[i]:=zero;
+          for i:=i0 to writeIndex-1 do data[i]:=0;
         end;
-        data[writeIndex]:=dataIn;
+        data[writeIndex]:=wire16ToWord(dataIn);
       end;
     end else result:=(clockWasHigh<>4294967295) and (clockWasHigh<>0);
     clockWasHigh:=clockWasHigh shl 1;
@@ -969,15 +994,15 @@ FUNCTION T_romGate.simulateStep: boolean;
   VAR newAdress:longint;
   begin
     newAdress:=getDecimalValue(readAdr,result);
-    result:=result and (newAdress<>decodedAdress);
-    decodedAdress:=newAdress;
+    result:=false;
+    if (newAdress>=0) and (newAdress<length(data))
+    then outValue:=wordToWire16(data[newAdress])
+    else outValue:=zero;
   end;
 
 FUNCTION T_romGate.getOutput(CONST index: longint): T_wireValue;
   begin
-    if (decodedAdress>=0) and (decodedAdress<length(data))
-    then result:=data[decodedAdress]
-    else result:=zero;
+    result:=outValue;
   end;
 
 FUNCTION T_romGate.setInput(CONST index: longint; CONST value: T_wireValue): boolean;
@@ -996,7 +1021,7 @@ PROCEDURE T_romGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CON
   begin
     inherited;
     stream.writeNaturalNumber(length(data));
-    for i:=0 to length(data)-1 do stream.writeNaturalNumber(serialize(data[i]));
+    for i:=0 to length(data)-1 do stream.writeWord(data[i]);
   end;
 
 PROCEDURE T_romGate.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrapper);
@@ -1008,7 +1033,7 @@ PROCEDURE T_romGate.readMetaDataFromStream(VAR stream: T_bufferedInputStreamWrap
       exit;
     end;
     setLength(data,i);
-    for i:=0 to length(data)-1 do data[i]:=deserialize(stream.readNaturalNumber);
+    for i:=0 to length(data)-1 do data[i]:=stream.readWord;
   end;
 
 FUNCTION T_romGate.equals(CONST other: P_abstractGate): boolean;

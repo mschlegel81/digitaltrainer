@@ -65,7 +65,7 @@ TYPE
   T_gatePropertyValue=record
     s:string;
     n:longint;
-    romContents:T_wireValueArray
+    romContents:T_romContents;
   end;
 
   T_gateProperties=array of T_gateProperty;

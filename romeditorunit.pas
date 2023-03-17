@@ -39,7 +39,7 @@ TYPE
     PROCEDURE updateDataRow(CONST adress:longint; CONST wireValue:T_wireValue);
     PROCEDURE fillTable;
   public
-    FUNCTION showFor(VAR dataIO: T_wireValueArray): boolean;
+    FUNCTION showFor(VAR dataIO: T_romContents): boolean;
 
   end;
 
@@ -158,12 +158,19 @@ PROCEDURE TRomEditorForm.fillTable;
     StringGrid1.AutoSizeColumns;
   end;
 
-FUNCTION TRomEditorForm.showFor(VAR dataIO: T_wireValueArray):boolean;
-  PROCEDURE clone(CONST source:T_wireValueArray; VAR dest:T_wireValueArray);
+FUNCTION TRomEditorForm.showFor(VAR dataIO: T_romContents):boolean;
+  PROCEDURE clone(CONST source:T_romContents; VAR dest:T_wireValueArray);
     VAR i:longint;
     begin
       setLength(dest,length(source));
-      for i:=0 to length(dest)-1 do dest[i]:=source[i];
+      for i:=0 to length(dest)-1 do dest[i]:=wordToWire16(source[i]);
+    end;
+
+  PROCEDURE clone(CONST source:T_wireValueArray; VAR dest:T_romContents);
+    VAR i:longint;
+    begin
+      setLength(dest,length(source));
+      for i:=0 to length(dest)-1 do dest[i]:=wire16ToWord(source[i]);
     end;
 
   begin
