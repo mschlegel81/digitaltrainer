@@ -92,7 +92,7 @@ TYPE
       FUNCTION  outputWidth(CONST index:longint):byte; virtual;
       FUNCTION  gateType:T_gateType;     virtual;
       FUNCTION  simulateStep:boolean;    virtual;
-      FUNCTION  simulateSteps(CONST count: longint; CONST inputWires: T_wireValueArray; OUT stepsDone: longint): T_wireValueArray;
+      FUNCTION  simulateSteps(CONST count: longint; CONST inputWires: T_wireValueArray; CONST resume:PBoolean; OUT stepsDone: longint): T_wireValueArray;
 
       FUNCTION  getOutput(CONST index:longint):T_wireValue; virtual;
       FUNCTION  setInput(CONST index:longint; CONST value:T_wireValue):boolean; virtual;
@@ -316,7 +316,7 @@ FUNCTION T_compoundGate.simulateStep: boolean;
     lastStepBusy:=result;
   end;
 
-FUNCTION T_compoundGate.simulateSteps(CONST count: longint; CONST inputWires: T_wireValueArray; OUT stepsDone: longint): T_wireValueArray;
+FUNCTION T_compoundGate.simulateSteps(CONST count: longint; CONST inputWires: T_wireValueArray; CONST resume:PBoolean; OUT stepsDone: longint): T_wireValueArray;
   VAR i:longint;
       changed:boolean=true;
       g: P_abstractGate;
@@ -328,7 +328,7 @@ FUNCTION T_compoundGate.simulateSteps(CONST count: longint; CONST inputWires: T_
     end;
 
     stepsDone:=0;
-    while changed and (stepsDone<count) do begin
+    while changed and (stepsDone<count) and (resume^) do begin
       changed:=false;
       for i:=0 to length(wires)-1 do if wires[i].simulateStep then changed:=true;
       for g in gates              do if g^.simulateStep       then changed:=true;

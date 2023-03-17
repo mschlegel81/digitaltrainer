@@ -622,7 +622,7 @@ PROCEDURE T_testCreator.updateTestCaseResults(CONST callback: F_caseUpdatedCallb
     end;
     if callback<>nil then callback(-1);
     for i:=0 to length(tests)-1 do if (resume=nil) or resume^ then begin
-      tests[i].outputs:=expectedBehavior^.simulateSteps(tests[i].maxTotalSteps,tests[i].inputs,stepsDone);
+      tests[i].outputs:=expectedBehavior^.simulateSteps(tests[i].maxTotalSteps,tests[i].inputs,resume,stepsDone);
       tests[i].actuallyActive:=stepsDone;
       if initCounts then tests[i].maxTotalSteps:=stepsDone+4+stepsDone shr 3;
       if callback<>nil then callback(i);
