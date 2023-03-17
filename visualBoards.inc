@@ -299,6 +299,7 @@ PROCEDURE T_visualBoard.attachUI(CONST uiAdapter: P_uiAdapter);
     ui^.uiElement.boardImage.OnMouseUp  :=@boardMouseUp;
     ui^.uiElement.boardHorizontalScrollBar.OnScroll:=@ScrollbarScroll;
     ui^.uiElement.boardVerticalScrollBar  .OnScroll:=@ScrollbarScroll;
+    ui^.updateTitleLayer;
   end;
 
 PROCEDURE T_visualBoard.elementAdded(CONST newElement: P_visualGate;
@@ -1170,9 +1171,11 @@ PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
   VAR i:longint;
       Canvas: TBGRACanvas;
       canvasWidth,canvasHeight, zoom:longint;
+      startTicks:qword;
   begin
     if not(wiresUpToDate and not(wiresHaveChangedInBackground)) and init then begin
       enterCriticalSection(wiresCs);
+      startTicks:=GetTickCount64;
       wiresHaveChangedInBackground:=false;
       //setup
       zoom:=ui^.getZoom;
@@ -1182,13 +1185,16 @@ PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
       Canvas:=ui^.uiElement.wireLayer.CanvasBGRA;
       Canvas.AntialiasingMode:=amOff;
 
-      //Clear image:
-      Canvas.Brush.color:=BOARD_COLOR;
-      Canvas.FillRect(0,0,canvasWidth,canvasHeight);
-      Canvas.Pen.color:=BOARD_BOUNDARY_COLOR;
-      Canvas.Pen.width:=1;
+      if (ui^.uiElement.titleLayer.width<ui^.uiElement.wireLayer.width) or
+         (ui^.uiElement.titleLayer.height<ui^.uiElement.wireLayer.height) then begin
+        Canvas.Brush.color:=BOARD_COLOR;
+        Canvas.FillRect(0,0,canvasWidth,canvasHeight);
+      end;
+      Canvas.draw(0,0,ui^.uiElement.titleLayer);
 
       //Draw boundaries:
+      Canvas.Pen.color:=BOARD_BOUNDARY_COLOR;
+      Canvas.Pen.width:=1;
       Canvas.MoveTo(0          ,gridY0*zoom);
       Canvas.LineTo(canvasWidth,gridY0*zoom);
       Canvas.MoveTo(0          ,gridY1*zoom);
@@ -1198,13 +1204,13 @@ PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
       Canvas.MoveTo(gridX1*zoom,           0);
       Canvas.LineTo(gridX1*zoom,canvasHeight);
 
-      //Draw title:
-      if getCaption<>'' then textOut(Canvas,getCaption,gridX0*zoom+1,gridY0*zoom+1,gridX1*zoom-1,gridY1*zoom-1,BOARD_BOUNDARY_COLOR);
-
       //Draw wires:
       for i:=0 to length(wires)-1 do wires[i].paint(zoom,Canvas);
 
       wiresUpToDate:=true;
+      {$ifdef debugMode}
+      writeln('Wire layer @',canvasWidth,'x',canvasHeight,' painted in ',GetTickCount64-startTicks,' ticks');
+      {$endif}
       leaveCriticalSection(wiresCs);
     end;
     if draw then begin
@@ -1399,15 +1405,11 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y:
         end;
         leaveCriticalSection(wiresCs);
         //Handle hover over wires
-        if anyWireHover then begin
+        if not(anyWireHover) then ui^.uiElement.boardImage.Cursor:=crCross;
+        if hoverChanged then begin
           wiresUpToDate:=false;
           ui^.paintAll;
-        end else begin
-          if hoverChanged then begin
-            wiresUpToDate:=false;
-            ui^.paintAll;
-          end;
-          ui^.uiElement.boardImage.Cursor:=crCross;
+          ui^.repaintImage;
         end;
       end;
     end;

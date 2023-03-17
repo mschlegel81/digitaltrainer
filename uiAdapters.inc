@@ -25,6 +25,7 @@ T_uiAdapter=object
       paletteWidth:longint;
       boardImage:TImage;
       paletteComboBox:TComboBox;
+      titleLayer,
       wireLayer:TBGRABitmap;
       boardHorizontalScrollBar,
       boardVerticalScrollBar,
@@ -84,6 +85,7 @@ T_uiAdapter=object
     PROCEDURE startDrag(CONST evtX,evtY:longint; CONST gateToDrag:P_visualGate; CONST newState:T_uiState; CONST outputIndex:longint=-1);
     PROCEDURE startDragSelectionFrame(CONST evtX,evtY:longint);
     PROCEDURE endSelectionDrag;
+    PROCEDURE updateTitleLayer;
 
     PROCEDURE zoomIn;
     PROCEDURE zoomOut;
@@ -135,6 +137,7 @@ CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape;
     uiElement.selectionShape          :=selectionShape;
     uiElement.boardImage              :=boardImage;
     uiElement.wireLayer               :=TBGRABitmap.create(boardImage.width,boardImage.height);
+    uiElement.titleLayer              :=TBGRABitmap.create(boardImage.width,boardImage.height);
     uiElement.paletteComboBox         :=paletteComboBox;
     uiElement.boardHorizontalScrollBar:=boardHorizontalScrollBar;
     uiElement.boardVerticalScrollBar  :=boardVerticalScrollBar  ;
@@ -156,6 +159,7 @@ DESTRUCTOR T_uiAdapter.destroy;
   begin
     clearUndoList;
     FreeAndNil(uiElement.wireLayer);
+    FreeAndNil(uiElement.titleLayer);
     if helperState.Clipboard<>nil then dispose(helperState.Clipboard,destroy);
   end;
 
@@ -252,10 +256,28 @@ PROCEDURE T_uiAdapter.endSelectionDrag;
     state:=uas_initial;
   end;
 
+PROCEDURE T_uiAdapter.updateTitleLayer;
+  VAR
+    canvasWidth, canvasHeight: longint;
+    Canvas: TBGRACanvas;
+  begin
+    if activeBoard=nil then exit;
+    canvasWidth :=zoom*(activeBoard^.gridX1+4);
+    canvasHeight:=zoom*(activeBoard^.gridY1+4);
+    uiElement.titleLayer.setSize(canvasWidth,canvasHeight);
+    //Clear image:
+    Canvas:=uiElement.titleLayer.CanvasBGRA;
+    Canvas.Brush.color:=BOARD_COLOR;
+    Canvas.FillRect(0,0,canvasWidth,canvasHeight);
+    //Draw title:
+    if activeBoard^.getCaption<>'' then textOut(Canvas,activeBoard^.getCaption,4*zoom,4*zoom,canvasWidth-4*zoom,canvasHeight-4*zoom,BOARD_BOUNDARY_COLOR);
+  end;
+
 PROCEDURE T_uiAdapter.zoomIn;
   begin
     zoom:=round(zoom*1.1);
     activeBoard^.wiresUpToDate:=false;
+    updateTitleLayer;
     hideIoEdit;
   end;
 
@@ -263,6 +285,7 @@ PROCEDURE T_uiAdapter.zoomOut;
   begin
     zoom:=round(zoom/1.1);
     activeBoard^.wiresUpToDate:=false;
+    updateTitleLayer;
     hideIoEdit;
   end;
 

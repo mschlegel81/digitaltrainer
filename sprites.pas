@@ -755,6 +755,7 @@ PROCEDURE textOut(CONST CanvasBGRA:TBGRACanvas; CONST s: string; CONST x0, y0, x
     end;
 
   begin
+    if (x1<x0+5) or (y1<y0+5) then exit;
     lines:=split(s,LineEnding);
 
     CanvasBGRA.Font.orientation:=0;

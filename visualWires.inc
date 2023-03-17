@@ -130,6 +130,7 @@ FUNCTION T_visualWire.isWirePosition(CONST gridX, gridY: longint; CONST markHove
     result:=false;
     for i:=0 to length(sink)-1 do if pathContains(sink[i].path,gridX,gridY,orientation) then begin
       horizontalWire:=orientation in [wd_left,wd_right];
+      hoverChanged:=hoverChanged or markHover and not sink[i].hoveringOver;
       sink[i].hoveringOver:=markHover;
       result:=true;
     end else begin
