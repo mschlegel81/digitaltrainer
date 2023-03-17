@@ -407,6 +407,7 @@ FUNCTION T_challenge.resetChallenge: P_visualBoard;
   VAR board: P_visualBoard;
   begin
     board:=resultTemplate^.clone(not(palette^.allowConfiguration));
+    board^.setCaption(challengeTitle);
     result:=board;
     palette^.resetCounts;
   end;

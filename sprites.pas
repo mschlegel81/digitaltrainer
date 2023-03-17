@@ -4,7 +4,7 @@ UNIT sprites;
 
 INTERFACE
 USES Graphics, BGRABitmap, wiringUtil, visuals, BGRABitmapTypes, BGRAGraphics,
-  logicalGates, myGenerics;
+  logicalGates, myGenerics, BGRACanvas;
 
 CONST
   C_inputKey:array[0..35] of char=('1','2','3','4','5','6','7','8','9','0','A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z');
@@ -22,8 +22,6 @@ TYPE
       Bitmap:TBGRABitmap;
       preparedForZoom:longint;
       screenOffset:T_point;
-    protected
-      PROCEDURE textOut(CONST s:string; CONST x0,y0,x1,y1:longint; CONST textColor:longint=$00FFFFFF);
     public
       CONSTRUCTOR create;
       DESTRUCTOR destroy;
@@ -107,6 +105,8 @@ TYPE
   end;
 
   T_spriteMap=specialize G_stringKeyMap<P_sprite>;
+
+PROCEDURE textOut(CONST CanvasBGRA:TBGRACanvas; CONST s:string; CONST x0,y0,x1,y1:longint; CONST textColor:longint=$00FFFFFF);
 
 FUNCTION getIoSprite(CONST pos:T_ioDirection; CONST wireValue:T_wireValue; CONST caption:string):P_sprite;
 FUNCTION getBlockSprite(CONST caption:shortstring; CONST gridWidth,gridHeight:longint; CONST marked:boolean):P_sprite;
@@ -543,11 +543,11 @@ PROCEDURE T_ioTextSprite.setZoom(CONST zoom: longint);
     Bitmap.CanvasBGRA.Pen.style:=psClear;
     Bitmap.CanvasBGRA.Rectangle(0,0,newWidth,newHeight);
     Bitmap.CanvasBGRA.DrawFontBackground:=true;
-    textOut(wireModeText,0,0,newWidth shr 1,newHeight,SHADOW_COLOR);
+    textOut(Bitmap.CanvasBGRA,wireModeText,0,0,newWidth shr 1,newHeight,SHADOW_COLOR);
 
     Bitmap.CanvasBGRA.Brush.style:=bsClear;
     Bitmap.CanvasBGRA.DrawFontBackground:=false;
-    textOut(caption     ,newWidth shr 3,0,newWidth,newHeight);
+    textOut(Bitmap.CanvasBGRA,caption,newWidth shr 3,0,newWidth,newHeight);
     preparedForZoom:=zoom;
   end;
 
@@ -658,7 +658,7 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
       Bitmap.CanvasBGRA.Brush.style:=bsSolid;
 
       Bitmap.CanvasBGRA.DrawFontBackground:=true;
-      textOut(cap,x,x,radius*2-x,radius*2-x);
+      textOut(Bitmap.CanvasBGRA,cap,x,x,radius*2-x,radius*2-x);
     end;
 
     for y:=0 to radius*2 do begin
@@ -689,7 +689,7 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
 
 { T_blockSprite }
 
-PROCEDURE T_sprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; CONST textColor: longint);
+PROCEDURE textOut(CONST CanvasBGRA:TBGRACanvas; CONST s: string; CONST x0, y0, x1, y1: longint; CONST textColor: longint);
   VAR
     lines       :T_arrayOfString;
     line:string;
@@ -706,7 +706,7 @@ PROCEDURE T_sprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; CONST
       maxTextWidth:=0;
       textHeight  :=0;
       for s in lines do begin
-        extend:=Bitmap.CanvasBGRA.TextExtent(s);
+        extend:=CanvasBGRA.TextExtent(s);
         textHeight+=extend.cy;
         if extend.cx>maxTextWidth then maxTextWidth:=extend.cx;
       end;
@@ -757,9 +757,9 @@ PROCEDURE T_sprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; CONST
   begin
     lines:=split(s,LineEnding);
 
-    Bitmap.CanvasBGRA.Font.orientation:=0;
-    Bitmap.CanvasBGRA.Font.quality:=fqFineAntialiasing;
-    Bitmap.CanvasBGRA.Font.Antialiasing:=true;
+    CanvasBGRA.Font.orientation:=0;
+    CanvasBGRA.Font.quality:=fqFineAntialiasing;
+    CanvasBGRA.Font.Antialiasing:=true;
     updateTextExtend;
     if (maxTextWidth=0) or (textHeight=0) then exit;
 
@@ -771,24 +771,24 @@ PROCEDURE T_sprite.textOut(CONST s: string; CONST x0, y0, x1, y1: longint; CONST
       fontSizeFactor:=min((y1-y0)/textHeight,(x1-x0)/maxTextWidth);
     end;
 
-    Bitmap.CanvasBGRA.Font.height:=round(Bitmap.CanvasBGRA.Font.height*fontSizeFactor);
-    Bitmap.CanvasBGRA.Font.color:=textColor;
+    CanvasBGRA.Font.height:=round(CanvasBGRA.Font.height*fontSizeFactor);
+    CanvasBGRA.Font.color:=textColor;
 
     updateTextExtend;
 
     if rotate then begin
-      Bitmap.CanvasBGRA.Font.orientation:=2700;
+      CanvasBGRA.Font.orientation:=2700;
       yTally:=(x0+x1) shr 1 + textHeight shr 1;
       for line in lines do begin
-        Bitmap.CanvasBGRA.textOut(yTally,(y0+y1) shr 1 - Bitmap.CanvasBGRA.textWidth (line) shr 1,line);
-        yTally-=                                         Bitmap.CanvasBGRA.textHeight(line);
+        CanvasBGRA.textOut(yTally,(y0+y1) shr 1 - CanvasBGRA.textWidth (line) shr 1,line);
+        yTally-=                                  CanvasBGRA.textHeight(line);
       end;
     end else begin
-      Bitmap.CanvasBGRA.Font.orientation:=0;
+      CanvasBGRA.Font.orientation:=0;
       yTally:=(y0+y1) shr 1 - textHeight shr 1;
       for line in lines do begin
-        Bitmap.CanvasBGRA.textOut((x0+x1) shr 1 - Bitmap.CanvasBGRA.textWidth (line) shr 1,yTally,line);
-        yTally+=                                  Bitmap.CanvasBGRA.textHeight(line);
+        CanvasBGRA.textOut((x0+x1) shr 1 - CanvasBGRA.textWidth (line) shr 1,yTally,line);
+        yTally+=                           CanvasBGRA.textHeight(line);
       end;
     end;
 
@@ -877,7 +877,7 @@ PROCEDURE T_blockSprite.setZoom(CONST zoom: longint);
   begin
     initBaseShape(zoom);
     Bitmap.CanvasBGRA.DrawFontBackground:=true;
-    textOut(caption,
+    textOut(Bitmap.CanvasBGRA,caption,
             screenOffset[0]            +zoom shr 1,
             screenOffset[1]            +zoom shr 1,
             screenOffset[0]+zoom*width -zoom shr 1,
@@ -893,7 +893,8 @@ PROCEDURE T_ioBlockSprite.setZoom(CONST zoom: longint);
     Bitmap.CanvasBGRA.LineTo(screenOffset[0]+zoom*width,screenOffset[1]+(zoom*height   shr 1));
     if (inIdx>=0) and (inIdx<length(C_inputKey)) then begin
       Bitmap.CanvasBGRA.DrawFontBackground:=true;
-      textOut(C_inputKey[inIdx],
+      textOut(Bitmap.CanvasBGRA,
+              C_inputKey[inIdx],
               screenOffset[0]+(width-1)*zoom,
               screenOffset[1]               +4,
               screenOffset[0]+(width  )*zoom-3,
@@ -903,7 +904,8 @@ PROCEDURE T_ioBlockSprite.setZoom(CONST zoom: longint);
       Bitmap.CanvasBGRA.LineTo(screenOffset[0]+(width  )*zoom-3,screenOffset[1]+zoom);
     end;
     Bitmap.CanvasBGRA.DrawFontBackground:=false;
-    textOut(caption,
+    textOut(Bitmap.CanvasBGRA,
+           caption,
             screenOffset[0]            +zoom shr 1,
             screenOffset[1]            +zoom shr 1,
             screenOffset[0]+ zoom*width-zoom shr 1,

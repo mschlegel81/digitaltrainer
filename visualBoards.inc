@@ -1198,6 +1198,9 @@ PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
       Canvas.MoveTo(gridX1*zoom,           0);
       Canvas.LineTo(gridX1*zoom,canvasHeight);
 
+      //Draw title:
+      if getCaption<>'' then textOut(Canvas,getCaption,gridX0*zoom+1,gridY0*zoom+1,gridX1*zoom-1,gridY1*zoom-1,BOARD_BOUNDARY_COLOR);
+
       //Draw wires:
       for i:=0 to length(wires)-1 do wires[i].paint(zoom,Canvas);
 

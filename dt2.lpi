@@ -198,6 +198,7 @@
         <Filename Value="boardchangedui.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="boardChangedDialog"/>
+        <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="boardChangedUi"/>
       </Unit>
