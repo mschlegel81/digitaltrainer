@@ -6,7 +6,7 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, StdCtrls, ComCtrls,
-  ExtCtrls, Grids, visualGates, challenges,compoundGates,testFrameUI;
+  ExtCtrls, visualGates, challenges,compoundGates,testFrameUI;
 
 TYPE
 
@@ -53,7 +53,6 @@ TYPE
 
 FUNCTION CreateTaskForm:TCreateTaskForm;
 IMPLEMENTATION
-USES logicalGates;
 {$R *.lfm}
 VAR
   myCreateTaskForm: TCreateTaskForm=nil;

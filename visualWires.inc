@@ -20,6 +20,7 @@ T_visualWire=object
   PROCEDURE dropWiresTouchingPosition(CONST gridX,gridY:longint; CONST horizontalWire:boolean);
   PROCEDURE setPaths(CONST paths:T_wirePathArray);
   FUNCTION unhoverAll:boolean;
+  FUNCTION equals(CONST myBoard,otherBoard:P_visualBoard; CONST other:T_visualWire):boolean;
 end;
 
 {$endif}
@@ -167,5 +168,27 @@ FUNCTION T_visualWire.unhoverAll:boolean;
     end;
   end;
 
+FUNCTION T_visualWire.equals(CONST myBoard,otherBoard:P_visualBoard; CONST other:T_visualWire):boolean;
+  FUNCTION getGateIndex(CONST gate:P_visualGate; CONST board:P_visualBoard):longint;
+    VAR g:P_visualGate;
+        i:longint=0;
+    begin
+      for g in board^.inputs  do if gate=g then exit(i) else inc(i);
+      for g in board^.gates   do if gate=g then exit(i) else inc(i);
+      for g in board^.outputs do if gate=g then exit(i) else inc(i);
+      result:=-1;
+    end;
+
+  VAR i:longint;
+  begin
+    result:=(sourceOutputIndex=other.sourceOutputIndex) and
+            (length(sink)=length(other.sink)) and
+            (getGateIndex(source,myBoard)=getGateIndex(other.source,otherBoard));
+    if not(result) then exit(false);
+    for i:=0 to length(sink)-1 do begin
+      if (             sink[i].gateInputIndex<>             other.sink[i].gateInputIndex) or
+         (getGateIndex(sink[i].gate,myBoard) <>getGateIndex(other.sink[i].gate,otherBoard)) then exit(false);
+    end;
+  end;
 {$endif}
 

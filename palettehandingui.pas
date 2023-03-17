@@ -6,7 +6,7 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, Grids, ExtCtrls,
-  StdCtrls,paletteHandling;
+  StdCtrls, Menus,paletteHandling;
 
 TYPE
 
@@ -14,6 +14,7 @@ TYPE
 
   TPaletteForm = class(TForm)
     entriesGrid: TStringGrid;
+    MainMenu1: TMainMenu;
     MarkNoneShape: TShape;
     MarkAllLabel: TLabel;
     MarkAllShape: TShape;
@@ -24,6 +25,9 @@ TYPE
     ImportShape: TShape;
     DeleteShape: TShape;
     MarkNoneLabel: TLabel;
+    MenuItem1: TMenuItem;
+    miRemoveDuplicatesExact: TMenuItem;
+    miRemoveDuplicatesBehavior: TMenuItem;
     MoveTaskDownLabel: TLabel;
     MoveTaskDownShape: TShape;
     MoveTaskUpLabel: TLabel;
@@ -46,6 +50,8 @@ TYPE
       Shift: TShiftState; X, Y: integer);
     PROCEDURE MarkNoneShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
+    PROCEDURE miRemoveDuplicatesBehaviorClick(Sender: TObject);
+    PROCEDURE miRemoveDuplicatesExactClick(Sender: TObject);
     PROCEDURE MoveTaskDownShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
     PROCEDURE MoveTaskUpShapeMouseDown(Sender: TObject; button: TMouseButton;
@@ -130,6 +136,20 @@ PROCEDURE TPaletteForm.MarkAllShapeMouseDown(Sender: TObject; button: TMouseButt
 PROCEDURE TPaletteForm.MarkNoneShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     palette^.markAllEntriesForExport(false);
+    fillTable;
+    updateButtons;
+  end;
+
+PROCEDURE TPaletteForm.miRemoveDuplicatesBehaviorClick(Sender: TObject);
+  begin
+    palette^.removeDuplicates(true);
+    fillTable;
+    updateButtons;
+  end;
+
+PROCEDURE TPaletteForm.miRemoveDuplicatesExactClick(Sender: TObject);
+  begin
+    palette^.removeDuplicates(false);
     fillTable;
     updateButtons;
   end;

@@ -120,6 +120,9 @@ T_visualBoard=object(T_captionedAndIndexed)
     FUNCTION getInfoLabelText:string;
 
     PROCEDURE moveToPalette(CONST newPalette:P_abstractPrototypeSource);
+    FUNCTION equals(CONST other:P_visualBoard):boolean;
+    FUNCTION hash:word;
+    FUNCTION interfaceHash:word;
 end;
 {$endif}
 {$ifdef includeImplementation}
@@ -253,11 +256,14 @@ PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft, movingBottom: boolean
       gridX1+=delta[0];
       gridY1+=delta[1];
     end;
-    if ((gridX1<>oldGridX1) or (gridY1<>oldGridY1)) and (ui<>nil) then ui^.updateBoardScrollbars;
     for gate in outputs do begin
       if P_outputGate(gate^.behavior)^.onLeftOrRightSide
       then gate^.gridPos[0]:=gridX1
       else gate^.gridPos[1]:=gridY1;
+    end;
+    if ((gridX1<>oldGridX1) or (gridY1<>oldGridY1)) and (ui<>nil) then begin
+      ui^.updateBoardScrollbars;
+      rewire(false);
     end;
     wiresUpToDate:=false;
   end;
@@ -803,6 +809,45 @@ FUNCTION T_visualBoard.getInterfaces: T_gateInterfaces;
     end;
   end;
 
+FUNCTION T_visualBoard.equals(CONST other:P_visualBoard):boolean;
+  VAR k:longint;
+  begin
+    result:=(length(inputs )=length(other^.inputs )) and
+            (length(outputs)=length(other^.outputs)) and
+            (length(gates  )=length(other^.gates  )) and
+            (length(wires  )=length(other^.wires  ));
+    if not(result) then exit(false);
+    for k:=0 to length(inputs )-1 do if not(inputs [k]^.behavior^.equals(other^.inputs [k]^.behavior)) then exit(false);
+    for k:=0 to length(outputs)-1 do if not(outputs[k]^.behavior^.equals(other^.outputs[k]^.behavior)) then exit(false);
+    for k:=0 to length(gates  )-1 do if not(gates  [k]^.behavior^.equals(other^.gates  [k]^.behavior)) then exit(false);
+    for k:=0 to length(wires)-1 do if not(wires[k].equals(@self,other,other^.wires[k])) then exit(false);
+  end;
+
+FUNCTION T_visualBoard.hash:word;
+  VAR g:P_visualGate;
+  begin
+    {$Q-}{$R-}
+    result:=          length(inputs);
+    result:=result*31+length(outputs);
+    result:=result*31+length(gates);
+    result:=result*31+length(wires);
+    for g in gates do result:=result*31+byte(g^.behavior^.gateType);
+    {$Q+}{$R+}
+  end;
+
+FUNCTION T_visualBoard.interfaceHash:word;
+  VAR i:longint;
+      Interfaces: T_gateInterfaces;
+  begin
+    Interfaces:=getInterfaces;
+    {$Q-}{$R-}
+    result:=          length(Interfaces.inputs);
+    result:=result*31+length(Interfaces.outputs);
+    for i:=0 to length(Interfaces.inputs) -1 do result:=result*31+Interfaces.inputs[i].wireWidth;
+    for i:=0 to length(Interfaces.outputs)-1 do result:=result*31+Interfaces.outputs[i].wireWidth;
+    {$Q+}{$R+}
+  end;
+
 FUNCTION T_visualBoard.clone(CONST fixProperties: boolean): P_visualBoard;
   VAR cloned:P_visualBoard;
       i,j:longint;
@@ -1161,8 +1206,7 @@ PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
   end;
 
 PROCEDURE T_visualBoard.reshapeGrid(CONST newGridX1, newGridY1: longint; CONST byMouseEvent: boolean);
-  VAR gate:P_visualGate;
-      movingBottom,
+  VAR movingBottom,
       movingLeft: boolean;
 
   begin
@@ -1219,7 +1263,8 @@ PROCEDURE T_visualBoard.unhoverAllWires;
 PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y: integer);
   VAR gridPos:T_point;
       i:longint;
-      horizontal, hoverChanged: boolean;
+      horizontal:boolean;
+      hoverChanged: boolean=false;
       g:P_visualGate;
       hoverInfo: T_hoverInfo;
       posDelta:T_point;
@@ -1509,7 +1554,8 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
       i: longint;
       j: longint=0;
       needToDropWire:boolean=false;
-      horizontal, dummy: boolean;
+      horizontal    :boolean=false;
+      dummy         :boolean=false;
   begin
     ui^.callback.repositionPropertyEditorCallback(x,y,true);
     if x<ui^.paletteWidth then begin
@@ -1789,8 +1835,6 @@ FUNCTION T_visualBoard.simulateSteps(CONST count, timeOutInTicks: longint): long
   VAR changed:boolean=true;
       g:P_visualGate;
       i:longint;
-      Canvas: TCanvas;
-      w:P_watcher;
       timeout: qword;
   begin
     timeout:=GetTickCount64+timeOutInTicks;

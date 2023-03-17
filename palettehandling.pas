@@ -95,6 +95,7 @@ TYPE
     PROCEDURE exportSelected(CONST fileName:string);
     PROCEDURE importPalette(CONST fileName:string);
     PROCEDURE swapPaletteName(CONST index:longint; CONST up:boolean);
+    PROCEDURE removeDuplicates(CONST byBehavior:boolean);
   end;
 
   T_challengePaletteEntry=record
@@ -753,8 +754,7 @@ FUNCTION T_workspacePalette.addBoard(CONST board: P_visualBoard; subPaletteIndex
     filter:=-1;
   end;
 
-PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard;
-  subPaletteIndex: longint; CONST subPaletteName: string);
+PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string);
   VAR i,j:longint;
       clonedBoard: P_visualBoard;
   begin
@@ -1077,6 +1077,102 @@ PROCEDURE T_workspacePalette.swapPaletteName(CONST index: longint; CONST up: boo
       then paletteEntries[k].subPaletteIndex:=otherIndex else
       if paletteEntries[k].subPaletteIndex=otherIndex
       then paletteEntries[k].subPaletteIndex:=index;
+  end;
+
+PROCEDURE T_workspacePalette.removeDuplicates(CONST byBehavior:boolean);
+  VAR hashGroups:array of T_arrayOfLongint;
+      k:longint;
+      i,j:longint;
+      protRetain,protRemove:P_visualBoard;
+      behvRetain,behvRemove:P_compoundGate;
+      h:word;
+      equals: boolean;
+      pairsToCleanup:array of record
+        retainIndex,
+        removeIndex:longint;
+      end;
+      removed:T_arrayOfLongint;
+
+  PROCEDURE addPairToCleanup(CONST retain,remove:longint);
+    VAR i:longint;
+    begin
+      i:=length(pairsToCleanup);
+      setLength(pairsToCleanup,i+1);
+      with pairsToCleanup[i] do begin
+        retainIndex:=retain;
+        removeIndex:=remove;
+      end;
+    end;
+
+  begin
+    setLength(pairsToCleanup,0);
+    setLength(hashGroups,65536);
+    for k:=0 to length(hashGroups)-1 do hashGroups[k]:=C_EMPTY_LONGINT_ARRAY;
+
+    for k:=0 to length(paletteEntries)-1 do if paletteEntries[k].entryType=gt_compound then begin
+      if byBehavior
+      then h:=paletteEntries[k].prototype^.interfaceHash
+      else h:=paletteEntries[k].prototype^.hash;
+      append(hashGroups[h],k);
+    end;
+
+    {$ifdef debugMode}
+    writeln('DUPLICATE SCAN over ',length(paletteEntries),' entries');
+    for h:=0 to 65535 do if length(hashGroups[h])>1 then begin
+      write('Group #',h,': ');
+      for k in hashGroups[h] do write(k,',');
+      writeln;
+    end;
+    {$endif}
+
+    for h:=0 to 65535 do begin
+      if length(hashGroups[h])>1 then begin
+        for i:=0 to length(hashGroups[h])-2 do for j:=i+1 to length(hashGroups[h])-1 do begin
+          protRetain:=paletteEntries[hashGroups[h,i]].prototype;
+          protRemove:=paletteEntries[hashGroups[h,j]].prototype;
+          if byBehavior then begin
+             behvRetain:=protRetain^.extractBehavior;
+             behvRemove:=protRemove^.extractBehavior;
+             equals:=behvRetain^.behaviorEquals(behvRemove);
+             dispose(behvRetain,destroy);
+             dispose(behvRemove,destroy);
+          end else equals:=protRetain^.equals(protRemove);
+          if equals then addPairToCleanup(hashGroups[h,i],hashGroups[h,j]);
+          {$ifdef debugMode}
+          writeln('Comparing ',hashGroups[h,j],' (',protRetain^.getCaption,') against ',hashGroups[h,i],' (',protRemove^.getCaption,') : ',equals);
+          {$endif}
+        end;
+      end;
+      setLength(hashGroups[h],0);
+    end;
+    setLength(hashGroups,0);
+
+    setLength(removed,0);
+    {$ifdef debugMode}
+    writeln('To clean up:');
+    {$endif}
+    for k:=0 to length(pairsToCleanup)-1 do with pairsToCleanup[k] do begin
+      {$ifdef debugMode}
+      writeln('Retain ',retainIndex,'; remove: ',removeIndex);
+      {$endif}
+      protRetain:=paletteEntries[retainIndex].prototype;
+      protRemove:=paletteEntries[removeIndex].prototype;
+      for i:=removeIndex+1 to length(paletteEntries)-1 do
+        if paletteEntries[i].entryType=gt_compound
+        then paletteEntries[i].prototype^.prototypeUpdated(protRemove,protRetain);
+      //Leave the removed entries where they are for the moment, but remember their index
+      append(removed,removeIndex);
+    end;
+
+    //Actually remove the entries:
+    j:=0;
+    for i:=0 to length(paletteEntries)-1 do if arrContains(removed,i) then begin
+      dispose(paletteEntries[i].prototype,destroy);
+    end else begin
+      paletteEntries[j]:=paletteEntries[i];
+      inc(j);
+    end;
+    setLength(paletteEntries,j);
   end;
 
 { T_palette }
