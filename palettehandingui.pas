@@ -118,6 +118,9 @@ PROCEDURE TPaletteForm.FormCreate(Sender: TObject);
   begin
     palette:=nil;
     entriesGrid.rowCount:=1;
+
+    SubPaletteStringGrid.editor     .color:=SubPaletteStringGrid     .color;
+    SubPaletteStringGrid.editor.Font.color:=SubPaletteStringGrid.Font.color;
   end;
 
 PROCEDURE TPaletteForm.ImportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
