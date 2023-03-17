@@ -144,7 +144,7 @@ TYPE
   end;
 
 IMPLEMENTATION
-USES visuals,Graphics;
+USES visuals,Graphics,sprites;
 
 { T_challengePalette }
 
@@ -1277,18 +1277,21 @@ FUNCTION T_palette.allowDeletion(CONST gate: P_abstractGate; OUT reasonForFalse:
 PROCEDURE T_palette.paint;
   VAR g:P_visualGate;
       yOffset:longint;
+      Canvas: TCanvas;
   begin
-    ui^.paletteCanvas.Brush.color:=BOARD_COLOR;
-    ui^.paletteCanvas.Brush.style:=bsSolid;
-    ui^.paletteCanvas.Pen.color:=clBlack;
-    ui^.paletteCanvas.Pen.style:=psSolid;
-    ui^.paletteCanvas.Rectangle(-1,-1,ui^.paletteWidth,2000);
+    Canvas:=ui^.paletteCanvas;
+    Canvas.Brush.color:=BOARD_COLOR;
+    Canvas.Brush.style:=bsSolid;
+    Canvas.Pen.color:=clBlack;
+    Canvas.Pen.style:=psSolid;
+    Canvas.Rectangle(-1,-1,ui^.paletteWidth,2000);
+    gradientSprite.renderRect(Canvas,ui^.getZoom,ui^.paletteWidth-ui^.getZoom,0,Canvas.height-1);
 
     yOffset:=ui^.paletteYOffset;
     for g in visualPaletteItems do begin
       g^.canvasPos:=pointOf(g^.gridPos[0]*ui^.getZoom,
                             g^.gridPos[1]*ui^.getZoom+yOffset);
-      g^.paintAll(ui^.paletteCanvas,ui^.getZoom);
+      g^.paintAll(Canvas,ui^.getZoom);
     end;
   end;
 

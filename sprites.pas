@@ -32,6 +32,14 @@ TYPE
       FUNCTION isAtPixel(CONST p:T_point):boolean;
   end;
 
+  { T_gradientSprite }
+
+  T_gradientSprite=object(T_sprite)
+    CONSTRUCTOR create;
+    PROCEDURE setZoom(CONST zoom:longint); virtual;
+    PROCEDURE renderRect(CONST Canvas: TCanvas; CONST zoom: longint; CONST x,y0,y1:longint);
+  end;
+
   { T_blockSprite }
   P_blockSprite=^T_blockSprite;
   T_blockSprite=object(T_sprite)
@@ -114,6 +122,7 @@ FUNCTION getIoBlockSprite(CONST caption:shortstring; CONST inputIndex:longint; C
 FUNCTION getIoTextSprite(CONST wireValue:T_wireValue; mode:T_multibitWireRepresentation):P_sprite;
 FUNCTION get7SegmentSprite(CONST wireValue: T_wireValue; CONST marked:boolean):P_sprite;
 FUNCTION getWatcherSprite(CONST ioLabel_:shortstring; CONST ioIndex:longint; CONST wireValue:T_wireValue; CONST isInput,leftOrRight:boolean):P_sprite;
+VAR gradientSprite:T_gradientSprite;
 IMPLEMENTATION
 USES sysutils,types,Classes,math,strutils;
 VAR ioSpriteMap,
@@ -300,6 +309,52 @@ FUNCTION getWatcherSprite(CONST ioLabel_: shortstring; CONST ioIndex:longint; CO
       spriteAllocated;
     end;
     result^.lastUsed:=now;
+  end;
+
+{ T_gradientSprite }
+
+CONSTRUCTOR T_gradientSprite.create();
+  begin
+    inherited;
+  end;
+
+PROCEDURE T_gradientSprite.setZoom(CONST zoom: longint);
+  VAR b0,g0,r0,
+      b1,g1,r1,
+      i,step:longint;
+      Canvas: TBGRACanvas;
+  begin
+    screenOffset:=pointOf(0,0);
+    if Bitmap=nil
+    then Bitmap:=TBGRABitmap.create(zoom,1,BOARD_COLOR)
+    else Bitmap.setSize(zoom,1);
+
+    b0:= BOARD_COLOR         and 255;
+    g0:=(BOARD_COLOR shr  8) and 255;
+    r0:=(BOARD_COLOR shr 16) and 255;
+
+    b1:= SHADOW_COLOR         and 255; b1-=b0; b0:=b0 shl 8;
+    g1:=(SHADOW_COLOR shr  8) and 255; g1-=g0; g0:=g0 shl 8;
+    r1:=(SHADOW_COLOR shr 16) and 255; r1-=r0; r0:=r0 shl 8;
+
+    Canvas:=Bitmap.CanvasBGRA;
+    for i:=0 to zoom-1 do begin
+      step:=(i shl 8) div (zoom-1);
+      Canvas.Pixels[i,0]:=(((b0+step*b1) shr 8)       ) or
+                          (((g0+step*g1) shr 8) shl  8) or
+                          (((r0+step*r1) shr 8) shl 16);
+    end;
+  end;
+
+PROCEDURE T_gradientSprite.renderRect(CONST Canvas: TCanvas; CONST zoom: longint; CONST x, y0, y1: longint);
+  VAR rect:TRect;
+  begin
+    if zoom<>preparedForZoom then setZoom(zoom);
+    rect.Left:=x;
+    rect.width:=Bitmap.width;
+    rect.top:=y0;
+    rect.height:=y1-y0;
+    Bitmap.draw(Canvas,rect);
   end;
 
 { T_watcherSprite }
@@ -945,7 +1000,6 @@ PROCEDURE T_sprite.renderAt(CONST Canvas: TCanvas; CONST zoom: longint; CONST sc
        (screenPosition[0]-screenOffset[0]+Bitmap.width<0) or
        (screenPosition[1]-screenOffset[1]>Canvas.height) or
        (screenPosition[1]-screenOffset[1]+Bitmap.height<0) then exit;
-
     Bitmap.draw(Canvas,
                 screenPosition[0]-screenOffset[0],
                 screenPosition[1]-screenOffset[1],true);
@@ -958,9 +1012,11 @@ FUNCTION T_sprite.isAtPixel(CONST p: T_point): boolean;
   end;
 
 INITIALIZATION
+  gradientSprite.create;
   init;
 
 FINALIZATION
+  gradientSprite.destroy;
   finalize;
 
 end.

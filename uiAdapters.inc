@@ -257,9 +257,8 @@ PROCEDURE T_uiAdapter.endSelectionDrag;
   end;
 
 PROCEDURE T_uiAdapter.updateTitleLayer;
-  VAR
-    canvasWidth, canvasHeight: longint;
-    Canvas: TBGRACanvas;
+  VAR canvasWidth, canvasHeight: longint;
+      Canvas: TBGRACanvas;
   begin
     if activeBoard=nil then exit;
     canvasWidth :=zoom*(activeBoard^.gridX1+4);
