@@ -125,6 +125,7 @@ TYPE
     PROCEDURE boardChanged;
     PROCEDURE testFinished;
     PROCEDURE updateUiElements;
+    FUNCTION continueWithOtherBoard:boolean;
   public
 
   end;
@@ -133,7 +134,7 @@ VAR
   DigitaltrainerMainForm: TDigitaltrainerMainForm;
 
 IMPLEMENTATION
-USES compoundGates, boardTestUnit;
+USES compoundGates, boardTestUnit, boardChangedUi;
 CONST playPauseGlyph:array[false..true] of string=('⏵','⏸');
 
 {$R *.lfm}
@@ -296,6 +297,8 @@ PROCEDURE TDigitaltrainerMainForm.miMarkChallengesUnsolvedClick(Sender: TObject)
 PROCEDURE TDigitaltrainerMainForm.miNewBoardClick(Sender: TObject);
   VAR fullInit:boolean;
   begin
+    if not(continueWithOtherBoard) then exit;
+
     fullInit:=workspace.getActiveChallenge<>nil;
     if fullInit then workspace.setFreeEditMode;
                      workspace.clearBoard(@uiAdapter);
@@ -337,6 +340,7 @@ PROCEDURE TDigitaltrainerMainForm.miShrinkClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);
   begin
     if SelectTaskForm(@workspace).startTaskAfterShowing(workspace.getChallenges) and
+       continueWithOtherBoard and
        workspace.startChallenge(SelectTaskForm(@workspace).selectedChallengeIndex) then begin
       workspace.activePalette^.attachUI(@uiAdapter);
       workspace.activeBoard  ^.attachUI(@uiAdapter);
@@ -405,14 +409,17 @@ PROCEDURE TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject; but
     infoLabel.caption:=workspace.getInfoLabelText;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject;button: TMouseButton; Shift: TShiftState; X, Y: integer);  begin
+PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  VAR prototype:P_visualBoard;
+  begin
+    prototype:=P_visualBoard(P_compoundGate(uiAdapter.draggedGate^.getBehavior)^.prototype);
 
     buttonClicked(propEditShape);
     ValueListEditor1.OnValidateEntry:=nil;
-    if not(gateProperties.arePropertiesForBoard)
+    if not(gateProperties.arePropertiesForBoard) and continueWithOtherBoard
     then begin
       AddToPaletteForm.setSubpalette(workspace.activePalette^.lastSubPaletteIndex);
-      workspace.editPaletteEntry(P_visualBoard(P_compoundGate(uiAdapter.draggedGate^.getBehavior)^.prototype),@uiAdapter);
+      workspace.editPaletteEntry(prototype,@uiAdapter);
     end;
     gateProperties.destroy;
     propEditPanel.visible:=false;
@@ -681,6 +688,22 @@ PROCEDURE TDigitaltrainerMainForm.updateUiElements;
     setEnableButton(TestShape,TestLabel,not(workspace.EditorMode));
     infoLabel.caption:=workspace.getInfoLabelText;
     PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
+  end;
+
+FUNCTION TDigitaltrainerMainForm.continueWithOtherBoard: boolean;
+  VAR mr: TModalResult;
+      simulationEnabledBefore:boolean;
+  begin
+    if not(workspace.activeBoard^.isModified) then exit(true);
+    simulationEnabledBefore:=SimulationTimer.enabled;
+    SimulationTimer.enabled:=false;
+    mr:=boardChangedDialog.showFor(workspace.EditorMode and (workspace.activeBoard^.getIndexInPalette>=0));
+    SimulationTimer.enabled:=simulationEnabledBefore;
+    if (mr=mrYes) and
+       workspace.EditorMode and
+       (workspace.activeBoard^.getIndexInPalette>=0)
+    then P_workspacePalette(workspace.activePalette)^.updateEntry(workspace.activeBoard);
+    result:=mr<>mrCancel;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.AnimationTimerTimer(Sender: TObject);

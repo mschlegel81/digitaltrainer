@@ -194,6 +194,13 @@
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="boardTestUnit"/>
       </Unit>
+      <Unit>
+        <Filename Value="boardchangedui.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="boardChangedDialog"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="boardChangedUi"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

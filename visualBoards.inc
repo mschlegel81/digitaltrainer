@@ -33,6 +33,7 @@ T_visualBoard=object(T_captionedAndIndexed)
     simStepCounter:longint;
     wiresUpToDate:boolean;
     ui:P_uiAdapter;
+    modified:boolean;
 
     wiringTask:P_wiringTask;
     watchers:array of P_watcher;
@@ -53,6 +54,8 @@ T_visualBoard=object(T_captionedAndIndexed)
     CONSTRUCTOR create(CONST palette:P_abstractPrototypeSource);
     PROCEDURE clear;
     DESTRUCTOR destroy;
+
+    PROPERTY isModified:boolean read modified;
 
     PROCEDURE handleInputKey(CONST key:word; CONST shiftPressed:boolean);
     PROCEDURE setIndexInPalette(CONST index:longint);
@@ -155,16 +158,17 @@ PROCEDURE T_visualBoard.clear;
     if ui<>nil then ui^.hideIoEdit;
     setLength(watchers,0);
     simStepCounter:=0;
+    modified:=false;
     disposeTask(wiringTask);
   end;
 
 DESTRUCTOR T_visualBoard.destroy;
   begin
+    detachUI;
     clear;
     enterCriticalSection(wiresCs);
     leaveCriticalSection(wiresCs);
     doneCriticalSection(wiresCs);
-    detachUI;
   end;
 
 PROCEDURE T_visualBoard.handleInputKey(CONST key: word;
@@ -301,6 +305,7 @@ PROCEDURE T_visualBoard.elementAdded(CONST newElement: P_visualGate;
   CONST mouseIsInBoard: boolean);
   VAR element:P_visualGate;
   begin
+    modified:=true;
     element:=newElement;
     if not(mouseIsInBoard)
     then dispose(element,destroy)
@@ -411,7 +416,10 @@ PROCEDURE T_visualBoard.repositionElement(CONST elements: T_visualGateArray;
     end;
 
   begin
-    if not skipSaveUndo then ui^.saveStateToUndoList;
+    if not skipSaveUndo then begin
+      ui^.saveStateToUndoList;
+      modified:=true;
+    end;
 
     if not(mouseIsInBoard) then begin
       remove(elements,true);
@@ -862,6 +870,7 @@ FUNCTION T_visualBoard.clone(CONST fixProperties: boolean): P_visualBoard;
     end;
   begin
     new(cloned,create(associatedPalette));
+    cloned^.wiresHaveChangedInBackground:=false;
     cloned^.captionString:=captionString;
     cloned^.descriptionString:=descriptionString;
     cloned^.myIndex:=myIndex;
@@ -869,6 +878,7 @@ FUNCTION T_visualBoard.clone(CONST fixProperties: boolean): P_visualBoard;
     cloned^.gridX1:=gridX1;
     cloned^.gridY0:=gridY0;
     cloned^.gridY1:=gridY1;
+    cloned^.modified:=false;
     setLength(cloned^.inputs ,length(inputs )); for i:=0 to length(inputs )-1 do begin cloned^.inputs [i]:=inputs [i]^.clone; if fixProperties then cloned^.inputs [i]^.fixedProperties:=true; end;
     setLength(cloned^.outputs,length(outputs)); for i:=0 to length(outputs)-1 do begin cloned^.outputs[i]:=outputs[i]^.clone; if fixProperties then cloned^.outputs[i]^.fixedProperties:=true; end;
     setLength(cloned^.gates  ,length(gates));   for i:=0 to length(gates  )-1 do begin cloned^.gates  [i]:=gates  [i]^.clone; if fixProperties then cloned^.gates  [i]^.fixedProperties:=true; end;
@@ -1243,6 +1253,7 @@ PROCEDURE T_visualBoard.deleteMarkedGates;
     for g in outputs do if g^.marked then begin toRemove[i]:=g; inc(i); end;
     setLength(toRemove,i);
     if i>0 then begin
+      modified:=true;
       remove(toRemove,false);
       paintBoard();
       ui^.repaintImage;
@@ -1589,6 +1600,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
     enterCriticalSection(wiresCs);
     for i:=0 to length(wires)-1 do needToDropWire:=needToDropWire or wires[i].isWirePosition(gridPos[0],gridPos[1],false,dummy,horizontal);
     if needToDropWire then begin
+      modified:=true;
       ui^.saveStateToUndoList;
       for i:=0 to length(wires)-1 do begin
         wires[i].dropWiresTouchingPosition(gridPos[0],gridPos[1],horizontal);
@@ -1752,6 +1764,7 @@ PROCEDURE T_visualBoard.addWire(CONST sourceGate: P_visualGate; CONST sourceOutp
   VAR i:longint=0;
       j:longint;
   begin
+    modified:=true;
     ui^.saveStateToUndoList;
     while (i<length(wires)) and ((wires[i].source<>sourceGate) or (wires[i].sourceOutputIndex<>sourceOutputIndex)) do inc(i);
     if i>=length(wires) then setLength(wires,i+1);
@@ -1996,6 +2009,7 @@ PROCEDURE T_visualBoard.pasteFromClipboard(CONST tgtX, tgtY: longint);
     for g in Clipboard^.inputs  do begin gCopy:=g^.clone; addGate(newElements,gCopy); addGate(inputs ,gCopy); end;
     for g in Clipboard^.outputs do begin gCopy:=g^.clone; addGate(newElements,gCopy); addGate(outputs,gCopy); end;
     for g in Clipboard^.gates   do begin gCopy:=g^.clone; addGate(newElements,gCopy); addGate(gates  ,gCopy); end;
+    if length(newElements)>0 then modified:=true;
     i0:=length(wires);
     setLength(wires,i0+length(Clipboard^.wires));
     for i:=0 to length(Clipboard^.wires)-1 do begin

@@ -79,6 +79,7 @@ TYPE
 
     FUNCTION  addBoard   (CONST board:P_visualBoard; subPaletteIndex:longint; CONST subPaletteName:string):P_visualBoard;
     PROCEDURE updateEntry(CONST board:P_visualBoard; subPaletteIndex:longint; CONST subPaletteName:string);
+    PROCEDURE updateEntry(CONST board:P_visualBoard);
     PROCEDURE deleteEntry(CONST prototype:P_captionedAndIndexed);
     FUNCTION  allowDeletion(CONST gate:P_abstractGate; OUT reasonForFalse:string):boolean; virtual;
     PROCEDURE deleteEntry(CONST index:longint);
@@ -752,6 +753,14 @@ FUNCTION T_workspacePalette.addBoard(CONST board: P_visualBoard; subPaletteIndex
     paletteEntries[i].visualSorting  :=visualIndex;
     reindex;
     filter:=-1;
+  end;
+
+PROCEDURE T_workspacePalette.updateEntry(CONST board:P_visualBoard);
+  VAR i: longint;
+  begin
+    if board^.getIndexInPalette<0 then exit;
+    i:=board^.getIndexInPalette;
+    updateEntry(board,paletteEntries[i].subPaletteIndex,paletteNames[paletteEntries[i].subPaletteIndex]);
   end;
 
 PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string);
