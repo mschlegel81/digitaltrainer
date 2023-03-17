@@ -155,7 +155,10 @@ PROCEDURE T_visualBoard.clear;
     setLength(gates,0);
     setLength(wires,0);
     wiresUpToDate:=false;
-    if ui<>nil then ui^.hideIoEdit;
+    if ui<>nil then begin
+      ui^.hideIoEdit;
+      ui^.updateTitleLayer;
+    end;
     setLength(watchers,0);
     simStepCounter:=0;
     modified:=false;
