@@ -186,8 +186,7 @@ FUNCTION T_workspace.EditorMode: boolean;
     result:=activeChallenge=nil;
   end;
 
-PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard;
-  CONST uiAdapter: P_uiAdapter);
+PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard; CONST uiAdapter: P_uiAdapter);
   begin
     if activeChallenge<>nil then exit;
     dispose(workspaceBoard,destroy);

@@ -491,7 +491,8 @@ CONST SPEED_SETTING:array[0..34] of record
            (timerInterval:  40; simSteps:1854; labelCaption:'46.4kHz'),
            (timerInterval:  40; simSteps:2621; labelCaption:'65.5kHz'),
            (timerInterval:  40; simSteps:3707; labelCaption:'92.7kHz'),
-           (timerInterval:  40; simSteps:5243; labelCaption:'131.1kHz'));
+           (timerInterval:1000; simSteps:1311000; labelCaption:'MAX!!!'));
+//           (timerInterval:  40; simSteps:5243; labelCaption:'131.1kHz'));
 
 VAR lastSimTime:qword=0;
     averageSpeed:double=8;
@@ -522,7 +523,9 @@ PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
 
     if elapsed>0 then begin
       speed:=stepsSimulated*1000 div elapsed;
-      averageSpeed:=averageSpeed*0.95+speed*0.05;
+      if speedTrackBar.position=length(SPEED_SETTING)-1
+      then averageSpeed:=speed
+      else averageSpeed:=averageSpeed*0.95+speed*0.05;
       speed:=round(averageSpeed);
       if speed>1000 then begin
         speed:=speed div 1000;
@@ -575,6 +578,7 @@ PROCEDURE TDigitaltrainerMainForm.ZoomInShapeMouseDown(Sender: TObject;
     uiAdapter.zoomIn;
     workspace.activePalette^.checkSizes;
     uiAdapter.paintAll;
+    uiAdapter.repaintImage;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ZoomOutShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -583,6 +587,7 @@ PROCEDURE TDigitaltrainerMainForm.ZoomOutShapeMouseDown(Sender: TObject; button:
     uiAdapter.zoomOut;
     workspace.activePalette^.checkSizes;
     uiAdapter.paintAll;
+    uiAdapter.repaintImage;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.buttonClicked(Shape: TShape);
@@ -641,6 +646,7 @@ PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate; C
 
 PROCEDURE TDigitaltrainerMainForm.boardChanged;
   begin
+    if speedTrackBar.position=speedTrackBar.max then speedTrackBar.position:=speedTrackBar.position-1;
     if not(SimulationTimer.enabled) and not(pauseByUser) then begin
       SimulationTimer.enabled:=true;
       PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];

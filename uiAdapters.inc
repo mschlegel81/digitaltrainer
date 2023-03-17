@@ -500,7 +500,7 @@ PROCEDURE T_uiAdapter.paintAll;
       Canvas.Pen.style:=psClear;
       Canvas.FillRect(0,0,width,height);
     end;
-    activeBoard^.paintBoard(state in [uas_draggingFromBoard,uas_multiDragFromBoard,uas_draggingFromPalette]);
+    if activeBoard<>nil then activeBoard^.paintBoard(state in [uas_draggingFromBoard,uas_multiDragFromBoard,uas_draggingFromPalette]);
   end;
 
 PROCEDURE T_uiAdapter.repaintImage;

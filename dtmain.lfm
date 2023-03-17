@@ -1,7 +1,7 @@
 object DigitaltrainerMainForm: TDigitaltrainerMainForm
-  Left = 1371
+  Left = 430
   Height = 737
-  Top = 314
+  Top = 235
   Width = 1277
   Align = alTop
   Caption = 'Digitaltrainer'
@@ -12,7 +12,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnKeyDown = FormKeyDown
-  OnResize = FormResize
   LCLVersion = '2.2.2.0'
   WindowState = wsMaximized
   object Panel1: TPanel
@@ -296,6 +295,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Width = 1260
     AntialiasingMode = amOn
     Align = alClient
+    OnResize = FormResize
     ParentShowHint = False
     ShowHint = True
     StretchOutEnabled = False

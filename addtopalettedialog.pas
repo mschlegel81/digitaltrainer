@@ -104,8 +104,7 @@ PROCEDURE TAddToPaletteForm.setSubpalette(CONST idx: longint);
     subPaletteIndex:=idx;
   end;
 
-FUNCTION TAddToPaletteForm.showFor(CONST palette: P_workspacePalette;
-  CONST board: P_visualBoard): boolean;
+FUNCTION TAddToPaletteForm.showFor(CONST palette: P_workspacePalette; CONST board: P_visualBoard): boolean;
   VAR s:string;
   begin
     currentBoard  :=board;
