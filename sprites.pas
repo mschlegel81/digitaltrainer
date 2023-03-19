@@ -114,7 +114,7 @@ TYPE
 
   T_spriteMap=specialize G_stringKeyMap<P_sprite>;
 
-PROCEDURE textOut(CONST CanvasBGRA:TBGRACanvas; CONST s:string; CONST x0,y0,x1,y1:longint; CONST textColor:longint=$00FFFFFF);
+PROCEDURE textOut(CONST CanvasBGRA:TBGRACanvas; CONST s:string; CONST x0,y0,x1,y1:longint; CONST textColor:longint=$00FFFFFF; CONST autoRotate:boolean=true);
 
 FUNCTION getIoSprite(CONST pos:T_ioDirection; CONST wireValue:T_wireValue; CONST caption:string):P_sprite;
 FUNCTION getBlockSprite(CONST caption:shortstring; CONST gridWidth,gridHeight:longint; CONST marked:boolean):P_sprite;
@@ -744,7 +744,7 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
 
 { T_blockSprite }
 
-PROCEDURE textOut(CONST CanvasBGRA:TBGRACanvas; CONST s: string; CONST x0, y0, x1, y1: longint; CONST textColor: longint);
+PROCEDURE textOut(CONST CanvasBGRA:TBGRACanvas; CONST s: string; CONST x0, y0, x1, y1: longint; CONST textColor: longint; CONST autoRotate:boolean=true);
   VAR
     lines       :T_arrayOfString;
     line:string;
@@ -820,7 +820,7 @@ PROCEDURE textOut(CONST CanvasBGRA:TBGRACanvas; CONST s: string; CONST x0, y0, x
     if (maxTextWidth=0) or (textHeight=0) then exit;
 
     //fit for aspect ratio:
-    if ((y1-y0)>(x1-x0)) and (maxTextWidth>textHeight) then begin
+    if ((y1-y0)>(x1-x0)) and (maxTextWidth>textHeight) and autoRotate then begin
       fontSizeFactor:=min((x1-x0)/textHeight,(y1-y0)/maxTextWidth);
       rotate:=true;
     end else begin

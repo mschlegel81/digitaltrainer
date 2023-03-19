@@ -269,7 +269,7 @@ PROCEDURE T_uiAdapter.updateTitleLayer;
     Canvas.Brush.color:=BOARD_COLOR;
     Canvas.FillRect(0,0,canvasWidth,canvasHeight);
     //Draw title:
-    if activeBoard^.getCaption<>'' then textOut(Canvas,activeBoard^.getCaption,4*zoom,4*zoom,canvasWidth-4*zoom,canvasHeight-4*zoom,BOARD_BOUNDARY_COLOR);
+    if activeBoard^.getCaption<>'' then textOut(Canvas,activeBoard^.getCaption,4*zoom,4*zoom,canvasWidth-4*zoom,canvasHeight-4*zoom,BOARD_BOUNDARY_COLOR,false);
   end;
 
 PROCEDURE T_uiAdapter.zoomIn;
