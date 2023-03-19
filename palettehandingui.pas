@@ -38,32 +38,35 @@ TYPE
     SubPalettePanel: TPanel;
     SaveDialog1: TSaveDialog;
     StartTaskLabel: TLabel;
+    PROCEDURE entriesGridGetCheckboxState(Sender: TObject; aCol, aRow: integer;
+      VAR value: TCheckboxState);
+    PROCEDURE entriesGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);
+    PROCEDURE entriesGridSelectEditor(Sender: TObject; aCol, aRow: integer; VAR editor: TWinControl);
     PROCEDURE entriesGridSelection(Sender: TObject; aCol, aRow: integer);
-    PROCEDURE DeleteShapeMouseDown(Sender: TObject; button: TMouseButton;
-      Shift: TShiftState; X, Y: integer);
-    PROCEDURE ExportShapeMouseDown(Sender: TObject; button: TMouseButton;
-      Shift: TShiftState; X, Y: integer);
+    PROCEDURE DeleteShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE entriesGridSetCheckboxState(Sender: TObject; aCol, aRow: integer;
+      CONST value: TCheckboxState);
+    PROCEDURE entriesGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
+    PROCEDURE ExportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE FormCreate(Sender: TObject);
-    PROCEDURE ImportShapeMouseDown(Sender: TObject; button: TMouseButton;
-      Shift: TShiftState; X, Y: integer);
-    PROCEDURE MarkAllShapeMouseDown(Sender: TObject; button: TMouseButton;
-      Shift: TShiftState; X, Y: integer);
-    PROCEDURE MarkNoneShapeMouseDown(Sender: TObject; button: TMouseButton;
-      Shift: TShiftState; X, Y: integer);
+    PROCEDURE ImportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE MarkAllShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE MarkNoneShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE miRemoveDuplicatesBehaviorClick(Sender: TObject);
     PROCEDURE miRemoveDuplicatesExactClick(Sender: TObject);
-    PROCEDURE MoveTaskDownShapeMouseDown(Sender: TObject; button: TMouseButton;
-      Shift: TShiftState; X, Y: integer);
-    PROCEDURE MoveTaskUpShapeMouseDown(Sender: TObject; button: TMouseButton;
-      Shift: TShiftState; X, Y: integer);
-    PROCEDURE SubPaletteStringGridSelection(Sender: TObject; aCol, aRow: integer
-      );
-    PROCEDURE SubPaletteStringGridValidateEntry(Sender: TObject; aCol,
-      aRow: integer; CONST oldValue: string; VAR newValue: string);
+    PROCEDURE MoveTaskDownShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE MoveTaskUpShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE SubPaletteStringGridSelection(Sender: TObject; aCol, aRow: integer);
+    PROCEDURE SubPaletteStringGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
   private
     palette:P_workspacePalette;
     lastClicked:longint;
     lastClickedSubPalette:longint;
+    sorting:record
+      byColumn:byte;
+      ascending:boolean;
+      index:array of longint;
+    end;
     PROCEDURE fillTable(CONST initial:boolean=false);
     PROCEDURE updateButtons;
   public
@@ -88,9 +91,42 @@ FUNCTION PaletteForm: TPaletteForm;
 PROCEDURE TPaletteForm.entriesGridSelection(Sender: TObject; aCol, aRow: integer);
   begin
     lastClicked:=aRow-1;
-    palette^.markEntryForExportToggle(lastClicked);
-    fillTable;
     updateButtons;
+  end;
+
+PROCEDURE TPaletteForm.entriesGridSelectEditor(Sender: TObject; aCol, aRow: integer; VAR editor: TWinControl);
+  begin
+    if (editor is TPickListCellEditor) then begin
+      TPickListCellEditor(editor).color:=$00703838;
+      TPickListCellEditor(editor).Font.color:=$00FFFFFF;
+      TPickListCellEditor(editor).style:=csOwnerDrawEditableFixed;
+      TPickListCellEditor(editor).AutoComplete:=true;
+      TPickListCellEditor(editor).AutoCompleteText:=[cbactEnabled,cbactEndOfLineComplete,cbactSearchAscending];
+    end;
+  end;
+
+PROCEDURE TPaletteForm.entriesGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);
+  begin
+    if not(IsColumn) then exit;
+    if sorting.byColumn=index then sorting.ascending:=not(sorting.ascending)
+    else begin
+      sorting.byColumn:=index;
+      sorting.ascending:=true;
+    end;
+    fillTable(false);
+  end;
+
+PROCEDURE TPaletteForm.entriesGridGetCheckboxState(Sender: TObject; aCol, aRow: integer; VAR value: TCheckboxState);
+  begin
+    if (aCol<>3) then exit;
+    aRow-=1;
+    if (aRow<0) or (aRow>=length(sorting.index)) then exit;
+    if palette^.paletteEntries[sorting.index[aRow]].entryType=gt_compound
+    then begin
+      if palette^.paletteEntries[sorting.index[aRow]].markedForExport
+      then value:=cbChecked
+      else value:=cbUnchecked;
+    end else value:=cbGrayed;
   end;
 
 PROCEDURE TPaletteForm.DeleteShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -98,15 +134,48 @@ PROCEDURE TPaletteForm.DeleteShapeMouseDown(Sender: TObject; button: TMouseButto
       selection:TGridRect;
   begin
     i:=lastClicked;
-    palette^.deleteEntry(lastClicked);
+    if (i<0) or (i>length(sorting.index)) then exit;
+
+    palette^.deleteEntry(sorting.index[i]);
     fillTable(true);
-    lastClicked:=i-1;
+    lastClicked-=1;
     selection.Bottom:=lastClicked+1;
     selection.top:=lastClicked+1;
     selection.Left:=0;
     selection.Right:=0;
     entriesGrid.selection:=selection;
     updateButtons;
+  end;
+
+PROCEDURE TPaletteForm.entriesGridSetCheckboxState(Sender: TObject; aCol, aRow: integer; CONST value: TCheckboxState);
+  begin
+    if (aCol<>3) then exit;
+    aRow-=1;
+    if (aRow<0) or (aRow>=length(sorting.index)) then exit;
+    if palette^.paletteEntries[sorting.index[aRow]].entryType=gt_compound
+    then begin
+      palette^.markEntryForExport(sorting.index[aRow],value=cbChecked);
+      fillTable;
+      updateButtons;
+    end;
+  end;
+
+PROCEDURE TPaletteForm.entriesGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
+  VAR editedIdx: longint;
+  begin
+    dec(aRow);
+    if (aRow<0) or (aRow>=length(sorting.index)) then exit;
+    editedIdx:=sorting.index[aRow];
+    if aCol=0 then begin
+      //Edit caption
+     if not(palette^.setPaletteEntryCaption(editedIdx,StringReplace(newValue,'\n',LineEnding,[rfReplaceAll]))) then newValue:=oldValue
+    end else if aCol=1 then begin
+      //Edit description
+     if not(palette^.setPaletteEntryDescription(editedIdx,StringReplace(newValue,'\n',LineEnding,[rfReplaceAll]))) then newValue:=oldValue
+    end else if aCol=2 then begin
+      //Edit palette
+      palette^.setPaletteEntrySubPalette(editedIdx,newValue);
+    end;
   end;
 
 PROCEDURE TPaletteForm.ExportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -121,6 +190,8 @@ PROCEDURE TPaletteForm.FormCreate(Sender: TObject);
 
     SubPaletteStringGrid.editor     .color:=SubPaletteStringGrid     .color;
     SubPaletteStringGrid.editor.Font.color:=SubPaletteStringGrid.Font.color;
+    entriesGrid.editor     .color:=entriesGrid     .color;
+    entriesGrid.editor.Font.color:=entriesGrid.Font.color;
   end;
 
 PROCEDURE TPaletteForm.ImportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -198,33 +269,79 @@ PROCEDURE TPaletteForm.SubPaletteStringGridValidateEntry(Sender: TObject; aCol, 
   end;
 
 PROCEDURE TPaletteForm.fillTable(CONST initial: boolean);
-  PROCEDURE fillRow(CONST i: longint);
-    VAR
-      tmp: string;
+  FUNCTION titleOf(CONST entry:T_workspacePaletteEntry):string;
     begin
-      with palette^.paletteEntries[i] do begin
-        if entryType=gt_compound
-        then tmp:=prototype^.getCaption
-        else tmp:=C_gateTypeName[entryType];
-        entriesGrid.Cells[0,i+1]:=StringReplace(tmp,LineEnding,'\n',[rfReplaceAll]);
+      if entry.entryType=gt_compound
+      then result:=entry.prototype^.getCaption
+      else result:=C_gateTypeName[entry.entryType];
+      result:=StringReplace(result,LineEnding,'\n',[rfReplaceAll]);
+    end;
 
-        if entryType=gt_compound
-        then tmp:=prototype^.getDescription
-        else tmp:=C_gateDefaultDescription[entryType];
-        entriesGrid.Cells[1,i+1]:=StringReplace(tmp,LineEnding,'\n',[rfReplaceAll]);
+  FUNCTION descriptionOf(CONST entry:T_workspacePaletteEntry):string;
+    begin
+      if entry.entryType=gt_compound
+      then result:=entry.prototype^.getDescription
+      else result:=C_gateDefaultDescription[entry.entryType];
+      result:=StringReplace(result,LineEnding,'\n',[rfReplaceAll]);
+    end;
 
+  PROCEDURE updateSorting;
+    FUNCTION comesBefore(CONST i,j:longint):boolean;
+      begin
+        case sorting.byColumn of
+          0: if sorting.ascending
+             then result:=uppercase(titleOf(palette^.paletteEntries[i]))<uppercase(titleOf(palette^.paletteEntries[j]))
+             else result:=uppercase(titleOf(palette^.paletteEntries[i]))>uppercase(titleOf(palette^.paletteEntries[j]));
+          1: if sorting.ascending
+             then result:=uppercase(descriptionOf(palette^.paletteEntries[i]))<uppercase(descriptionOf(palette^.paletteEntries[j]))
+             else result:=uppercase(descriptionOf(palette^.paletteEntries[i]))>uppercase(descriptionOf(palette^.paletteEntries[j]));
+          2: if sorting.ascending
+             then result:=palette^.paletteEntries[i].subPaletteIndex<palette^.paletteEntries[j].subPaletteIndex
+             else result:=palette^.paletteEntries[i].subPaletteIndex>palette^.paletteEntries[j].subPaletteIndex;
+          3: if sorting.ascending
+             then result:=palette^.paletteEntries[i].markedForExport<palette^.paletteEntries[j].markedForExport
+             else result:=palette^.paletteEntries[i].markedForExport>palette^.paletteEntries[j].markedForExport;
+          else exit(false);
+        end;
+      end;
+
+    VAR i,j,k:longint;
+    begin
+      with sorting do begin
+        if length(index)<>length(palette^.paletteEntries) then begin
+          setLength(index,length(palette^.paletteEntries));
+          for k:=0 to length(index)-1 do index[k]:=k;
+        end;
+
+        if sorting.byColumn in [0..3] then begin
+          for i:=1 to length(index)-1 do for j:=0 to i-1 do
+          if comesBefore(index[i],index[j]) then begin
+            k:=index[i]; index[i]:=index[j]; index[j]:=k;
+          end;
+        end else for k:=0 to length(index)-1 do index[k]:=k;
+
+      end;
+    end;
+
+  PROCEDURE fillRow(CONST i: longint);
+    begin
+      with palette^.paletteEntries[sorting.index[i]] do begin
+        entriesGrid.Cells[0,i+1]:=titleOf      (palette^.paletteEntries[sorting.index[i]]);
+        entriesGrid.Cells[1,i+1]:=descriptionOf(palette^.paletteEntries[sorting.index[i]]);
         entriesGrid.Cells[2,i+1]:=palette^.subPaletteNames[subPaletteIndex];
-        entriesGrid.Cells[3,i+1]:=BoolToStr((entryType=gt_compound) and markedForExport,'✓','');
       end;
     end;
   VAR i:longint;
   begin
     entriesGrid.rowCount:=1+length(palette^.paletteEntries);
-    //TODO: It would be nicer if the basic gates were not shown; but this would require a more complex handling of the index...
+    updateSorting;
     for i:=0 to length(palette^.paletteEntries)-1 do fillRow(i);
-
     SubPaletteStringGrid.rowCount:=1+length(palette^.paletteNames);
-    for i:=0 to length(palette^.paletteNames)-1 do SubPaletteStringGrid.Cells[0,i+1]:=palette^.paletteNames[i];
+    entriesGrid.Columns[2].PickList.clear;
+    for i:=0 to length(palette^.paletteNames)-1 do begin
+      SubPaletteStringGrid.Cells[0,i+1]:=palette^.paletteNames[i];
+      entriesGrid.Columns[2].PickList.add(palette^.paletteNames[i]);
+    end;
 
     if not(initial) then exit;
     entriesGrid.AutoSizeColumn(0);
@@ -251,6 +368,8 @@ PROCEDURE TPaletteForm.updateButtons;
 PROCEDURE TPaletteForm.showFor(CONST palette_: P_workspacePalette);
   begin
     palette:=palette_;
+    sorting.byColumn:=255;
+    setLength(sorting.index,0);
     fillTable(true);
     ShowModal;
   end;

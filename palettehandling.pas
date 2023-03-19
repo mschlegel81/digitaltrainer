@@ -90,6 +90,9 @@ TYPE
     PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual;
     FUNCTION isWorkspacePalette:boolean; virtual;
 
+    FUNCTION setPaletteEntryCaption    (CONST index:longint; CONST value:string):boolean;
+    FUNCTION setPaletteEntryDescription(CONST index:longint; CONST value:string):boolean;
+    PROCEDURE setPaletteEntrySubPalette (CONST index:longint; CONST value:string);
     PROCEDURE markAllEntriesForExport(CONST Selected:boolean);
     PROCEDURE markEntryForExportToggle(CONST index:longint);
     PROCEDURE markEntryForExport(CONST index:longint; CONST Selected:boolean);
@@ -962,6 +965,33 @@ PROCEDURE T_workspacePalette.dropPaletteItem(CONST gatePtr: pointer);
 FUNCTION T_workspacePalette.isWorkspacePalette: boolean;
   begin
     result:=true;
+  end;
+
+FUNCTION T_workspacePalette.setPaletteEntryCaption    (CONST index:longint; CONST value:string):boolean;
+  begin
+    if (index<0) or (index>=length(paletteEntries)) or (paletteEntries[index].entryType<>gt_compound) then exit(false);
+    paletteEntries[index].prototype^.setCaption(value);
+    result:=true;
+  end;
+
+FUNCTION T_workspacePalette.setPaletteEntryDescription(CONST index:longint; CONST value:string):boolean;
+  begin
+    if (index<0) or (index>=length(paletteEntries)) or (paletteEntries[index].entryType<>gt_compound) then exit(false);
+    paletteEntries[index].prototype^.setDescription(value);
+    result:=true;
+  end;
+
+PROCEDURE T_workspacePalette.setPaletteEntrySubPalette (CONST index:longint; CONST value:string);
+  VAR subPaletteIndex:longint=0;
+  begin
+    if (index<0) or (index>=length(paletteEntries)) then exit;
+    while (subPaletteIndex<length(paletteNames)) and (paletteNames[subPaletteIndex]<>value) do inc(subPaletteIndex);
+    if subPaletteIndex>=length(paletteNames) then begin
+      setLength(paletteNames,length(paletteNames)+1);
+      paletteNames[subPaletteIndex]:=value;
+    end;
+    paletteEntries[index].subPaletteIndex:=subPaletteIndex;
+    reindex;
   end;
 
 PROCEDURE T_workspacePalette.markAllEntriesForExport(CONST Selected: boolean);
