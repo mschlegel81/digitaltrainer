@@ -1646,7 +1646,6 @@ PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point; CONST screenX
       i:longint;
       graph: P_wireGraph;
       wirePath, newWirePath: T_wirePath;
-      wrapper:T_wirePathArray;
       wireWidth:byte;
 
       connectible:T_visualGateArray;
@@ -1695,22 +1694,19 @@ PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point; CONST screenX
 
     paintWires(true,false);
     Canvas:=ui^.uiElement.boardImage.Canvas;
-    setLength(wrapper,1);
-    wrapper[0]:=wirePath;
-    paintWire(ui^.zoom,
-              ui^.uiElement.wireLayer.CanvasBGRA,
-              wireWidth,
-              wrapper,true);
+    paintPreviewWire(ui^.zoom,
+                     ui^.uiElement.wireLayer.CanvasBGRA,
+                     wireWidth,
+                     wirePath);
     paintWires(false,true);
-    for g in inputs  do g^.paintAll(Canvas);
-    for g in gates   do g^.paintAll(Canvas);
-    for g in outputs do g^.paintAll(Canvas);
+    for g in inputs   do g^.paintAll(Canvas);
+    for g in gates    do g^.paintAll(Canvas);
+    for g in outputs  do g^.paintAll(Canvas);
     for w in watchers do w^.paint(ui,Canvas);
     wiresUpToDate:=false;
 
     ui^.callback.paintPalette();
     ui^.repaintImage;
-
   end;
 
 FUNCTION T_visualBoard.getCaption: shortstring;

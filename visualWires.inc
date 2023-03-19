@@ -25,12 +25,13 @@ end;
 
 {$endif}
 {$ifdef includeImplementation}
-PROCEDURE paintWire(CONST zoom:longint; CONST Canvas:TBGRACanvas; CONST bitWidth:byte; CONST path:T_wirePathArray; CONST preview:boolean=false);
+PROCEDURE paintPreviewWire(CONST zoom:longint; CONST Canvas:TBGRACanvas; CONST bitWidth:byte; CONST path:T_wirePath);
   VAR w:longint=1;
       run:longint;
-      i,j:longint;
+      j:longint;
       surround:longint;
   begin
+    if length(path)<=1 then exit;
     surround:=zoom div 2;
     case bitWidth of
        1..3: w:=(1*zoom) shr 4;
@@ -41,14 +42,12 @@ PROCEDURE paintWire(CONST zoom:longint; CONST Canvas:TBGRACanvas; CONST bitWidth
     if w<1 then w:=1; w+=surround;
     for run:=0 to 1 do begin
       Canvas.Pen.width:=w;
-      w-=surround;
-      if run=0        then Canvas.Pen.color:=BOARD_COLOR
-      else if preview then Canvas.Pen.color:=MARK_COLOR
-                      else Canvas.Pen.color:=WIRE_COLOR;
-      for i:=0 to length(path)-1 do if length(path[i])>1 then begin
-                                         Canvas.MoveTo(path[i,0,0]*zoom,path[i,0,1]*zoom);
-        for j:=1 to length(path[i])-1 do Canvas.LineTo(path[i,j,0]*zoom,path[i,j,1]*zoom);
-      end;
+      w+=1-surround;
+      if run=0
+      then Canvas.Pen.color:=BOARD_COLOR
+      else Canvas.Pen.color:=MARK_COLOR;
+                                    Canvas.MoveTo(path[0,0]*zoom,path[0,1]*zoom);
+      for j:=1 to length(path)-1 do Canvas.LineTo(path[j,0]*zoom,path[j,1]*zoom);
     end;
   end;
 
