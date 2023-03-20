@@ -80,7 +80,7 @@ TYPE
     challengeDescription:string;
 
     CONSTRUCTOR create;
-    DESTRUCTOR destroy;
+    DESTRUCTOR destroy; virtual;
     DESTRUCTOR destroyPartial;
     FUNCTION partialClone:P_challenge;
 
@@ -88,17 +88,35 @@ TYPE
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
 
-    FUNCTION resetChallenge:P_visualBoard;
-    PROCEDURE startTesting(CONST board:P_visualBoard);
+    FUNCTION resetChallenge:P_visualBoard; virtual;
+    PROCEDURE startTesting(CONST board:P_visualBoard); virtual;
     PROPERTY currentlyTesting:boolean read testRun.active;
     PROPERTY testSucceeded:boolean read testRun.succeeded;
-    FUNCTION testStep(CONST count, timeOutInTicks: longint; CONST board: P_visualBoard): longint;
-    FUNCTION getInfoLabelText:string;
+    FUNCTION testStep(CONST count, timeOutInTicks: longint; CONST board: P_visualBoard): longint; virtual;
+    FUNCTION getInfoLabelText(CONST uiIdle:boolean):string; virtual;
 
     //For creation purposes...
     PROCEDURE initNewChallenge(CONST expectedAsVisual:P_visualBoard; CONST challengeBoardOption:T_challengeBoardOption; CONST challengePaletteOption:T_challengePaletteOption);
 
-    FUNCTION equals(CONST c:P_challenge):boolean;
+    FUNCTION equals(CONST c:P_challenge):boolean; virtual;
+  end;
+
+  { T_tutorial }
+  T_tutorial=object(T_challenge)
+    tutorialStep:byte;
+    workspaceBoard:P_visualBoard;
+
+    unchangedInput:T_wireValue;
+    oldIoMode: T_multibitWireRepresentation;
+    CONSTRUCTOR create;
+    DESTRUCTOR destroy; virtual;
+
+    FUNCTION resetChallenge:P_visualBoard; virtual;
+    PROCEDURE startTesting(CONST board:P_visualBoard); virtual;
+    FUNCTION testStep(CONST count, timeOutInTicks: longint; CONST board: P_visualBoard): longint; virtual;
+    FUNCTION getInfoLabelText(CONST uiIdle:boolean):string; virtual;
+
+    FUNCTION equals(CONST c:P_challenge):boolean; virtual;
   end;
 
   { T_challengeSet }
@@ -123,9 +141,239 @@ TYPE
   end;
 
 CONST checkMark='✓';
-
+VAR tutorial:T_tutorial;
 IMPLEMENTATION
 USES sysutils;
+
+{ T_tutorial }
+
+CONSTRUCTOR T_tutorial.create;
+  VAR tempBoard:T_visualBoard;
+
+      input:P_visualGate;
+      output:P_visualGate;
+      adapter:P_visualGate;
+      andGate:P_visualGate;
+
+      behavior:P_abstractGate;
+  begin
+    inherited;
+    tutorialStep:=0;
+    challengeTitle      :='Tutorial';
+    challengeDescription:='Eine Grundlegende Erklärung der Bedienung';
+    challengeLevel      :=0;
+    callengeCompleted   :=false;
+    editable            :=false;
+
+    tempBoard.create(palette);
+
+    behavior:=newBaseGate(gt_input);
+    P_inputGate(behavior)^.width:=4;
+    P_inputGate(behavior)^.reset;
+    new(input,create(behavior));
+    tempBoard.elementAdded(input,true);
+
+    new(output,create(newBaseGate(gt_output)));
+    tempBoard.elementAdded(output,true);
+
+    new(adapter,create(newBaseGate(gt_adapter)));
+    tempBoard.elementAdded(adapter,true);
+
+    behavior:=newBaseGate(gt_andGate);
+    P_andGate(behavior)^.inputCount:=4;
+    new(andGate,create(behavior));
+
+    tempBoard.elementAdded(andGate,true);
+
+    tempBoard.addWire(input,0,adapter,0);
+    tempBoard.addWire(adapter,0,andGate,0);
+    tempBoard.addWire(adapter,1,andGate,1);
+    tempBoard.addWire(adapter,2,andGate,2);
+    tempBoard.addWire(adapter,3,andGate,3);
+    tempBoard.addWire(andGate,0,output,0);
+
+    Interfaces:=tempBoard.getInterfaces;
+    dispose(expectedBehavior,destroy);
+    expectedBehavior:=tempBoard.extractBehavior;
+
+    tempBoard.destroy;
+
+    setNumberOfTestCases(16);
+    generateTestCases(true,false);
+  end;
+
+DESTRUCTOR T_tutorial.destroy;
+  begin
+    inherited;
+  end;
+
+FUNCTION T_tutorial.resetChallenge: P_visualBoard;
+  VAR tmp:P_abstractGate;
+  begin
+    result:=inherited;
+    tutorialStep:=0;
+    palette^.clear;
+    tmp:=newBaseGate(gt_input);
+    tmp^.reset;
+    palette^.ensureBaseGate(tmp,true);
+    palette^.countUpGate(tmp);
+    dispose(tmp,destroy);
+    palette^.finalizePalette(co_none,co_unconfiguredPaletteWithCounts);
+    workspaceBoard:=result;
+  end;
+
+PROCEDURE T_tutorial.startTesting(CONST board: P_visualBoard);
+  begin
+    if tutorialStep=12 then inherited;
+  end;
+
+FUNCTION T_tutorial.testStep(CONST count, timeOutInTicks: longint; CONST board: P_visualBoard): longint;
+  begin
+    if tutorialStep=12 then result:=inherited;
+  end;
+
+FUNCTION T_tutorial.getInfoLabelText(CONST uiIdle:boolean): string;
+  CONST stepText:array[0..12] of string=(
+  {0} 'Auf der linken Seite siehst du die Palette.'+LineEnding+'Du kannst Bauelemente zur Schaltung hinzufügen, indem Du sie mit der rechten Maustaste'+LineEnding+'von der Palette auf die Schaltung ziehst.',
+  {1} 'Eingänge werden immer am oberen oder linken Rand positioniert,'+LineEnding+'Ausgänge immer am unteren oder rechten.'+LineEnding+'Du kannst das Element wieder entfernen, indem Du es zurück zur Palette ziehst.',
+  {2} 'Jetzt fügen wir einen Eingang und einen Ausgang hinzu.',
+  {3} 'Du kannst Kabel erstellen, indem Du auf einen Ausgang eines Bauelements links-klickst.'+LineEnding+'Ein Linksklick auf ein bestehendes Kabel entfernt dieses wieder.',
+  {4} 'Mit einem Rechtsklick auf einen Ein- oder Ausgang kannst Du beobachten, was genau dort passiert.',
+  {5} 'Du kannst den Wert eines Eingangs ändern, indem Du ihn mit Klick auf seine untere Hälfte bearbeitest.'+LineEnding+
+      'Beendest Du die Eingabe mit Enter, wird sie wieder geschlossen; beendest Du sie mit einem Leerzeichen, wird sie übernommen ohne zu schließen',
+  {6} 'Alle Bits eines Eingangs werden umgeschaltet, wenn Du die in der oberen rechten Ecke des Eingangs angegebene Taste drückst',
+  {7} 'Du kannst die Eigenschaften des Eingangs verändern, indem Du auf seine obere Hälfte rechts-klickst.'+LineEnding+
+      'Setze "Breite Ausgang" auf 4!'+LineEnding+
+      'Erlaubte Breiten sind: 1, 4, 8 und 16',
+  {8} 'Das Kabel ist verschwunden, weil die Anschlüsse unterschiedliche Breiten haben.'+LineEnding+
+      'Dafür gibt es Adapter. Füge den Adapter hinzu und verbinde Eingang mit Adapter!',
+  {9} 'Jetzt fügen wir ein Und-Gatter hinzu und setzen dort (Rechtsklick) "Anzahl Eingänge" auf 4.',
+  {10} 'Verbinde nun jeden Ausgang des Adapters mit einem Eingang des "and"-Elements und den Ausgang des "and"-Elements mit dem Ausgang'+LineEnding+
+       'Du hast damit eine Schaltung erstellt, die genau dann 1 ausgibt wenn alle Eingänge 1 sind.',
+  {11} 'Eine Sache noch: Für breitere Eingänge kannst Du die Darstellungsform'+LineEnding+
+       'per Rechtsklick auf dessen untere Hälfte umschalten.',
+  {12} 'Mit einem Klick auf "test" startest Du einen Vergleich Deiner Schaltung mit dem vordefinierten Verhalten.'+LineEnding+'Das Beendet das Tutorial.');
+  FUNCTION stepCompleted:boolean;
+    VAR tmp:P_abstractGate;
+    begin
+      case tutorialStep of
+        0: begin
+             result:=gatesTotal(workspaceBoard^.getGateCount)=1;
+           end;
+        1: begin
+             result:=gatesTotal(workspaceBoard^.getGateCount)=0;
+             if result then begin
+               tmp:=newBaseGate(gt_output);
+               palette^.ensureBaseGate(tmp,true);
+               palette^.countUpGate(tmp);
+               dispose(tmp,destroy);
+             end;
+           end;
+        2: begin
+             result:=(length(workspaceBoard^.inputs)=1) and
+                     (length(workspaceBoard^.outputs)=1);
+           end;
+        3: begin
+             result:=(length(workspaceBoard^.inputs)=1) and
+                     (length(workspaceBoard^.outputs)=1) and
+                     (length(workspaceBoard^.wires)=1);
+           end;
+        4: begin
+             result:=(length(workspaceBoard^.inputs)=1) and
+                     (length(workspaceBoard^.outputs)=1) and
+                     (length(workspaceBoard^.wires)=1) and
+                     (length(workspaceBoard^.watchers)>0);
+             if result then begin
+               unchangedInput.width:=1;
+               unchangedInput.bit[0]:=tsv_false;
+               workspaceBoard^.inputs[0]^.getBehavior^.setInput(0,unchangedInput);
+             end;
+           end;
+        5,6: begin
+             result:=(length(workspaceBoard^.inputs)=1) and
+                     (length(workspaceBoard^.outputs)=1) and
+                     (length(workspaceBoard^.wires)=1) and
+                     (unchangedInput<>workspaceBoard^.inputs[0]^.getBehavior^.getInput(0));
+             if result then unchangedInput:=workspaceBoard^.inputs[0]^.getBehavior^.getInput(0);
+           end;
+        7: begin
+             result:=(length(workspaceBoard^.inputs)=1) and
+                     (length(workspaceBoard^.outputs)=1) and
+                     (workspaceBoard^.inputs[0]^.getBehavior^.outputWidth(0)=4);
+             if result then begin
+               tmp:=newBaseGate(gt_adapter);
+               palette^.ensureBaseGate(tmp,true);
+               palette^.countUpGate(tmp);
+               dispose(tmp,destroy);
+               workspaceBoard^.inputs[0]^.fixedProperties:=true;
+             end;
+           end;
+        8: begin
+             result:=(length(workspaceBoard^.inputs)=1) and
+                     (length(workspaceBoard^.outputs)=1) and
+                     (length(workspaceBoard^.wires)=1) and
+                     (length(workspaceBoard^.gates)=1) and
+                     (workspaceBoard^.isInputConnected(workspaceBoard^.gates[0],0));
+             if result then begin
+               tmp:=newBaseGate(gt_andGate);
+               palette^.ensureBaseGate(tmp,true);
+               palette^.countUpGate(tmp);
+               dispose(tmp,destroy);
+               workspaceBoard^.gates[0]^.fixedProperties:=true;
+             end;
+           end;
+        9: begin
+            result:=(length(workspaceBoard^.inputs)=1) and
+                    (length(workspaceBoard^.outputs)=1) and
+                    (length(workspaceBoard^.wires)=1) and
+                    (length(workspaceBoard^.gates)=2) and
+                    (workspaceBoard^.isInputConnected(workspaceBoard^.gates[0],0)) and
+                    (workspaceBoard^.gates[1]^.getBehavior^.numberOfInputs=4);
+           end;
+       10: begin
+             result:=(length(workspaceBoard^.inputs)=1) and
+                     (length(workspaceBoard^.outputs)=1) and
+                     (length(workspaceBoard^.wires)=6) and
+                     (length(workspaceBoard^.gates)=2) and
+                     (workspaceBoard^.gates[1]^.getBehavior^.numberOfInputs=4) and
+                     workspaceBoard^.isInputConnected(workspaceBoard^.gates[0],0) and
+                     workspaceBoard^.isInputConnected(workspaceBoard^.gates[1],0) and
+                     workspaceBoard^.isInputConnected(workspaceBoard^.gates[1],1) and
+                     workspaceBoard^.isInputConnected(workspaceBoard^.gates[1],2) and
+                     workspaceBoard^.isInputConnected(workspaceBoard^.gates[1],3) and
+                     workspaceBoard^.isInputConnected(workspaceBoard^.outputs[0],0);
+             oldIoMode:=workspaceBoard^.inputs[0]^.ioMode;
+           end;
+        11: begin
+          result:=(length(workspaceBoard^.inputs)=1) and
+                  (length(workspaceBoard^.outputs)=1) and
+                  (length(workspaceBoard^.wires)=6) and
+                  (length(workspaceBoard^.gates)=2) and
+                  (workspaceBoard^.gates[1]^.getBehavior^.numberOfInputs=4) and
+                  workspaceBoard^.isInputConnected(workspaceBoard^.gates[0],0) and
+                  workspaceBoard^.isInputConnected(workspaceBoard^.gates[1],0) and
+                  workspaceBoard^.isInputConnected(workspaceBoard^.gates[1],1) and
+                  workspaceBoard^.isInputConnected(workspaceBoard^.gates[1],2) and
+                  workspaceBoard^.isInputConnected(workspaceBoard^.gates[1],3) and
+                  workspaceBoard^.isInputConnected(workspaceBoard^.outputs[0],0) and
+                 (workspaceBoard^.inputs[0]^.ioMode<>oldIoMode);
+            end;
+        else result:=false;
+      end;
+    end;
+
+  begin
+    if uiIdle and stepCompleted then inc(tutorialStep);
+    if (tutorialStep=12) and currentlyTesting
+    then result:=inherited
+    else result:=stepText[tutorialStep];
+  end;
+
+FUNCTION T_tutorial.equals(CONST c: P_challenge): boolean;
+  begin
+    //Singleton equality
+    result:= c=P_challenge(@self);
+  end;
 
 { T_testCreationThread }
 
@@ -177,13 +425,14 @@ PROCEDURE T_testCreationThread.ensureStop;
 
 CONSTRUCTOR T_challengeSet.create;
   begin
-    setLength(challenge,0);
+    setLength(challenge,1);
+    challenge[0]:=@tutorial;
   end;
 
 DESTRUCTOR T_challengeSet.destroy;
   VAR i:longint;
   begin
-    for i:=0 to length(challenge)-1 do dispose(challenge[i],destroy);
+    for i:=0 to length(challenge)-1 do if not(tutorial.equals(challenge[i])) then dispose(challenge[i],destroy);
     setLength(challenge,0);
   end;
 
@@ -202,11 +451,11 @@ FUNCTION T_challengeSet.loadFromStream(VAR stream: T_bufferedInputStreamWrapper)
   VAR i:longint;
   begin
     if not inherited then exit(false);
-    if length(challenge)>0 then exit(false);
-
-    setLength(challenge,stream.readNaturalNumber);
+    if length(challenge)<>1 then exit(false);
+    tutorial.callengeCompleted:=stream.readBoolean;
+    setLength(challenge,stream.readNaturalNumber+1);
     result:=stream.allOkay;
-    for i:=0 to length(challenge)-1 do begin
+    for i:=1 to length(challenge)-1 do begin
       new(challenge[i],create);
       result:=result and challenge[i]^.loadFromStream(stream);
       {$ifdef debugMode}
@@ -219,8 +468,11 @@ PROCEDURE T_challengeSet.saveToStream(VAR stream: T_bufferedOutputStreamWrapper)
   VAR i:longint;
   begin
     inherited;
-    stream.writeNaturalNumber(length(challenge));
-    for i:=0 to length(challenge)-1 do challenge[i]^.saveToStream(stream);
+    stream.writeBoolean(tutorial.callengeCompleted);
+    stream.writeNaturalNumber(length(challenge)-1);
+    for i:=0 to length(challenge)-1 do if not(tutorial.equals(challenge[i])) then begin
+      challenge[i]^.saveToStream(stream);
+    end;
   end;
 
 FUNCTION T_challengeSet.add(CONST c: P_challenge): boolean;
@@ -262,7 +514,7 @@ PROCEDURE T_challengeSet.exportSelected(CONST fileName:string; CONST exportEdita
     temp.create;
     for i:=0 to length(challenge)-1 do if challenge[i]^.marked then temp.addCopyForExport(challenge[i],exportEditable);
     temp.saveToFile(fileName);
-    for i:=0 to length(temp.challenge)-1 do dispose(temp.challenge[i],destroyPartial);
+    for i:=0 to length(temp.challenge)-1 do if not(tutorial.equals(temp.challenge[i])) then dispose(temp.challenge[i],destroyPartial);
     setLength(temp.challenge,0);
     temp.destroy;
   end;
@@ -278,12 +530,12 @@ FUNCTION T_challengeSet.importChallenges(CONST fileName:string; CONST overwriteE
     end;
     temp.markAllAsPending;
     if overwriteExisting then begin
-      for i:=0 to length(challenge)-1 do dispose(challenge[i],destroy);
+      for i:=0 to length(challenge)-1 do if not tutorial.equals(temp.challenge[i]) then dispose(challenge[i],destroy);
       setLength(challenge,length(temp.challenge));
       for i:=0 to length(challenge)-1 do challenge[i]:=temp.challenge[i];
     end else begin
       for i:=0 to length(temp.challenge)-1 do
-        if not add(temp.challenge[i])
+        if not add(temp.challenge[i]) and not tutorial.equals(temp.challenge[i])
         then dispose(temp.challenge[i],destroy);
     end;
     setLength(temp.challenge,0);
@@ -456,7 +708,7 @@ FUNCTION T_challenge.testStep(CONST count, timeOutInTicks: longint; CONST board:
     end;
   end;
 
-FUNCTION T_challenge.getInfoLabelText: string;
+FUNCTION T_challenge.getInfoLabelText(CONST uiIdle:boolean): string;
   begin
     if testRun.active
     then result:='Test '+intToStr(testRun.testInputIndex+1)+' von '+intToStr(length(tests))
@@ -653,6 +905,11 @@ DESTRUCTOR T_testCreator.destroy;
     setLength(Interfaces.inputs,0);
     setLength(Interfaces.outputs,0);
   end;
+
+INITIALIZATION
+  tutorial.create;
+FINALIZATION
+  tutorial.destroy;
 
 end.
 

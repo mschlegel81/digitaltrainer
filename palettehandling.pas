@@ -103,13 +103,13 @@ TYPE
   end;
 
   T_challengePaletteEntry=record
-      visible,preconfigured:boolean;
-      initialAvailableCount,
-      currentAvailableCount:longint;
-      entryType:T_gateType;
-      prototype:P_abstractGate;
-      sourcePaletteIndex:longint; //not persisted; only relevant during construction
-    end;
+    visible,preconfigured:boolean;
+    initialAvailableCount,
+    currentAvailableCount:longint;
+    entryType:T_gateType;
+    prototype:P_abstractGate;
+    sourcePaletteIndex:longint; //not persisted; only relevant during construction
+  end;
 
   { T_challengePalette }
   P_challengePalette=^T_challengePalette;
@@ -126,6 +126,7 @@ TYPE
 
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
+    PROCEDURE clear;
 
     FUNCTION subPaletteNames:T_arrayOfString; virtual;
     PROCEDURE selectSubPalette(CONST index:longint); virtual;
@@ -176,12 +177,9 @@ CONSTRUCTOR T_challengePalette.create;
   end;
 
 DESTRUCTOR T_challengePalette.destroy;
-  VAR i:longint;
   begin
     detachUI;
-    for i:=length(paletteEntries)-1 downto 0 do
-    with paletteEntries[i] do if prototype<>nil then dispose(prototype,destroy);
-    setLength(paletteEntries,0);
+    clear;
   end;
 
 FUNCTION T_challengePalette.loadFromStream(
@@ -235,6 +233,14 @@ PROCEDURE T_challengePalette.saveToStream(
         if preconfigured then prototype^.writeToStream(stream,true);
       end;
     end;
+  end;
+
+PROCEDURE T_challengePalette.clear;
+  VAR i:longint;
+  begin
+    for i:=length(paletteEntries)-1 downto 0 do
+    with paletteEntries[i] do if prototype<>nil then dispose(prototype,destroy);
+    setLength(paletteEntries,0);
   end;
 
 FUNCTION T_challengePalette.subPaletteNames: T_arrayOfString;
@@ -356,8 +362,7 @@ PROCEDURE T_challengePalette.addPrototype(CONST prototypeIndex: longint; CONST b
     {$endif}
   end;
 
-PROCEDURE T_challengePalette.ensureBaseGate(CONST gate: P_abstractGate;
-  CONST visible: boolean);
+PROCEDURE T_challengePalette.ensureBaseGate(CONST gate: P_abstractGate; CONST visible: boolean);
   VAR idx:longint;
   begin
     idx:=IndexOf(gate); if idx>=0 then exit;

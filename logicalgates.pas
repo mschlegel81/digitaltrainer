@@ -739,6 +739,7 @@ FUNCTION newBaseGate(CONST gateType: T_gateType): P_abstractGate;
       gt_7segmentDummy: new(P_7segmentGate(result),create);
       else result:=nil;
     end;
+    if result<>nil then result^.reset;
   end;
 
 { T_7segmentGate }

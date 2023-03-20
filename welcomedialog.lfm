@@ -1,0 +1,65 @@
+object FirstStartForm: TFirstStartForm
+  Left = 651
+  Height = 299
+  Top = 140
+  Width = 590
+  Caption = 'Herzlich Willkommen...'
+  ClientHeight = 299
+  ClientWidth = 590
+  Color = 7354424
+  Position = poOwnerFormCenter
+  LCLVersion = '2.2.2.0'
+  object WelcomeLabel: TLabel
+    AnchorSideTop.Control = Owner
+    Left = 0
+    Height = 168
+    Top = 10
+    Width = 590
+    Align = alTop
+    Alignment = taCenter
+    Anchors = [akTop]
+    BorderSpacing.Top = 10
+    Caption = 'Hallo!'#13#10'Das scheint das erste mal zu sein dass Du den Digitaltrainer startest.'#13#10'Möchtest Du gleich mit dem Tutorial anfangen?'#13#10#13#10'Wenn Du das nicht möchtest findest Du es später im Menü unter'#13#10'Aufgaben / Aufgaben ansehen.'#13#10#13#10'Du kannst dieses Fenster einfach schließen.'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+  end
+  object updatePaletteButton: TShape
+    AnchorSideLeft.Control = WelcomeLabel
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = WelcomeLabel
+    AnchorSideTop.Side = asrBottom
+    Left = 230
+    Height = 65
+    Top = 188
+    Width = 130
+    BorderSpacing.Top = 10
+    Brush.Color = 6303792
+    OnMouseDown = startTutorialLabelMouseDown
+    Shape = stRoundRect
+  end
+  object startTutorialLabel: TLabel
+    AnchorSideLeft.Control = updatePaletteButton
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = updatePaletteButton
+    AnchorSideTop.Side = asrCenter
+    Left = 269
+    Height = 42
+    Top = 199
+    Width = 53
+    Alignment = taCenter
+    Caption = 'Tutorial'#13#10'starten'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = startTutorialLabelMouseDown
+  end
+end

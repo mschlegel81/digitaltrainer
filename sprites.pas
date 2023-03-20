@@ -101,9 +101,6 @@ TYPE
   end;
 
   P_watcherSprite=^T_watcherSprite;
-
-  { T_watcherSprite }
-
   T_watcherSprite=object(T_sprite)
     anchor:T_ioDirection;
     ioLabel:shortstring;

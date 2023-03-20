@@ -78,6 +78,7 @@ TYPE
     PROCEDURE FormDestroy(Sender: TObject);
     PROCEDURE FormKeyDown(Sender: TObject; VAR key: word; Shift: TShiftState);
     PROCEDURE FormResize(Sender: TObject);
+    PROCEDURE FormShow(Sender: TObject);
     PROCEDURE miAddToPaletteClick(Sender: TObject);
     PROCEDURE miCopyClick(Sender: TObject);
     PROCEDURE miEditModeClick(Sender: TObject);
@@ -106,6 +107,7 @@ TYPE
     PROCEDURE SimulationTimerTimer(Sender: TObject);
     PROCEDURE speedTrackBarChange(Sender: TObject);
     PROCEDURE SubPaletteComboBoxDrawItem(control: TWinControl; index: integer; ARect: TRect; state: TOwnerDrawState);
+    PROCEDURE SubPaletteComboBoxEditingDone(Sender: TObject);
     PROCEDURE TestShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE WireTimerTimer(Sender: TObject);
     PROCEDURE ZoomInShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -134,7 +136,7 @@ VAR
   DigitaltrainerMainForm: TDigitaltrainerMainForm;
 
 IMPLEMENTATION
-USES compoundGates, boardTestUnit, boardChangedUi;
+USES compoundGates, boardTestUnit, boardChangedUi,welcomeDialog;
 CONST playPauseGlyph:array[false..true] of string=('⏵','⏸');
 
 {$R *.lfm}
@@ -216,6 +218,19 @@ PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
     uiAdapter.paintAll;
   end;
 
+PROCEDURE TDigitaltrainerMainForm.FormShow(Sender: TObject);
+  begin
+    if workspace.firstStart and FirstStartForm.wantToStartTutorial then begin
+      workspace.startChallenge(0);
+      workspace.activePalette^.attachUI(@uiAdapter);
+      workspace.activeBoard  ^.attachUI(@uiAdapter);
+      workspace.activeBoard  ^.reset(true);
+      uiAdapter.paintAll;
+      updateUiElements;
+      infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
+    end;
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
   VAR timerEnabledBefore:boolean;
   begin
@@ -228,7 +243,7 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
       workspace.activeBoard^.clear;
       uiAdapter.clearUndoList;
       uiAdapter.paintAll;
-      infoLabel.caption:=workspace.getInfoLabelText;
+      infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
     end;
     SimulationTimer.enabled:=timerEnabledBefore;
   end;
@@ -317,19 +332,19 @@ PROCEDURE TDigitaltrainerMainForm.miPasteClick(Sender: TObject);
     workspace.activeBoard^.pasteFromClipboard(
       round((mouse.CursorPos.X-Left-boardImage.Left+boardHorizontalScrollBar.position)/uiAdapter.getZoom),
       round((mouse.CursorPos.Y-top -boardImage.top +boardVerticalScrollBar  .position)/uiAdapter.getZoom));
-    infoLabel.caption:=workspace.getInfoLabelText;
+    infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miRedoClick(Sender: TObject);
   begin
     uiAdapter.performRedo(@workspace.setActiveBoard);
-    infoLabel.caption:=workspace.getInfoLabelText;
+    infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miSaveAsTaskClick(Sender: TObject);
   begin
     if workspace.EditorMode then CreateTaskForm.showFor(workspace.activeBoard,workspace.getChallenges);
-    infoLabel.caption:=workspace.getInfoLabelText;
+    infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miShrinkClick(Sender: TObject);
@@ -350,18 +365,20 @@ PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);
     end;
     workspace.activePalette^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
-    infoLabel.caption:=workspace.getInfoLabelText;
+    infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miTestBoardClick(Sender: TObject);
   begin
-    BoardTestForm.showForBoard(workspace.activeBoard);
+    if workspace.getActiveChallenge<>nil
+    then TestShapeMouseDown(Sender,mbRight,[],0,0)
+    else BoardTestForm.showForBoard(workspace.activeBoard);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
   begin
     uiAdapter.performUndo(@workspace.setActiveBoard);
-    infoLabel.caption:=workspace.getInfoLabelText;
+    infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.PaletteScrollBarScroll(Sender: TObject; ScrollCode: TScrollCode; VAR ScrollPos: integer);
@@ -406,7 +423,7 @@ PROCEDURE TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject; but
     gateProperties.destroy;
     propEditPanel.visible:=false;
     uiAdapter.resetState;
-    infoLabel.caption:=workspace.getInfoLabelText;
+    infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -442,7 +459,7 @@ PROCEDURE TDigitaltrainerMainForm.propOkShapeMouseDown(Sender: TObject; button: 
     gateProperties.destroy;
     uiAdapter.resetState;
     uiAdapter.paintAll;
-    infoLabel.caption:=workspace.getInfoLabelText;
+    infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.ResetShapeMouseDown(Sender: TObject;
@@ -452,7 +469,7 @@ PROCEDURE TDigitaltrainerMainForm.ResetShapeMouseDown(Sender: TObject;
     workspace.activeBoard^.reset;
     if workspace.getActiveChallenge<>nil then workspace.getActiveChallenge^.expectedBehavior^.reset;
     uiAdapter.paintAll;
-    infoLabel.caption:=workspace.getInfoLabelText;
+    infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.selectionShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -523,7 +540,7 @@ PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
       end
       else stepsSimulated:=workspace.activeBoard^.coSimulateSteps(stepsToSimulate,timeForSimlulation,workspace.getActiveChallenge^.expectedBehavior);
     end;
-    infoLabel.caption:=workspace.getInfoLabelText;
+    infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
 
     elapsed:=GetTickCount64-lastSimTime;
     lastSimTime:=GetTickCount64;
@@ -560,6 +577,11 @@ PROCEDURE TDigitaltrainerMainForm.SubPaletteComboBoxDrawItem(control: TWinContro
     if not(control is TComboBox) then exit;
     SubPaletteComboBox.Canvas.FillRect(ARect);                                                 //first paint normal background
     SubPaletteComboBox.Canvas.TextRect(ARect, 5, ARect.top, SubPaletteComboBox.items[index]);  //paint item text
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.SubPaletteComboBoxEditingDone(Sender: TObject);
+  begin
+    speedTrackBar.SetFocus;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.TestShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -658,7 +680,7 @@ PROCEDURE TDigitaltrainerMainForm.boardChanged;
       SimulationTimer.enabled:=true;
       PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
     end;
-    infoLabel.caption:=workspace.getInfoLabelText;
+    infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.testFinished;
@@ -685,9 +707,9 @@ PROCEDURE TDigitaltrainerMainForm.updateUiElements;
     miCopy.enabled:=workspace.EditorMode;
     miPaste.enabled:=workspace.EditorMode;
     miEditMode.checked:=workspace.EditorMode;
-    TestShape.Visible:=not(workspace.EditorMode);
-    TestLabel.Visible:=not(workspace.EditorMode);
-    infoLabel.caption:=workspace.getInfoLabelText;
+    TestShape.visible:=not(workspace.EditorMode);
+    TestLabel.visible:=not(workspace.EditorMode);
+    infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
     PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
   end;
 

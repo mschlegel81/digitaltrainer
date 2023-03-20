@@ -202,6 +202,14 @@
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="boardChangedUi"/>
       </Unit>
+      <Unit>
+        <Filename Value="welcomedialog.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="FirstStartForm"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="welcomeDialog"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

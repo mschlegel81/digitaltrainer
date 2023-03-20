@@ -1,7 +1,7 @@
 object boardChangedDialog: TboardChangedDialog
-  Left = 1709
+  Left = 1037
   Height = 116
-  Top = 442
+  Top = 565
   Width = 421
   BorderStyle = bsNone
   Caption = 'Schaltung geändert'

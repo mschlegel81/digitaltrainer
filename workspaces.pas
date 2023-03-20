@@ -40,10 +40,11 @@ TYPE
     PROCEDURE clearBoard(CONST uiAdapter: P_uiAdapter);
     PROPERTY  getChallenges:P_challengeSet read challenges;
 
-    FUNCTION getInfoLabelText:string;
-    PROCEDURE replaceChallengeSet(CONST challengeSet:P_challengeSet);
+    FUNCTION getInfoLabelText(CONST uiIdle:boolean):string;
 
     PROPERTY getWorkspacePalette:P_workspacePalette read workspacePalette;
+
+    FUNCTION firstStart:boolean;
   end;
 
 IMPLEMENTATION
@@ -97,7 +98,8 @@ FUNCTION T_workspace.getSerialVersion: dword;
     result:=serialVersionOf('T_workspace',2);
   end;
 
-FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
+  ): boolean;
   begin
     result:=inherited and challenges^.loadFromStream(stream);
     activeChallengeIndex:=stream.readLongint;
@@ -112,6 +114,9 @@ FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): b
       result:=result and
       workspacePalette^.loadFromStream(stream) and
       workspaceBoard  ^.loadFromStream(stream,false);
+
+      if tutorial.equals(activeChallenge) then restartChallenge;
+
     end else result:=false;
   end;
 
@@ -186,7 +191,8 @@ FUNCTION T_workspace.EditorMode: boolean;
     result:=activeChallenge=nil;
   end;
 
-PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard; CONST uiAdapter: P_uiAdapter);
+PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard;
+  CONST uiAdapter: P_uiAdapter);
   begin
     if activeChallenge<>nil then exit;
     dispose(workspaceBoard,destroy);
@@ -209,20 +215,16 @@ PROCEDURE T_workspace.clearBoard(CONST uiAdapter: P_uiAdapter);
     workspaceBoard^.attachUI(uiAdapter);
   end;
 
-FUNCTION T_workspace.getInfoLabelText: string;
+FUNCTION T_workspace.getInfoLabelText(CONST uiIdle: boolean): string;
   begin
     if activeChallenge<>nil
-    then result:=activeChallenge^.getInfoLabelText
+    then result:=activeChallenge^.getInfoLabelText(uiIdle)
     else result:=workspaceBoard ^.getInfoLabelText;
   end;
 
-PROCEDURE T_workspace.replaceChallengeSet(CONST challengeSet: P_challengeSet);
+FUNCTION T_workspace.firstStart: boolean;
   begin
-    setFreeEditMode;
-    dispose(challenges,destroy);
-    challenges:=challengeSet;
-    activeChallenge:=nil;
-    activeChallengeIndex:=-1;
+    result:=not(tutorial.callengeCompleted) and (length(workspacePalette^.paletteEntries)<=19);
   end;
 
 end.

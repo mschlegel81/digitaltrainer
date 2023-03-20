@@ -31,12 +31,12 @@ TYPE
       gridWidth,gridHeight:longint;
       behavior:P_abstractGate;
       ioLocations: T_ioLocations;
-      ioMode:T_multibitWireRepresentation;
       outputMark:T_ioMark;
       marked:boolean;
       PROCEDURE ioEditEditingDone(Sender: TObject);
       PROCEDURE ioEditKeyPress(Sender: TObject; VAR key: char);
     public
+      ioMode:T_multibitWireRepresentation;
       fixedPosition,fixedProperties:boolean;
       canvasPos,
       gridPos:T_point;

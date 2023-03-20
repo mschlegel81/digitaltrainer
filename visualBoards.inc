@@ -25,10 +25,6 @@ T_visualBoard=object(T_captionedAndIndexed)
 
     captionString:shortstring;
     descriptionString:string;
-    inputs : T_visualGateArray;
-    outputs: T_visualGateArray;
-    gates  : T_visualGateArray;
-    wires  : array of T_visualWire;
 
     simStepCounter:longint;
     wiresUpToDate:boolean;
@@ -36,7 +32,6 @@ T_visualBoard=object(T_captionedAndIndexed)
     modified:boolean;
 
     wiringTask:P_wiringTask;
-    watchers:array of P_watcher;
 
     gridX0,gridX1,gridY0,gridY1:longint;
 
@@ -50,6 +45,12 @@ T_visualBoard=object(T_captionedAndIndexed)
     PROCEDURE deleteMarkedGates;
     PROCEDURE unhoverAllWires;
   public
+    inputs : T_visualGateArray;
+    outputs: T_visualGateArray;
+    gates  : T_visualGateArray;
+    wires  : array of T_visualWire;
+    watchers:array of P_watcher;
+
     wiresHaveChangedInBackground:boolean;
     CONSTRUCTOR create(CONST palette:P_abstractPrototypeSource);
     PROCEDURE clear;
@@ -202,7 +203,8 @@ PROCEDURE T_visualBoard.setIndexInPalette(CONST index: longint);
     myIndex:=index;
   end;
 
-PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft, movingBottom: boolean; CONST autoshrink:boolean=false);
+PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft,
+  movingBottom: boolean; CONST autoshrink: boolean);
   VAR nonInX0,nonInY0:longint;
   PROCEDURE growIfNecessary(CONST gate:P_visualGate);
     VAR corner:T_point;
@@ -305,8 +307,7 @@ PROCEDURE T_visualBoard.attachUI(CONST uiAdapter: P_uiAdapter);
     ui^.updateTitleLayer;
   end;
 
-PROCEDURE T_visualBoard.elementAdded(CONST newElement: P_visualGate;
-  CONST mouseIsInBoard: boolean);
+PROCEDURE T_visualBoard.elementAdded(CONST newElement: P_visualGate;  CONST mouseIsInBoard: boolean);
   VAR element:P_visualGate;
   begin
     modified:=true;
@@ -314,16 +315,16 @@ PROCEDURE T_visualBoard.elementAdded(CONST newElement: P_visualGate;
     if not(mouseIsInBoard)
     then dispose(element,destroy)
     else begin
-      ui^.saveStateToUndoList;
+      if ui<>nil then ui^.saveStateToUndoList;
       case element^.behavior^.gateType of
         gt_input:  begin setLength(inputs ,length(inputs )+1); inputs [length(inputs )-1]:=element; end;
         gt_output: begin setLength(outputs,length(outputs)+1); outputs[length(outputs)-1]:=element; end;
         else       begin setLength(gates  ,length(gates  )+1); gates  [length(gates  )-1]:=element; end;
       end;
       if element^.behavior^.gateType in [gt_input,gt_output] then enumerateIo;
-      repositionElement(element,true,true);
+      if ui<>nil then repositionElement(element,true,true);
     end;
-    ui^.callback.boardModifiedCallback();
+    if ui<>nil then ui^.callback.boardModifiedCallback();
   end;
 
 PROCEDURE T_visualBoard.repositionElement(CONST element: P_visualGate;
@@ -471,7 +472,8 @@ PROCEDURE T_visualBoard.repositionElement(CONST elements: T_visualGateArray;
     ui^.uiElement.boardImage.repaint;
   end;
 
-PROCEDURE T_visualBoard.remove(CONST element: P_visualGate; CONST skipSaveUndo: boolean);
+PROCEDURE T_visualBoard.remove(CONST element: P_visualGate;
+  CONST skipSaveUndo: boolean);
   VAR wrap:T_visualGateArray;
   begin
     setLength(wrap,1);
@@ -479,7 +481,8 @@ PROCEDURE T_visualBoard.remove(CONST element: P_visualGate; CONST skipSaveUndo: 
     remove(wrap,skipSaveUndo);
   end;
 
-PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray; CONST skipSaveUndo: boolean);
+PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray;
+  CONST skipSaveUndo: boolean);
   VAR
     element: P_visualGate;
     j, i: integer;
@@ -511,7 +514,8 @@ PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray; CONST skipSave
     ui^.callback.boardModifiedCallback();
   end;
 
-FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper; CONST includeFixing: boolean): boolean;
+FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper;
+  CONST includeFixing: boolean): boolean;
   FUNCTION gateByIndex(index:longint):P_visualGate;
     begin
       if index<length(inputs) then exit(inputs[index]); dec(index,length(inputs));
@@ -643,13 +647,15 @@ PROCEDURE T_visualBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper;
     end;
   end;
 
-PROCEDURE T_visualBoard.savePaletteEntryToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST paletteIndex: longint);
+PROCEDURE T_visualBoard.savePaletteEntryToStream(
+  VAR stream: T_bufferedOutputStreamWrapper; CONST paletteIndex: longint);
   begin
     myIndex:=paletteIndex;
     saveToStream(stream,false);
   end;
 
-PROCEDURE T_visualBoard.loadPaletteEntryFromStream(VAR stream: T_bufferedInputStreamWrapper; CONST paletteIndex: longint);
+PROCEDURE T_visualBoard.loadPaletteEntryFromStream(
+  VAR stream: T_bufferedInputStreamWrapper; CONST paletteIndex: longint);
   begin
     loadFromStream(stream,false);
     myIndex:=paletteIndex;
@@ -691,7 +697,8 @@ FUNCTION T_visualBoard.extractBehavior: P_compoundGate;
   end;
 
 PROCEDURE T_visualBoard.extractChallenge(CONST options: T_challengeBoardOption;
-  CONST challengePalette: P_abstractPrototypeSource; OUT expectedBehavior: P_compoundGate; OUT boardTemplate: P_visualBoard);
+  CONST challengePalette: P_abstractPrototypeSource; OUT
+  expectedBehavior: P_compoundGate; OUT boardTemplate: P_visualBoard);
   PROCEDURE setupExpectedBehavior;
     VAR i,j:longint;
     FUNCTION gateInClone(CONST gate:P_visualGate):P_abstractGate;
@@ -821,7 +828,7 @@ FUNCTION T_visualBoard.getInterfaces: T_gateInterfaces;
     end;
   end;
 
-FUNCTION T_visualBoard.equals(CONST other:P_visualBoard):boolean;
+FUNCTION T_visualBoard.equals(CONST other: P_visualBoard): boolean;
   VAR k:longint;
   begin
     result:=(length(inputs )=length(other^.inputs )) and
@@ -835,7 +842,7 @@ FUNCTION T_visualBoard.equals(CONST other:P_visualBoard):boolean;
     for k:=0 to length(wires)-1 do if not(wires[k].equals(@self,other,other^.wires[k])) then exit(false);
   end;
 
-FUNCTION T_visualBoard.hash:word;
+FUNCTION T_visualBoard.hash: word;
   VAR g:P_visualGate;
   begin
     {$Q-}{$R-}
@@ -847,7 +854,7 @@ FUNCTION T_visualBoard.hash:word;
     {$Q+}{$R+}
   end;
 
-FUNCTION T_visualBoard.interfaceHash:word;
+FUNCTION T_visualBoard.interfaceHash: word;
   VAR i:longint;
       Interfaces: T_gateInterfaces;
   begin
@@ -948,7 +955,8 @@ PROCEDURE T_visualBoard.enumerateIo;
     end;
   end;
 
-FUNCTION T_visualBoard.getWireGraph(CONST dropExistingWires: boolean): P_wireGraph;
+FUNCTION T_visualBoard.getWireGraph(CONST dropExistingWires: boolean
+  ): P_wireGraph;
   VAR graph:P_wireGraph;
   PROCEDURE punchOutGate(CONST gate:P_visualGate);
     VAR x,y:longint;
@@ -1227,7 +1235,8 @@ PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
     end;
   end;
 
-PROCEDURE T_visualBoard.reshapeGrid(CONST newGridX1, newGridY1: longint; CONST byMouseEvent: boolean);
+PROCEDURE T_visualBoard.reshapeGrid(CONST newGridX1, newGridY1: longint;
+  CONST byMouseEvent: boolean);
   VAR movingBottom,
       movingLeft: boolean;
 
@@ -1283,7 +1292,8 @@ PROCEDURE T_visualBoard.unhoverAllWires;
     end;
   end;
 
-PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y: integer);
+PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,
+  Y: integer);
   VAR gridPos:T_point;
       i:longint;
       horizontal:boolean;
@@ -1419,7 +1429,8 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,Y:
 
   end;
 
-PROCEDURE T_visualBoard.boardMouseUp(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE T_visualBoard.boardMouseUp(Sender: TObject; button: TMouseButton;
+  Shift: TShiftState; X, Y: integer);
   VAR x0,x1,y0,y1,i:longint;
   PROCEDURE mark(CONST gate:P_visualGate);
     begin
@@ -1453,15 +1464,16 @@ PROCEDURE T_visualBoard.boardMouseUp(Sender: TObject; button: TMouseButton; Shif
         ui^.state:=uas_initial;
       end;
       uas_draggingFromBoard,uas_multiDragFromBoard: begin
-        repositionElement(ui^.dragData.draggedGates,false,(x>=ui^.uiElement.paletteWidth) and (y>=0));
         ui^.state:=uas_initial;
+        repositionElement(ui^.dragData.draggedGates,false,(x>=ui^.uiElement.paletteWidth) and (y>=0));
         ui^.paintAll;
       end;
       uas_draggingFromPalette: if x<=ui^.uiElement.paletteWidth then begin
+        ui^.state:=uas_initial;
+        associatedPalette^.countUpGate(ui^.draggedGate^.behavior);
         associatedPalette^.dropPaletteItem(ui^.draggedGate);
         dispose(ui^.dragData.draggedGates[0],destroy);
         setLength(ui^.dragData.draggedGates,0);
-        ui^.state:=uas_initial;
         ui^.paintAll;
       end else begin
         elementAdded(ui^.draggedGate,(x>=ui^.uiElement.paletteWidth) and (y>=0));
@@ -1472,7 +1484,8 @@ PROCEDURE T_visualBoard.boardMouseUp(Sender: TObject; button: TMouseButton; Shif
     end;
   end;
 
-PROCEDURE T_visualBoard.ScrollbarScroll(Sender: TObject; ScrollCode: TScrollCode; VAR ScrollPos: integer);
+PROCEDURE T_visualBoard.ScrollbarScroll(Sender: TObject;
+  ScrollCode: TScrollCode; VAR ScrollPos: integer);
   VAR g:P_visualGate;
   begin
     ui^.hideIoEdit;
@@ -1485,7 +1498,8 @@ PROCEDURE T_visualBoard.ScrollbarScroll(Sender: TObject; ScrollCode: TScrollCode
     end;
   end;
 
-PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
+  Shift: TShiftState; X, Y: integer);
   VAR gridPos: T_point;
   FUNCTION handleWatcherHit:boolean;
     VAR i,toDrop:longint;
@@ -1510,6 +1524,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
       watchers[length(watchers)-1]:=w;
       w^.paint(ui,ui^.uiElement.boardImage.Canvas);
       ui^.uiElement.boardImage.Invalidate;
+      ui^.callback.boardModifiedCallback();
     end;
 
   FUNCTION handleGateHit(CONST g:P_visualGate):boolean;
@@ -1638,7 +1653,8 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
 
   end;
 
-PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point; CONST screenX, screenY: longint);
+PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point;
+  CONST screenX, screenY: longint);
   VAR tgt :T_point;
       dist,distToClosest:double;
 
@@ -1734,7 +1750,8 @@ FUNCTION T_visualBoard.getIndexInPalette: longint;
     result:=myIndex;
   end;
 
-PROCEDURE T_visualBoard.afterGatePropertiesEdited(CONST editedGate: P_visualGate; CONST editedIsBoardElement: boolean);
+PROCEDURE T_visualBoard.afterGatePropertiesEdited(
+  CONST editedGate: P_visualGate; CONST editedIsBoardElement: boolean);
   VAR g:P_visualGate;
   begin
     for g in gates do if g^.behavior^.equals(editedGate^.behavior) then g^.propertyEditDone();
@@ -1764,12 +1781,14 @@ FUNCTION T_visualBoard.isOutputputConnected(CONST gate: P_visualGate;
     for i:=0 to length(wires)-1 do with wires[i] do if (source=gate) and (sourceOutputIndex=gateOutputIndex) then exit(true);
   end;
 
-PROCEDURE T_visualBoard.addWire(CONST sourceGate: P_visualGate; CONST sourceOutputIndex: longint; CONST sinkGate: P_visualGate; CONST sinkInputIndex: longint);
+PROCEDURE T_visualBoard.addWire(CONST sourceGate: P_visualGate;
+  CONST sourceOutputIndex: longint; CONST sinkGate: P_visualGate;
+  CONST sinkInputIndex: longint);
   VAR i:longint=0;
       j:longint;
   begin
     modified:=true;
-    ui^.saveStateToUndoList;
+    if ui<>nil then ui^.saveStateToUndoList;
     while (i<length(wires)) and ((wires[i].source<>sourceGate) or (wires[i].sourceOutputIndex<>sourceOutputIndex)) do inc(i);
     if i>=length(wires) then setLength(wires,i+1);
     wires[i].source:=sourceGate;
@@ -1779,10 +1798,10 @@ PROCEDURE T_visualBoard.addWire(CONST sourceGate: P_visualGate; CONST sourceOutp
     wires[i].sink[j].gate:=sinkGate;
     wires[i].sink[j].gateInputIndex:=sinkInputIndex;
     rewire(false);
-    ui^.callback.boardModifiedCallback();
+    if ui<>nil then ui^.callback.boardModifiedCallback();
   end;
 
-PROCEDURE T_visualBoard.reset(CONST includeInputs:boolean);
+PROCEDURE T_visualBoard.reset(CONST includeInputs: boolean);
   VAR g:P_visualGate;
   begin
     simStepCounter:=0;
@@ -1848,7 +1867,8 @@ PROCEDURE T_visualBoard.setInputs(CONST inputWires: T_wireValueArray);
     ui^.paintAll;
   end;
 
-FUNCTION T_visualBoard.simulateSteps(CONST count, timeOutInTicks: longint): longint;
+FUNCTION T_visualBoard.simulateSteps(CONST count, timeOutInTicks: longint
+  ): longint;
   VAR changed:boolean=true;
       g:P_visualGate;
       i:longint;
@@ -1898,7 +1918,8 @@ FUNCTION T_visualBoard.usesPrototype(CONST p: P_captionedAndIndexed): boolean;
     for g in gates do if (g^.behavior^.gateType=gt_compound) and P_compoundGate(g^.behavior)^.usesPrototype(p) then result:=true;
   end;
 
-PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype, newPrototype: P_visualBoard);
+PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype,
+  newPrototype: P_visualBoard);
   VAR g:P_visualGate;
       anyGateUpdated:boolean=false;
   begin
@@ -2100,7 +2121,8 @@ FUNCTION T_visualBoard.getInfoLabelText: string;
             'Schritte simuliert: '+intToStr(simStepCounter);
   end;
 
-PROCEDURE T_visualBoard.moveToPalette(CONST newPalette: P_abstractPrototypeSource);
+PROCEDURE T_visualBoard.moveToPalette(
+  CONST newPalette: P_abstractPrototypeSource);
   begin
     associatedPalette:=newPalette;
   end;
