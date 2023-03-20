@@ -265,15 +265,29 @@ PROCEDURE TDigitaltrainerMainForm.miEditModeClick(Sender: TObject);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miEditPaletteClick(Sender: TObject);
+  var
+    timerEnabledBefore: Boolean;
   begin
+    timerEnabledBefore:=SimulationTimer.enabled;
+    SimulationTimer.enabled:=false;
+
     PaletteForm.showFor(workspace.getWorkspacePalette);
     workspace.activePalette^.detachUI;
     workspace.activePalette^.attachUI(@uiAdapter);
+
+    SimulationTimer.Enabled:=timerEnabledBefore;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miExportChallengesClick(Sender: TObject);
+  var
+    timerEnabledBefore: Boolean;
   begin
+    timerEnabledBefore:=SimulationTimer.enabled;
+    SimulationTimer.enabled:=false;
+
     SelectTaskForm(@workspace).showForExport(workspace.getChallenges);
+
+    SimulationTimer.Enabled:=timerEnabledBefore;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
@@ -342,9 +356,16 @@ PROCEDURE TDigitaltrainerMainForm.miRedoClick(Sender: TObject);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miSaveAsTaskClick(Sender: TObject);
+  var
+    timerEnabledBefore: Boolean;
   begin
+    timerEnabledBefore:=SimulationTimer.enabled;
+    SimulationTimer.enabled:=false;
+
     if workspace.EditorMode then CreateTaskForm.showFor(workspace.activeBoard,workspace.getChallenges);
     infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
+
+    SimulationTimer.Enabled:=timerEnabledBefore;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miShrinkClick(Sender: TObject);
@@ -353,7 +374,12 @@ PROCEDURE TDigitaltrainerMainForm.miShrinkClick(Sender: TObject);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);
+  var
+    timerEnabledBefore: Boolean;
   begin
+    timerEnabledBefore:=SimulationTimer.enabled;
+    SimulationTimer.enabled:=false;
+
     if SelectTaskForm(@workspace).startTaskAfterShowing(workspace.getChallenges) and
        continueWithOtherBoard and
        workspace.startChallenge(SelectTaskForm(@workspace).selectedChallengeIndex) then begin
@@ -366,13 +392,24 @@ PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);
     workspace.activePalette^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
     infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
+    SimulationTimer.Enabled:=timerEnabledBefore;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miTestBoardClick(Sender: TObject);
+  var
+    timerEnabledBefore: Boolean;
   begin
     if workspace.getActiveChallenge<>nil
-    then TestShapeMouseDown(Sender,mbRight,[],0,0)
-    else BoardTestForm.showForBoard(workspace.activeBoard);
+    then begin
+      TestShapeMouseDown(Sender,mbRight,[],0,0)
+    end else begin
+      timerEnabledBefore:=SimulationTimer.enabled;
+      SimulationTimer.enabled:=false;
+
+      BoardTestForm.showForBoard(workspace.activeBoard);
+
+      SimulationTimer.enabled:=timerEnabledBefore;
+    end;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
@@ -515,19 +552,21 @@ CONST SPEED_SETTING:array[0..34] of record
            (timerInterval:  40; simSteps:1854; labelCaption:'46.4kHz'),
            (timerInterval:  40; simSteps:2621; labelCaption:'65.5kHz'),
            (timerInterval:  40; simSteps:3707; labelCaption:'92.7kHz'),
-           (timerInterval:1000; simSteps:1311000; labelCaption:'MAX!!!'));
-//           (timerInterval:  40; simSteps:5243; labelCaption:'131.1kHz'));
+           (timerInterval:1000; simSteps:maxlongint; labelCaption:'MAX!!!')); //Do whatever you can do in 1000 ms
+
 
 VAR lastSimTime:qword=0;
     averageSpeed:double=8;
+CONST PLANNED_IDLE_TICKS_DURING_SIMULATION=5;
 PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
   VAR stepsSimulated: longint;
       stepsToSimulate, timeForSimlulation:longint;
       elapsed, speed: qword;
   begin
+    //TODO: Keep the UI responsive at full speed; reduce timer interval in order to account for overhead?
     if (uiAdapter.getState<>uas_initial) or (propEditPanel.visible) then exit;
     stepsToSimulate   :=SPEED_SETTING[speedTrackBar.position].simSteps;
-    timeForSimlulation:=SPEED_SETTING[speedTrackBar.position].timerInterval;
+    timeForSimlulation:=SPEED_SETTING[speedTrackBar.position].timerInterval-PLANNED_IDLE_TICKS_DURING_SIMULATION;
     if workspace.EditorMode
     then stepsSimulated:=workspace.activeBoard^.simulateSteps  (stepsToSimulate,timeForSimlulation)
     else begin
@@ -662,13 +701,15 @@ PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate; C
     setEnableButton(propEditShape   ,propEditLabel  ,not(fromBoard) and (gate^.getBehavior^.gateType=gt_compound) and workspace.EditorMode);
     setEnableButton(propDeleteButton,propDeleteLabel,
       fromBoard or ((gate^.getBehavior^.gateType=gt_compound) and
-                    (workspace.activeBoard^.getIndexInPalette<0) and
+               //     (workspace.activeBoard^.getIndexInPalette<0) and
                     (workspace.activePalette^.allowDeletion(gate^.getBehavior,deletionHintText))));
     if not(propDeleteButton.enabled) then begin
-      propDeleteButton.ShowHint:=true;
+      propDeleteButton.ShowHint:=false;
+      propDeleteLabel .ShowHint:=false;
       propDeleteButton.Hint:=deletionHintText;
-      propDeleteLabel.ShowHint:=true;
-      propDeleteLabel.Hint:=deletionHintText;
+      propDeleteLabel .Hint:=deletionHintText;
+      propDeleteButton.ShowHint:=true;
+      propDeleteLabel .ShowHint:=true;
     end;
     setEnableButton(propOkShape     ,propOkLabel    ,false);
   end;
@@ -721,11 +762,11 @@ FUNCTION TDigitaltrainerMainForm.continueWithOtherBoard: boolean;
     simulationEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
     mr:=boardChangedDialog.showFor(workspace.EditorMode and (workspace.activeBoard^.getIndexInPalette>=0));
-    SimulationTimer.enabled:=simulationEnabledBefore;
     if (mr=mrYes) and
        workspace.EditorMode and
        (workspace.activeBoard^.getIndexInPalette>=0)
     then P_workspacePalette(workspace.activePalette)^.updateEntry(workspace.activeBoard);
+    SimulationTimer.enabled:=simulationEnabledBefore;
     result:=mr<>mrCancel;
   end;
 

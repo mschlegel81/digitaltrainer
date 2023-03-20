@@ -259,7 +259,7 @@ PROCEDURE T_challengePalette.selectSubPalette(CONST index: longint);
 
 PROCEDURE T_challengePalette.ensureVisualPaletteItems;
   VAR i,k:longint;
-      y0:longint=0;
+      y0:longint=1;
       behavior: P_abstractGate;
   begin
     for i:=0 to length(visualPaletteItems)-1 do dispose(visualPaletteItems[i],destroy);
@@ -275,7 +275,7 @@ PROCEDURE T_challengePalette.ensureVisualPaletteItems;
     for i:=0 to length(paletteEntries)-1 do if (paletteEntries[i].visible) and (paletteEntries[i].currentAvailableCount>0) then begin
 
       if (paletteEntries[i].entryType=gt_compound) or (paletteEntries[i].preconfigured)
-      then behavior:=paletteEntries[i].prototype^.clone(false)
+      then behavior:=paletteEntries[i].prototype^.clone(true)
       else behavior:=newBaseGate(paletteEntries[i].entryType);
 
       setLength(visualPaletteItems,k+1);
@@ -284,7 +284,7 @@ PROCEDURE T_challengePalette.ensureVisualPaletteItems;
       if not(allowConfiguration) then visualPaletteItems[k]^.fixedProperties:=true;
 
       visualPaletteItems[k]^.gridPos:=pointOf(1,y0);
-      y0+=visualPaletteItems[k]^.getGridHeight;
+      y0+=visualPaletteItems[k]^.getGridHeight+1;
 
       inc(k);
     end;
@@ -681,8 +681,7 @@ PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
     setLength(items,0);
   end;
 
-FUNCTION T_workspacePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
-  ): P_abstractGate;
+FUNCTION T_workspacePalette.readGate(VAR stream: T_bufferedInputStreamWrapper): P_abstractGate;
   VAR gateType:T_gateType;
       prototypeIndex:longint;
   begin
