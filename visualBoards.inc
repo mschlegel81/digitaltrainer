@@ -1606,7 +1606,6 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
 
     gridPos:=ui^.canvasToGrid(x,y);
 
-
     if handleWatcherHit then exit;
     for g in inputs  do if handleGateHit(g) then exit;
     for g in gates   do if handleGateHit(g) then exit;
@@ -1751,9 +1750,9 @@ PROCEDURE T_visualBoard.afterGatePropertiesEdited(
   begin
     for g in gates do if g^.behavior^.equals(editedGate^.behavior) then g^.propertyEditDone();
     if editedIsBoardElement then begin
+      dropWatchersAssociatedWith(editedGate);
       repositionElement(editedGate,true,true);
       checkBoardExtend(false,false);
-      dropWatchersAssociatedWith(editedGate);
     end;
     rewire(true);
   end;
