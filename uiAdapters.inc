@@ -181,6 +181,7 @@ PROCEDURE T_uiAdapter.boardImageMouseWheel(Sender: TObject;  Shift: TShiftState;
             g^.canvasPos[1]                     +uiElement.boardImage.top,
             false);
         end;
+        repaintImage;
       end;
     end else begin
       if uiElement.boardVerticalScrollBar.visible
