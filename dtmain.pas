@@ -745,8 +745,11 @@ PROCEDURE TDigitaltrainerMainForm.testFinished;
 
 PROCEDURE TDigitaltrainerMainForm.updateUiElements;
   begin
-    miCopy.enabled:=workspace.EditorMode;
+    miCopy .enabled:=workspace.EditorMode;
     miPaste.enabled:=workspace.EditorMode;
+    //TODO: Undo/Redo functions would be nice for challenges, but we would have to keep track of the gate counts in the palette.
+    miUndo .enabled:=workspace.EditorMode;
+    miRedo .enabled:=workspace.EditorMode;
     miEditMode.checked:=workspace.EditorMode;
     TestShape.visible:=not(workspace.EditorMode);
     TestLabel.visible:=not(workspace.EditorMode);

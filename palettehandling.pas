@@ -391,6 +391,7 @@ PROCEDURE T_challengePalette.countUpGate(CONST gate: P_abstractGate);
     inc(paletteEntries[idx].currentAvailableCount);
     if (paletteEntries[idx].currentAvailableCount=1) and (ui<>nil) then begin
       ensureVisualPaletteItems;
+      checkSizes;
     end;
   end;
 

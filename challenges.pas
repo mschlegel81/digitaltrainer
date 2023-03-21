@@ -235,7 +235,7 @@ FUNCTION T_tutorial.testStep(CONST count, timeOutInTicks: longint; CONST board: 
 FUNCTION T_tutorial.getInfoLabelText(CONST uiIdle:boolean): string;
   CONST stepText:array[0..12] of string=(
   {0} 'Auf der linken Seite siehst du die Palette.'+LineEnding+'Du kannst Bauelemente zur Schaltung hinzufügen, indem Du sie mit der linken Maustaste'+LineEnding+'von der Palette auf die Schaltung ziehst.',
-  {1} 'Eingänge werden immer am oberen oder linken Rand positioniert,'+LineEnding+'Ausgänge immer am unteren oder rechten.'+LineEnding+'Du kannst das Element wieder entfernen, indem Du es zurück zur Palette ziehst oder Entf drückst.',
+  {1} 'Eingänge werden immer am oberen oder linken Rand positioniert,'+LineEnding+'Ausgänge immer am unteren oder rechten.'+LineEnding+'Du kannst das Element wieder entfernen, indem Du es zurück zur Palette ziehst oder es markierst und Entf drückst.',
   {2} 'Jetzt fügen wir einen Eingang und einen Ausgang hinzu.',
   {3} 'Du kannst Kabel erstellen, indem Du auf einen Ausgang eines Bauelements links-klickst.'+LineEnding+'Ein Linksklick auf ein bestehendes Kabel entfernt dieses wieder.',
   {4} 'Mit einem Rechtsklick auf einen Ein- oder Ausgang kannst Du beobachten, was genau dort passiert.',
@@ -658,10 +658,15 @@ PROCEDURE T_challenge.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
 FUNCTION T_challenge.resetChallenge: P_visualBoard;
   VAR board: P_visualBoard;
       i:longint;
+      g:P_visualGate;
   begin
     board:=resultTemplate^.clone(not(palette^.allowConfiguration));
+    for g in board^.inputs  do g^.fixedPosition:=true;
+    for g in board^.outputs do g^.fixedPosition:=true;
+    for g in board^.gates   do g^.fixedPosition:=true;
     board^.setCaption(challengeTitle);
     result:=board;
+    board^.reset(true);
     palette^.resetCounts;
     for i:=0 to length(palette^.paletteEntries)-1 do with palette^.paletteEntries[i] do
       if prototype<>nil then prototype^.reset;
