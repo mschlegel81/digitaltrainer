@@ -265,8 +265,8 @@ PROCEDURE TDigitaltrainerMainForm.miEditModeClick(Sender: TObject);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miEditPaletteClick(Sender: TObject);
-  var
-    timerEnabledBefore: Boolean;
+  VAR
+    timerEnabledBefore: boolean;
   begin
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
@@ -275,19 +275,19 @@ PROCEDURE TDigitaltrainerMainForm.miEditPaletteClick(Sender: TObject);
     workspace.activePalette^.detachUI;
     workspace.activePalette^.attachUI(@uiAdapter);
 
-    SimulationTimer.Enabled:=timerEnabledBefore;
+    SimulationTimer.enabled:=timerEnabledBefore;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miExportChallengesClick(Sender: TObject);
-  var
-    timerEnabledBefore: Boolean;
+  VAR
+    timerEnabledBefore: boolean;
   begin
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
 
     SelectTaskForm(@workspace).showForExport(workspace.getChallenges);
 
-    SimulationTimer.Enabled:=timerEnabledBefore;
+    SimulationTimer.enabled:=timerEnabledBefore;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
@@ -356,8 +356,8 @@ PROCEDURE TDigitaltrainerMainForm.miRedoClick(Sender: TObject);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miSaveAsTaskClick(Sender: TObject);
-  var
-    timerEnabledBefore: Boolean;
+  VAR
+    timerEnabledBefore: boolean;
   begin
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
@@ -365,7 +365,7 @@ PROCEDURE TDigitaltrainerMainForm.miSaveAsTaskClick(Sender: TObject);
     if workspace.EditorMode then CreateTaskForm.showFor(workspace.activeBoard,workspace.getChallenges);
     infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
 
-    SimulationTimer.Enabled:=timerEnabledBefore;
+    SimulationTimer.enabled:=timerEnabledBefore;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miShrinkClick(Sender: TObject);
@@ -374,8 +374,8 @@ PROCEDURE TDigitaltrainerMainForm.miShrinkClick(Sender: TObject);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);
-  var
-    timerEnabledBefore: Boolean;
+  VAR
+    timerEnabledBefore: boolean;
   begin
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
@@ -392,12 +392,12 @@ PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);
     workspace.activePalette^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
     infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
-    SimulationTimer.Enabled:=timerEnabledBefore;
+    SimulationTimer.enabled:=timerEnabledBefore;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miTestBoardClick(Sender: TObject);
-  var
-    timerEnabledBefore: Boolean;
+  VAR
+    timerEnabledBefore: boolean;
   begin
     if workspace.getActiveChallenge<>nil
     then begin
@@ -428,6 +428,7 @@ PROCEDURE TDigitaltrainerMainForm.PaletteScrollBarScroll(Sender: TObject; Scroll
         g^.canvasPos[0]+g^.getGridWidth*uiAdapter.getZoom+boardImage.Left,
         g^.canvasPos[1]                                  +boardImage.top,false);
     end;
+    boardImage.repaint;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.PlayPauseShapeMouseDown(Sender: TObject;
@@ -552,8 +553,7 @@ CONST SPEED_SETTING:array[0..34] of record
            (timerInterval:  40; simSteps:1854; labelCaption:'46.4kHz'),
            (timerInterval:  40; simSteps:2621; labelCaption:'65.5kHz'),
            (timerInterval:  40; simSteps:3707; labelCaption:'92.7kHz'),
-           (timerInterval:1000; simSteps:maxlongint; labelCaption:'MAX!!!')); //Do whatever you can do in 1000 ms
-
+           (timerInterval:1000; simSteps:maxLongint; labelCaption:'MAX!!!')); //Do whatever you can do in 1000 ms
 
 VAR lastSimTime:qword=0;
     averageSpeed:double=8;

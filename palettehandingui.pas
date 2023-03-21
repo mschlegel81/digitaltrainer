@@ -329,11 +329,15 @@ PROCEDURE TPaletteForm.fillTable(CONST initial: boolean);
         entriesGrid.Cells[0,i+1]:=titleOf      (palette^.paletteEntries[sorting.index[i]]);
         entriesGrid.Cells[1,i+1]:=descriptionOf(palette^.paletteEntries[sorting.index[i]]);
         entriesGrid.Cells[2,i+1]:=palette^.subPaletteNames[subPaletteIndex];
+        entriesGrid.Cells[3,i+1]:=BoolToStr(markedForExport,'x',' ');
       end;
     end;
   VAR i:longint;
   begin
     entriesGrid.rowCount:=1+length(palette^.paletteEntries);
+    entriesGrid.Columns[3].ValueChecked:='x';
+    entriesGrid.Columns[3].ValueUnchecked:=' ';
+
     updateSorting;
     for i:=0 to length(palette^.paletteEntries)-1 do fillRow(i);
     SubPaletteStringGrid.rowCount:=1+length(palette^.paletteNames);
@@ -360,8 +364,8 @@ PROCEDURE TPaletteForm.updateButtons;
     for i:=0 to length(palette^.paletteEntries)-1 do with palette^.paletteEntries[i] do anyMarked:=anyMarked or (entryType=gt_compound) and markedForExport;
     setEnableButton(DeleteShape,DeleteLabel,
       (lastClicked>=0) and
-      (palette^.paletteEntries[lastClicked].entryType=gt_compound) and
-      palette^.allowDeletion(lastClicked));
+      (palette^.paletteEntries[sorting.index[lastClicked]].entryType=gt_compound) and
+      palette^.allowDeletion(sorting.index[lastClicked]));
     setEnableButton(ExportShape,ExportLabel,anyMarked);
   end;
 

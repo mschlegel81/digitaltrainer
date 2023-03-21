@@ -1481,8 +1481,7 @@ PROCEDURE T_visualBoard.boardMouseUp(Sender: TObject; button: TMouseButton;
     end;
   end;
 
-PROCEDURE T_visualBoard.ScrollbarScroll(Sender: TObject;
-  ScrollCode: TScrollCode; VAR ScrollPos: integer);
+PROCEDURE T_visualBoard.ScrollbarScroll(Sender: TObject; ScrollCode: TScrollCode; VAR ScrollPos: integer);
   VAR g:P_visualGate;
   begin
     ui^.hideIoEdit;
@@ -1493,10 +1492,10 @@ PROCEDURE T_visualBoard.ScrollbarScroll(Sender: TObject;
         g^.canvasPos[0]+ui^.uiElement.boardImage.Left+g^.gridWidth*ui^.zoom,
         g^.canvasPos[1]+ui^.uiElement.boardImage.top,false);
     end;
+    ui^.repaintImage;
   end;
 
-PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton;
-  Shift: TShiftState; X, Y: integer);
+PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR gridPos: T_point;
   FUNCTION handleWatcherHit:boolean;
     VAR i,toDrop:longint;
@@ -2067,6 +2066,7 @@ PROCEDURE T_visualBoard.paintBoard(CONST exludeDragged: boolean);
   VAR Canvas:TCanvas;
       g:P_visualGate;
       w:P_watcher;
+      {$ifdef debugMode} start: qword; {$endif}
   FUNCTION isExcluded(CONST g:P_visualGate):boolean;
     VAR d:P_visualGate;
     begin
@@ -2076,6 +2076,7 @@ PROCEDURE T_visualBoard.paintBoard(CONST exludeDragged: boolean);
     end;
 
   begin
+    {$ifdef debugMode} start:=GetTickCount64; {$endif}
     paintWires;
     Canvas:=ui^.uiElement.boardImage.Canvas;
     for g in inputs  do if not isExcluded(g) then g^.paintAll(Canvas);
@@ -2083,6 +2084,7 @@ PROCEDURE T_visualBoard.paintBoard(CONST exludeDragged: boolean);
     for g in outputs do if not isExcluded(g) then g^.paintAll(Canvas);
     for w in watchers do w^.paint(ui,Canvas);
     ui^.callback.paintPalette();
+    {$ifdef debugMode} writeln('Full paint done in ',GetTickCount64-start,' ticks'); {$endif}
   end;
 
 FUNCTION T_visualBoard.getGateCount: T_gateCount;

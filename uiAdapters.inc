@@ -261,15 +261,15 @@ PROCEDURE T_uiAdapter.updateTitleLayer;
       Canvas: TBGRACanvas;
   begin
     if activeBoard=nil then exit;
-    canvasWidth :=zoom*(activeBoard^.gridX1+4);
-    canvasHeight:=zoom*(activeBoard^.gridY1+4);
+    canvasWidth :=zoom*min(32,activeBoard^.gridX1+4);
+    canvasHeight:=zoom*(4);
     uiElement.titleLayer.setSize(canvasWidth,canvasHeight);
     //Clear image:
     Canvas:=uiElement.titleLayer.CanvasBGRA;
     Canvas.Brush.color:=BOARD_COLOR;
     Canvas.FillRect(0,0,canvasWidth,canvasHeight);
     //Draw title:
-    if activeBoard^.getCaption<>'' then textOut(Canvas,activeBoard^.getCaption,4*zoom,4*zoom,canvasWidth-4*zoom,canvasHeight-4*zoom,BOARD_BOUNDARY_COLOR,false);
+    if activeBoard^.getCaption<>'' then textOut(Canvas,activeBoard^.getCaption,zoom,0,canvasWidth-zoom,canvasHeight,BOARD_BOUNDARY_COLOR,false);
   end;
 
 PROCEDURE T_uiAdapter.zoomIn;
