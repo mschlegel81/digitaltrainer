@@ -1378,9 +1378,7 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,
             begin
               ui^.uiElement.boardImage.ShowHint:=true;
               ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
-              if (hoverInfo.subElement=outputConnector)
-              then ui^.uiElement.boardImage.Cursor:=crCross
-              else ui^.uiElement.boardImage.Cursor:=crHandPoint;
+              ui^.uiElement.boardImage.Cursor:=crHandPoint;
               unhoverAllWires;
               exit;
             end;
@@ -1608,13 +1606,14 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
 
     gridPos:=ui^.canvasToGrid(x,y);
 
-    if gridPos[0]=gridX1 then begin ui^.state:=uas_draggingGridOutputX0; exit; end;
-    if gridPos[1]=gridY1 then begin ui^.state:=uas_draggingGridOutputY0; exit; end;
 
     if handleWatcherHit then exit;
     for g in inputs  do if handleGateHit(g) then exit;
     for g in gates   do if handleGateHit(g) then exit;
     for g in outputs do if handleGateHit(g) then exit;
+
+    if gridPos[0]=gridX1 then begin ui^.state:=uas_draggingGridOutputX0; exit; end;
+    if gridPos[1]=gridY1 then begin ui^.state:=uas_draggingGridOutputY0; exit; end;
 
     enterCriticalSection(wiresCs);
     for i:=0 to length(wires)-1 do needToDropWire:=needToDropWire or wires[i].isWirePosition(gridPos[0],gridPos[1],false,dummy,horizontal);
