@@ -421,10 +421,7 @@ PROCEDURE T_visualBoard.repositionElement(CONST elements: T_visualGateArray;
     end;
 
   begin
-    if not skipSaveUndo then begin
-      ui^.saveStateToUndoList;
-      modified:=true;
-    end;
+    if not skipSaveUndo then ui^.saveStateToUndoList;
 
     if not(mouseIsInBoard) then begin
       remove(elements,true);
