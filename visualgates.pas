@@ -284,7 +284,7 @@ PROCEDURE T_visualGate.flipInputBits;
     for b:=0 to wireValue.width-1 do wireValue.bit[b]:=flipped[wireValue.bit[b]];
     behavior^.setInput(0,wireValue);
     paintAll(uiAdapter^.uiElement.boardImage.Canvas);
-    uiAdapter^.uiElement.boardImage.Invalidate;
+    uiAdapter^.repaintImage;
     uiAdapter^.callback.boardModifiedCallback();
     uiAdapter^.hideIoEdit;
   end;

@@ -11,7 +11,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   Menu = MainMenu1
   OnCreate = FormCreate
   OnDestroy = FormDestroy
-  OnKeyDown = FormKeyDown
   OnShow = FormShow
   LCLVersion = '2.2.2.0'
   WindowState = wsMaximized
@@ -279,7 +278,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Kind = sbVertical
     PageSize = 0
     TabOrder = 1
-    OnKeyDown = FormKeyDown
     OnScroll = PaletteScrollBarScroll
   end
   object BoardImage: TImage
@@ -296,6 +294,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Width = 1260
     AntialiasingMode = amOn
     Align = alClient
+    OnClick = BoardImageClick
     OnResize = FormResize
     ParentShowHint = False
     ShowHint = True

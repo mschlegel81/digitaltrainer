@@ -78,6 +78,7 @@ TYPE
     PlayPauseShape: TShape;
     SpeedBgShape: TShape;
     PROCEDURE AnimationTimerTimer(Sender: TObject);
+    PROCEDURE BoardImageClick(Sender: TObject);
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE FormDestroy(Sender: TObject);
     PROCEDURE FormKeyDown(Sender: TObject; VAR key: word; Shift: TShiftState);
@@ -646,7 +647,9 @@ PROCEDURE TDigitaltrainerMainForm.SubPaletteComboBoxDrawItem(control: TWinContro
 
 PROCEDURE TDigitaltrainerMainForm.SubPaletteComboBoxEditingDone(Sender: TObject);
   begin
-    speedTrackBar.SetFocus;
+    if speedTrackBar.visible
+    then speedTrackBar.SetFocus
+    else DefocusControl(SubPaletteComboBox,false);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.TestShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -832,6 +835,11 @@ PROCEDURE TDigitaltrainerMainForm.AnimationTimerTimer(Sender: TObject);
       Shape.Brush.color:=buttonColorTable[colorIndex];
     end;
     if not(anythingDone) then AnimationTimer.enabled:=false;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.BoardImageClick(Sender: TObject);
+  begin
+    if SubPaletteComboBox.Focused then DefocusControl(SubPaletteComboBox,false);
   end;
 
 end.
