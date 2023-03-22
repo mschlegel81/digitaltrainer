@@ -1555,13 +1555,14 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
               ui^.hideIoEdit;
               ui^.repaintImage;
             end else begin
-              ui^.state:=uas_initial;
-              if not g^.fixedProperties then
-              ui^.callback.showPropertyEditorCallback(
-                g,
-                true,
-                g^.canvasPos[0]+ui^.uiElement.boardImage.Left+g^.gridWidth*ui^.zoom,
-                g^.canvasPos[1]+ui^.uiElement.boardImage.top);
+              if not g^.fixedProperties then begin
+                ui^.state:=uas_propertyEditFromBoard;
+                ui^.callback.showPropertyEditorCallback(
+                  g,
+                  true,
+                  g^.canvasPos[0]+ui^.uiElement.boardImage.Left+g^.gridWidth*ui^.zoom,
+                  g^.canvasPos[1]+ui^.uiElement.boardImage.top);
+              end else ui^.state:=uas_initial;
             end;
           end;
         end;
@@ -1596,6 +1597,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
           ui^.startDrag(x,y,g,uas_draggingFromPalette);
           associatedPalette^.countDownGate(g^.behavior);
         end else if (button=mbRight) and associatedPalette^.isWorkspacePalette then begin
+          ui^.state:=uas_propertyEditFromPalette;
           ui^.callback.showPropertyEditorCallback(g,false,
             g^.canvasPos[0]+g^.gridWidth*ui^.zoom+ui^.uiElement.boardImage.Left,
             g^.canvasPos[1]                      +ui^.uiElement.boardImage.top);

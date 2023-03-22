@@ -9,9 +9,6 @@ USES
   ExtCtrls,challenges,workspaces;
 
 TYPE
-
-  { TSelectTaskForm }
-
   TSelectTaskForm = class(TForm)
     ChallengesMemo: TMemo;
     ChallengesGrid: TStringGrid;
@@ -26,10 +23,11 @@ TYPE
     StartTaskLabel: TLabel;
     DeleteTaskShape: TShape;
     StartTaskShape: TShape;
+    PROCEDURE ChallengesGridGetCheckboxState(Sender: TObject; aCol, aRow: integer; VAR value: TCheckboxState);
+    PROCEDURE ChallengesGridSetCheckboxState(Sender: TObject; aCol, aRow: integer; CONST value: TCheckboxState);
     PROCEDURE DeleteTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE EditTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE FormShow(Sender: TObject);
-    PROCEDURE ChallengesGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);
     PROCEDURE ChallengesGridSelection(Sender: TObject; aCol, aRow: integer);
     PROCEDURE MoveTaskDownShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE MoveTaskUpShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -86,38 +84,53 @@ PROCEDURE TSelectTaskForm.DeleteTaskShapeMouseDown(Sender: TObject; button: TMou
     end;
   end;
 
+PROCEDURE TSelectTaskForm.ChallengesGridGetCheckboxState(Sender: TObject; aCol, aRow: integer; VAR value: TCheckboxState);
+  begin
+    dec(aRow);
+    if (not exporting) or (tutorial.equals(challengeSet^.challenge[aRow]))
+    then value:=cbGrayed
+    else begin
+      if challengeSet^.challenge[aRow]^.marked
+      then value:=cbChecked
+      else value:=cbUnchecked;
+    end;
+  end;
+
+PROCEDURE TSelectTaskForm.ChallengesGridSetCheckboxState(Sender: TObject; aCol, aRow: integer; CONST value: TCheckboxState);
+  VAR i: integer;
+      anySelected:boolean;
+  begin
+    dec(aRow);
+    if (not exporting) or (tutorial.equals(challengeSet^.challenge[aRow]))
+    then exit;
+
+    challengeSet^.challenge[aRow]^.marked:=not(challengeSet^.challenge[aRow]^.marked);
+
+    ChallengesGrid.Cells[3,aRow+1]:=BoolToStr(challengeSet^.challenge[aRow]^.marked,'x','');
+
+    for i:=0 to length(challengeSet^.challenge)-1 do anySelected:=anySelected or challengeSet^.challenge[i]^.marked;
+    setEnableButton(StartTaskShape,StartTaskLabel,anySelected);
+    setEnableButton(DeleteTaskShape,DeleteTaskLabel,anySelected);
+  end;
+
 PROCEDURE TSelectTaskForm.EditTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     CreateTaskForm.showForExistingChallenge(selectedChallengeIndex,challengeSet);
     updateTable;
   end;
 
-PROCEDURE TSelectTaskForm.ChallengesGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);
-  begin
-
-  end;
-
 PROCEDURE TSelectTaskForm.ChallengesGridSelection(Sender: TObject; aCol, aRow: integer);
-  VAR anySelected:boolean=false;
-      i:longint;
   begin
     aRow-=1; //ignore header
     if (aRow<0) or (aRow>=length(challengeSet^.challenge)) then exit;
     ChallengesMemo.text:=challengeSet^.challenge[aRow]^.challengeDescription;
     selectedChallengeIndex:=aRow;
-    setEnableButton(StartTaskShape,StartTaskLabel,true);
-    setEnableButton(DeleteTaskShape,DeleteTaskLabel,not(tutorial.equals(challengeSet^.challenge[aRow])));
     setEnableButton(EditTaskShape,EditTaskLabel,challengeSet^.challenge[aRow]^.editable);
     setEnableButton(MoveTaskUpShape,MoveTaskUpLabel,aRow>0);
     setEnableButton(MoveTaskDownShape,MoveTaskDownLabel,aRow<length(challengeSet^.challenge)-1);
-
-    if exporting then begin
-      challengeSet^.challenge[aRow]^.marked:=not(challengeSet^.challenge[aRow]^.marked);
-      ChallengesGrid.Cells[3,aRow+1]:=BoolToStr(challengeSet^.challenge[aRow]^.marked,checkMark,'');
-      for i:=0 to length(challengeSet^.challenge)-1 do anySelected:=anySelected or challengeSet^.challenge[i]^.marked;
-      setEnableButton(StartTaskShape,StartTaskLabel,anySelected);
-      setEnableButton(DeleteTaskShape,DeleteTaskLabel,anySelected);
-    end;
+    if exporting then exit;
+    setEnableButton(StartTaskShape,StartTaskLabel,true);
+    setEnableButton(DeleteTaskShape,DeleteTaskLabel,not(tutorial.equals(challengeSet^.challenge[aRow])));
   end;
 
 PROCEDURE TSelectTaskForm.MoveTaskDownShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -159,16 +172,12 @@ PROCEDURE TSelectTaskForm.updateTable;
   begin
     ChallengesMemo.text:='';
     ChallengesGrid.rowCount:=1+length(challengeSet^.challenge);
-    if exporting
-    then ChallengesGrid.colCount:=4
-    else ChallengesGrid.colCount:=3;
-
+    ChallengesGrid.Columns[3].visible:=exporting;
     for i:=0 to length(challengeSet^.challenge)-1 do begin
       ChallengesGrid.Cells[0,i+1]:=challengeSet^.challenge[i]^.challengeTitle;
       ChallengesGrid.Cells[1,i+1]:=BoolToStr(challengeSet^.challenge[i]^.callengeCompleted,checkMark,'');
       ChallengesGrid.Cells[2,i+1]:=StringOfChar('|',challengeSet^.challenge[i]^.challengeLevel);
-      if exporting
-      then ChallengesGrid.Cells[3,i+1]:=BoolToStr(challengeSet^.challenge[i]^.marked,checkMark,'');
+      ChallengesGrid.Cells[3,i+1]:=BoolToStr(challengeSet^.challenge[i]^.marked,'x','');
     end;
     ChallengesGrid.AutoSizeColumns;
     setEnableButton(EditTaskShape,EditTaskLabel,false);

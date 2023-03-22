@@ -26,38 +26,42 @@ object SelectTaskForm: TSelectTaskForm
     BorderSpacing.Right = 4
     BorderSpacing.Bottom = 4
     Color = 8405056
-    ColCount = 3
+    ColCount = 4
+    Columns = <    
+      item
+        ReadOnly = True
+        Title.Caption = 'Titel'
+      end    
+      item
+        ReadOnly = True
+        Title.Caption = 'Gelöst'
+      end    
+      item
+        ReadOnly = True
+        Title.Caption = 'Level'
+      end    
+      item
+        ButtonStyle = cbsCheckboxColumn
+        Title.Caption = 'exportieren'
+        ValueChecked = 'x'
+        ValueUnchecked = ' '
+      end>
+    ExtendedSelect = False
     FixedColor = 6303792
     FixedCols = 0
     Flat = True
     Font.Color = clWhite
-    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goRowSelect, goDblClickAutoSize, goSmoothScroll]
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goEditing, goRowSelect, goDblClickAutoSize, goSmoothScroll]
     ParentFont = False
     TabOrder = 0
-    OnHeaderClick = ChallengesGridHeaderClick
+    OnGetCheckboxState = ChallengesGridGetCheckboxState
     OnSelection = ChallengesGridSelection
-    ColWidths = (
-      64
-      64
-      147
-    )
+    OnSetCheckboxState = ChallengesGridSetCheckboxState
     Cells = (
-      5
+      1
       0
       0
       'Titel'
-      1
-      0
-      'Gelöst'
-      2
-      0
-      'Level'
-      2
-      1
-      '|||'
-      2
-      2
-      '||||||||||||||||||||'
     )
   end
   object ChallengesMemo: TMemo
