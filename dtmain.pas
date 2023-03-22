@@ -184,15 +184,13 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
                      ioEdit,
                      @showPropertyEditor,
                      @repositionPropertyEditor,
-                     @boardChanged,
-                     @BeginFormUpdate,
-                     @EndFormUpdate,
-                     @Application.ProcessMessages);
+                     @boardChanged);
 
     workspace.create;
     workspace.activePalette^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.reset(true);
+    miSimpleUI.checked:=workspace.simplisticUi;
     updateUiElements;
 
     pauseByUser:=false;
@@ -384,6 +382,7 @@ PROCEDURE TDigitaltrainerMainForm.miShrinkClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miSimpleUIClick(Sender: TObject);
   begin
     miSimpleUI.checked:=not(miSimpleUI).checked;
+    workspace.simplisticUi:=miSimpleUI.checked;
     if miSimpleUI.checked then begin
       pauseByUser:=false;
       speedTrackBar.position:=6;

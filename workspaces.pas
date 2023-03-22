@@ -18,6 +18,7 @@ TYPE
 
     activeChallenge :P_challenge;
   public
+    simplisticUi:boolean;
     CONSTRUCTOR create;
     DESTRUCTOR destroy;
     FUNCTION getSerialVersion:dword; virtual;
@@ -118,6 +119,7 @@ FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
       if tutorial.equals(activeChallenge) then restartChallenge;
 
     end else result:=false;
+    simplisticUi:=not(stream.allOkay) or stream.readBoolean;
   end;
 
 PROCEDURE T_workspace.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
@@ -127,6 +129,7 @@ PROCEDURE T_workspace.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
     stream.writeLongint(activeChallengeIndex);
     workspacePalette^.saveToStream(stream);
     workspaceBoard^.saveToStream(stream,false);
+    stream.writeBoolean(simplisticUi);
   end;
 
 PROCEDURE T_workspace.restartChallenge;

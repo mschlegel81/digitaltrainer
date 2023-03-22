@@ -37,10 +37,8 @@ T_uiAdapter=object
       showPropertyEditorCallback:F_showPropertyEditorCallback;
       repositionPropertyEditorCallback:F_repositionPropertyEditorCallback;
       boardModifiedCallback:F_procedure;
-      BeginFormUpdate,EndFormUpdate:F_procedure;
       paletteItemAt:F_gateHitInfo;
       paintPalette:F_procedure;
-      ProcessMessages:F_procedure;
     end;
 
     zoom:longint;
@@ -75,8 +73,7 @@ T_uiAdapter=object
                        CONST ioEdit:TEdit;
                        CONST showPropertyEditorCallback:F_showPropertyEditorCallback;
                        CONST repositionPropertyEditorCallback:F_repositionPropertyEditorCallback;
-                       CONST boardModifiedCallback:F_procedure;
-                       CONST BeginFormUpdate,EndFormUpdate,ProcessMessages:F_procedure);
+                       CONST boardModifiedCallback:F_procedure);
     DESTRUCTOR destroy;
 
     PROCEDURE propertyEditorShown(CONST gate:P_visualGate; CONST fromBoard:boolean);
@@ -131,8 +128,7 @@ CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape;
                                CONST ioEdit: TEdit;
                                CONST showPropertyEditorCallback: F_showPropertyEditorCallback;
                                CONST repositionPropertyEditorCallback:F_repositionPropertyEditorCallback;
-                               CONST boardModifiedCallback: F_procedure;
-                               CONST BeginFormUpdate, EndFormUpdate, ProcessMessages: F_procedure);
+                               CONST boardModifiedCallback: F_procedure);
   begin
     uiElement.selectionShape          :=selectionShape;
     uiElement.boardImage              :=boardImage;
@@ -146,9 +142,6 @@ CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape;
     callback.showPropertyEditorCallback:=showPropertyEditorCallback;
     callback.repositionPropertyEditorCallback:=repositionPropertyEditorCallback;
     callback.boardModifiedCallback:=boardModifiedCallback;
-    callback.BeginFormUpdate:=BeginFormUpdate;
-    callback.EndFormUpdate:=EndFormUpdate;
-    callback.ProcessMessages:=ProcessMessages;
     uiElement.boardImage.OnMouseWheel:=@boardImageMouseWheel;
     zoom:=30;
     state:=uas_initial;
