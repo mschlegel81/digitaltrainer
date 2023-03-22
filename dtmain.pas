@@ -682,7 +682,10 @@ PROCEDURE TDigitaltrainerMainForm.repositionPropertyEditor(CONST mouseX,mouseY:l
     else propEditPanel.Left:=mouseX;
     if mouseY>height-propEditPanel.height
     then propEditPanel.top:=height-propEditPanel.height
-    else propEditPanel.top:=mouseY;
+    else if mouseY<boardImage.top
+         then propEditPanel.top:=boardImage.top
+         else propEditPanel.top:=mouseY;
+
     if propEditPanel.Left+propEditPanel.width>width then propEditPanel.Left:=width-propEditPanel.width;
     if propEditPanel.top+propEditPanel.height>height then propEditPanel.top:=height-propEditPanel.height;
     propEditPanel.BringToFront;

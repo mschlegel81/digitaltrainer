@@ -37,6 +37,8 @@ TYPE
       challengeTestCreationThread:T_testCreationThread;
       PROCEDURE updateTestCaseResults(CONST callback:F_caseUpdatedCallback; CONST resume:PBoolean; CONST initCounts:boolean=false);
     public
+      //TODO: Store expected behavior as visual board in order to allow for later editing...
+      //TODO: Use full editor to edit resultTemplate
       expectedBehavior    :P_compoundGate;
       tests:array of record
         inputs:T_wireValueArray;
