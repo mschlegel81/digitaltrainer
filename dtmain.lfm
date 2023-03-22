@@ -645,6 +645,26 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         Caption = '&Freier Modus'
         OnClick = miEditModeClick
       end
+      object miSimpleUI: TMenuItem
+        Caption = '&Vereinfachte UI'
+        Checked = True
+        OnClick = miSimpleUIClick
+      end
+      object Separator2: TMenuItem
+        Caption = '-'
+      end
+      object miZoomIn: TMenuItem
+        Caption = 'Zoom in'
+        ShortCut = 16571
+        ShortCutKey2 = 16491
+        OnClick = miZoomInClick
+      end
+      object miZoomOut: TMenuItem
+        Caption = 'Zoom out'
+        ShortCut = 16573
+        ShortCutKey2 = 16493
+        OnClick = miZoomOutClick
+      end
     end
   end
   object AnimationTimer: TTimer

@@ -15,6 +15,9 @@ TYPE
   TDigitaltrainerMainForm = class(TForm)
     boardHorizontalScrollBar: TScrollBar;
     boardImage: TImage;
+    miZoomOut: TMenuItem;
+    miZoomIn: TMenuItem;
+    miSimpleUI: TMenuItem;
     miShrink: TMenuItem;
     miTestBoard: TMenuItem;
     miMarkChallengesUnsolved: TMenuItem;
@@ -27,6 +30,7 @@ TYPE
     miEditPalette: TMenuItem;
     OpenDialog1: TOpenDialog;
     Separator1: TMenuItem;
+    Separator2: TMenuItem;
     WireTimer: TIdleTimer;
     ioEdit: TEdit;
     infoLabel: TLabel;
@@ -93,9 +97,12 @@ TYPE
     PROCEDURE miRedoClick(Sender: TObject);
     PROCEDURE miSaveAsTaskClick(Sender: TObject);
     PROCEDURE miShrinkClick(Sender: TObject);
+    PROCEDURE miSimpleUIClick(Sender: TObject);
     PROCEDURE miTasksClick(Sender: TObject);
     PROCEDURE miTestBoardClick(Sender: TObject);
     PROCEDURE miUndoClick(Sender: TObject);
+    PROCEDURE miZoomInClick(Sender: TObject);
+    PROCEDURE miZoomOutClick(Sender: TObject);
     PROCEDURE PaletteScrollBarScroll(Sender: TObject; ScrollCode: TScrollCode; VAR ScrollPos: integer);
     PROCEDURE PlayPauseShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE propCancelShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -373,6 +380,16 @@ PROCEDURE TDigitaltrainerMainForm.miShrinkClick(Sender: TObject);
     workspace.activeBoard^.checkBoardExtend(false,false,true);
   end;
 
+PROCEDURE TDigitaltrainerMainForm.miSimpleUIClick(Sender: TObject);
+  begin
+    miSimpleUI.checked:=not(miSimpleUI).checked;
+    if miSimpleUI.checked then begin
+      pauseByUser:=false;
+      speedTrackBar.position:=6;
+    end;
+    updateUiElements;
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);
   VAR
     timerEnabledBefore: boolean;
@@ -416,6 +433,16 @@ PROCEDURE TDigitaltrainerMainForm.miUndoClick(Sender: TObject);
   begin
     uiAdapter.performUndo(@workspace.setActiveBoard);
     infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miZoomInClick(Sender: TObject);
+  begin
+    ZoomInShapeMouseDown(Sender,mbLeft,[],0,0);
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miZoomOutClick(Sender: TObject);
+  begin
+    ZoomOutShapeMouseDown(Sender,mbLeft,[],0,0);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.PaletteScrollBarScroll(Sender: TObject; ScrollCode: TScrollCode; VAR ScrollPos: integer);
@@ -471,7 +498,7 @@ PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject; button
 
     buttonClicked(propEditShape);
     ValueListEditor1.OnValidateEntry:=nil;
-    if not(gateProperties.arePropertiesForBoard) and continueWithOtherBoard
+    if {not(gateProperties.arePropertiesForBoard) and} continueWithOtherBoard
     then begin
       AddToPaletteForm.setSubpalette(workspace.activePalette^.lastSubPaletteIndex);
       workspace.editPaletteEntry(prototype,@uiAdapter);
@@ -563,7 +590,6 @@ PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
       stepsToSimulate, timeForSimlulation:longint;
       elapsed, speed: qword;
   begin
-    //TODO: Keep the UI responsive at full speed; reduce timer interval in order to account for overhead?
     if (uiAdapter.getState<>uas_initial) or (propEditPanel.visible) then exit;
     stepsToSimulate   :=SPEED_SETTING[speedTrackBar.position].simSteps;
     timeForSimlulation:=SPEED_SETTING[speedTrackBar.position].timerInterval-PLANNED_IDLE_TICKS_DURING_SIMULATION;
@@ -701,10 +727,9 @@ PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate; C
     else gateProperties.createForPaletteEntry(ValueListEditor1,@propertyValueChanged,gate^.getBehavior,workspace.activePalette);
 
     uiAdapter.propertyEditorShown(gate,fromBoard);
-    setEnableButton(propEditShape   ,propEditLabel  ,not(fromBoard) and (gate^.getBehavior^.gateType=gt_compound) and workspace.EditorMode);
+    setEnableButton(propEditShape   ,propEditLabel  ,{not(fromBoard) and} (gate^.getBehavior^.gateType=gt_compound) and workspace.EditorMode);
     setEnableButton(propDeleteButton,propDeleteLabel,
       fromBoard or ((gate^.getBehavior^.gateType=gt_compound) and
-               //     (workspace.activeBoard^.getIndexInPalette<0) and
                     (workspace.activePalette^.allowDeletion(gate^.getBehavior,deletionHintText))));
     if not(propDeleteButton.enabled) then begin
       propDeleteButton.ShowHint:=false;
@@ -747,6 +772,7 @@ PROCEDURE TDigitaltrainerMainForm.testFinished;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.updateUiElements;
+  VAR showAll:boolean;
   begin
     miCopy .enabled:=workspace.EditorMode;
     miPaste.enabled:=workspace.EditorMode;
@@ -758,6 +784,24 @@ PROCEDURE TDigitaltrainerMainForm.updateUiElements;
     TestLabel.visible:=not(workspace.EditorMode);
     infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
     PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
+
+    showAll:=not(miSimpleUI.checked);
+
+    ZoomInShape       .visible:=showAll;
+    ZoomInLabel       .visible:=showAll;
+    ZoomOutShape      .visible:=showAll;
+    ZoomOutLabel      .visible:=showAll;
+    PlayPauseShape    .visible:=showAll;
+    PlayPauseLabel    .visible:=showAll;
+    SpeedBgShape      .visible:=showAll;
+    speedLabel        .visible:=showAll;
+    speedTrackBar     .visible:=showAll;
+    miShrink          .visible:=showAll;
+    miAddToPalette    .visible:=showAll;
+    miSaveAsTask      .visible:=showAll;
+    miEditPalette     .visible:=showAll;
+    miExportChallenges.visible:=showAll;
+    miImportChallenges.visible:=showAll;
   end;
 
 FUNCTION TDigitaltrainerMainForm.continueWithOtherBoard: boolean;
@@ -765,6 +809,7 @@ FUNCTION TDigitaltrainerMainForm.continueWithOtherBoard: boolean;
       simulationEnabledBefore:boolean;
   begin
     if not(workspace.activeBoard^.isModified) then exit(true);
+    if not(workspace.EditorMode) then exit;
     simulationEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
     mr:=boardChangedDialog.showFor(workspace.EditorMode and (workspace.activeBoard^.getIndexInPalette>=0));
