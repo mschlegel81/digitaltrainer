@@ -535,8 +535,7 @@ DESTRUCTOR T_workspacePalette.destroy;
     setLength(paletteNames,0);
   end;
 
-FUNCTION T_workspacePalette.loadFromStream(
-  VAR stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_workspacePalette.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
   VAR i:longint;
   begin
     filter:=stream.readLongint;
@@ -556,8 +555,7 @@ FUNCTION T_workspacePalette.loadFromStream(
     result:=stream.allOkay;
   end;
 
-PROCEDURE T_workspacePalette.saveToStream(
-  VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_workspacePalette.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
   VAR i:longint;
   begin
     stream.writeLongint(filter);
@@ -1201,6 +1199,7 @@ PROCEDURE T_workspacePalette.removeDuplicates(CONST byBehavior:boolean);
       {$endif}
       protRetain:=paletteEntries[retainIndex].prototype;
       protRemove:=paletteEntries[removeIndex].prototype;
+      ui^.prototypeUpdated(protRemove,protRetain);
       for i:=removeIndex+1 to length(paletteEntries)-1 do
         if paletteEntries[i].entryType=gt_compound
         then paletteEntries[i].prototype^.prototypeUpdated(protRemove,protRetain);
