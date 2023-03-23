@@ -118,7 +118,7 @@ TYPE
       FUNCTION IndexOf(CONST gate:P_abstractGate):longint;
     public
     paletteEntries:array of T_challengePaletteEntry;
-    allowConfiguration:boolean;
+    paletteOption:T_challengePaletteOption;
     constructingChallenge:boolean;
 
     CONSTRUCTOR create;
@@ -147,6 +147,7 @@ TYPE
     FUNCTION isWorkspacePalette:boolean; virtual;
 
     FUNCTION cloneAndMigrate(CONST b1,b2:P_visualBoard):P_challengePalette;
+    FUNCTION allowConfiguration:boolean;
   end;
 
 IMPLEMENTATION
@@ -189,7 +190,8 @@ FUNCTION T_challengePalette.loadFromStream(
   VAR i:longint;
   begin
     constructingChallenge:=false;
-    allowConfiguration:=stream.readBoolean;
+    paletteOption:=T_challengePaletteOption(stream.readByte([byte(low(T_challengePaletteOption))..byte(high(T_challengePaletteOption))]));
+
     setLength(paletteEntries,stream.readNaturalNumber);
     for i:=0 to length(paletteEntries)-1 do with paletteEntries[i] do begin
       initialAvailableCount:=stream.readLongint;
@@ -219,7 +221,7 @@ PROCEDURE T_challengePalette.saveToStream(
   VAR stream: T_bufferedOutputStreamWrapper);
   VAR i:longint;
   begin
-    stream.writeBoolean(allowConfiguration);
+    stream.writeByte(byte(paletteOption));
     stream.writeNaturalNumber(length(paletteEntries));
     for i:=0 to length(paletteEntries)-1 do with paletteEntries[i] do begin
       stream.writeLongint(initialAvailableCount);
@@ -314,8 +316,7 @@ FUNCTION T_challengePalette.readGate(VAR stream: T_bufferedInputStreamWrapper
     end;
   end;
 
-FUNCTION T_challengePalette.obtainGate(CONST prototypeIndex: longint
-  ): P_compoundGate;
+FUNCTION T_challengePalette.obtainGate(CONST prototypeIndex: longint): P_compoundGate;
   VAR i: integer;
   begin
     if constructingChallenge then begin
@@ -328,8 +329,7 @@ FUNCTION T_challengePalette.obtainGate(CONST prototypeIndex: longint
     end;
   end;
 
-FUNCTION T_challengePalette.hasPrototype(CONST prototypeIndex: longint
-  ): boolean;
+FUNCTION T_challengePalette.hasPrototype(CONST prototypeIndex: longint): boolean;
   VAR i:longint;
   begin
     if constructingChallenge then begin
@@ -446,8 +446,7 @@ PROCEDURE T_challengePalette.finalizePalette(CONST paletteOptions: T_challengePa
         end;
       end;
       setLength(paletteEntries,j);
-      allowConfiguration:=true;
-    end else allowConfiguration:=false;
+    end;
 
     //Set available count to (virtually) infinite, if counts should be ignored
     if paletteOptions in [co_preconfiguredPalette,co_freePalette]
@@ -486,7 +485,7 @@ FUNCTION T_challengePalette.cloneAndMigrate(CONST b1, b2: P_visualBoard): P_chal
       myPrototype,clonedPrototype:P_compoundGate;
   begin
     new(result,create);
-    result^.allowConfiguration:=allowConfiguration;
+    result^.paletteOption:=paletteOption;
     result^.constructingChallenge:=constructingChallenge;
     setLength(result^.paletteEntries,length(paletteEntries));
     for i:=0 to length(paletteEntries)-1 do begin
@@ -506,6 +505,11 @@ FUNCTION T_challengePalette.cloneAndMigrate(CONST b1, b2: P_visualBoard): P_chal
     end;
     if b1<>nil then b1^.moveToPalette(result);
     if b2<>nil then b2^.moveToPalette(result);
+  end;
+
+FUNCTION T_challengePalette.allowConfiguration:boolean;
+  begin
+    result:=paletteOption in [co_unconfiguredPaletteWithCounts,co_freePalette];
   end;
 
 { T_workspacePalette }

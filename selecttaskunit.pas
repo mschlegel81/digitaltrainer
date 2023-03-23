@@ -114,9 +114,11 @@ PROCEDURE TSelectTaskForm.ChallengesGridSetCheckboxState(Sender: TObject; aCol, 
   end;
 
 PROCEDURE TSelectTaskForm.EditTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  VAR
+    closeImmediately: boolean;
   begin
-    CreateTaskForm.showForExistingChallenge(selectedChallengeIndex,challengeSet);
-    updateTable;
+    closeImmediately:=CreateTaskForm.showForExistingChallenge(selectedChallengeIndex,challengeSet);
+    if closeImmediately then ModalResult:=mrYes else updateTable;
   end;
 
 PROCEDURE TSelectTaskForm.ChallengesGridSelection(Sender: TObject; aCol, aRow: integer);

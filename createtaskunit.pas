@@ -46,8 +46,8 @@ TYPE
     FUNCTION paletteOption:T_challengePaletteOption;
   public
     PROCEDURE showForNewChallenge     (CONST board:P_visualBoard; CONST challenges:P_challengeSet);
-    PROCEDURE showForExistingChallenge(CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet);
-    PROCEDURE reShowFor               (CONST editedChallenge:P_challenge; CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet);
+    FUNCTION  showForExistingChallenge(CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet):boolean;
+    FUNCTION reShowFor               (CONST editedChallenge:P_challenge; CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet):boolean;
   end;
 
 VAR workspace:P_workspace;
@@ -106,7 +106,6 @@ PROCEDURE TCreateTaskForm.editExpectedShapeMouseDown(Sender: TObject; button: TM
 
 PROCEDURE TCreateTaskForm.editTemplateShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
-    //TODO: set visible counts to high before this!
     workspace^.startEditingChallenge(challenge,challengeIndex,false,uiAdapter);
     ModalResult:=mrYes;
   end;
@@ -120,12 +119,12 @@ PROCEDURE TCreateTaskForm.showForNewChallenge(CONST board: P_visualBoard; CONST 
     reShowFor(temp,-1,challenges);
   end;
 
-PROCEDURE TCreateTaskForm.showForExistingChallenge(CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet );
+FUNCTION TCreateTaskForm.showForExistingChallenge(CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet ):boolean;
   begin
-    reShowFor(challenges^.challenge[originalChallengeIndex]^.clone,originalChallengeIndex,challenges);
+    result:=reShowFor(challenges^.challenge[originalChallengeIndex]^.clone,originalChallengeIndex,challenges);
   end;
 
-PROCEDURE TCreateTaskForm.reShowFor(CONST editedChallenge:P_challenge; CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet);
+FUNCTION TCreateTaskForm.reShowFor(CONST editedChallenge:P_challenge; CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet):boolean;
   begin
     challenge:=editedChallenge;
     challengeIndex:=originalChallengeIndex;
@@ -134,20 +133,34 @@ PROCEDURE TCreateTaskForm.reShowFor(CONST editedChallenge:P_challenge; CONST ori
     DifficultyTrackBar.position:=challenge^.challengeLevel;
     TestCreationFrame1.setTestGenerator(challenge,MAX_NUMBER_OF_CHALLENGE_CHECKS);
     challenge^.updateTestCaseResults;
+    case challenge^.palette^.paletteOption of
+      co_preconfiguredPaletteWithCounts: rbPreconfiguredPaletteWithCounts.checked:=true;
+      co_preconfiguredPalette          : rbPreconfiguredPalette          .checked:=true;
+      co_unconfiguredPaletteWithCounts : rbUnconfiguredPaletteWithCounts .checked:=true;
+      co_freePalette                   : rbFreePalette                   .checked:=true;
+    end;
+
     if ShowModal=mrOk then begin
       TestCreationFrame1.detachTestGenerator;
       challenge^.challengeLevel:=DifficultyTrackBar.position;
       challenge^.challengeTitle:=TitleEdit.text;
       challenge^.challengeDescription:=DescriptionMemo.text;
+      challenge^.palette^.paletteOption:=paletteOption;
       if originalChallengeIndex>=0 then begin
         dispose(challenges^.challenge[originalChallengeIndex],destroy);
         challenges^.challenge[originalChallengeIndex]:=challenge;
       end else challenges^.add(challenge);
     end else begin
+      challenge^.challengeLevel:=DifficultyTrackBar.position;
+      challenge^.challengeTitle:=TitleEdit.text;
+      challenge^.challengeDescription:=DescriptionMemo.text;
+      challenge^.palette^.paletteOption:=paletteOption;
+
       TestCreationFrame1.detachTestGenerator;
       if ModalResult<>mrYes then dispose(challenge,destroy);
     end;
     challenge:=nil;
+    result:=ModalResult=mrYes;
   end;
 
 FINALIZATION

@@ -444,7 +444,7 @@ PROCEDURE T_challengeSet.markAllAsPending;
 
 FUNCTION T_challengeSet.getSerialVersion: dword;
   begin
-    result:=serialVersionOf('T_challengeSet',1);
+    result:=serialVersionOf('T_challengeSet',2);
   end;
 
 FUNCTION T_challengeSet.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
@@ -736,6 +736,7 @@ PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard);
     expectedAsVisual^.extractChallenge(palette,expectedBehavior);
     behavior      :=expectedBehavior^.extractBehavior;
     resultTemplate:=expectedBehavior^.clone();
+    palette^.finalizePalette(co_preconfiguredPaletteWithCounts);
 
     if length(tests)>0 then exit;
     Interfaces:=expectedAsVisual^.getInterfaces;
