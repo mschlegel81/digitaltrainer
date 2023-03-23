@@ -75,10 +75,7 @@ T_visualBoard=object(T_captionedAndIndexed)
     PROCEDURE savePaletteEntryToStream(VAR stream:T_bufferedOutputStreamWrapper; CONST paletteIndex:longint);
     PROCEDURE loadPaletteEntryFromStream(VAR stream:T_bufferedInputStreamWrapper; CONST paletteIndex:longint);
     FUNCTION extractBehavior:P_compoundGate;
-    PROCEDURE extractChallenge(CONST options:T_challengeBoardOption;
-                               CONST challengePalette:P_abstractPrototypeSource;
-                               OUT expectedBehavior:P_compoundGate;
-                               OUT boardTemplate:P_visualBoard);
+    PROCEDURE extractChallenge(CONST challengePalette: P_abstractPrototypeSource; OUT expectedBehavior: P_visualBoard);
     FUNCTION getInterfaces:T_gateInterfaces;
 
     FUNCTION clone(CONST fixProperties:boolean=false):P_visualBoard;
@@ -115,6 +112,7 @@ T_visualBoard=object(T_captionedAndIndexed)
     FUNCTION isVisualBoard: boolean; virtual;
     FUNCTION usesPrototype(CONST p:P_captionedAndIndexed; CONST transitiveScan:boolean):boolean;
     PROCEDURE prototypeUpdated(CONST oldPrototype,newPrototype:P_visualBoard);
+    PROCEDURE prototypeUpdated(CONST oldPrototype,newPrototype:P_compoundGate);
 
     PROCEDURE copySelectionToClipboard;
     PROCEDURE pasteFromClipboard(CONST tgtX,tgtY:longint);
@@ -693,118 +691,64 @@ FUNCTION T_visualBoard.extractBehavior: P_compoundGate;
     result:=cloned;
   end;
 
-PROCEDURE T_visualBoard.extractChallenge(CONST options: T_challengeBoardOption;
-  CONST challengePalette: P_abstractPrototypeSource; OUT
-  expectedBehavior: P_compoundGate; OUT boardTemplate: P_visualBoard);
-  PROCEDURE setupExpectedBehavior;
-    VAR i,j:longint;
-    FUNCTION gateInClone(CONST gate:P_visualGate):P_abstractGate;
-      VAR i:longint;
-      begin
-        result:=nil;
-        for i:=0 to length(inputs )-1 do if inputs [i]=gate then exit(expectedBehavior^.inputs[i]);
-        for i:=0 to length(outputs)-1 do if outputs[i]=gate then exit(expectedBehavior^.outputs[i]);
-        for i:=0 to length(gates  )-1 do if gates  [i]=gate then exit(expectedBehavior^.gates[i]);
-        assert(result<>nil,'extractChallenge of T_circuitBoard failed');
-      end;
+PROCEDURE T_visualBoard.extractChallenge(CONST challengePalette: P_abstractPrototypeSource; OUT expectedBehavior: P_visualBoard);
+  FUNCTION gateInClone(CONST gate:P_visualGate):P_visualGate;
+    VAR i:longint;
     begin
-      new(expectedBehavior,create(challengePalette));
-
-      expectedBehavior^.prototype:=nil;
-      expectedBehavior^.captionString:='';
-      expectedBehavior^.descriptionString:='';
-      setLength(expectedBehavior^.inputs ,length(inputs ));
-      for i:=0 to length(inputs )-1 do begin
-        challengePalette^.ensureBaseGate(inputs [i]^.behavior,true);
-        expectedBehavior^.inputs [i]:=P_inputGate (inputs [i]^.behavior^.clone(false));
-      end;
-      setLength(expectedBehavior^.outputs,length(outputs));
-      for i:=0 to length(outputs)-1 do begin
-        challengePalette^.ensureBaseGate(outputs[i]^.behavior,true);
-        expectedBehavior^.outputs[i]:=P_outputGate(outputs[i]^.behavior^.clone(false));
-      end;
-      setLength(expectedBehavior^.gates,length(gates));
-      for i:=0 to length(gates)-1 do begin
-        if gates[i]^.behavior^.gateType=gt_compound
-        then expectedBehavior^.gates[i]:=P_compoundGate(gates[i]^.behavior)^.exportForChallenge(challengePalette,true)
-        else begin
-          challengePalette^.ensureBaseGate(gates[i]^.behavior,true);
-          expectedBehavior^.gates[i]:=gates[i]^.behavior^.clone(false);
-        end
-      end;
-      setLength(expectedBehavior^.wires,length(wires));
-      for i:=0 to length(wires)-1 do begin
-        expectedBehavior^.wires[i].source:=gateInClone(wires[i].source);
-        expectedBehavior^.wires[i].sourceOutputIndex:= wires[i].sourceOutputIndex;
-        setLength(expectedBehavior^.wires[i].sink,length(wires[i].sink));
-        for j:=0 to length(wires[i].sink)-1 do begin
-          expectedBehavior^.wires[i].sink[j].gate:=gateInClone(wires[i].sink[j].gate);
-          expectedBehavior^.wires[i].sink[j].gateInputIndex:=  wires[i].sink[j].gateInputIndex;
-        end;
-      end;
+      result:=nil;
+      for i:=0 to length(inputs )-1 do if inputs [i]=gate then exit(expectedBehavior^.inputs[i]);
+      for i:=0 to length(outputs)-1 do if outputs[i]=gate then exit(expectedBehavior^.outputs[i]);
+      for i:=0 to length(gates  )-1 do if gates  [i]=gate then exit(expectedBehavior^.gates[i]);
+      assert(result<>nil,'extractChallenge of T_circuitBoard failed');
     end;
-
-  PROCEDURE setupTemplate;
-    VAR i,j:longint;
-    FUNCTION doIncludeGate(CONST g:P_visualGate):boolean;
-      begin
-        case g^.behavior^.gateType of
-          gt_input,gt_output:
-            result:=options<>co_none;
-          else
-            result:=(options=co_allGates) or
-                    (options=co_halfGates) and (random<0.5);
-        end;
-      end;
-
-    begin
-      new(boardTemplate,create(challengePalette));
-      boardTemplate^.captionString:=captionString;
-      boardTemplate^.descriptionString:=descriptionString;
-      boardTemplate^.myIndex:=-1;
-      boardTemplate^.gridX0:=gridX0;
-      boardTemplate^.gridX1:=gridX1;
-      boardTemplate^.gridY0:=gridY0;
-      boardTemplate^.gridY1:=gridY1;
-
-      j:=0;
-      setLength(boardTemplate^.inputs ,length(inputs ));
-      for i:=0 to length(inputs )-1 do
-        if doIncludeGate(inputs[i])
-        then begin
-          boardTemplate^.inputs[j]:=inputs[i]^.clone;
-          inc(j);
-        end else challengePalette^.countUpGate(inputs[i]^.behavior);
-      setLength(boardTemplate^.inputs,j);
-
-      j:=0;
-      setLength(boardTemplate^.outputs,length(outputs));
-      for i:=0 to length(outputs)-1 do
-        if doIncludeGate(outputs[i])
-        then begin
-          boardTemplate^.outputs[i]:=outputs[i]^.clone;
-          inc(j);
-        end else challengePalette^.countUpGate(outputs[i]^.behavior);
-      setLength(boardTemplate^.outputs,j);
-
-      j:=0;
-      setLength(boardTemplate^.gates  ,length(gates));
-      for i:=0 to length(gates)-1 do
-        if doIncludeGate(gates[i])
-        then begin
-          if gates[i]^.behavior^.gateType=gt_compound
-          then begin
-            new(boardTemplate^.gates[j],create(P_compoundGate(gates[i]^.behavior)^.exportForChallenge(challengePalette,true)));
-            boardTemplate^.gates[j]^.gridPos  :=gates[i]^.gridPos;
-          end else boardTemplate^.gates[j]:=gates[i]^.clone;
-          inc(j);
-        end else challengePalette^.countUpGate(gates[i]^.behavior);
-      setLength(boardTemplate^.gates,j);
-    end;
-
+  VAR i,j:longint;
+      behavior: P_abstractGate;
+      visual  : P_visualGate;
   begin
-    setupExpectedBehavior;
-    setupTemplate;
+    new(expectedBehavior,create(challengePalette));
+
+    expectedBehavior^.myIndex:=-1;
+    expectedBehavior^.captionString:=captionString;
+    expectedBehavior^.descriptionString:=descriptionString;
+    setLength(expectedBehavior^.inputs ,length(inputs ));
+    for i:=0 to length(inputs )-1 do begin
+      challengePalette^.ensureBaseGate(inputs [i]^.behavior);
+      expectedBehavior^.inputs [i]:=inputs[i]^.clone;
+    end;
+    setLength(expectedBehavior^.outputs,length(outputs));
+    for i:=0 to length(outputs)-1 do begin
+      challengePalette^.ensureBaseGate(outputs[i]^.behavior);
+      expectedBehavior^.outputs[i]:=outputs[i]^.clone;
+    end;
+    setLength(expectedBehavior^.gates,length(gates));
+    for i:=0 to length(gates)-1 do begin
+      if gates[i]^.behavior^.gateType=gt_compound
+      then begin
+        behavior:=P_compoundGate(gates[i]^.behavior)^.exportForChallenge(challengePalette);
+        new(visual,create(behavior));
+        visual^.gridPos        :=gates[i]^.gridPos;
+        visual^.uiAdapter      :=gates[i]^.uiAdapter;
+        visual^.canvasPos      :=gates[i]^.canvasPos;
+        visual^.ioMode         :=gates[i]^.ioMode;
+        visual^.fixedProperties:=false;
+        visual^.fixedPosition  :=false;
+        expectedBehavior^.gates[i]:=visual;
+      end
+      else begin
+        challengePalette^.ensureBaseGate(gates[i]^.behavior);
+        expectedBehavior^.gates[i]:=gates[i]^.clone;
+      end
+    end;
+    setLength(expectedBehavior^.wires,length(wires));
+    for i:=0 to length(wires)-1 do begin
+      expectedBehavior^.wires[i].source:=gateInClone(wires[i].source);
+      expectedBehavior^.wires[i].sourceOutputIndex:= wires[i].sourceOutputIndex;
+      setLength(expectedBehavior^.wires[i].sink,length(wires[i].sink));
+      for j:=0 to length(wires[i].sink)-1 do begin
+        expectedBehavior^.wires[i].sink[j].gate:=gateInClone(wires[i].sink[j].gate);
+        expectedBehavior^.wires[i].sink[j].gateInputIndex:=  wires[i].sink[j].gateInputIndex;
+      end;
+    end;
   end;
 
 FUNCTION T_visualBoard.getInterfaces: T_gateInterfaces;
@@ -1807,8 +1751,7 @@ PROCEDURE T_visualBoard.reset(CONST includeInputs: boolean);
     for g in gates   do g^.getBehavior^.reset;
   end;
 
-FUNCTION T_visualBoard.coSimulateSteps(CONST count, timeOutInTicks: longint;
-  CONST expectedBehavior: P_abstractGate): longint;
+FUNCTION T_visualBoard.coSimulateSteps(CONST count, timeOutInTicks: longint; CONST expectedBehavior: P_abstractGate): longint;
   VAR changed:boolean=true;
       g:P_visualGate;
       i:longint;
@@ -1932,6 +1875,25 @@ PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype, newPrototype: P_vis
       if P_compoundGate(g^.behavior)^.prototype=P_captionedAndIndexed(oldPrototype) then begin
         dispose(g^.behavior,destroy);
         g^.behavior:=newPrototype^.extractBehavior;
+        if ui<>nil then begin
+          g^.setupVisuals;
+          repositionElement(g,true,true);
+          dropWatchersAssociatedWith(g);
+        end;
+        anyGateUpdated:=true;
+      end else P_compoundGate(g^.behavior)^.prototypeUpdated(oldPrototype,newPrototype);
+    end;
+    if anyGateUpdated then rewire(true);
+  end;
+
+PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype,newPrototype:P_compoundGate);
+  VAR g:P_visualGate;
+      anyGateUpdated:boolean=false;
+  begin
+    for g in gates do if (g^.behavior^.gateType=gt_compound) then begin
+      if P_compoundGate(g^.behavior)^.prototype=P_captionedAndIndexed(oldPrototype) then begin
+        dispose(g^.behavior,destroy);
+        g^.behavior:=newPrototype^.clone(true);
         if ui<>nil then begin
           g^.setupVisuals;
           repositionElement(g,true,true);
@@ -2129,8 +2091,7 @@ FUNCTION T_visualBoard.getInfoLabelText: string;
             'Schritte simuliert: '+intToStr(simStepCounter);
   end;
 
-PROCEDURE T_visualBoard.moveToPalette(
-  CONST newPalette: P_abstractPrototypeSource);
+PROCEDURE T_visualBoard.moveToPalette(CONST newPalette: P_abstractPrototypeSource);
   begin
     associatedPalette:=newPalette;
   end;

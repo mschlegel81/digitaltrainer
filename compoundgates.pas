@@ -9,8 +9,6 @@ USES
 
 TYPE
   P_compoundGate=^T_compoundGate;
-
-  T_challengeBoardOption=(co_allGates,co_halfGates,co_ioOnly,co_none);
   T_challengePaletteOption=(co_preconfiguredPaletteWithCounts,
                             co_preconfiguredPalette,
                             co_unconfiguredPaletteWithCounts,
@@ -36,8 +34,8 @@ TYPE
     PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual; abstract;
     FUNCTION getGateAtScreenPosition(CONST x,y:longint):pointer; virtual; abstract;
     FUNCTION hasPrototype(CONST prototypeIndex:longint):boolean; virtual; abstract;
-    PROCEDURE addPrototype(CONST prototypeIndex:longint; CONST behavior:P_compoundGate; CONST visible:boolean); virtual; abstract;
-    PROCEDURE ensureBaseGate(CONST gate:P_abstractGate; CONST visible:boolean); virtual; abstract;
+    PROCEDURE addPrototype(CONST prototypeIndex:longint; CONST behavior:P_compoundGate); virtual; abstract;
+    PROCEDURE ensureBaseGate(CONST gate:P_abstractGate); virtual; abstract;
     PROCEDURE countUpGate(CONST gate:P_abstractGate); virtual; abstract;
     PROCEDURE countDownGate(CONST gate:P_abstractGate); virtual; abstract;
     FUNCTION isWorkspacePalette:boolean; virtual; abstract;
@@ -62,12 +60,12 @@ TYPE
   { T_compoundGate }
   T_compoundGate=object(T_abstractGate)
     protected
-      prototypeSource:P_abstractPrototypeSource;
       myIndex:longint;
 
       //not persisted:
       lastStepBusy:boolean;
     public
+      prototypeSource:P_abstractPrototypeSource;
       prototype:P_captionedAndIndexed;
       captionString:string;
       descriptionString:string;
@@ -80,7 +78,8 @@ TYPE
       DESTRUCTOR destroy; virtual;
       PROCEDURE reset;                   virtual;
       FUNCTION  clone(CONST includeState:boolean):P_abstractGate; virtual;
-      FUNCTION  exportForChallenge(CONST challengePalette:P_abstractPrototypeSource; CONST addAsVisibleToPalette:boolean):P_abstractGate;
+      PROCEDURE ensureInPalette   (CONST challengePalette:P_abstractPrototypeSource);
+      FUNCTION  exportForChallenge(CONST challengePalette:P_abstractPrototypeSource):P_abstractGate;
 
       FUNCTION  getCaption:shortstring;       virtual;
       FUNCTION  getDescription:string;   virtual;
@@ -199,7 +198,7 @@ FUNCTION T_compoundGate.clone(CONST includeState: boolean): P_abstractGate;
     result:=cloned;
   end;
 
-FUNCTION T_compoundGate.exportForChallenge(CONST challengePalette: P_abstractPrototypeSource; CONST addAsVisibleToPalette:boolean): P_abstractGate;
+PROCEDURE T_compoundGate.ensureInPalette   (CONST challengePalette:P_abstractPrototypeSource);
   VAR cloned:P_compoundGate;
       i,j:longint;
   FUNCTION gateInClone(CONST gate:P_abstractGate):P_abstractGate;
@@ -213,8 +212,7 @@ FUNCTION T_compoundGate.exportForChallenge(CONST challengePalette: P_abstractPro
     end;
 
   begin
-    if (challengePalette^.hasPrototype(prototype^.getIndexInPalette))
-    then exit(challengePalette^.obtainGate(prototype^.getIndexInPalette));
+    if (challengePalette^.hasPrototype(prototype^.getIndexInPalette)) then exit;
 
     new(cloned,create(challengePalette));
     cloned^.prototype:=nil;
@@ -225,9 +223,9 @@ FUNCTION T_compoundGate.exportForChallenge(CONST challengePalette: P_abstractPro
     setLength(cloned^.outputs,length(outputs)); for i:=0 to length(outputs)-1 do cloned^.outputs[i]:=P_outputGate(outputs[i]^.clone(false));
     setLength(cloned^.gates  ,length(gates));   for i:=0 to length(gates  )-1 do begin
       if gates[i]^.gateType=gt_compound
-      then cloned^.gates[i]:=P_compoundGate(gates[i])^.exportForChallenge(challengePalette,false)
+      then cloned^.gates[i]:=P_compoundGate(gates[i])^.exportForChallenge(challengePalette)
       else begin
-        challengePalette^.ensureBaseGate(gates[i],false);
+        challengePalette^.ensureBaseGate(gates[i]);
         cloned^.gates[i]:=gates[i]^.clone(false);
       end;
     end;
@@ -243,7 +241,12 @@ FUNCTION T_compoundGate.exportForChallenge(CONST challengePalette: P_abstractPro
       end;
     end;
 
-    challengePalette^.addPrototype(prototype^.getIndexInPalette,cloned,addAsVisibleToPalette);
+    challengePalette^.addPrototype(prototype^.getIndexInPalette,cloned);
+  end;
+
+FUNCTION T_compoundGate.exportForChallenge(CONST challengePalette: P_abstractPrototypeSource): P_abstractGate;
+  begin
+    ensureInPalette(challengePalette);
     result:=challengePalette^.obtainGate(prototype^.getIndexInPalette);
   end;
 

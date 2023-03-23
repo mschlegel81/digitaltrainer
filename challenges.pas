@@ -37,9 +37,7 @@ TYPE
       challengeTestCreationThread:T_testCreationThread;
       PROCEDURE updateTestCaseResults(CONST callback:F_caseUpdatedCallback; CONST resume:PBoolean; CONST initCounts:boolean=false);
     public
-      //TODO: Store expected behavior as visual board in order to allow for later editing...
-      //TODO: Use full editor to edit resultTemplate
-      expectedBehavior    :P_compoundGate;
+      behavior    :P_compoundGate;
       tests:array of record
         inputs:T_wireValueArray;
         actuallyActive,
@@ -74,7 +72,8 @@ TYPE
 
     challengeLevel      :byte;
     callengeCompleted   :boolean;
-    resultTemplate      :P_visualBoard;
+    resultTemplate,
+    expectedBehavior    :P_visualBoard;
 
     editable:boolean;
     palette             :P_challengePalette;
@@ -83,8 +82,7 @@ TYPE
 
     CONSTRUCTOR create;
     DESTRUCTOR destroy; virtual;
-    DESTRUCTOR destroyPartial;
-    FUNCTION partialClone:P_challenge;
+    FUNCTION clone:P_challenge;
 
     FUNCTION getSerialVersion:dword; virtual;
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
@@ -96,9 +94,10 @@ TYPE
     PROPERTY testSucceeded:boolean read testRun.succeeded;
     FUNCTION testStep(CONST count, timeOutInTicks: longint; CONST board: P_visualBoard): longint; virtual;
     FUNCTION getInfoLabelText(CONST uiIdle:boolean):string; virtual;
+    FUNCTION ensureBehavior:P_compoundGate;
 
     //For creation purposes...
-    PROCEDURE initNewChallenge(CONST expectedAsVisual:P_visualBoard; CONST challengeBoardOption:T_challengeBoardOption; CONST challengePaletteOption:T_challengePaletteOption);
+    PROCEDURE initNewChallenge(CONST expectedAsVisual:P_visualBoard);
 
     FUNCTION equals(CONST c:P_challenge):boolean; virtual;
   end;
@@ -157,7 +156,7 @@ CONSTRUCTOR T_tutorial.create;
       adapter:P_visualGate;
       andGate:P_visualGate;
 
-      behavior:P_abstractGate;
+      tempBehavior:P_abstractGate;
   begin
     inherited;
     tutorialStep:=0;
@@ -169,10 +168,10 @@ CONSTRUCTOR T_tutorial.create;
 
     tempBoard.create(palette);
 
-    behavior:=newBaseGate(gt_input);
-    P_inputGate(behavior)^.width:=4;
-    P_inputGate(behavior)^.reset;
-    new(input,create(behavior));
+    tempBehavior:=newBaseGate(gt_input);
+    P_inputGate(tempBehavior)^.width:=4;
+    P_inputGate(tempBehavior)^.reset;
+    new(input,create(tempBehavior));
     tempBoard.elementAdded(input,true);
 
     new(output,create(newBaseGate(gt_output)));
@@ -181,9 +180,9 @@ CONSTRUCTOR T_tutorial.create;
     new(adapter,create(newBaseGate(gt_adapter)));
     tempBoard.elementAdded(adapter,true);
 
-    behavior:=newBaseGate(gt_andGate);
-    P_andGate(behavior)^.inputCount:=4;
-    new(andGate,create(behavior));
+    tempBehavior:=newBaseGate(gt_andGate);
+    P_andGate(tempBehavior)^.inputCount:=4;
+    new(andGate,create(tempBehavior));
 
     tempBoard.elementAdded(andGate,true);
 
@@ -195,8 +194,7 @@ CONSTRUCTOR T_tutorial.create;
     tempBoard.addWire(andGate,0,output,0);
 
     Interfaces:=tempBoard.getInterfaces;
-    dispose(expectedBehavior,destroy);
-    expectedBehavior:=tempBoard.extractBehavior;
+    behavior:=tempBoard.extractBehavior;
 
     tempBoard.destroy;
 
@@ -217,10 +215,10 @@ FUNCTION T_tutorial.resetChallenge: P_visualBoard;
     palette^.clear;
     tmp:=newBaseGate(gt_input);
     tmp^.reset;
-    palette^.ensureBaseGate(tmp,true);
+    palette^.ensureBaseGate(tmp);
     palette^.countUpGate(tmp);
     dispose(tmp,destroy);
-    palette^.finalizePalette(co_none,co_unconfiguredPaletteWithCounts);
+    palette^.finalizePalette(co_unconfiguredPaletteWithCounts);
     workspaceBoard:=result;
   end;
 
@@ -236,15 +234,15 @@ FUNCTION T_tutorial.testStep(CONST count, timeOutInTicks: longint; CONST board: 
 
 FUNCTION T_tutorial.getInfoLabelText(CONST uiIdle:boolean): string;
   CONST stepText:array[0..12] of string=(
-  {0} 'Auf der linken Seite siehst du die Palette.'+LineEnding+'Du kannst Bauelemente zur Schaltung hinzufügen, indem Du sie mit der linken Maustaste'+LineEnding+'von der Palette auf die Schaltung ziehst.',
-  {1} 'Eingänge werden immer am oberen oder linken Rand positioniert,'+LineEnding+'Ausgänge immer am unteren oder rechten.'+LineEnding+'Du kannst das Element wieder entfernen, indem Du es zurück zur Palette ziehst oder es markierst und Entf drückst.',
+  {0} 'Auf der linken Seite siehst du die Palette.'+LineEnding+'Du kannst Bauelemente zur Schaltung hinzufügen, indem du sie mit der linken Maustaste'+LineEnding+'von der Palette auf die Schaltung ziehst.',
+  {1} 'Eingänge werden immer am oberen oder linken Rand positioniert,'+LineEnding+'Ausgänge immer am unteren oder rechten.'+LineEnding+'Du kannst das Element wieder entfernen, indem du es zurück zur Palette ziehst oder es markierst und Entf drückst.',
   {2} 'Jetzt fügen wir einen Eingang und einen Ausgang hinzu.',
-  {3} 'Du kannst Kabel erstellen, indem Du auf einen Ausgang eines Bauelements links-klickst.'+LineEnding+'Ein Linksklick auf ein bestehendes Kabel entfernt dieses wieder.',
-  {4} 'Mit einem Rechtsklick auf einen Ein- oder Ausgang kannst Du beobachten, was genau dort passiert.',
-  {5} 'Du kannst den Wert eines Eingangs ändern, indem Du ihn mit Klick auf seine untere Hälfte bearbeitest.'+LineEnding+
-      'Beendest Du die Eingabe mit Enter, wird sie wieder geschlossen; beendest Du sie mit einem Leerzeichen, wird sie übernommen ohne zu schließen',
-  {6} 'Alle Bits eines Eingangs werden umgeschaltet, wenn Du die in der oberen rechten Ecke des Eingangs angegebene Taste drückst',
-  {7} 'Du kannst die Eigenschaften des Eingangs verändern, indem Du auf seine obere Hälfte rechts-klickst.'+LineEnding+
+  {3} 'Du kannst Kabel erstellen, indem du auf einen Ausgang eines Bauelements links-klickst.'+LineEnding+'Ein Linksklick auf ein bestehendes Kabel entfernt dieses wieder.',
+  {4} 'Mit einem Rechtsklick auf einen Ein- oder Ausgang kannst du beobachten, was genau dort passiert.',
+  {5} 'Du kannst den Wert eines Eingangs ändern, indem du ihn mit Klick auf seine untere Hälfte bearbeitest.'+LineEnding+
+      'Beendest du die Eingabe mit Enter, wird sie wieder geschlossen; beendest du sie mit einem Leerzeichen, wird sie übernommen ohne zu schließen',
+  {6} 'Alle Bits eines Eingangs werden umgeschaltet, wenn du die in der oberen rechten Ecke des Eingangs angegebene Taste drückst'+LineEnding+'Mit Shift+[Taste] öffnest du den Editor',
+  {7} 'Du kannst die Eigenschaften des Eingangs verändern, indem du auf seine obere Hälfte rechts-klickst.'+LineEnding+
       'Setze "Breite Ausgang" auf 4!'+LineEnding+
       'Erlaubte Breiten sind: 1, 4, 8 und 16',
   {8} 'Das Kabel ist verschwunden, weil die Anschlüsse unterschiedliche Breiten haben.'+LineEnding+
@@ -252,9 +250,9 @@ FUNCTION T_tutorial.getInfoLabelText(CONST uiIdle:boolean): string;
   {9} 'Jetzt fügen wir ein Und-Gatter hinzu und setzen dort (Rechtsklick) "Anzahl Eingänge" auf 4.',
   {10} 'Verbinde nun jeden Ausgang des Adapters mit einem Eingang des "and"-Elements und den Ausgang des "and"-Elements mit dem Ausgang'+LineEnding+
        'Du hast damit eine Schaltung erstellt, die genau dann 1 ausgibt wenn alle Eingänge 1 sind.',
-  {11} 'Eine Sache noch: Für breitere Eingänge kannst Du die Darstellungsform'+LineEnding+
+  {11} 'Eine Sache noch: Für breitere Eingänge kannst du die Darstellungsform'+LineEnding+
        'per Rechtsklick auf dessen untere Hälfte umschalten.',
-  {12} 'Mit einem Klick auf "test" startest Du einen Vergleich Deiner Schaltung mit dem vordefinierten Verhalten.'+LineEnding+'Das Beendet das Tutorial.');
+  {12} 'Mit einem Klick auf "test" startest du einen Vergleich Deiner Schaltung mit dem vordefinierten Verhalten.'+LineEnding+'Das Beendet das Tutorial.');
   FUNCTION stepCompleted:boolean;
     VAR tmp:P_abstractGate;
     begin
@@ -266,7 +264,7 @@ FUNCTION T_tutorial.getInfoLabelText(CONST uiIdle:boolean): string;
              result:=gatesTotal(workspaceBoard^.getGateCount)=0;
              if result then begin
                tmp:=newBaseGate(gt_output);
-               palette^.ensureBaseGate(tmp,true);
+               palette^.ensureBaseGate(tmp);
                palette^.countUpGate(tmp);
                dispose(tmp,destroy);
              end;
@@ -304,7 +302,7 @@ FUNCTION T_tutorial.getInfoLabelText(CONST uiIdle:boolean): string;
                      (workspaceBoard^.inputs[0]^.getBehavior^.outputWidth(0)=4);
              if result then begin
                tmp:=newBaseGate(gt_adapter);
-               palette^.ensureBaseGate(tmp,true);
+               palette^.ensureBaseGate(tmp);
                palette^.countUpGate(tmp);
                dispose(tmp,destroy);
                workspaceBoard^.inputs[0]^.fixedProperties:=true;
@@ -318,7 +316,7 @@ FUNCTION T_tutorial.getInfoLabelText(CONST uiIdle:boolean): string;
                      (workspaceBoard^.isInputConnected(workspaceBoard^.gates[0],0));
              if result then begin
                tmp:=newBaseGate(gt_andGate);
-               palette^.ensureBaseGate(tmp,true);
+               palette^.ensureBaseGate(tmp);
                palette^.countUpGate(tmp);
                dispose(tmp,destroy);
                workspaceBoard^.gates[0]^.fixedProperties:=true;
@@ -490,7 +488,7 @@ FUNCTION T_challengeSet.add(CONST c: P_challenge): boolean;
 PROCEDURE T_challengeSet.addCopyForExport(CONST c:P_challenge; CONST exportEditable:boolean);
   begin
     setLength(challenge,length(challenge)+1);
-    challenge[length(challenge)-1]:=c^.partialClone;
+    challenge[length(challenge)-1]:=c^.clone;
     if not(exportEditable) then challenge[length(challenge)-1]^.editable:=false;
   end;
 
@@ -516,7 +514,7 @@ PROCEDURE T_challengeSet.exportSelected(CONST fileName:string; CONST exportEdita
     temp.create;
     for i:=0 to length(challenge)-1 do if challenge[i]^.marked then temp.addCopyForExport(challenge[i],exportEditable);
     temp.saveToFile(fileName);
-    for i:=0 to length(temp.challenge)-1 do if not(tutorial.equals(temp.challenge[i])) then dispose(temp.challenge[i],destroyPartial);
+    for i:=0 to length(temp.challenge)-1 do if not(tutorial.equals(temp.challenge[i])) then dispose(temp.challenge[i],destroy);
     setLength(temp.challenge,0);
     temp.destroy;
   end;
@@ -566,38 +564,23 @@ DESTRUCTOR T_challenge.destroy;
   begin
     inherited;
     dispose(resultTemplate,destroy);
+    dispose(expectedBehavior,destroy);
     dispose(palette,destroy);
   end;
 
-DESTRUCTOR T_challenge.destroyPartial;
-  VAR i:longint;
-  begin
-    challengeTestCreationThread.destroy;
-    for i:=0 to length(tests)-1 do setLength(tests[i].inputs,0); setLength(tests,0);
-  end;
-
-FUNCTION T_challenge.partialClone: P_challenge;
-  VAR i, j: longint;
+FUNCTION T_challenge.clone: P_challenge;
   begin
     new(result,create);
-    result^.editable:=editable;
-    result^.callengeCompleted:=callengeCompleted;
 
-    result^.challengeLevel:=challengeLevel;
-    result^.challengeTitle:=challengeTitle;
+    result^.challengeLevel      :=challengeLevel      ;
+    result^.callengeCompleted   :=callengeCompleted   ;
+    result^.editable            :=editable            ;
+    result^.challengeTitle      :=challengeTitle      ;
     result^.challengeDescription:=challengeDescription;
 
-    result^.palette:=palette;
-    result^.resultTemplate:=resultTemplate;
-    result^.expectedBehavior:=expectedBehavior;
-    result^.Interfaces:=expectedBehavior^.getInterfaces;
-
-    setLength(result^.tests,length(tests));
-    for i:=0 to length(tests)-1 do begin
-      setLength(result^.tests[i].inputs,length(tests[i].inputs));
-      for j:=0 to length(tests[i].inputs)-1 do result^.tests[i].inputs[j]:=tests[i].inputs[j];
-      result^.tests[i].maxTotalSteps:=tests[i].maxTotalSteps;
-    end;
+    result^.resultTemplate  :=resultTemplate^.clone();
+    result^.expectedBehavior:=expectedBehavior^.clone();
+    result^.palette:=palette^.cloneAndMigrate(result^.resultTemplate,result^.expectedBehavior);
   end;
 
 FUNCTION T_challenge.getSerialVersion: dword;
@@ -619,7 +602,7 @@ FUNCTION T_challenge.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): b
 
     result:=palette^.loadFromStream(stream)
         and resultTemplate^.loadFromStream(stream,false)
-        and expectedBehavior^.readPrototypeFromStream(stream,-1)
+        and expectedBehavior^.loadFromStream(stream,false)
         and stream.allOkay;
     if not(result) then exit(result);
 
@@ -627,8 +610,8 @@ FUNCTION T_challenge.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): b
     if (testCount>65536) or not(stream.allOkay) then exit(false);
     setLength(tests,testCount);
     for i:=0 to length(tests)-1 do with tests[i] do begin
-      setLength(inputs,expectedBehavior^.numberOfInputs);
-      for j:=0 to expectedBehavior^.numberOfInputs-1 do begin
+      setLength(inputs,length(expectedBehavior^.inputs));
+      for j:=0 to length(inputs)-1 do begin
         inputs[j]:=deserialize(stream.readNaturalNumber);
       end;
       maxTotalSteps:=stream.readNaturalNumber;
@@ -648,11 +631,11 @@ PROCEDURE T_challenge.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
 
     palette^.saveToStream(stream);
     resultTemplate^.saveToStream(stream,false);
-    expectedBehavior^.writePrototypeToStream(stream,-1);
+    expectedBehavior^.saveToStream(stream,false);
 
     stream.writeNaturalNumber(length(tests));
     for i:=0 to length(tests)-1 do with tests[i] do begin
-      for j:=0 to expectedBehavior^.numberOfInputs-1 do stream.writeNaturalNumber(serialize(inputs[j]));
+      for j:=0 to length(expectedBehavior^.inputs)-1 do stream.writeNaturalNumber(serialize(inputs[j]));
       stream.writeNaturalNumber(maxTotalSteps);
     end;
   end;
@@ -676,8 +659,9 @@ FUNCTION T_challenge.resetChallenge: P_visualBoard;
 
 PROCEDURE T_challenge.startTesting(CONST board: P_visualBoard);
   begin
+    if behavior=nil then behavior:=expectedBehavior^.extractBehavior;
     with testRun do begin
-      active:=board^.interfacesMatch(expectedBehavior);
+      active:=board^.interfacesMatch(behavior);
       testInputIndex:=0;
       testStep:=0;
       if not(active) then exit;
@@ -697,11 +681,11 @@ FUNCTION T_challenge.testStep(CONST count, timeOutInTicks: longint; CONST board:
     writeln('Simulating step ',testRun.testStep,' of test case #',testRun.testInputIndex);
     {$endif}
 
-    result:=board^.coSimulateSteps(stepsToSimulate,timeOutInTicks,expectedBehavior);
+    result:=board^.coSimulateSteps(stepsToSimulate,timeOutInTicks,ensureBehavior);
     testRun.testStep+=result;
     if result=0 then inc(testRun.testStep);
     if testRun.testStep>=tests[testRun.testInputIndex].maxTotalSteps then begin
-      if board^.outputsMatch(expectedBehavior) then begin
+      if board^.outputsMatch(behavior) then begin
         inc(testRun.testInputIndex);
         if testRun.testInputIndex>=length(tests) then begin
           testRun.active:=false;
@@ -718,14 +702,20 @@ FUNCTION T_challenge.testStep(CONST count, timeOutInTicks: longint; CONST board:
     end;
   end;
 
-FUNCTION T_challenge.getInfoLabelText(CONST uiIdle:boolean): string;
+FUNCTION T_challenge.getInfoLabelText(CONST uiIdle: boolean): string;
   begin
     if testRun.active
     then result:='Test '+intToStr(testRun.testInputIndex+1)+' von '+intToStr(length(tests))
     else result:=challengeDescription;
   end;
 
-PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard; CONST challengeBoardOption: T_challengeBoardOption; CONST challengePaletteOption: T_challengePaletteOption);
+FUNCTION T_challenge.ensureBehavior:P_compoundGate;
+  begin
+    if behavior=nil then behavior:=expectedBehavior^.extractBehavior;
+    result:=behavior;
+  end;
+
+PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard);
   VAR
     totalInputBits:longint=0;
     i:longint;
@@ -734,6 +724,8 @@ PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard; CO
     challengeLevel      :=0;
     callengeCompleted   :=false;
     editable            :=true;
+    challengeTitle      :=expectedAsVisual^.getCaption;
+    challengeDescription:=expectedAsVisual^.getDescription;
 
     if expectedBehavior<>nil then dispose(expectedBehavior,destroy);
     if resultTemplate  <>nil then dispose(resultTemplate,destroy);
@@ -741,11 +733,9 @@ PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard; CO
 
     new(palette,create);
     palette^.constructingChallenge:=true;
-    expectedAsVisual^.extractChallenge(challengeBoardOption,palette,expectedBehavior,resultTemplate);
-    palette^.finalizePalette(challengeBoardOption,challengePaletteOption);
-
-    challengeTitle      :=expectedAsVisual^.getCaption;
-    challengeDescription:=expectedAsVisual^.getDescription;
+    expectedAsVisual^.extractChallenge(palette,expectedBehavior);
+    behavior      :=expectedBehavior^.extractBehavior;
+    resultTemplate:=expectedBehavior^.clone();
 
     if length(tests)>0 then exit;
     Interfaces:=expectedAsVisual^.getInterfaces;
@@ -863,7 +853,7 @@ FUNCTION T_challenge.equals(CONST c: P_challenge): boolean;
     result:=(c^.challengeLevel=challengeLevel)
         and (c^.challengeTitle=challengeTitle)
         and (c^.challengeDescription=challengeDescription)
-        and (c^.expectedBehavior^.behaviorEquals(expectedBehavior))
+        and (c^.expectedBehavior^.equals(expectedBehavior))
         and (length(c^.tests)=length(tests));
     if result then for i:=0 to length(tests)-1 do with tests[i] do begin
       result:=result
@@ -878,14 +868,14 @@ FUNCTION T_challenge.equals(CONST c: P_challenge): boolean;
 PROCEDURE T_testCreator.updateTestCaseResults(CONST callback: F_caseUpdatedCallback; CONST resume: PBoolean; CONST initCounts: boolean);
   VAR i, stepsDone:longint;
   begin
-    expectedBehavior^.reset;
+    behavior^.reset;
     for i:=0 to length(tests)-1 do begin
       tests[i].outputs:=undeterminedOutput(Interfaces);
       tests[i].actuallyActive:=0;
     end;
     if callback<>nil then callback(-1);
     for i:=0 to length(tests)-1 do if (resume=nil) or resume^ then begin
-      tests[i].outputs:=expectedBehavior^.simulateSteps(tests[i].maxTotalSteps,tests[i].inputs,resume,stepsDone);
+      tests[i].outputs:=behavior^.simulateSteps(tests[i].maxTotalSteps,tests[i].inputs,resume,stepsDone);
       tests[i].actuallyActive:=stepsDone;
       if initCounts then tests[i].maxTotalSteps:=stepsDone+4+stepsDone shr 3;
       if callback<>nil then callback(i);
@@ -897,12 +887,13 @@ CONSTRUCTOR T_testCreator.createAsChallengeBasis;
   begin
     setLength(tests,0);
     challengeTestCreationThread.create(@self);
+    behavior:=nil;
   end;
 
 CONSTRUCTOR T_testCreator.createForAnalysis(CONST visualBoard: P_visualBoard);
   begin
     createAsChallengeBasis;
-    expectedBehavior:=visualBoard^.extractBehavior;
+    behavior:=visualBoard^.extractBehavior;
     Interfaces:=visualBoard^.getInterfaces;
   end;
 
@@ -911,7 +902,7 @@ DESTRUCTOR T_testCreator.destroy;
   begin
     challengeTestCreationThread.destroy;
     for i:=0 to length(tests)-1 do setLength(tests[i].inputs,0); setLength(tests,0);
-    dispose(expectedBehavior,destroy);
+    if behavior<>nil then dispose(behavior,destroy);
     setLength(Interfaces.inputs,0);
     setLength(Interfaces.outputs,0);
   end;

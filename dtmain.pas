@@ -7,8 +7,9 @@ INTERFACE
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
   Buttons, StdCtrls, Menus, ValEdit, Grids, visualGates, logicalGates,
-  paletteHandling, gateProperties, addToPaletteDialog, visuals,workspaces,
-  createTaskUnit,selectTaskUnit,taskFinishedUnit,paletteHandingUi, types;
+  paletteHandling, gateProperties, addToPaletteDialog, visuals, workspaces,
+  createTaskUnit, selectTaskUnit, taskFinishedUnit, paletteHandingUi,
+  challenges, types;
 
 TYPE
   { TDigitaltrainerMainForm }
@@ -189,6 +190,9 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
                      @boardChanged);
 
     workspace.create;
+    createTaskUnit.workspace:=@workspace;
+    createTaskUnit.uiAdapter:=@uiAdapter;
+
     workspace.activePalette^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.reset(true);
@@ -244,7 +248,7 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
   begin
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
-    if workspace.EditorMode and AddToPaletteForm.showFor(P_workspacePalette(workspace.activePalette),workspace.activeBoard) then begin
+    if (workspace.state in [editingNewBoard,editingPaletteEntry]) and AddToPaletteForm.showFor(P_workspacePalette(workspace.activePalette),workspace.activeBoard) then begin
       repositionPropertyEditor(0,0,true);
       workspace.activePalette^.attachUI(@uiAdapter);
       workspace.activePalette^.checkSizes;
@@ -263,7 +267,7 @@ PROCEDURE TDigitaltrainerMainForm.miCopyClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miEditModeClick(Sender: TObject);
   begin
-    if workspace.EditorMode then exit;
+    if (workspace.state in [editingNewBoard,editingPaletteEntry,editingChallengeSolution,editingChallengeTemplate]) then exit;
     repositionPropertyEditor(0,0,false);
     workspace.setFreeEditMode;
     workspace.activePalette^.attachUI(@uiAdapter);
@@ -311,8 +315,14 @@ PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miGoBackClick(Sender: TObject);
+  VAR
+    challenge: P_challenge;
+    originalChallengeIndex: longint;
   begin
-    if workspace.canGoBack then workspace.goBack(@uiAdapter);
+    if workspace.canGoBack then begin
+      workspace.goBack(@uiAdapter,challenge,originalChallengeIndex);
+      if challenge<>nil then CreateTaskForm.reShowFor(challenge,originalChallengeIndex,workspace.getChallenges);
+    end;
     updateUiElements;
   end;
 
@@ -376,8 +386,9 @@ PROCEDURE TDigitaltrainerMainForm.miSaveAsTaskClick(Sender: TObject);
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
 
-    if workspace.EditorMode then CreateTaskForm.showFor(workspace.activeBoard,workspace.getChallenges);
+    if (workspace.state in [editingNewBoard,editingPaletteEntry]) then CreateTaskForm.showForNewChallenge(workspace.activeBoard,workspace.getChallenges);
     infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
+    updateUiElements;
 
     SimulationTimer.enabled:=timerEnabledBefore;
   end;
@@ -412,11 +423,12 @@ PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);
       workspace.activeBoard  ^.attachUI(@uiAdapter);
       workspace.activeBoard  ^.reset(true);
       uiAdapter.paintAll;
-      updateUiElements;
     end;
     workspace.activePalette^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
     infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
+    updateUiElements;
+
     SimulationTimer.enabled:=timerEnabledBefore;
   end;
 
@@ -602,7 +614,7 @@ PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
     if (uiAdapter.getState<>uas_initial) or (propEditPanel.visible) then exit;
     stepsToSimulate   :=SPEED_SETTING[speedTrackBar.position].simSteps;
     timeForSimlulation:=SPEED_SETTING[speedTrackBar.position].timerInterval-PLANNED_IDLE_TICKS_DURING_SIMULATION;
-    if workspace.EditorMode
+    if workspace.state<>solvingChallenge
     then stepsSimulated:=workspace.activeBoard^.simulateSteps  (stepsToSimulate,timeForSimlulation)
     else begin
       if workspace.getActiveChallenge^.currentlyTesting
@@ -612,7 +624,7 @@ PROCEDURE TDigitaltrainerMainForm.SimulationTimerTimer(Sender: TObject);
         if not(workspace.getActiveChallenge^.currentlyTesting)
         then testFinished;
       end
-      else stepsSimulated:=workspace.activeBoard^.coSimulateSteps(stepsToSimulate,timeForSimlulation,workspace.getActiveChallenge^.expectedBehavior);
+      else stepsSimulated:=workspace.activeBoard^.coSimulateSteps(stepsToSimulate,timeForSimlulation,workspace.getActiveChallenge^.ensureBehavior);
     end;
     infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
 
@@ -738,7 +750,7 @@ PROCEDURE TDigitaltrainerMainForm.showPropertyEditor(CONST gate: P_visualGate; C
     else gateProperties.createForPaletteEntry(ValueListEditor1,@propertyValueChanged,gate^.getBehavior,workspace.activePalette);
 
     uiAdapter.propertyEditorShown(gate,fromBoard);
-    setEnableButton(propEditShape   ,propEditLabel  ,{not(fromBoard) and} (gate^.getBehavior^.gateType=gt_compound) and workspace.EditorMode);
+    setEnableButton(propEditShape   ,propEditLabel  ,{not(fromBoard) and} (gate^.getBehavior^.gateType=gt_compound) and (workspace.state in [editingNewBoard,editingPaletteEntry]));
     setEnableButton(propDeleteButton,propDeleteLabel,
       fromBoard or ((gate^.getBehavior^.gateType=gt_compound) and
                     (workspace.activePalette^.allowDeletion(gate^.getBehavior,deletionHintText))));
@@ -785,14 +797,14 @@ PROCEDURE TDigitaltrainerMainForm.testFinished;
 PROCEDURE TDigitaltrainerMainForm.updateUiElements;
   VAR showAll:boolean;
   begin
-    miCopy .enabled:=workspace.EditorMode;
-    miPaste.enabled:=workspace.EditorMode;
+    miCopy .enabled:=workspace.state in [editingNewBoard,editingPaletteEntry];
+    miPaste.enabled:=workspace.state in [editingNewBoard,editingPaletteEntry];
     //TODO: Undo/Redo functions would be nice for challenges, but we would have to keep track of the gate counts in the palette.
-    miUndo .enabled:=workspace.EditorMode;
-    miRedo .enabled:=workspace.EditorMode;
-    miEditMode.checked:=workspace.EditorMode;
-    TestShape.visible:=not(workspace.EditorMode);
-    TestLabel.visible:=not(workspace.EditorMode);
+    miUndo .enabled:=workspace.state in [editingNewBoard,editingPaletteEntry,editingChallengeSolution];
+    miRedo .enabled:=workspace.state in [editingNewBoard,editingPaletteEntry,editingChallengeSolution];
+    miEditMode.checked:=workspace.state in [editingNewBoard,editingPaletteEntry];
+    TestShape.visible:=workspace.state in [solvingChallenge,editingChallengeTemplate];
+    TestLabel.visible:=workspace.state in [solvingChallenge,editingChallengeTemplate];
     infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
     PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
     miGoBack.enabled:=workspace.canGoBack;
@@ -814,7 +826,16 @@ PROCEDURE TDigitaltrainerMainForm.updateUiElements;
     miEditPalette     .visible:=showAll;
     miExportChallenges.visible:=showAll;
     miImportChallenges.visible:=showAll;
-    miGoBack          .visible:=showAll;
+    miGoBack          .visible:=showAll or (workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
+    miNewBoard        .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
+    miAddToPalette    .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
+    miSaveAsTask      .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
+    miViewTasks       .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
+    miEditPalette     .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
+    miExportChallenges.enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
+    miImportChallenges.enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
+    miEditMode        .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
+    miTestBoard       .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
   end;
 
 FUNCTION TDigitaltrainerMainForm.continueWithOtherBoard: boolean;
@@ -822,12 +843,12 @@ FUNCTION TDigitaltrainerMainForm.continueWithOtherBoard: boolean;
       simulationEnabledBefore:boolean;
   begin
     if not(workspace.activeBoard^.isModified) then exit(true);
-    if not(workspace.EditorMode) then exit;
+    if not(workspace.state in [editingNewBoard,editingPaletteEntry]) then exit;
     simulationEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
-    mr:=boardChangedDialog.showFor(workspace.EditorMode and (workspace.activeBoard^.getIndexInPalette>=0));
+    mr:=boardChangedDialog.showFor(workspace.state=editingPaletteEntry);
     if (mr=mrYes) and
-       workspace.EditorMode and
+       (workspace.state=editingPaletteEntry) and
        (workspace.activeBoard^.getIndexInPalette>=0)
     then P_workspacePalette(workspace.activePalette)^.updateEntry(workspace.activeBoard);
     SimulationTimer.enabled:=simulationEnabledBefore;

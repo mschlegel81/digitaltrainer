@@ -6,7 +6,7 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, StdCtrls, ComCtrls,
-  ExtCtrls, visualGates, challenges,compoundGates,testFrameUI;
+  ExtCtrls, visualGates, challenges,compoundGates,testFrameUI,workspaces;
 
 TYPE
 
@@ -14,7 +14,11 @@ TYPE
 
   TCreateTaskForm = class(TForm)
     addTaskLabel: TLabel;
+    editTemplateLabel: TLabel;
+    editExpectedLabel: TLabel;
     addTaskShape: TShape;
+    editTemplateShape: TShape;
+    editExpectedShape: TShape;
     Label7: TLabel;
     RadioPanel1: TPanel;
     rbPreconfiguredPaletteWithCounts: TRadioButton;
@@ -22,36 +26,32 @@ TYPE
     rbUnconfiguredPaletteWithCounts: TRadioButton;
     rbFreePalette: TRadioButton;
     Label5: TLabel;
-    RadioPanel: TPanel;
     TestCreationFrame1: TTestCreationFrame;
     TitleEdit: TEdit;
     Label1: TLabel;
     Label2: TLabel;
     Label3: TLabel;
-    Label4: TLabel;
     DescriptionMemo: TMemo;
-    rbIncludeAllGates: TRadioButton;
-    rbIncludeIO: TRadioButton;
-    rbIncludeHalfOfGates: TRadioButton;
-    rbIncludeNothing: TRadioButton;
     DifficultyTrackBar: TTrackBar;
-    PROCEDURE addTaskShapeChangeBounds(Sender: TObject);
-    PROCEDURE addTaskShapeMouseDown(Sender: TObject; button: TMouseButton;
-      Shift: TShiftState; X, Y: integer);
+    PROCEDURE addTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE editExpectedShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE editTemplateShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE FormShow(Sender: TObject);
     PROCEDURE rbIncludeAllGatesChange(Sender: TObject);
   private
     challenge:P_challenge;
+    challengeIndex:longint;
 
     FUNCTION minimumDifficulty: longint;
     FUNCTION paletteOption:T_challengePaletteOption;
-    FUNCTION boardOption:T_challengeBoardOption;
   public
-    PROCEDURE showFor(CONST board:P_visualBoard; CONST challenges:P_challengeSet);
+    PROCEDURE showForNewChallenge     (CONST board:P_visualBoard; CONST challenges:P_challengeSet);
     PROCEDURE showForExistingChallenge(CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet);
-    PROCEDURE reShowFor(CONST editedChallenge:P_challenge; CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet);
+    PROCEDURE reShowFor               (CONST editedChallenge:P_challenge; CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet);
   end;
 
+VAR workspace:P_workspace;
+    uiAdapter:P_uiAdapter;
 FUNCTION CreateTaskForm:TCreateTaskForm;
 IMPLEMENTATION
 {$R *.lfm}
@@ -66,10 +66,7 @@ FUNCTION CreateTaskForm: TCreateTaskForm;
 
 FUNCTION TCreateTaskForm.minimumDifficulty: longint;
   begin
-    if      rbIncludeAllGates   .checked then result:=0
-    else if rbIncludeHalfOfGates.checked then result:=17
-    else if rbIncludeIO         .checked then result:=17*2
-                                         else result:=17*3;
+    result:=0;
     if      rbPreconfiguredPalette         .checked then result+=17
     else if rbUnconfiguredPaletteWithCounts.checked then result+=17*2
     else if rbFreePalette                  .checked then result+=17*3;
@@ -81,14 +78,6 @@ FUNCTION TCreateTaskForm.paletteOption: T_challengePaletteOption;
     if rbUnconfiguredPaletteWithCounts.checked then exit(co_unconfiguredPaletteWithCounts);
     if rbFreePalette                  .checked then exit(co_freePalette);
     result:=co_preconfiguredPaletteWithCounts;
-  end;
-
-FUNCTION TCreateTaskForm.boardOption: T_challengeBoardOption;
-  begin
-    if rbIncludeAllGates   .checked then exit(co_allGates);
-    if rbIncludeHalfOfGates.checked then exit(co_halfGates);
-    if rbIncludeIO         .checked then exit(co_ioOnly);
-    result:=co_none;
   end;
 
 { TCreateTaskForm }
@@ -109,84 +98,56 @@ PROCEDURE TCreateTaskForm.addTaskShapeMouseDown(Sender: TObject;
     ModalResult:=mrOk;
   end;
 
-PROCEDURE TCreateTaskForm.addTaskShapeChangeBounds(Sender: TObject);
+PROCEDURE TCreateTaskForm.editExpectedShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
+    workspace^.startEditingChallenge(challenge,challengeIndex,true,uiAdapter);
+    ModalResult:=mrYes;
   end;
 
-PROCEDURE TCreateTaskForm.showFor(CONST board: P_visualBoard; CONST challenges: P_challengeSet);
+PROCEDURE TCreateTaskForm.editTemplateShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
-    rbIncludeAllGates.Font.color:=clWhite;
+    //TODO: set visible counts to high before this!
+    workspace^.startEditingChallenge(challenge,challengeIndex,false,uiAdapter);
+    ModalResult:=mrYes;
+  end;
 
-    TitleEdit.text:=StringReplace(board^.getCaption,LineEnding,'\n',[rfReplaceAll]);
-    DescriptionMemo.text:=board^.getDescription;
-
-    new(challenge,create);
-    challenge^.challengeLevel:=minimumDifficulty;
-    challenge^.initNewChallenge(board,boardOption,paletteOption);
-    TestCreationFrame1.setTestGenerator(challenge,MAX_NUMBER_OF_CHALLENGE_CHECKS);
-
-    RadioPanel .visible:=true;
-    RadioPanel1.visible:=true;
-    Label4.visible:=true;
-    Label7.visible:=true;
-
-    if ShowModal=mrOk then begin
-      TestCreationFrame1.detachTestGenerator;
-      challenge^.initNewChallenge(board,boardOption,paletteOption);
-      challenge^.challengeLevel:=DifficultyTrackBar.position;
-      challenge^.challengeTitle:=TitleEdit.text;
-      challenge^.challengeDescription:=DescriptionMemo.text;
-      challenges^.add(challenge);
-    end else begin
-      TestCreationFrame1.detachTestGenerator;
-      dispose(challenge,destroy);
-    end;
-    challenge:=nil;
+PROCEDURE TCreateTaskForm.showForNewChallenge(CONST board: P_visualBoard; CONST challenges: P_challengeSet);
+  VAR temp:P_challenge;
+  begin
+    new(temp,create);
+    temp^.initNewChallenge(board);
+    temp^.challengeLevel:=minimumDifficulty;
+    reShowFor(temp,-1,challenges);
   end;
 
 PROCEDURE TCreateTaskForm.showForExistingChallenge(CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet );
   begin
-    challenge:=challenges^.challenge[originalChallengeIndex]^.partialClone;
-    RadioPanel .visible:=false;
-    RadioPanel1.visible:=false;
-    Label4.visible:=false;
-    Label7.visible:=false;
+    reShowFor(challenges^.challenge[originalChallengeIndex]^.clone,originalChallengeIndex,challenges);
+  end;
 
+PROCEDURE TCreateTaskForm.reShowFor(CONST editedChallenge:P_challenge; CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet);
+  begin
+    challenge:=editedChallenge;
+    challengeIndex:=originalChallengeIndex;
     TitleEdit.text:=challenge^.challengeTitle;
     DescriptionMemo.text:=challenge^.challengeDescription;
     DifficultyTrackBar.position:=challenge^.challengeLevel;
     TestCreationFrame1.setTestGenerator(challenge,MAX_NUMBER_OF_CHALLENGE_CHECKS);
-
     challenge^.updateTestCaseResults;
-
     if ShowModal=mrOk then begin
       TestCreationFrame1.detachTestGenerator;
       challenge^.challengeLevel:=DifficultyTrackBar.position;
       challenge^.challengeTitle:=TitleEdit.text;
       challenge^.challengeDescription:=DescriptionMemo.text;
-
-      dispose(challenges^.challenge[originalChallengeIndex],destroyPartial);
-      challenges^.challenge[originalChallengeIndex]:=challenge;
+      if originalChallengeIndex>=0 then begin
+        dispose(challenges^.challenge[originalChallengeIndex],destroy);
+        challenges^.challenge[originalChallengeIndex]:=challenge;
+      end else challenges^.add(challenge);
     end else begin
       TestCreationFrame1.detachTestGenerator;
-      dispose(challenge,destroyPartial);
+      if ModalResult<>mrYes then dispose(challenge,destroy);
     end;
     challenge:=nil;
-  end;
-
-PROCEDURE TCreateTaskForm.reShowFor(CONST editedChallenge:P_challenge; CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet);
-  begin
-    assert(false,'Not implemented yet');
-    challenge:=editedChallenge;
-    TitleEdit.text:=challenge^.challengeTitle;
-    DescriptionMemo.text:=challenge^.challengeDescription;
-    DifficultyTrackBar.position:=challenge^.challengeLevel;
-    TestCreationFrame1.setTestGenerator(challenge,MAX_NUMBER_OF_CHALLENGE_CHECKS);
-    challenge^.updateTestCaseResults;
-    if ShowModal=mrOk then begin
-      //TODO: This must be handled...
-
-    end;
   end;
 
 FINALIZATION
