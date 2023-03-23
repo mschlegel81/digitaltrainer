@@ -288,6 +288,7 @@ PROCEDURE T_visualBoard.detachUI;
 PROCEDURE T_visualBoard.attachUI(CONST uiAdapter: P_uiAdapter);
   VAR e:P_visualGate;
   begin
+    if uiAdapter^.activeBoard<>nil then uiAdapter^.activeBoard^.detachUI;
     wiresUpToDate:=false;
     ui:=uiAdapter;
     uiAdapter^.activeBoard:=@self;
@@ -712,12 +713,10 @@ PROCEDURE T_visualBoard.extractChallenge(CONST challengePalette: P_abstractProto
     expectedBehavior^.descriptionString:=descriptionString;
     setLength(expectedBehavior^.inputs ,length(inputs ));
     for i:=0 to length(inputs )-1 do begin
-      challengePalette^.ensureBaseGate(inputs [i]^.behavior);
       expectedBehavior^.inputs [i]:=inputs[i]^.clone;
     end;
     setLength(expectedBehavior^.outputs,length(outputs));
     for i:=0 to length(outputs)-1 do begin
-      challengePalette^.ensureBaseGate(outputs[i]^.behavior);
       expectedBehavior^.outputs[i]:=outputs[i]^.clone;
     end;
     setLength(expectedBehavior^.gates,length(gates));
@@ -735,7 +734,6 @@ PROCEDURE T_visualBoard.extractChallenge(CONST challengePalette: P_abstractProto
         expectedBehavior^.gates[i]:=visual;
       end
       else begin
-        challengePalette^.ensureBaseGate(gates[i]^.behavior);
         expectedBehavior^.gates[i]:=gates[i]^.clone;
       end
     end;
@@ -1883,7 +1881,7 @@ PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype, newPrototype: P_vis
         anyGateUpdated:=true;
       end else P_compoundGate(g^.behavior)^.prototypeUpdated(oldPrototype,newPrototype);
     end;
-    if anyGateUpdated then rewire(true);
+    if anyGateUpdated and (ui<>nil) then rewire(true);
   end;
 
 PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype,newPrototype:P_compoundGate);

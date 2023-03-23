@@ -225,7 +225,6 @@ PROCEDURE T_compoundGate.ensureInPalette   (CONST challengePalette:P_abstractPro
       if gates[i]^.gateType=gt_compound
       then cloned^.gates[i]:=P_compoundGate(gates[i])^.exportForChallenge(challengePalette)
       else begin
-        challengePalette^.ensureBaseGate(gates[i]);
         cloned^.gates[i]:=gates[i]^.clone(false);
       end;
     end;

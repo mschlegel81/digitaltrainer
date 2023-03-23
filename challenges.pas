@@ -95,6 +95,7 @@ TYPE
     FUNCTION testStep(CONST count, timeOutInTicks: longint; CONST board: P_visualBoard): longint; virtual;
     FUNCTION getInfoLabelText(CONST uiIdle:boolean):string; virtual;
     FUNCTION ensureBehavior:P_compoundGate;
+    PROCEDURE dropBehavior;
 
     //For creation purposes...
     PROCEDURE initNewChallenge(CONST expectedAsVisual:P_visualBoard);
@@ -215,10 +216,10 @@ FUNCTION T_tutorial.resetChallenge: P_visualBoard;
     palette^.clear;
     tmp:=newBaseGate(gt_input);
     tmp^.reset;
+    palette^.paletteOption:=co_unconfiguredPaletteWithCounts;
     palette^.ensureBaseGate(tmp);
     palette^.countUpGate(tmp);
     dispose(tmp,destroy);
-    palette^.finalizePalette(co_unconfiguredPaletteWithCounts);
     workspaceBoard:=result;
   end;
 
@@ -659,7 +660,7 @@ FUNCTION T_challenge.resetChallenge: P_visualBoard;
 
 PROCEDURE T_challenge.startTesting(CONST board: P_visualBoard);
   begin
-    if behavior=nil then behavior:=expectedBehavior^.extractBehavior;
+    ensureBehavior;
     with testRun do begin
       active:=board^.interfacesMatch(behavior);
       testInputIndex:=0;
@@ -711,8 +712,19 @@ FUNCTION T_challenge.getInfoLabelText(CONST uiIdle: boolean): string;
 
 FUNCTION T_challenge.ensureBehavior:P_compoundGate;
   begin
-    if behavior=nil then behavior:=expectedBehavior^.extractBehavior;
+    if behavior=nil then begin
+      Interfaces:=expectedBehavior^.getInterfaces;
+      behavior  :=expectedBehavior^.extractBehavior;
+    end;
     result:=behavior;
+  end;
+
+PROCEDURE T_challenge.dropBehavior;
+  begin
+    if behavior=nil then exit;
+    challengeTestCreationThread.ensureStop;
+    dispose(behavior,destroy);
+    behavior:=nil;
   end;
 
 PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard);
@@ -734,9 +746,9 @@ PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard);
     new(palette,create);
     palette^.constructingChallenge:=true;
     expectedAsVisual^.extractChallenge(palette,expectedBehavior);
+    palette^.constructingChallenge:=false;
     behavior      :=expectedBehavior^.extractBehavior;
     resultTemplate:=expectedBehavior^.clone();
-    palette^.finalizePalette(co_preconfiguredPaletteWithCounts);
 
     if length(tests)>0 then exit;
     Interfaces:=expectedAsVisual^.getInterfaces;

@@ -127,6 +127,7 @@ FUNCTION TCreateTaskForm.showForExistingChallenge(CONST originalChallengeIndex:l
 FUNCTION TCreateTaskForm.reShowFor(CONST editedChallenge:P_challenge; CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet):boolean;
   begin
     challenge:=editedChallenge;
+    challenge^.ensureBehavior;
     challengeIndex:=originalChallengeIndex;
     TitleEdit.text:=challenge^.challengeTitle;
     DescriptionMemo.text:=challenge^.challengeDescription;
@@ -146,6 +147,8 @@ FUNCTION TCreateTaskForm.reShowFor(CONST editedChallenge:P_challenge; CONST orig
       challenge^.challengeTitle:=TitleEdit.text;
       challenge^.challengeDescription:=DescriptionMemo.text;
       challenge^.palette^.paletteOption:=paletteOption;
+      challenge^.palette^.finalizePalette(challenge^.resultTemplate,challenge^.expectedBehavior);
+      challenge^.dropBehavior;
       if originalChallengeIndex>=0 then begin
         dispose(challenges^.challenge[originalChallengeIndex],destroy);
         challenges^.challenge[originalChallengeIndex]:=challenge;

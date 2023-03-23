@@ -182,15 +182,15 @@ PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT challenge:P_chall
     originalChallengeIndex:=currentState.originalChallengeIndex;
     case currentState.state of
       editingChallengeSolution: begin
-        if challenge^.resultTemplate<>nil then dispose(challenge^.resultTemplate,destroy);
-        challenge^.resultTemplate:=workspaceBoard;
-        //TODO: finalize the palette here!
+        if challenge^.expectedBehavior<>nil then dispose(challenge^.expectedBehavior,destroy);
+        challenge^.expectedBehavior:=workspaceBoard;
+        challenge^.dropBehavior; //behavior may have changed, so we drop the previously extracted behavior
         workspaceBoard^.detachUI;
         workspaceBoard:=nil;
       end;
       editingChallengeTemplate: begin
-        if challenge^.expectedBehavior<>nil then dispose(challenge^.expectedBehavior,destroy);
-        challenge^.expectedBehavior:=workspaceBoard;
+        if challenge^.resultTemplate<>nil then dispose(challenge^.resultTemplate,destroy);
+        challenge^.resultTemplate:=workspaceBoard;
         workspaceBoard^.detachUI;
         workspaceBoard:=nil;
       end;
@@ -266,6 +266,7 @@ CONSTRUCTOR T_workspace.create;
 DESTRUCTOR T_workspace.destroy;
   begin
     saveToFile(workspaceFilename);
+    clearPreviousStates;
     dispose(challenges,destroy);
     dispose(workspaceBoard,destroy);
     dispose(workspacePalette,destroy);
@@ -276,8 +277,7 @@ FUNCTION T_workspace.getSerialVersion: dword;
     result:=serialVersionOf('T_workspace',2);
   end;
 
-FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
-  ): boolean;
+FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
   begin
     result:=inherited and challenges^.loadFromStream(stream);
     activeChallengeIndex:=stream.readLongint;
@@ -427,13 +427,14 @@ PROCEDURE T_workspace.startEditingChallenge(CONST challenge: P_challenge; CONST 
     stateTransition(CHALLENGE_EDIT_STATE[editExpected]);
     currentState.challenge:=challenge;
     currentState.originalChallengeIndex:=challengeIndex;
-    if editExpected then workspaceBoard:=challenge^.expectedBehavior
-                    else begin
-      workspaceBoard:=challenge^.resultTemplate;
-      if workspaceBoard=nil then workspaceBoard:=challenge^.expectedBehavior^.clone;
-    end;
+    if editExpected
+    then workspaceBoard:=challenge^.expectedBehavior^.clone()
+    else workspaceBoard:=challenge^.resultTemplate^.clone();
+    challenge^.palette^.finalizePalette(workspaceBoard,challenge^.expectedBehavior);
+
     workspaceBoard^.attachUI(uiAdapter);
     challenge^.palette^.attachUI(uiAdapter);
+    challenge^.palette^.ensureVisualPaletteItems;
   end;
 
 FUNCTION T_workspace.firstStart: boolean;
