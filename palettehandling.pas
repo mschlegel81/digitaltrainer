@@ -441,6 +441,7 @@ PROCEDURE T_challengePalette.finalizePalette(CONST initialBoard,finalBoard:P_vis
       paletteEntries[j]:=paletteEntries[i];
       inc(j);
     end;
+    setLength(paletteEntries,j);
     //introduce all gates contained in final board:
     for gate in finalBoard^.inputs  do introduce(gate);
     for gate in finalBoard^.gates   do introduce(gate);

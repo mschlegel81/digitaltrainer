@@ -570,6 +570,7 @@ DESTRUCTOR T_challenge.destroy;
   end;
 
 FUNCTION T_challenge.clone: P_challenge;
+  VAR i,j:longint;
   begin
     new(result,create);
 
@@ -579,9 +580,24 @@ FUNCTION T_challenge.clone: P_challenge;
     result^.challengeTitle      :=challengeTitle      ;
     result^.challengeDescription:=challengeDescription;
 
+    dispose(result^.resultTemplate,destroy);
     result^.resultTemplate  :=resultTemplate^.clone();
+    dispose(result^.expectedBehavior,destroy);
     result^.expectedBehavior:=expectedBehavior^.clone();
+    dispose(result^.palette,destroy);
     result^.palette:=palette^.cloneAndMigrate(result^.resultTemplate,result^.expectedBehavior);
+
+    setLength(result^.tests,length(tests));
+    for i:=0 to length(tests)-1 do begin
+      setLength(result^.tests[i].inputs,
+         length(        tests[i].inputs));
+      for j:=0 to length(tests[i].inputs)-1 do
+        result^.tests[i].inputs[j]
+              :=tests[i].inputs[j];
+      result^.tests[i].actuallyActive:=tests[i].actuallyActive;
+      result^.tests[i].maxTotalSteps :=tests[i].maxTotalSteps;
+      setLength(result^.tests[i].outputs,0); //not cloned, because it can be reproduced anyway
+    end;
   end;
 
 FUNCTION T_challenge.getSerialVersion: dword;

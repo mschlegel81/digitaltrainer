@@ -435,6 +435,7 @@ PROCEDURE T_workspace.startEditingChallenge(CONST challenge: P_challenge; CONST 
     workspaceBoard^.attachUI(uiAdapter);
     challenge^.palette^.attachUI(uiAdapter);
     challenge^.palette^.ensureVisualPaletteItems;
+    uiAdapter^.paintAll;
   end;
 
 FUNCTION T_workspace.firstStart: boolean;

@@ -1087,6 +1087,7 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
 
   {$ifdef debugMode} VAR startTicks: qword; {$endif}
   begin
+    if ui=nil then exit;
     {$ifdef debugMode} startTicks:=GetTickCount64; {$endif}
     disposeTask(wiringTask);
     enterCriticalSection(wiresCs);
