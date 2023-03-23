@@ -553,6 +553,11 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Top = 16
     object miBoard: TMenuItem
       Caption = '&Schaltung'
+      object miGoBack: TMenuItem
+        Caption = '&Zurück zur vorherigen'
+        ShortCut = 16471
+        OnClick = miGoBackClick
+      end
       object miNewBoard: TMenuItem
         Caption = '&Neu'
         ShortCut = 16462

@@ -15,6 +15,7 @@ TYPE
   TDigitaltrainerMainForm = class(TForm)
     boardHorizontalScrollBar: TScrollBar;
     boardImage: TImage;
+    miGoBack: TMenuItem;
     miZoomOut: TMenuItem;
     miZoomIn: TMenuItem;
     miSimpleUI: TMenuItem;
@@ -90,6 +91,7 @@ TYPE
     PROCEDURE miEditPaletteClick(Sender: TObject);
     PROCEDURE miExportChallengesClick(Sender: TObject);
     PROCEDURE miFullScreenClick(Sender: TObject);
+    PROCEDURE miGoBackClick(Sender: TObject);
     PROCEDURE miImportAddClick(Sender: TObject);
     PROCEDURE miImportOverwriteClick(Sender: TObject);
     PROCEDURE miMarkChallengesUnsolvedClick(Sender: TObject);
@@ -308,6 +310,12 @@ PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
     miFullScreen.checked:=not(miFullScreen.checked);
   end;
 
+PROCEDURE TDigitaltrainerMainForm.miGoBackClick(Sender: TObject);
+  begin
+    if workspace.canGoBack then workspace.goBack(@uiAdapter);
+    updateUiElements;
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.miImportAddClick(Sender: TObject);
   begin
     if OpenDialog1.execute and workspace.getChallenges^.importChallenges(OpenDialog1.fileName,false) then miTasksClick(Sender);
@@ -342,7 +350,7 @@ PROCEDURE TDigitaltrainerMainForm.miNewBoardClick(Sender: TObject);
                        workspace.activePalette^.ensureVisualPaletteItems;
                        workspace.activePalette^.checkSizes;
                      end;
-    if fullInit then workspace.activeBoard  ^.attachUI(@uiAdapter);
+    if fullInit then workspace.activeBoard^.attachUI(@uiAdapter);
     uiAdapter.paintAll;
     updateUiElements;
   end;
@@ -502,6 +510,7 @@ PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject; button
     then begin
       AddToPaletteForm.setSubpalette(workspace.activePalette^.lastSubPaletteIndex);
       workspace.editPaletteEntry(prototype,@uiAdapter);
+      updateUiElements;
     end;
     gateProperties.destroy;
     propEditPanel.visible:=false;
@@ -786,6 +795,7 @@ PROCEDURE TDigitaltrainerMainForm.updateUiElements;
     TestLabel.visible:=not(workspace.EditorMode);
     infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
     PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
+    miGoBack.enabled:=workspace.canGoBack;
 
     showAll:=not(miSimpleUI.checked);
 
@@ -804,6 +814,7 @@ PROCEDURE TDigitaltrainerMainForm.updateUiElements;
     miEditPalette     .visible:=showAll;
     miExportChallenges.visible:=showAll;
     miImportChallenges.visible:=showAll;
+    miGoBack          .visible:=showAll;
   end;
 
 FUNCTION TDigitaltrainerMainForm.continueWithOtherBoard: boolean;

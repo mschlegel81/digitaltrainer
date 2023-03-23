@@ -113,7 +113,7 @@ T_visualBoard=object(T_captionedAndIndexed)
 
     FUNCTION startMultiDrag(CONST primaryGate:P_visualGate):boolean;
     FUNCTION isVisualBoard: boolean; virtual;
-    FUNCTION usesPrototype(CONST p:P_captionedAndIndexed):boolean;
+    FUNCTION usesPrototype(CONST p:P_captionedAndIndexed; CONST transitiveScan:boolean):boolean;
     PROCEDURE prototypeUpdated(CONST oldPrototype,newPrototype:P_visualBoard);
 
     PROCEDURE copySelectionToClipboard;
@@ -1907,15 +1907,24 @@ FUNCTION T_visualBoard.startMultiDrag(CONST primaryGate: P_visualGate): boolean;
 FUNCTION T_visualBoard.isVisualBoard: boolean;
   begin result:=true; end;
 
-FUNCTION T_visualBoard.usesPrototype(CONST p: P_captionedAndIndexed): boolean;
+FUNCTION T_visualBoard.usesPrototype(CONST p: P_captionedAndIndexed; CONST transitiveScan:boolean): boolean;
   VAR g:P_visualGate;
   begin
     result:=false;
-    for g in gates do if (g^.behavior^.gateType=gt_compound) and P_compoundGate(g^.behavior)^.usesPrototype(p) then result:=true;
+    if transitiveScan then begin
+      for g in gates do
+        if (g^.behavior^.gateType=gt_compound) and
+           P_compoundGate(g^.behavior)^.usesPrototype(p)
+        then exit(true);
+    end else begin
+      for g in gates do
+        if (g^.behavior^.gateType=gt_compound) and
+           (P_compoundGate(g^.behavior)^.prototype=p)
+        then exit(true);
+    end;
   end;
 
-PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype,
-  newPrototype: P_visualBoard);
+PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype, newPrototype: P_visualBoard);
   VAR g:P_visualGate;
       anyGateUpdated:boolean=false;
   begin

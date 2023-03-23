@@ -345,11 +345,11 @@ FUNCTION T_uiAdapter.isPrototypeInUse(CONST prototype: P_captionedAndIndexed; OU
     usedByActiveBoard:=false;
     usedByClipboard:=false;
     usedByUndoList:=false;
-    if (activeBoard<>nil) and (activeBoard^.usesPrototype(prototype)) then usedByActiveBoard:=true;
+    if (activeBoard<>nil) and (activeBoard^.usesPrototype(prototype,true)) then usedByActiveBoard:=true;
     with helperState do begin
-      if (Clipboard<>nil) and Clipboard^.usesPrototype(prototype) then usedByClipboard:=true;
-      for b in undoList do if b^.usesPrototype(prototype) then begin usedByUndoList:=true; exit(true); end;
-      for b in redoList do if b^.usesPrototype(prototype) then begin usedByUndoList:=true; exit(true); end;
+      if (Clipboard<>nil) and Clipboard^.usesPrototype(prototype,true) then usedByClipboard:=true;
+      for b in undoList do if b^.usesPrototype(prototype,true) then begin usedByUndoList:=true; exit(true); end;
+      for b in redoList do if b^.usesPrototype(prototype,true) then begin usedByUndoList:=true; exit(true); end;
     end;
     result:=usedByUndoList or usedByClipboard or usedByActiveBoard;
   end;

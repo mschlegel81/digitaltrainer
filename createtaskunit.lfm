@@ -373,6 +373,12 @@ object CreateTaskForm: TCreateTaskForm
       inherited generateTestCasesLabel: TLabel
         Left = 299
       end
+      inherited generateTestCasesShape1: TShape
+        Left = 123
+      end
+      inherited generateTestCasesLabel1: TLabel
+        Left = 149
+      end
     end
   end
 end

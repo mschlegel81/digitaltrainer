@@ -6,6 +6,20 @@ INTERFACE
 USES serializationUtil,visualGates,paletteHandling,challenges;
 
 TYPE
+  T_workspaceStateEnum=(editingNewBoard,
+                        editingPaletteEntry,
+                        solvingChallenge,
+                        editingChallengeTemplate,
+                        editingChallengeSolution);
+
+  T_workspaceState=record
+    state:T_workspaceStateEnum;
+    prototypeInWorkspacePalette:P_visualBoard;
+    newBoard:P_visualBoard;
+    challenge:P_challenge;
+    originalChallengeIndex:longint;
+    paletteIndex:longint;
+  end;
 
   { T_workspace }
   P_workspace=^T_workspace;
@@ -17,6 +31,14 @@ TYPE
     activeChallengeIndex :longint;
 
     activeChallenge :P_challenge;
+
+    //Not persisted
+    currentState:T_workspaceState;
+    previousState:array of T_workspaceState;
+
+    PROCEDURE clearPreviousStates;
+    PROCEDURE initCurrentState;
+    PROCEDURE stateTransition(CONST newState:T_workspaceStateEnum);
   public
     simplisticUi:boolean;
     CONSTRUCTOR create;
@@ -46,6 +68,8 @@ TYPE
     PROPERTY getWorkspacePalette:P_workspacePalette read workspacePalette;
 
     FUNCTION firstStart:boolean;
+    FUNCTION canGoBack:boolean;
+    PROCEDURE goBack(CONST uiAdapter: P_uiAdapter);
   end;
 
 IMPLEMENTATION
@@ -61,6 +85,137 @@ FUNCTION workspaceBackupFilename:string;
   end;
 
 { T_workspace }
+
+PROCEDURE T_workspace.clearPreviousStates;
+  VAR i:longint;
+  begin
+    for i:=0 to length(previousState)-1 do with previousState[i] do begin
+      case state of
+        editingNewBoard: dispose(newBoard,destroy);
+        editingPaletteEntry: prototypeInWorkspacePalette:=nil;
+        editingChallengeTemplate,
+        editingChallengeSolution: begin
+          if originalChallengeIndex<0
+          then dispose(challenge,destroy)
+          else dispose(challenge,destroyPartial);
+        end;
+      end;
+    end;
+    setLength(previousState,0);
+
+  end;
+
+PROCEDURE T_workspace.initCurrentState;
+  begin
+    currentState.prototypeInWorkspacePalette:=nil;
+    currentState.newBoard                   :=nil;
+    currentState.challenge                  :=nil;
+    currentState.originalChallengeIndex     :=-1;
+    currentState.paletteIndex               :=0;
+
+    if activeChallengeIndex>=0 then begin
+      currentState.state:=solvingChallenge;
+      currentState.originalChallengeIndex:=activeChallengeIndex;
+      exit;
+    end else if workspaceBoard^.getIndexInPalette>=0 then begin
+      currentState.state:=editingPaletteEntry;
+      currentState.prototypeInWorkspacePalette:=workspacePalette^.paletteEntries[workspaceBoard^.getIndexInPalette].prototype;
+    end else begin
+      currentState.state:=editingNewBoard;
+      currentState.newBoard:=workspaceBoard;
+    end;
+  end;
+
+PROCEDURE T_workspace.stateTransition(CONST newState: T_workspaceStateEnum);
+  PROCEDURE pushState;
+    begin
+      //Save some things before doing the rest...
+      with currentState do begin
+        if state in [editingNewBoard,editingPaletteEntry]
+        then paletteIndex:=workspacePalette^.lastSubPaletteIndex;
+        if state=editingNewBoard
+        then currentState.newBoard:=workspaceBoard^.clone;
+        if state=solvingChallenge
+        then originalChallengeIndex:=activeChallengeIndex;
+      end;
+      setLength(previousState,length(previousState)+1);
+      previousState[length(previousState)-1]:=currentState;
+    end;
+
+  begin
+     case currentState.state of
+       editingNewBoard         : pushState;
+       editingPaletteEntry     : pushState;
+       solvingChallenge        :
+       case newState of
+         editingNewBoard         ,
+         editingPaletteEntry     : pushState;
+       //solvingChallenge        : begin end;
+         editingChallengeTemplate,
+         editingChallengeSolution: assert(false,'This should never happen');
+       end;
+       editingChallengeTemplate,
+       editingChallengeSolution:
+       case newState of
+         editingNewBoard,
+         editingPaletteEntry,
+         solvingChallenge:
+         begin
+           dispose(currentState.challenge,destroy);
+           currentState.challenge:=nil;
+         end;
+         editingChallengeTemplate,
+         editingChallengeSolution: assert(false,'This should never happen');
+       end;
+     end;
+     currentState.state:=newState;
+     currentState.prototypeInWorkspacePalette:=nil;
+     currentState.newBoard                   :=nil;
+     currentState.challenge                  :=nil;
+     currentState.originalChallengeIndex     :=-1;
+     currentState.paletteIndex               :=0;
+  end;
+
+PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter);
+  begin
+    currentState:=previousState[length(previousState)-1];
+    setLength    (previousState,length(previousState)-1);
+    case currentState.state of
+      editingNewBoard: begin
+        dispose(workspaceBoard,destroy);
+        workspaceBoard:=currentState.newBoard; currentState.newBoard:=nil;
+
+        activeChallenge:=nil;
+        activeChallengeIndex:=-1;
+        workspaceBoard  ^.attachUI(uiAdapter);
+        workspacePalette^.attachUI(uiAdapter);
+        workspacePalette^.setFilter(maxLongint);
+        workspacePalette^.selectSubPalette(currentState.paletteIndex);
+        uiAdapter^.paintAll;
+      end;
+      editingPaletteEntry: begin
+        dispose(workspaceBoard,destroy);
+        workspaceBoard:=currentState.prototypeInWorkspacePalette^.clone();
+
+        activeChallenge:=nil;
+        activeChallengeIndex:=-1;
+        workspaceBoard  ^.attachUI(uiAdapter);
+        workspacePalette^.attachUI(uiAdapter);
+        workspacePalette^.setFilter(workspaceBoard^.getIndexInPalette);
+        workspacePalette^.selectSubPalette(currentState.paletteIndex);
+        uiAdapter^.paintAll;
+      end;
+      solvingChallenge: begin
+        startChallenge(currentState.originalChallengeIndex);
+
+        activePalette^.attachUI(uiAdapter);
+        activeBoard  ^.attachUI(uiAdapter);
+        activeBoard  ^.reset(true);
+        uiAdapter^.paintAll;
+      end;
+      else assert(false,'Not implemented.');
+    end;
+  end;
 
 CONSTRUCTOR T_workspace.create;
   begin
@@ -84,6 +239,8 @@ CONSTRUCTOR T_workspace.create;
       activeChallengeIndex:=-1;
       activeChallenge:=nil;
     end;
+    setLength(previousState,0);
+    initCurrentState;
   end;
 
 DESTRUCTOR T_workspace.destroy;
@@ -99,8 +256,7 @@ FUNCTION T_workspace.getSerialVersion: dword;
     result:=serialVersionOf('T_workspace',2);
   end;
 
-FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
-  ): boolean;
+FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
   begin
     result:=inherited and challenges^.loadFromStream(stream);
     activeChallengeIndex:=stream.readLongint;
@@ -149,6 +305,10 @@ FUNCTION T_workspace.startChallenge(CONST challengeIndex: longint): boolean;
     if (challengeIndex<0) or (challengeIndex>=length(challenges^.challenge)) then exit(false);
     activeChallengeIndex:=challengeIndex;
     activeChallenge:=challenges^.challenge[challengeIndex];
+
+    stateTransition(solvingChallenge);
+    currentState.originalChallengeIndex:=challengeIndex;
+
     dispose(workspaceBoard,destroy);
     workspaceBoard:=activeChallenge^.resetChallenge;
     result:=true;
@@ -156,6 +316,7 @@ FUNCTION T_workspace.startChallenge(CONST challengeIndex: longint): boolean;
 
 PROCEDURE T_workspace.setFreeEditMode;
   begin
+    stateTransition(editingNewBoard);
     activeChallenge:=nil;
     activeChallengeIndex:=-1;
     dispose(workspaceBoard,destroy);
@@ -194,10 +355,13 @@ FUNCTION T_workspace.EditorMode: boolean;
     result:=activeChallenge=nil;
   end;
 
-PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard;
-  CONST uiAdapter: P_uiAdapter);
+PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard; CONST uiAdapter: P_uiAdapter);
   begin
     if activeChallenge<>nil then exit;
+
+    stateTransition(editingPaletteEntry);
+    currentState.prototypeInWorkspacePalette:=prototype;
+
     dispose(workspaceBoard,destroy);
     workspacePalette^.setFilter(prototype^.getIndexInPalette);
     workspaceBoard:=prototype^.clone;
@@ -208,6 +372,8 @@ PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard;
 
 PROCEDURE T_workspace.clearBoard(CONST uiAdapter: P_uiAdapter);
   begin
+    stateTransition(editingNewBoard);
+
     if activeChallenge<>nil then begin
       dispose(workspaceBoard,destroy);
       workspaceBoard:=activeChallenge^.resetChallenge;
@@ -228,6 +394,11 @@ FUNCTION T_workspace.getInfoLabelText(CONST uiIdle: boolean): string;
 FUNCTION T_workspace.firstStart: boolean;
   begin
     result:=not(tutorial.callengeCompleted) and (length(workspacePalette^.paletteEntries)<=19);
+  end;
+
+FUNCTION T_workspace.canGoBack: boolean;
+  begin
+    result:=length(previousState)>0;
   end;
 
 end.

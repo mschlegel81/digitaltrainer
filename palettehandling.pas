@@ -506,7 +506,7 @@ PROCEDURE T_workspacePalette.reindex;
       for i:=0 to length(paletteEntries)-2 do
       if paletteEntries[i].prototype<>nil then begin
         j:=i+1;
-        while (j<length(paletteEntries)) and ((paletteEntries[j].prototype=nil) or not(paletteEntries[i].prototype^.usesPrototype(paletteEntries[j].prototype))) do inc(j);
+        while (j<length(paletteEntries)) and ((paletteEntries[j].prototype=nil) or not(paletteEntries[i].prototype^.usesPrototype(paletteEntries[j].prototype,true))) do inc(j);
         if j<length(paletteEntries) then begin
           anySwapped:=true;
           tmp:=paletteEntries[i];
@@ -627,7 +627,7 @@ PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
          (paletteEntries[paletteIndex].prototype=nil)
       then exit(false);
       result:=(filter=paletteIndex) or
-              paletteEntries[paletteIndex].prototype^.usesPrototype(paletteEntries[filter].prototype);
+              paletteEntries[paletteIndex].prototype^.usesPrototype(paletteEntries[filter].prototype,true);
     end;
   TYPE T_item=record
         entryIndex,visualSorting:longint;
@@ -809,7 +809,7 @@ PROCEDURE T_workspacePalette.deleteEntry(CONST prototype: P_captionedAndIndexed)
     for i:=0 to length(paletteEntries)-1 do
       if (i<>i0) and
          (paletteEntries[i].prototype<>nil) and
-         (paletteEntries[i].prototype^.usesPrototype(prototype)) then exit;
+         (paletteEntries[i].prototype^.usesPrototype(prototype,false)) then exit;
 
     dispose(paletteEntries[i0].prototype,destroy);
     for i:=i0 to length(paletteEntries)-2 do paletteEntries[i]:=paletteEntries[i+1];
@@ -856,7 +856,7 @@ FUNCTION T_workspacePalette.allowDeletion(CONST gate: P_abstractGate; OUT reason
     for i:=0 to length(paletteEntries)-1 do
       if (i<>prototype^.getIndexInPalette) and
          (paletteEntries[i].prototype<>nil) and
-         (paletteEntries[i].prototype^.usesPrototype(prototype)) then begin
+         (paletteEntries[i].prototype^.usesPrototype(prototype,false)) then begin
       addReason(StringReplace(paletteEntries[i].prototype^.getCaption,LineEnding,'\n',[rfReplaceAll]));
       result:=false;
     end;
@@ -873,7 +873,7 @@ PROCEDURE T_workspacePalette.deleteEntry(CONST index: longint);
     if ui^.isPrototypeInUse(prototype,d0,d1,d2) then exit;
     for i:=index+1 to length(paletteEntries)-1 do
       if (paletteEntries[i].prototype<>nil) and
-         (paletteEntries[i].prototype^.usesPrototype(prototype)) then exit;
+         (paletteEntries[i].prototype^.usesPrototype(prototype,false)) then exit;
     dispose(paletteEntries[index].prototype,destroy);
     for i:=index to length(paletteEntries)-2 do paletteEntries[i]:=paletteEntries[i+1];
     setLength(paletteEntries,length(paletteEntries)-1);
@@ -890,7 +890,7 @@ FUNCTION T_workspacePalette.allowDeletion(CONST index: longint): boolean;
     if ui^.isPrototypeInUse(prototype,d0,d1,d2) then exit(false);
     for i:=index+1 to length(paletteEntries)-1 do
       if (paletteEntries[i].prototype<>nil) and
-         (paletteEntries[i].prototype^.usesPrototype(prototype)) then exit(false);
+         (paletteEntries[i].prototype^.usesPrototype(prototype,false)) then exit(false);
     result:=true;
   end;
 
@@ -1028,14 +1028,14 @@ PROCEDURE T_workspacePalette.markEntryForExport(CONST index: longint;
       for i:=0 to index-1 do
         if (paletteEntries[i].entryType=gt_compound) and
            not(paletteEntries[i].markedForExport) and
-           prototype^.usesPrototype(paletteEntries[i].prototype)
+           prototype^.usesPrototype(paletteEntries[i].prototype,true)
         then markEntryForExport(i,true);
     end else begin
       //We want to unmark...
       for i:=index+1 to length(paletteEntries)-1 do
         if (paletteEntries[i].entryType=gt_compound) and
            (paletteEntries[i].markedForExport) and
-           paletteEntries[i].prototype^.usesPrototype(prototype)
+           paletteEntries[i].prototype^.usesPrototype(prototype,true)
         then markEntryForExport(i,false);
     end;
   end;

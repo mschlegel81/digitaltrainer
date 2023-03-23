@@ -9,7 +9,7 @@ USES
   StdCtrls, Menus,paletteHandling;
 
 TYPE
-
+//TODO: Info box for currently selected entry with interfaces and dependencies.
   { TPaletteForm }
 
   TPaletteForm = class(TForm)

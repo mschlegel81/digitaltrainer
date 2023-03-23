@@ -48,7 +48,8 @@ TYPE
     FUNCTION boardOption:T_challengeBoardOption;
   public
     PROCEDURE showFor(CONST board:P_visualBoard; CONST challenges:P_challengeSet);
-    PROCEDURE showForExistingChallenge(CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet );
+    PROCEDURE showForExistingChallenge(CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet);
+    PROCEDURE reShowFor(CONST editedChallenge:P_challenge; CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet);
   end;
 
 FUNCTION CreateTaskForm:TCreateTaskForm;
@@ -171,6 +172,21 @@ PROCEDURE TCreateTaskForm.showForExistingChallenge(CONST originalChallengeIndex:
       dispose(challenge,destroyPartial);
     end;
     challenge:=nil;
+  end;
+
+PROCEDURE TCreateTaskForm.reShowFor(CONST editedChallenge:P_challenge; CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet);
+  begin
+    assert(false,'Not implemented yet');
+    challenge:=editedChallenge;
+    TitleEdit.text:=challenge^.challengeTitle;
+    DescriptionMemo.text:=challenge^.challengeDescription;
+    DifficultyTrackBar.position:=challenge^.challengeLevel;
+    TestCreationFrame1.setTestGenerator(challenge,MAX_NUMBER_OF_CHALLENGE_CHECKS);
+    challenge^.updateTestCaseResults;
+    if ShowModal=mrOk then begin
+      //TODO: This must be handled...
+
+    end;
   end;
 
 FINALIZATION
