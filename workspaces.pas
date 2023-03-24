@@ -117,20 +117,25 @@ PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistori
   VAR fileStream: TFileStream;
 
   FUNCTION createEntry(CONST bytesToWrite:longint):T_workspaceHistoryEntryMetaData;
+    VAR gapStart,gapEnd,i:longint;
+        iNext:longint=-1;
     begin
       result.triggeredBy:=reason;
       result.datetime:=now;
       result.numberOfPaletteEntries:=length(workspace^.workspacePalette^.paletteEntries);
       result.numberOfTasks         :=length(workspace^.challenges^.challenge);
       result.dataSize:=bytesToWrite;
-      //TODO: A more elaborate scan for gaps would be helpful
-      gapStart:=sizeOf(T_workspaceHistoryEntryIndex);
-      while gapIsTooSmall do findNextGap;
 
-      if historyIndex.size=0
-      then result.dataStartAt:=sizeOf(T_workspaceHistoryEntryIndex)
-      else result.dataStartAt:=historyIndex.entries[historyIndex.size-1].dataStartAt+
-                               historyIndex.entries[historyIndex.size-1].dataSize;
+      gapStart:=sizeOf(T_workspaceHistoryEntryIndex);
+      repeat
+        gapEnd:=maxLongint;
+        if iNext>=0 then with historyIndex.entries[iNext] do gapStart:=dataStartAt+dataSize;
+        for i:=0 to historyIndex.size-1 do with historyIndex.entries[i] do if (dataStartAt>gapStart) and (dataStartAt<gapEnd) then begin gapEnd:=dataStartAt; iNext:=i; end;
+        {$ifdef debugMode}
+        writeln('Found gap of ',gapEnd-gapStart,' before index ',iNext,' at position ',gapStart);
+        {$endif}
+      until gapEnd-gapStart>=bytesToWrite;
+      result.dataStartAt:=gapStart;
     end;
 
   PROCEDURE writeCompressedBackup;
@@ -604,13 +609,15 @@ FUNCTION T_workspace.canGoBack: boolean;
     result:=length(previousState)>0;
   end;
 
+{$ifdef debugMode}
 VAR ws:T_workspace;
     entry:T_workspaceHistoryEntryMetaData;
 INITIALIZATION
   entry:=getBackupsIndex.entries[0];
   ws.createWithoutRestoring;
-  tryRestoreBackup(@ws,entry);
+  if tryRestoreBackup(@ws,entry) then writeln('Restoring backup was okay') else writeln('RESTORING OF BACKUP FAILED!!!');
   ws.destroy;
+{$endif}
 
 end.
 
