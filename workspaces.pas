@@ -135,21 +135,21 @@ PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistori
 
   PROCEDURE writeCompressedBackup;
     VAR streamWrapper: T_bufferedOutputStreamWrapper;
-        compressionstream:Tcompressionstream;
+        compressionstream:TCompressionStream;
         memoryStream:TMemoryStream;
 
         newEntry:T_workspaceHistoryEntryMetaData;
     begin
       memoryStream     :=TMemoryStream.create;
-      memoryStream.SetSize(1 shl 20);
+      memoryStream.setSize(1 shl 20);
       memoryStream.Seek(0,soBeginning);
-      compressionstream:=Tcompressionstream.create(clmax,memoryStream);
+      compressionstream:=TCompressionStream.create(clMax,memoryStream);
       streamWrapper.create(compressionstream);
       workspace^.saveToStream(streamWrapper);
       streamWrapper.destroy;
 
-      newEntry:=createEntry(memoryStream.Position);
-      memoryStream.SetSize(memoryStream.Position);
+      newEntry:=createEntry(memoryStream.position);
+      memoryStream.setSize(memoryStream.position);
       with historyIndex do begin
         entries[size]:=newEntry;
         inc(size);
@@ -197,7 +197,7 @@ FUNCTION tryRestoreBackup(CONST workspace:P_workspace; CONST entry:T_workspaceHi
   VAR fileStream: TFileStream;
 
       streamWrapper: T_bufferedInputStreamWrapper;
-      decompressionstream:Tdecompressionstream;
+      decompressionstream:TDecompressionStream;
       memoryStream:TMemoryStream;
   begin
     if not(fileExists(backupsFileName)) then exit(false);
@@ -209,14 +209,14 @@ FUNCTION tryRestoreBackup(CONST workspace:P_workspace; CONST entry:T_workspaceHi
     fileStream.destroy;
 
     memoryStream.Seek(0,soBeginning);
-    decompressionstream:=Tdecompressionstream.create(memoryStream);
+    decompressionstream:=TDecompressionStream.create(memoryStream);
     streamWrapper.create(decompressionstream);
 
     workspace^.destroy;
     workspace^.createWithoutRestoring;
     result:=workspace^.loadFromStream(streamWrapper);
     streamWrapper.destroy;
-    memoryStream.Destroy;
+    memoryStream.destroy;
   end;
 
 FUNCTION workspaceFilename:string;
