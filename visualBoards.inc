@@ -1805,8 +1805,7 @@ PROCEDURE T_visualBoard.setInputs(CONST inputWires: T_wireValueArray);
     ui^.paintAll;
   end;
 
-FUNCTION T_visualBoard.simulateSteps(CONST count, timeOutInTicks: longint
-  ): longint;
+FUNCTION T_visualBoard.simulateSteps(CONST count, timeOutInTicks: longint): longint;
   VAR changed:boolean=true;
       g:P_visualGate;
       i:longint;

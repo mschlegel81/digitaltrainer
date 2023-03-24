@@ -335,6 +335,7 @@ object CreateTaskForm: TCreateTaskForm
     Font.Quality = fqDraft
     ParentColor = False
     ParentFont = False
+    OnMouseDown = editTemplateShapeMouseDown
   end
   object editExpectedShape: TShape
     AnchorSideLeft.Control = DifficultyTrackBar

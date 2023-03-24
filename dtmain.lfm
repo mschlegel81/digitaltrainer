@@ -9,6 +9,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   ClientWidth = 1277
   Color = 8405056
   Menu = MainMenu1
+  OnCloseQuery = FormCloseQuery
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow

@@ -81,6 +81,7 @@ TYPE
     SpeedBgShape: TShape;
     PROCEDURE AnimationTimerTimer(Sender: TObject);
     PROCEDURE BoardImageClick(Sender: TObject);
+    PROCEDURE FormCloseQuery(Sender: TObject; VAR CanClose: boolean);
     PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE FormDestroy(Sender: TObject);
     PROCEDURE FormKeyDown(Sender: TObject; VAR key: word; Shift: TShiftState);
@@ -841,16 +842,26 @@ PROCEDURE TDigitaltrainerMainForm.updateUiElements;
 FUNCTION TDigitaltrainerMainForm.continueWithOtherBoard: boolean;
   VAR mr: TModalResult;
       simulationEnabledBefore:boolean;
+      challenge: P_challenge;
+      originalChallengeIndex: longint;
   begin
-    if not(workspace.activeBoard^.isModified) then exit(true);
-    if not(workspace.state in [editingNewBoard,editingPaletteEntry]) then exit;
+
+    if not(workspace.isEditingNewChallenge) and not(workspace.activeBoard^.isModified) then exit(true);
+    if    (workspace.state=solvingChallenge) then exit(true);
     simulationEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
-    mr:=boardChangedDialog.showFor(workspace.state=editingPaletteEntry);
+    mr:=boardChangedDialog.showFor(workspace.state);
     if (mr=mrYes) and
        (workspace.state=editingPaletteEntry) and
        (workspace.activeBoard^.getIndexInPalette>=0)
-    then P_workspacePalette(workspace.activePalette)^.updateEntry(workspace.activeBoard);
+    then begin
+      if workspace.state=editingPaletteEntry
+      then P_workspacePalette(workspace.activePalette)^.updateEntry(workspace.activeBoard)
+      else begin
+        workspace.goBack(@uiAdapter,challenge,originalChallengeIndex);
+        if challenge<>nil then CreateTaskForm.reShowFor(challenge,originalChallengeIndex,workspace.getChallenges);
+      end;
+    end;
     SimulationTimer.enabled:=simulationEnabledBefore;
     result:=mr<>mrCancel;
   end;
@@ -871,6 +882,11 @@ PROCEDURE TDigitaltrainerMainForm.AnimationTimerTimer(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.BoardImageClick(Sender: TObject);
   begin
     if SubPaletteComboBox.Focused then DefocusControl(SubPaletteComboBox,false);
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.FormCloseQuery(Sender: TObject; VAR CanClose: boolean);
+  begin
+    CanClose:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]) or continueWithOtherBoard;
   end;
 
 end.

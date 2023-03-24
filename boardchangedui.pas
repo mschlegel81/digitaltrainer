@@ -5,7 +5,7 @@ UNIT boardChangedUi;
 INTERFACE
 
 USES
-  Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, StdCtrls;
+  Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, StdCtrls,workspaces;
 
 TYPE
 
@@ -25,7 +25,7 @@ TYPE
   private
 
   public
-    FUNCTION showFor(CONST hasRelatedPaletteEntry:boolean):TModalResult;
+    FUNCTION showFor(CONST state: T_workspaceStateEnum):TModalResult;
   end;
 
 FUNCTION boardChangedDialog: TboardChangedDialog;
@@ -57,9 +57,30 @@ PROCEDURE TboardChangedDialog.updatePaletteButtonMouseDown(Sender: TObject;  but
     ModalResult:=mrYes;
   end;
 
-FUNCTION TboardChangedDialog.showFor(CONST hasRelatedPaletteEntry: boolean): TModalResult;
+FUNCTION TboardChangedDialog.showFor(CONST state: T_workspaceStateEnum): TModalResult;
   begin
-    setEnableButton(updatePaletteButton,updatePaletteLabel,hasRelatedPaletteEntry);
+    case state of
+      editingNewBoard         : begin
+        boardWasChangedLabel.caption:='Die aktuelle Schaltung wurde geändert.';
+        updatePaletteLabel.caption:='Paletteneintrag'+LineEnding+'aktuallisieren';
+        setEnableButton(updatePaletteButton,updatePaletteLabel,false);
+      end;
+      editingPaletteEntry     : begin
+        boardWasChangedLabel.caption:='Die aktuelle Schaltung wurde geändert.';
+        updatePaletteLabel.caption:='Paletteneintrag'+LineEnding+'aktuallisieren';
+        setEnableButton(updatePaletteButton,updatePaletteLabel,true);
+      end;
+      editingChallengeTemplate: begin
+        boardWasChangedLabel.caption:='Die Aufgabe (Lösungsvorgabe) wurde geändert.';
+        updatePaletteLabel.caption:='Aufgabe'+LineEnding+'aktualisieren';
+        setEnableButton(updatePaletteButton,updatePaletteLabel,true);
+      end;
+      editingChallengeSolution: begin
+        boardWasChangedLabel.caption:='Die Aufgabe (Lösung) wurde geändert.';
+        updatePaletteLabel.caption:='Aufgabe'+LineEnding+'aktualisieren';
+        setEnableButton(updatePaletteButton,updatePaletteLabel,true);
+      end;
+    end;
     result:=ShowModal;
   end;
 
