@@ -93,6 +93,7 @@ TYPE
     entries:array[0..254] of T_workspaceHistoryEntryMetaData;
   end;
 
+FUNCTION workspaceFilename:string;
 PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistorizationTriggerEnum);
 FUNCTION getBackupsIndex:T_workspaceHistoryEntryIndex;
 FUNCTION tryRestoreBackup(CONST workspace:P_workspace; CONST entry:T_workspaceHistoryEntryMetaData):boolean;
@@ -116,7 +117,6 @@ PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistori
   VAR fileStream: TFileStream;
 
   FUNCTION createEntry(CONST bytesToWrite:longint):T_workspaceHistoryEntryMetaData;
-    VAR i:longint;
     begin
       result.triggeredBy:=reason;
       result.datetime:=now;
@@ -124,6 +124,8 @@ PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistori
       result.numberOfTasks         :=length(workspace^.challenges^.challenge);
       result.dataSize:=bytesToWrite;
       //TODO: A more elaborate scan for gaps would be helpful
+      gapStart:=sizeOf(T_workspaceHistoryEntryIndex);
+      while gapIsTooSmall do findNextGap;
 
       if historyIndex.size=0
       then result.dataStartAt:=sizeOf(T_workspaceHistoryEntryIndex)
@@ -133,19 +135,21 @@ PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistori
 
   PROCEDURE writeCompressedBackup;
     VAR streamWrapper: T_bufferedOutputStreamWrapper;
-       // compressionstream:Tcompressionstream;
+        compressionstream:Tcompressionstream;
         memoryStream:TMemoryStream;
 
         newEntry:T_workspaceHistoryEntryMetaData;
     begin
       memoryStream     :=TMemoryStream.create;
-      //compressionstream:=Tcompressionstream.create(clmax,memoryStream);
-      //streamWrapper.create(compressionstream);
-      streamWrapper.create(memoryStream);
+      memoryStream.SetSize(1 shl 20);
+      memoryStream.Seek(0,soBeginning);
+      compressionstream:=Tcompressionstream.create(clmax,memoryStream);
+      streamWrapper.create(compressionstream);
       workspace^.saveToStream(streamWrapper);
+      streamWrapper.destroy;
 
-      newEntry:=createEntry(memoryStream.size);
-
+      newEntry:=createEntry(memoryStream.Position);
+      memoryStream.SetSize(memoryStream.Position);
       with historyIndex do begin
         entries[size]:=newEntry;
         inc(size);
@@ -156,8 +160,7 @@ PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistori
       fileStream.Seek(newEntry.dataStartAt,soBeginning);
       memoryStream.Seek(0,soBeginning);
       memoryStream.saveToStream(fileStream);
-      streamWrapper.destroy;
-//      FreeAndNil(memoryStream);
+      FreeAndNil(memoryStream);
     end;
 
   VAR
@@ -194,7 +197,7 @@ FUNCTION tryRestoreBackup(CONST workspace:P_workspace; CONST entry:T_workspaceHi
   VAR fileStream: TFileStream;
 
       streamWrapper: T_bufferedInputStreamWrapper;
-//      decompressionstream:Tdecompressionstream;
+      decompressionstream:Tdecompressionstream;
       memoryStream:TMemoryStream;
   begin
     if not(fileExists(backupsFileName)) then exit(false);
@@ -206,14 +209,14 @@ FUNCTION tryRestoreBackup(CONST workspace:P_workspace; CONST entry:T_workspaceHi
     fileStream.destroy;
 
     memoryStream.Seek(0,soBeginning);
-//    decompressionstream:=Tdecompressionstream.create(memoryStream);
-    streamWrapper.create(memoryStream);
+    decompressionstream:=Tdecompressionstream.create(memoryStream);
+    streamWrapper.create(decompressionstream);
 
     workspace^.destroy;
     workspace^.createWithoutRestoring;
     result:=workspace^.loadFromStream(streamWrapper);
     streamWrapper.destroy;
-//    memoryStream.Destroy;
+    memoryStream.Destroy;
   end;
 
 FUNCTION workspaceFilename:string;
@@ -419,7 +422,6 @@ CONSTRUCTOR T_workspace.create;
 
 DESTRUCTOR T_workspace.destroy;
   begin
-    saveToFile(workspaceFilename);
     clearPreviousStates;
     dispose(challenges,destroy);
     dispose(workspaceBoard,destroy);
@@ -608,6 +610,7 @@ INITIALIZATION
   entry:=getBackupsIndex.entries[0];
   ws.createWithoutRestoring;
   tryRestoreBackup(@ws,entry);
+  ws.destroy;
 
 end.
 

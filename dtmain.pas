@@ -207,6 +207,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
   begin
+    workspace.saveToFile(workspaceFilename);
     workspace.destroy;
     uiAdapter.destroy;
   end;
