@@ -31,21 +31,21 @@ TYPE
 CONST
   C_multibitWireRepresentationName:array[T_multibitWireRepresentation] of string=('bin','dec','2cmp');
   C_gateDefaultDescription:array [T_gateType] of string=
-  {gt_notGate}   ('Logische Negation',
-  {gt_andGate}    'Logisches und',
-  {gt_orGate}     'Logisches oder (inklusiv)',
-  {gt_xorGate}    'Logisches oder (exklusiv)',
-  {gt_nandGate}   'Logisches nicht-und',
-  {gt_norGate}    'Logisches nicht-oder',
-  {gt_nxorGate}   'Logisches nicht-exklusiv-oder',
+  {gt_notGate}   ('Logische Negation'+LineEnding+'Gibt das Gegenteil des Eingangs aus',
+  {gt_andGate}    'Logisches und'+LineEnding+'Gibt 1 aus, wenn alle Eingänge 1 sind, sonst 0',
+  {gt_orGate}     'Logisches oder (inklusiv)'+LineEnding+'Gibt 0 aus, wenn alle Eingänge 0 sind, sonst 1',
+  {gt_xorGate}    'Logisches oder (exklusiv)'+LineEnding+'Gibt 1 aus, wenn eine ungerade Anzahl von Eingängen 1 ist (parity)',
+  {gt_nandGate}   'Logisches nicht-und'+LineEnding+'Gibt 0 aus, wenn alle Eingänge 1 sind, sonst 1',
+  {gt_norGate}    'Logisches nicht-oder'+LineEnding+'Gibt 1 aus, wenn alle Eingänge 0 sind, sonst 0',
+  {gt_nxorGate}   'Logisches nicht-exklusiv-oder'+LineEnding+'Gibt 1 aus, wenn eine gerade Anzahl von Eingängen 1 ist',
   {gt_input}      'Eingabe-Baustein',
   {gt_output}     'Ausgabe-Baustein',
   {gt_compound}   '<compound>',
-  {gt_clock}      'Zeitgeber'+LineEnding+'Ausgangssignal wechselt periodisch',
+  {gt_clock}      'Zeitgeber'+LineEnding+'Ausgangssignal wechselt periodisch'+LineEnding+'Über die Gattereigenschaften kann der Takt als Vielfaches des Simulationstakts gesetzt werden',
   {gt_adapter}    'Ein Adapter für unterschiedliche Kabel-Breiten',
   {gt_true}       'Konstant 1',
   {gt_false}      'Konstant 0',
-  {gt_gatedClock} 'Geschalter Zeitgeber'+LineEnding+'Ausgangssignal wechselt periodisch'+LineEnding+'falls am Eingang 1 anliegt',
+  {gt_gatedClock} 'Geschalter Zeitgeber'+LineEnding+'Ausgangssignal wechselt periodisch falls am Eingang 1 anliegt'+LineEnding+'Über die Gattereigenschaften kann der Takt als Vielfaches des Simulationstakts gesetzt werden',
   {gt_un....true} 'Gibt für unbestimmten Eingang 1 aus',
   {gt_un...false} 'Gibt für unbestimmten Eingang 0 aus',
                   'Speicher'+LineEnding+'Schreibt auf fallender Flanke von clk',
@@ -70,8 +70,8 @@ CONST
     {gt_gatedClock} 'gated clock',
     {gt_un....true} 'tend to true',
     {gt_un...false} 'tend to false',
-                    'ram',
-                    'rom',
+                    'RAM',
+                    'ROM',
                     '7seg');
 
 TYPE

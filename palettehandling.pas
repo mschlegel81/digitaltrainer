@@ -100,6 +100,8 @@ TYPE
     PROCEDURE importPalette(CONST fileName:string);
     PROCEDURE swapPaletteName(CONST index:longint; CONST up:boolean);
     PROCEDURE removeDuplicates(CONST byBehavior:boolean);
+
+    FUNCTION describeEntry(CONST index:longint):string;
   end;
 
   T_challengePaletteEntry=record
@@ -150,8 +152,23 @@ TYPE
     FUNCTION allowConfiguration:boolean;
   end;
 
+FUNCTION titleOf(CONST entry:T_workspacePaletteEntry):string;
+FUNCTION descriptionOf(CONST entry:T_workspacePaletteEntry):string;
 IMPLEMENTATION
 USES visuals,Graphics,sprites;
+FUNCTION titleOf(CONST entry:T_workspacePaletteEntry):string;
+  begin
+    if entry.entryType=gt_compound
+    then result:=entry.prototype^.getCaption
+    else result:=C_gateTypeName[entry.entryType];
+  end;
+
+FUNCTION descriptionOf(CONST entry:T_workspacePaletteEntry):string;
+  begin
+    if entry.entryType=gt_compound
+    then result:=entry.prototype^.getDescription
+    else result:=C_gateDefaultDescription[entry.entryType];
+  end;
 
 { T_challengePalette }
 
@@ -1252,6 +1269,87 @@ PROCEDURE T_workspacePalette.removeDuplicates(CONST byBehavior:boolean);
       inc(j);
     end;
     setLength(paletteEntries,j);
+  end;
+
+FUNCTION T_workspacePalette.describeEntry(CONST index:longint):string;
+  CONST SPACES='    ';
+        SPACE6='      ';
+  FUNCTION indent(CONST s:string; CONST indentation:string):string;
+    begin
+      result:=StringReplace(s,
+                             LineEnding,
+                             LineEnding+indentation,
+                             [rfReplaceAll]);
+    end;
+
+  FUNCTION getInterfaceDescription:string;
+    CONST BASE_GATE_DESCRIPTION:array[T_gateType] of string=(
+      {gt_notGate            } 'Eingänge:'+LineEnding+SPACES+'in 0 (1bit)'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'out 0 (1bit)',
+      {gt_andGate            } 'Eingänge (Anzahl konfigurierbar, 2-16):'+LineEnding+SPACES+'in <n> (1bit)'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'out 0 (1bit)',
+      {gt_orGate             } 'Eingänge (Anzahl konfigurierbar, 2-16):'+LineEnding+SPACES+'in <n> (1bit)'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'out 0 (1bit)',
+      {gt_xorGate            } 'Eingänge (Anzahl konfigurierbar, 2-16):'+LineEnding+SPACES+'in <n> (1bit)'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'out 0 (1bit)',
+      {gt_nandGate           } 'Eingänge (Anzahl konfigurierbar, 2-16):'+LineEnding+SPACES+'in <n> (1bit)'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'out 0 (1bit)',
+      {gt_norGate            } 'Eingänge (Anzahl konfigurierbar, 2-16):'+LineEnding+SPACES+'in <n> (1bit)'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'out 0 (1bit)',
+      {gt_nxorGate           } 'Eingänge (Anzahl konfigurierbar, 2-16):'+LineEnding+SPACES+'in <n> (1bit)'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'out 0 (1bit)',
+      {gt_input              } 'Eingänge: keine'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'<Name konfigurierbar> (Breite konfigurierbar)',
+      {gt_output             } 'Eingänge:'+LineEnding+SPACES+'<Name konfigurierbar> (Breite konfigurierbar)'+LineEnding+'Ausgänge: keine',
+      {gt_compound           } '',
+      {gt_clock              } 'Eingänge: keine'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'out 0 (1bit)',
+      {gt_adapter            } 'Eingänge (Anzahl automatisch, 2-16):'+LineEnding+SPACES+'in <n> (Breite konfigurierbar)'+LineEnding+'Ausgänge (Anzahl automatisch, 2-16):'+LineEnding+SPACES+'out <n> (Breite konfigurierbar)',
+      {gt_true               } 'Eingänge: keine'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'out 0 (1bit)',
+      {gt_false              } 'Eingänge: keine'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'out 0 (1bit)',
+      {gt_gatedClock         } 'Eingänge:'+LineEnding+SPACES+'in 0 (1bit)'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'out 0 (1bit)',
+      {gt_undeterminedToTrue } 'Eingänge:'+LineEnding+SPACES+'in 0 (1bit)'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'out 0 (1bit)',
+      {gt_undeterminedToFalse} 'Eingänge:'+LineEnding+SPACES+'in 0 (1bit)'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'out 0 (1bit)',
+      {gt_ram                } 'Eingänge:'+LineEnding+SPACES+'readAdr (16bit)'+LineEnding+SPACES+'writeAdr (16bit)'+LineEnding+SPACES+'data (16bit)'+LineEnding+SPACES+'clk (1bit)'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'data (16bit)',
+      {gt_rom                } 'Eingänge:'+LineEnding+SPACES+'readAdr (16bit)'+LineEnding+'Ausgänge:'+LineEnding+SPACES+'data (16bit)',
+      {gt_7segmentDummy      } 'Eingänge: '+LineEnding+SPACES+'in 0 (8bit, höchstwertiges bit ohne Funktion)'+LineEnding+'Ausgänge: keine');
+    VAR
+      Interfaces: T_gateInterfaces;
+      gateInterface: T_gateInterface;
+    begin
+      if paletteEntries[index].entryType<>gt_compound then exit(BASE_GATE_DESCRIPTION[paletteEntries[index].entryType]);
+      Interfaces:=paletteEntries[index].prototype^.getInterfaces;
+      result:='Eingänge:';
+      if length(Interfaces.inputs)=0 then result+=' keine' else for gateInterface in Interfaces.inputs do begin
+        result+=LineEnding+SPACES+gateInterface.name+' ('+intToStr(gateInterface.wireWidth)+'bit)';
+      end;
+      result+=LineEnding+'Ausgänge:';
+      if length(Interfaces.outputs)=0 then result+=' keine' else for gateInterface in Interfaces.outputs do begin
+        result+=LineEnding+SPACES+gateInterface.name+' ('+intToStr(gateInterface.wireWidth)+'bit)';
+      end;
+    end;
+
+  FUNCTION getDependencyDescription:string;
+    VAR i:longint;
+        anyFound:boolean;
+    begin
+      if paletteEntries[index].entryType<>gt_compound then exit('');
+      result:='Verwendet:';
+      anyFound:=false;
+      for i:=0 to index-1 do if (paletteEntries[i].entryType=gt_compound) and (paletteEntries[index].prototype^.usesPrototype(paletteEntries[i].prototype,false))
+      then begin
+        anyFound:=true;
+        result+=LineEnding+SPACES+'• '+indent(titleOf(paletteEntries[i]),SPACE6);
+      end;
+      if not(anyFound) then result+=' nur Basisgatter';
+
+      result+=LineEnding+'Wird verwendet von:';
+      anyFound:=false;
+      for i:=index+1 to length(paletteEntries)-1 do if (paletteEntries[i].entryType=gt_compound) and (paletteEntries[i].prototype^.usesPrototype(paletteEntries[index].prototype,false))
+      then begin
+        anyFound:=true;
+        result+=LineEnding+SPACES+'• '+indent(titleOf(paletteEntries[i]),SPACE6);
+      end;
+      if not(anyFound) then result+=' keine';
+    end;
+
+  begin
+    result:=
+      'Titel/Beschriftung:'+LineEnding+SPACES+indent(titleOf      (paletteEntries[index]),SPACES)+LineEnding+
+      'Beschreibung:'      +LineEnding+SPACES+indent(descriptionOf(paletteEntries[index]),SPACES)+LineEnding+
+      getInterfaceDescription+LineEnding+
+      getDependencyDescription;
   end;
 
 { T_palette }

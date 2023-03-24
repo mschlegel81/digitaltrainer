@@ -2,11 +2,10 @@ object TestCreationFrame: TTestCreationFrame
   Left = 0
   Height = 378
   Top = 0
-  Width = 700
+  Width = 688
   ClientHeight = 378
-  ClientWidth = 700
+  ClientWidth = 688
   Color = 7354424
-  LCLVersion = '2.2.2.0'
   ParentBackground = False
   ParentColor = False
   TabOrder = 0
@@ -16,7 +15,7 @@ object TestCreationFrame: TTestCreationFrame
     Left = 4
     Height = 370
     Top = 4
-    Width = 692
+    Width = 680
     Align = alClient
     BorderSpacing.Left = 4
     BorderSpacing.Top = 4
@@ -24,7 +23,7 @@ object TestCreationFrame: TTestCreationFrame
     BorderSpacing.Bottom = 4
     BorderWidth = 5
     ClientHeight = 370
-    ClientWidth = 692
+    ClientWidth = 680
     Color = 7354424
     ParentColor = False
     TabOrder = 0
@@ -70,7 +69,7 @@ object TestCreationFrame: TTestCreationFrame
       Left = 10
       Height = 318
       Top = 42
-      Width = 672
+      Width = 660
       Anchors = [akTop, akLeft, akRight, akBottom]
       BorderSpacing.Left = 4
       BorderSpacing.Top = 4
@@ -92,12 +91,11 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideTop.Control = TestInputsPanel
       AnchorSideRight.Control = TestInputsPanel
       AnchorSideRight.Side = asrBottom
-      Left = 553
+      Left = 541
       Height = 28
       Top = 10
       Width = 129
       Anchors = [akTop, akRight]
-      BorderSpacing.Left = 15
       BorderSpacing.Top = 4
       BorderSpacing.Right = 4
       Brush.Color = 6303792
@@ -110,7 +108,7 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideTop.Control = generateTestCasesShape
       AnchorSideTop.Side = asrCenter
       AnchorSideRight.Side = asrBottom
-      Left = 585
+      Left = 573
       Height = 21
       Top = 14
       Width = 64
@@ -162,12 +160,12 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideLeft.Side = asrBottom
       AnchorSideTop.Control = TestInputsPanel
       AnchorSideRight.Control = generateTestCasesShape
-      Left = 409
+      Left = 408
       Height = 28
       Top = 10
       Width = 129
       Anchors = [akTop, akRight]
-      BorderSpacing.Left = 15
+      BorderSpacing.Left = 4
       BorderSpacing.Top = 4
       BorderSpacing.Right = 4
       Brush.Color = 6303792
@@ -180,7 +178,7 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideTop.Control = generateTestCasesShape1
       AnchorSideTop.Side = asrCenter
       AnchorSideRight.Side = asrBottom
-      Left = 435
+      Left = 434
       Height = 21
       Top = 14
       Width = 77

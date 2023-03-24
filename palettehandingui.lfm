@@ -1,11 +1,11 @@
 object PaletteForm: TPaletteForm
-  Left = 694
+  Left = 1252
   Height = 590
-  Top = 161
-  Width = 695
+  Top = 166
+  Width = 706
   Caption = 'Palette verwalten'
   ClientHeight = 570
-  ClientWidth = 695
+  ClientWidth = 706
   Color = 7354424
   Menu = MainMenu1
   OnCreate = FormCreate
@@ -15,13 +15,12 @@ object PaletteForm: TPaletteForm
     AnchorSideLeft.Control = Owner
     AnchorSideTop.Control = Splitter1
     AnchorSideTop.Side = asrBottom
-    AnchorSideRight.Control = Owner
-    AnchorSideRight.Side = asrBottom
+    AnchorSideRight.Control = DetailsMemo
     AnchorSideBottom.Control = ExportShape
     Left = 5
     Height = 410
     Top = 111
-    Width = 685
+    Width = 488
     Anchors = [akTop, akLeft, akRight, akBottom]
     BorderSpacing.Left = 5
     BorderSpacing.Top = 5
@@ -80,7 +79,7 @@ object PaletteForm: TPaletteForm
     AnchorSideRight.Control = ImportShape
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 5
+    Left = 16
     Height = 39
     Top = 526
     Width = 203
@@ -98,7 +97,7 @@ object PaletteForm: TPaletteForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = ExportShape
     AnchorSideTop.Side = asrCenter
-    Left = 20
+    Left = 31
     Height = 21
     Top = 535
     Width = 172
@@ -132,7 +131,7 @@ object PaletteForm: TPaletteForm
     AnchorSideRight.Control = DeleteShape
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 213
+    Left = 224
     Height = 39
     Top = 526
     Width = 163
@@ -150,7 +149,7 @@ object PaletteForm: TPaletteForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = ImportShape
     AnchorSideTop.Side = asrCenter
-    Left = 228
+    Left = 239
     Height = 21
     Top = 535
     Width = 132
@@ -168,7 +167,7 @@ object PaletteForm: TPaletteForm
     AnchorSideRight.Control = MarkAllShape
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 381
+    Left = 392
     Height = 39
     Top = 526
     Width = 139
@@ -186,7 +185,7 @@ object PaletteForm: TPaletteForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = DeleteShape
     AnchorSideTop.Side = asrCenter
-    Left = 397
+    Left = 408
     Height = 21
     Top = 535
     Width = 106
@@ -204,7 +203,7 @@ object PaletteForm: TPaletteForm
     AnchorSideRight.Control = MarkNoneShape
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 525
+    Left = 536
     Height = 39
     Top = 526
     Width = 80
@@ -222,7 +221,7 @@ object PaletteForm: TPaletteForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = MarkAllShape
     AnchorSideTop.Side = asrCenter
-    Left = 545
+    Left = 556
     Height = 21
     Top = 535
     Width = 40
@@ -241,7 +240,7 @@ object PaletteForm: TPaletteForm
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 610
+    Left = 621
     Height = 39
     Top = 526
     Width = 80
@@ -259,7 +258,7 @@ object PaletteForm: TPaletteForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = MarkNoneShape
     AnchorSideTop.Side = asrCenter
-    Left = 624
+    Left = 635
     Height = 21
     Top = 535
     Width = 53
@@ -277,14 +276,14 @@ object PaletteForm: TPaletteForm
     Left = 5
     Height = 96
     Top = 5
-    Width = 685
+    Width = 696
     Align = alTop
     BorderSpacing.Left = 5
     BorderSpacing.Top = 5
     BorderSpacing.Right = 5
     BevelColor = clBlack
     ClientHeight = 96
-    ClientWidth = 685
+    ClientWidth = 696
     TabOrder = 1
     object MoveTaskDownShape: TShape
       AnchorSideTop.Control = MoveTaskUpShape
@@ -293,7 +292,7 @@ object PaletteForm: TPaletteForm
       AnchorSideRight.Side = asrBottom
       AnchorSideBottom.Control = Owner
       AnchorSideBottom.Side = asrBottom
-      Left = 640
+      Left = 651
       Height = 39
       Top = 50
       Width = 39
@@ -311,7 +310,7 @@ object PaletteForm: TPaletteForm
       AnchorSideLeft.Side = asrCenter
       AnchorSideTop.Control = MoveTaskDownShape
       AnchorSideTop.Side = asrCenter
-      Left = 655
+      Left = 666
       Height = 21
       Top = 59
       Width = 8
@@ -331,7 +330,7 @@ object PaletteForm: TPaletteForm
       AnchorSideRight.Side = asrBottom
       AnchorSideBottom.Control = SubPalettePanel
       AnchorSideBottom.Side = asrBottom
-      Left = 640
+      Left = 651
       Height = 39
       Top = 6
       Width = 39
@@ -349,7 +348,7 @@ object PaletteForm: TPaletteForm
       AnchorSideLeft.Side = asrCenter
       AnchorSideTop.Control = MoveTaskUpShape
       AnchorSideTop.Side = asrCenter
-      Left = 655
+      Left = 666
       Height = 21
       Top = 15
       Width = 8
@@ -372,7 +371,7 @@ object PaletteForm: TPaletteForm
       Left = 6
       Height = 84
       Top = 6
-      Width = 629
+      Width = 640
       Anchors = [akTop, akLeft, akRight, akBottom]
       AutoFillColumns = True
       BorderSpacing.Left = 5
@@ -391,7 +390,7 @@ object PaletteForm: TPaletteForm
       OnSelection = SubPaletteStringGridSelection
       OnValidateEntry = SubPaletteStringGridValidateEntry
       ColWidths = (
-        611
+        622
       )
       Cells = (
         1
@@ -406,9 +405,31 @@ object PaletteForm: TPaletteForm
     Left = 0
     Height = 5
     Top = 101
-    Width = 695
+    Width = 706
     Align = alTop
     ResizeAnchor = akTop
+  end
+  object DetailsMemo: TMemo
+    AnchorSideTop.Control = Splitter1
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = ExportShape
+    Left = 498
+    Height = 411
+    Top = 110
+    Width = 203
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    BorderSpacing.Top = 9
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    BorderStyle = bsNone
+    Color = 6303792
+    Font.Color = clWhite
+    ParentFont = False
+    ReadOnly = True
+    ScrollBars = ssAutoBoth
+    TabOrder = 3
+    WordWrap = False
   end
   object OpenDialog1: TOpenDialog
     DefaultExt = '.palette'

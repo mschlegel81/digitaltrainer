@@ -25,6 +25,7 @@ TYPE
     ImportShape: TShape;
     DeleteShape: TShape;
     MarkNoneLabel: TLabel;
+    DetailsMemo: TMemo;
     MenuItem1: TMenuItem;
     miRemoveDuplicatesExact: TMenuItem;
     miRemoveDuplicatesBehavior: TMenuItem;
@@ -91,6 +92,8 @@ FUNCTION PaletteForm: TPaletteForm;
 PROCEDURE TPaletteForm.entriesGridSelection(Sender: TObject; aCol, aRow: integer);
   begin
     lastClicked:=aRow-1;
+    if (lastClicked>=0) and (lastClicked<length(sorting.index))
+    then DetailsMemo.text:=palette^.describeEntry(sorting.index[lastClicked]);
     updateButtons;
   end;
 
@@ -187,7 +190,6 @@ PROCEDURE TPaletteForm.FormCreate(Sender: TObject);
   begin
     palette:=nil;
     entriesGrid.rowCount:=1;
-
     SubPaletteStringGrid.editor     .color:=SubPaletteStringGrid     .color;
     SubPaletteStringGrid.editor.Font.color:=SubPaletteStringGrid.Font.color;
     entriesGrid.editor     .color:=entriesGrid     .color;
@@ -269,22 +271,6 @@ PROCEDURE TPaletteForm.SubPaletteStringGridValidateEntry(Sender: TObject; aCol, 
   end;
 
 PROCEDURE TPaletteForm.fillTable(CONST initial: boolean);
-  FUNCTION titleOf(CONST entry:T_workspacePaletteEntry):string;
-    begin
-      if entry.entryType=gt_compound
-      then result:=entry.prototype^.getCaption
-      else result:=C_gateTypeName[entry.entryType];
-      result:=StringReplace(result,LineEnding,'\n',[rfReplaceAll]);
-    end;
-
-  FUNCTION descriptionOf(CONST entry:T_workspacePaletteEntry):string;
-    begin
-      if entry.entryType=gt_compound
-      then result:=entry.prototype^.getDescription
-      else result:=C_gateDefaultDescription[entry.entryType];
-      result:=StringReplace(result,LineEnding,'\n',[rfReplaceAll]);
-    end;
-
   PROCEDURE updateSorting;
     FUNCTION comesBefore(CONST i,j:longint):boolean;
       begin
@@ -326,8 +312,8 @@ PROCEDURE TPaletteForm.fillTable(CONST initial: boolean);
   PROCEDURE fillRow(CONST i: longint);
     begin
       with palette^.paletteEntries[sorting.index[i]] do begin
-        entriesGrid.Cells[0,i+1]:=titleOf      (palette^.paletteEntries[sorting.index[i]]);
-        entriesGrid.Cells[1,i+1]:=descriptionOf(palette^.paletteEntries[sorting.index[i]]);
+        entriesGrid.Cells[0,i+1]:=StringReplace(titleOf      (palette^.paletteEntries[sorting.index[i]]),LineEnding,'\n',[rfReplaceAll]);
+        entriesGrid.Cells[1,i+1]:=StringReplace(descriptionOf(palette^.paletteEntries[sorting.index[i]]),LineEnding,'\n',[rfReplaceAll]);
         entriesGrid.Cells[2,i+1]:=palette^.subPaletteNames[subPaletteIndex];
         entriesGrid.Cells[3,i+1]:=BoolToStr(markedForExport,'x',' ');
       end;
