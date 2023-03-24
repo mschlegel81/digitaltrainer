@@ -17,8 +17,10 @@ TYPE
     editTemplateLabel: TLabel;
     editExpectedLabel: TLabel;
     addTaskShape: TShape;
+    resetTemplateLabel: TLabel;
     editTemplateShape: TShape;
     editExpectedShape: TShape;
+    resetTemplateShape: TShape;
     Label7: TLabel;
     RadioPanel1: TPanel;
     rbPreconfiguredPaletteWithCounts: TRadioButton;
@@ -38,6 +40,8 @@ TYPE
     PROCEDURE editTemplateShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE FormShow(Sender: TObject);
     PROCEDURE rbIncludeAllGatesChange(Sender: TObject);
+    PROCEDURE resetTemplateShapeMouseDown(Sender: TObject;
+      button: TMouseButton; Shift: TShiftState; X, Y: integer);
   private
     challenge:P_challenge;
     challengeIndex:longint;
@@ -86,6 +90,12 @@ PROCEDURE TCreateTaskForm.rbIncludeAllGatesChange(Sender: TObject);
   begin
     if DifficultyTrackBar.position<minimumDifficulty then
        DifficultyTrackBar.position:=minimumDifficulty;
+  end;
+
+PROCEDURE TCreateTaskForm.resetTemplateShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  begin
+    dispose(challenge^.resultTemplate,destroy);
+    challenge^.resultTemplate:=challenge^.expectedBehavior^.clone();
   end;
 
 PROCEDURE TCreateTaskForm.FormShow(Sender: TObject);
