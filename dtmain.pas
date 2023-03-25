@@ -16,6 +16,7 @@ TYPE
   TDigitaltrainerMainForm = class(TForm)
     boardHorizontalScrollBar: TScrollBar;
     boardImage: TImage;
+    miBackups: TMenuItem;
     miGoBack: TMenuItem;
     miZoomOut: TMenuItem;
     miZoomIn: TMenuItem;
@@ -88,6 +89,7 @@ TYPE
     PROCEDURE FormResize(Sender: TObject);
     PROCEDURE FormShow(Sender: TObject);
     PROCEDURE miAddToPaletteClick(Sender: TObject);
+    PROCEDURE miBackupsClick(Sender: TObject);
     PROCEDURE miCopyClick(Sender: TObject);
     PROCEDURE miEditModeClick(Sender: TObject);
     PROCEDURE miEditPaletteClick(Sender: TObject);
@@ -147,7 +149,7 @@ VAR
   DigitaltrainerMainForm: TDigitaltrainerMainForm;
 
 IMPLEMENTATION
-USES compoundGates, boardTestUnit, boardChangedUi,welcomeDialog;
+USES compoundGates, boardTestUnit, boardChangedUi,welcomeDialog,restoreWorkspaceUi;
 CONST playPauseGlyph:array[false..true] of string=('⏵','⏸');
 
 {$R *.lfm}
@@ -229,6 +231,12 @@ PROCEDURE TDigitaltrainerMainForm.FormResize(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.FormShow(Sender: TObject);
   begin
+    if errorOnLoadWorkspace and RestoreWorkspaceDialog.showFor(true) then begin
+      workspace.activePalette^.attachUI(@uiAdapter);
+      workspace.activeBoard  ^.attachUI(@uiAdapter);
+      workspace.activeBoard  ^.reset(true);
+      updateUiElements;
+    end;
     if workspace.firstStart and FirstStartForm.wantToStartTutorial then begin
       workspace.startChallenge(0);
       workspace.activePalette^.attachUI(@uiAdapter);
@@ -254,6 +262,19 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
       uiAdapter.paintAll;
       infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
     end;
+    SimulationTimer.enabled:=timerEnabledBefore;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miBackupsClick(Sender: TObject);
+  VAR timerEnabledBefore:boolean;
+  begin
+    timerEnabledBefore:=SimulationTimer.enabled;
+    SimulationTimer.enabled:=false;
+    RestoreWorkspaceDialog.showFor(false);
+    workspace.activePalette^.attachUI(@uiAdapter);
+    workspace.activeBoard  ^.attachUI(@uiAdapter);
+    workspace.activeBoard  ^.reset(true);
+    updateUiElements;
     SimulationTimer.enabled:=timerEnabledBefore;
   end;
 
@@ -507,7 +528,10 @@ PROCEDURE TDigitaltrainerMainForm.propDeleteButtonMouseDown(Sender: TObject; but
     ValueListEditor1.OnValidateEntry:=nil;
     if gateProperties.arePropertiesForBoard
     then workspace.activeBoard^.remove(uiAdapter.draggedGate,false)
-    else P_workspacePalette(workspace.activePalette)^.deleteEntry(P_compoundGate(uiAdapter.draggedGate^.getBehavior)^.prototype);
+    else begin
+      addBackup(@workspace,wht_beforeDeletingEntry);
+      P_workspacePalette(workspace.activePalette)^.deleteEntry(P_compoundGate(uiAdapter.draggedGate^.getBehavior)^.prototype);
+    end;
     gateProperties.destroy;
     propEditPanel.visible:=false;
     uiAdapter.resetState;

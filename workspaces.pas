@@ -44,6 +44,7 @@ TYPE
     simplisticUi:boolean;
     CONSTRUCTOR createAndRestore;
     DESTRUCTOR destroy;
+    PROCEDURE clear;
     FUNCTION getSerialVersion:dword; virtual;
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
     PROCEDURE saveToStream(VAR stream:T_bufferedOutputStreamWrapper); virtual;
@@ -75,7 +76,7 @@ TYPE
     PROCEDURE goBack(CONST uiAdapter: P_uiAdapter; OUT challenge:P_challenge; OUT originalChallengeIndex:longint);
   end;
 
-  T_workspaceHistorizationTriggerEnum=(wht_onStartup,wht_beforeDeletingEntry,wht_beforeDuplicateRemoval,wht_beforeTaskImport,wht_beforePaletteImport,wht_beforeDeletingTask);
+  T_workspaceHistorizationTriggerEnum=(wht_onStartup,wht_beforeDeletingEntry,wht_beforeDuplicateRemoval,wht_beforeTaskImport,wht_beforePaletteImport,wht_beforeDeletingTask,wht_beforeRestore);
 
   P_workspaceHistoryEntryMetaData=^T_workspaceHistoryEntryMetaData;
   T_workspaceHistoryEntryMetaData=record
@@ -93,11 +94,21 @@ TYPE
     entries:array[0..254] of T_workspaceHistoryEntryMetaData;
   end;
 
+CONST C_workspaceHistorizationTrigger:array[T_workspaceHistorizationTriggerEnum] of string=(
+    {wht_onStartup}             'beim Start',
+    {wht_beforeDeletingEntry}   'vor Löschen eines Paletteneintrags',
+    {wht_beforeDuplicateRemoval}'vor Entfernen von Duplikaten',
+    {wht_beforeTaskImport}      'vor Importieren von Aufgaben',
+    {wht_beforePaletteImport}   'vor Importieren einer Palette',
+    {wht_beforeDeletingTask}    'vor Entfernen einer Aufgabe',
+    {wht_beforeRestore}         'vor Wiederherstellung');
 FUNCTION workspaceFilename:string;
-PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistorizationTriggerEnum);
+FUNCTION addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistorizationTriggerEnum):T_workspaceHistoryEntryMetaData;
 FUNCTION getBackupsIndex:T_workspaceHistoryEntryIndex;
 FUNCTION tryRestoreBackup(CONST workspace:P_workspace; CONST entry:T_workspaceHistoryEntryMetaData):boolean;
+FUNCTION dropBackup(CONST toDrop:T_workspaceHistoryEntryMetaData):T_workspaceHistoryEntryIndex;
 VAR workspace:T_workspace;
+    errorOnLoadWorkspace:boolean=false;
 IMPLEMENTATION
 USES sysutils,FileUtil,Classes,zstream;
 FUNCTION backupsFileName:string;
@@ -115,7 +126,7 @@ PROCEDURE listBackups(CONST historyIndex:T_workspaceHistoryEntryIndex);
     end;
   end;
 
-PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistorizationTriggerEnum);
+FUNCTION addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistorizationTriggerEnum):T_workspaceHistoryEntryMetaData;
   VAR historyIndex:T_workspaceHistoryEntryIndex;
   PROCEDURE invalidateOldestBackup;
     VAR i:longint;
@@ -129,7 +140,7 @@ PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistori
 
   FUNCTION createEntry(CONST bytesToWrite:longint):T_workspaceHistoryEntryMetaData;
     VAR gapStart,gapEnd,i:longint;
-        iNext:longint=-1;
+        iCollision:longint;
     begin
       result.triggeredBy:=reason;
       result.datetime:=now;
@@ -138,14 +149,20 @@ PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistori
       result.dataSize:=bytesToWrite;
 
       gapStart:=sizeOf(T_workspaceHistoryEntryIndex);
-      repeat
-        gapEnd:=maxLongint;
-        if iNext>=0 then with historyIndex.entries[iNext] do gapStart:=dataStartAt+dataSize;
-        for i:=0 to historyIndex.size-1 do with historyIndex.entries[i] do if (dataStartAt>gapStart) and (dataStartAt<gapEnd) then begin gapEnd:=dataStartAt; iNext:=i; end;
-        {$ifdef debugMode}
-        writeln('Found gap of ',gapEnd-gapStart,' before index ',iNext,' at position ',gapStart);
-        {$endif}
-      until gapEnd-gapStart>=bytesToWrite;
+      gapEnd:=gapStart+bytesToWrite;
+      if historyIndex.size>0 then begin
+        repeat
+          iCollision:=-1;
+          for i:=0 to historyIndex.size-1 do with historyIndex.entries[i] do if (dataStartAt<gapEnd) and (dataStartAt+dataSize>gapStart) then iCollision:=i;
+          if iCollision>=0 then with historyIndex.entries[iCollision] do begin
+            {$ifdef debugMode}
+            writeln('Writing at ',gapStart,'--',gapEnd,' would collide with entry #',iCollision,' ',dataStartAt,'--',dataStartAt+dataSize);
+            {$endif}
+            gapStart:=dataStartAt+dataSize;
+            gapEnd:=gapStart+bytesToWrite;
+          end;
+        until iCollision<0;
+      end;
       result.dataStartAt:=gapStart;
       {$ifdef debugMode}
       writeln('Next entry will be written at: ',result.dataStartAt);
@@ -169,6 +186,7 @@ PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistori
 
       newEntry:=createEntry(memoryStream.position);
       memoryStream.setSize(memoryStream.position);
+      result:=newEntry;
       with historyIndex do begin
         entries[size]:=newEntry;
         inc(size);
@@ -192,8 +210,8 @@ PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistori
     acutallyRead:=fileStream.read(historyIndex,sizeOf(historyIndex));
     if acutallyRead<sizeOf(historyIndex) then historyIndex.size:=0;
 
-    if historyIndex.size=255 then invalidateOldestBackup;
-    {$ifdef DEBUGMODE}
+    if historyIndex.size>=254 then invalidateOldestBackup;
+    {$ifdef debugMode}
     listBackups(historyIndex);
     {$endif}
     writeCompressedBackup;
@@ -208,6 +226,7 @@ FUNCTION getBackupsIndex:T_workspaceHistoryEntryIndex;
       result.size:=0;
       exit;
     end;
+    initialize(result);
     fileStream:=TFileStream.create(backupsFileName,fmOpenRead);
     fileStream.Seek(0,soBeginning);
     acutallyRead:=fileStream.read(result,sizeOf(result));
@@ -234,11 +253,37 @@ FUNCTION tryRestoreBackup(CONST workspace:P_workspace; CONST entry:T_workspaceHi
     decompressionstream:=TDecompressionStream.create(memoryStream);
     streamWrapper.create(decompressionstream);
 
-    workspace^.destroy;
-    workspace^.create;
+    workspace^.clear;
     result:=workspace^.loadFromStream(streamWrapper);
     streamWrapper.destroy;
     memoryStream.destroy;
+  end;
+
+FUNCTION dropBackup(CONST toDrop: T_workspaceHistoryEntryMetaData): T_workspaceHistoryEntryIndex;
+  VAR fileStream: TFileStream;
+      i, acutallyRead:longint;
+      dropIdx:longint=-1;
+  begin
+    if fileExists(backupsFileName)
+    then fileStream:=TFileStream.create(backupsFileName,fmOpenReadWrite or fmShareDenyWrite)
+    else fileStream:=TFileStream.create(backupsFileName,fmCreate        or fmShareDenyWrite);
+    fileStream.Seek(0,soBeginning);
+    acutallyRead:=fileStream.read(result,sizeOf(T_workspaceHistoryEntryIndex));
+    if acutallyRead<sizeOf(T_workspaceHistoryEntryIndex) then result.size:=0
+    else begin
+      for i:=0 to result.size-1 do
+        if (result.entries[i].datetime   =toDrop.datetime) and
+           (result.entries[i].dataStartAt=toDrop.dataStartAt) and
+           (result.entries[i].dataSize   =toDrop.dataSize)
+        then dropIdx:=i;
+      if dropIdx>=0 then begin
+        for i:=dropIdx to result.size-2 do result.entries[i]:=result.entries[i+1];
+        result.size-=1;
+        fileStream.Seek(0,soBeginning);
+        fileStream.write(result,sizeOf(T_workspaceHistoryEntryIndex));
+      end;
+    end;
+    fileStream.destroy;
   end;
 
 FUNCTION workspaceFilename:string;
@@ -342,7 +387,8 @@ PROCEDURE T_workspace.stateTransition(CONST newState: T_workspaceStateEnum);
      currentState.paletteIndex               :=0;
   end;
 
-PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT challenge:P_challenge; OUT originalChallengeIndex:longint);
+PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT
+  challenge: P_challenge; OUT originalChallengeIndex: longint);
   begin
     challenge             :=currentState.challenge;
     originalChallengeIndex:=currentState.originalChallengeIndex;
@@ -415,7 +461,6 @@ CONSTRUCTOR T_workspace.create;
 CONSTRUCTOR T_workspace.createAndRestore;
   begin
     create;
-
     if loadFromFile(workspaceFilename)
     then begin
       CopyFile(workspaceFilename,workspaceBackupFilename);
@@ -433,6 +478,7 @@ CONSTRUCTOR T_workspace.createAndRestore;
       activeChallenge:=nil;
       challenges^.markAllAsPending;
       simplisticUi:=true;
+      errorOnLoadWorkspace:=true;
     end;
     initCurrentState;
   end;
@@ -445,12 +491,28 @@ DESTRUCTOR T_workspace.destroy;
     dispose(workspacePalette,destroy);
   end;
 
+PROCEDURE T_workspace.clear;
+  begin
+    clearPreviousStates;
+    dispose(challenges,destroy);
+    dispose(workspaceBoard,destroy);
+    dispose(workspacePalette,destroy);
+    new(workspacePalette,create);
+    new(workspaceBoard,create(workspacePalette));
+    new(challenges,create);
+    activeChallengeIndex:=-1;
+    activeChallenge:=nil;
+    setLength(previousState,0);
+    initCurrentState;
+  end;
+
 FUNCTION T_workspace.getSerialVersion: dword;
   begin
     result:=serialVersionOf('T_workspace',2);
   end;
 
-FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
+  ): boolean;
   begin
     result:=inherited and challenges^.loadFromStream(stream);
     activeChallengeIndex:=stream.readLongint;
@@ -548,7 +610,7 @@ PROCEDURE T_workspace.setActiveBoard(CONST board: P_visualBoard);
     workspaceBoard:=board;
   end;
 
-FUNCTION T_workspace.isEditingNewChallenge:boolean;
+FUNCTION T_workspace.isEditingNewChallenge: boolean;
   begin
     result:=(currentState.state in [editingChallengeSolution,editingChallengeTemplate]) and (currentState.originalChallengeIndex<0);
   end;
@@ -594,7 +656,9 @@ FUNCTION T_workspace.getInfoLabelText(CONST uiIdle: boolean): string;
     else result:=workspaceBoard ^.getInfoLabelText;
   end;
 
-PROCEDURE T_workspace.startEditingChallenge(CONST challenge: P_challenge; CONST challengeIndex: longint; CONST editExpected: boolean; CONST uiAdapter:P_uiAdapter);
+PROCEDURE T_workspace.startEditingChallenge(CONST challenge: P_challenge;
+  CONST challengeIndex: longint; CONST editExpected: boolean;
+  CONST uiAdapter: P_uiAdapter);
   CONST CHALLENGE_EDIT_STATE:array[false..true] of T_workspaceStateEnum=(editingChallengeTemplate,editingChallengeSolution);
   begin
     stateTransition(CHALLENGE_EDIT_STATE[editExpected]);
@@ -623,7 +687,7 @@ FUNCTION T_workspace.canGoBack: boolean;
 
 INITIALIZATION
   workspace.createAndRestore;
-finalization
+FINALIZATION
   workspace.saveToFile(workspaceFilename);
   workspace.destroy;
 end.

@@ -1,0 +1,120 @@
+object RestoreWorkspaceDialog: TRestoreWorkspaceDialog
+  Left = 507
+  Height = 430
+  Top = 239
+  Width = 724
+  Caption = 'Früher war alles besser...'
+  ClientHeight = 430
+  ClientWidth = 724
+  Color = 7354424
+  DesignTimePPI = 120
+  Position = poOwnerFormCenter
+  LCLVersion = '2.2.2.0'
+  object backupsGrid: TStringGrid
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = ErrorOcurredLabel
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = RestoreShape
+    Left = 6
+    Height = 279
+    Top = 90
+    Width = 712
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    BorderSpacing.Left = 6
+    BorderSpacing.Top = 6
+    BorderSpacing.Right = 6
+    BorderSpacing.Bottom = 6
+    Color = 8405056
+    ColCount = 6
+    FixedColor = 6303792
+    FixedCols = 0
+    Flat = True
+    Font.Color = clWhite
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing, goRowSelect, goDblClickAutoSize, goSmoothScroll]
+    ParentFont = False
+    TabOrder = 0
+    OnSelectCell = backupsGridSelectCell
+    Cells = (
+      6
+      0
+      0
+      'Zeitpunkt'
+      1
+      0
+      'Auslöser'
+      2
+      0
+      'Paletteneinträge'
+      3
+      0
+      'Aufgaben'
+      4
+      0
+      'Datenbereich Start'
+      5
+      0
+      'Größe (Bytes)'
+    )
+  end
+  object RestoreShape: TShape
+    AnchorSideLeft.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 6
+    Height = 49
+    Top = 375
+    Width = 712
+    Anchors = [akLeft, akRight, akBottom]
+    BorderSpacing.Left = 6
+    BorderSpacing.Top = 6
+    BorderSpacing.Right = 6
+    BorderSpacing.Bottom = 6
+    Brush.Color = 6303792
+    OnMouseDown = RestoreShapeMouseDown
+    Shape = stRoundRect
+  end
+  object RestoreLabel: TLabel
+    AnchorSideLeft.Control = RestoreShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = RestoreShape
+    AnchorSideTop.Side = asrCenter
+    Left = 190
+    Height = 28
+    Top = 385
+    Width = 344
+    Caption = 'Ausgewählten Zustand wiederherstellen'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -20
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = RestoreShapeMouseDown
+  end
+  object ErrorOcurredLabel: TLabel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 0
+    Height = 84
+    Top = 0
+    Width = 724
+    Alignment = taCenter
+    Anchors = [akTop, akLeft, akRight]
+    Caption = 'Leider ist beim Starten etwas schiefgelaufen'#13#10'und der Arbeitsplatz konnte nicht wiederhergestellt werden.'#13#10'Vielleicht hilft eines der folgenden Backups dir weiter.'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -20
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = RestoreShapeMouseDown
+  end
+end
