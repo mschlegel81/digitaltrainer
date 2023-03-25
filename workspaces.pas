@@ -39,10 +39,10 @@ TYPE
     PROCEDURE clearPreviousStates;
     PROCEDURE initCurrentState;
     PROCEDURE stateTransition(CONST newState:T_workspaceStateEnum);
-    CONSTRUCTOR createWithoutRestoring;
+    CONSTRUCTOR create;
   public
     simplisticUi:boolean;
-    CONSTRUCTOR create;
+    CONSTRUCTOR createAndRestore;
     DESTRUCTOR destroy;
     FUNCTION getSerialVersion:dword; virtual;
     FUNCTION loadFromStream(VAR stream:T_bufferedInputStreamWrapper):boolean; virtual;
@@ -75,7 +75,7 @@ TYPE
     PROCEDURE goBack(CONST uiAdapter: P_uiAdapter; OUT challenge:P_challenge; OUT originalChallengeIndex:longint);
   end;
 
-  T_workspaceHistorizationTriggerEnum=(wht_onStartup,wht_beforeDeletingEntry,wht_beforeDuplicateRemoval,wht_beforeTaskImport,wht_beforePaletteImport);
+  T_workspaceHistorizationTriggerEnum=(wht_onStartup,wht_beforeDeletingEntry,wht_beforeDuplicateRemoval,wht_beforeTaskImport,wht_beforePaletteImport,wht_beforeDeletingTask);
 
   P_workspaceHistoryEntryMetaData=^T_workspaceHistoryEntryMetaData;
   T_workspaceHistoryEntryMetaData=record
@@ -97,11 +97,22 @@ FUNCTION workspaceFilename:string;
 PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistorizationTriggerEnum);
 FUNCTION getBackupsIndex:T_workspaceHistoryEntryIndex;
 FUNCTION tryRestoreBackup(CONST workspace:P_workspace; CONST entry:T_workspaceHistoryEntryMetaData):boolean;
+VAR workspace:T_workspace;
 IMPLEMENTATION
 USES sysutils,FileUtil,Classes,zstream;
 FUNCTION backupsFileName:string;
   begin
     result:=ChangeFileExt(paramStr(0),'.backups');
+  end;
+
+PROCEDURE listBackups(CONST historyIndex:T_workspaceHistoryEntryIndex);
+  VAR i:longint;
+  begin
+    writeln('Total backups: ',historyIndex.size);
+    for i:=0 to historyIndex.size-1 do with historyIndex.entries[i] do begin
+      writeln(FormatDateTime('dd.mm.yyyy hh:nn:ss ',datetime),' ',dataStartAt,'--',dataStartAt+dataSize);
+
+    end;
   end;
 
 PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistorizationTriggerEnum);
@@ -136,6 +147,9 @@ PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistori
         {$endif}
       until gapEnd-gapStart>=bytesToWrite;
       result.dataStartAt:=gapStart;
+      {$ifdef debugMode}
+      writeln('Next entry will be written at: ',result.dataStartAt);
+      {$endif}
     end;
 
   PROCEDURE writeCompressedBackup;
@@ -179,6 +193,9 @@ PROCEDURE addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistori
     if acutallyRead<sizeOf(historyIndex) then historyIndex.size:=0;
 
     if historyIndex.size=255 then invalidateOldestBackup;
+    {$ifdef DEBUGMODE}
+    listBackups(historyIndex);
+    {$endif}
     writeCompressedBackup;
     fileStream.destroy;
   end;
@@ -218,7 +235,7 @@ FUNCTION tryRestoreBackup(CONST workspace:P_workspace; CONST entry:T_workspaceHi
     streamWrapper.create(decompressionstream);
 
     workspace^.destroy;
-    workspace^.createWithoutRestoring;
+    workspace^.create;
     result:=workspace^.loadFromStream(streamWrapper);
     streamWrapper.destroy;
     memoryStream.destroy;
@@ -384,7 +401,7 @@ PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT challenge:P_chall
     end;
   end;
 
-CONSTRUCTOR T_workspace.createWithoutRestoring;
+CONSTRUCTOR T_workspace.create;
   begin
     new(workspacePalette,create);
     new(workspaceBoard,create(workspacePalette));
@@ -395,13 +412,9 @@ CONSTRUCTOR T_workspace.createWithoutRestoring;
     initCurrentState;
   end;
 
-CONSTRUCTOR T_workspace.create;
+CONSTRUCTOR T_workspace.createAndRestore;
   begin
-    new(workspacePalette,create);
-    new(workspaceBoard,create(workspacePalette));
-    new(challenges,create);
-    activeChallengeIndex:=-1;
-    activeChallenge:=nil;
+    create;
 
     if loadFromFile(workspaceFilename)
     then begin
@@ -421,7 +434,6 @@ CONSTRUCTOR T_workspace.create;
       challenges^.markAllAsPending;
       simplisticUi:=true;
     end;
-    setLength(previousState,0);
     initCurrentState;
   end;
 
@@ -609,15 +621,10 @@ FUNCTION T_workspace.canGoBack: boolean;
     result:=length(previousState)>0;
   end;
 
-{$ifdef debugMode}
-VAR ws:T_workspace;
-    entry:T_workspaceHistoryEntryMetaData;
 INITIALIZATION
-  entry:=getBackupsIndex.entries[0];
-  ws.createWithoutRestoring;
-  if tryRestoreBackup(@ws,entry) then writeln('Restoring backup was okay') else writeln('RESTORING OF BACKUP FAILED!!!');
-  ws.destroy;
-{$endif}
-
+  workspace.createAndRestore;
+finalization
+  workspace.saveToFile(workspaceFilename);
+  workspace.destroy;
 end.
 

@@ -54,8 +54,7 @@ TYPE
     FUNCTION reShowFor               (CONST editedChallenge:P_challenge; CONST originalChallengeIndex:longint; CONST challenges: P_challengeSet):boolean;
   end;
 
-VAR workspace:P_workspace;
-    uiAdapter:P_uiAdapter;
+VAR uiAdapter:P_uiAdapter;
 FUNCTION CreateTaskForm:TCreateTaskForm;
 IMPLEMENTATION
 {$R *.lfm}
@@ -110,13 +109,13 @@ PROCEDURE TCreateTaskForm.addTaskShapeMouseDown(Sender: TObject;
 
 PROCEDURE TCreateTaskForm.editExpectedShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
-    workspace^.startEditingChallenge(challenge,challengeIndex,true,uiAdapter);
+    workspace.startEditingChallenge(challenge,challengeIndex,true,uiAdapter);
     ModalResult:=mrYes;
   end;
 
 PROCEDURE TCreateTaskForm.editTemplateShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
-    workspace^.startEditingChallenge(challenge,challengeIndex,false,uiAdapter);
+    workspace.startEditingChallenge(challenge,challengeIndex,false,uiAdapter);
     ModalResult:=mrYes;
   end;
 

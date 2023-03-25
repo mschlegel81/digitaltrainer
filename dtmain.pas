@@ -130,7 +130,6 @@ TYPE
     uiAdapter:T_uiAdapter;
     gateProperties  :T_gatePropertyValues;
     pauseByUser:boolean;
-    workspace:T_workspace;
 
     PROCEDURE buttonClicked(Shape:TShape);
     PROCEDURE propertyValueChanged(Sender: TObject);
@@ -190,8 +189,6 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
                      @repositionPropertyEditor,
                      @boardChanged);
 
-    workspace.create;
-    createTaskUnit.workspace:=@workspace;
     createTaskUnit.uiAdapter:=@uiAdapter;
 
     workspace.activePalette^.attachUI(@uiAdapter);
@@ -207,8 +204,6 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
   begin
-    workspace.saveToFile(workspaceFilename);
-    workspace.destroy;
     uiAdapter.destroy;
   end;
 
@@ -299,7 +294,7 @@ PROCEDURE TDigitaltrainerMainForm.miExportChallengesClick(Sender: TObject);
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
 
-    SelectTaskForm(@workspace).showForExport(workspace.getChallenges);
+    SelectTaskForm.showForExport(workspace.getChallenges);
 
     SimulationTimer.enabled:=timerEnabledBefore;
   end;
@@ -330,17 +325,23 @@ PROCEDURE TDigitaltrainerMainForm.miGoBackClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miImportAddClick(Sender: TObject);
   begin
-    if OpenDialog1.execute and workspace.getChallenges^.importChallenges(OpenDialog1.fileName,false) then miTasksClick(Sender);
+    if OpenDialog1.execute then begin
+      addBackup(@workspace,wht_beforeTaskImport);
+      if workspace.getChallenges^.importChallenges(OpenDialog1.fileName,false) then miTasksClick(Sender);
+    end;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miImportOverwriteClick(Sender: TObject);
   begin
-    if OpenDialog1.execute and workspace.getChallenges^.importChallenges(OpenDialog1.fileName,true) then begin
-      workspace.setFreeEditMode;
-      workspace.activePalette^.attachUI(@uiAdapter);
-      workspace.activeBoard  ^.attachUI(@uiAdapter);
-      updateUiElements;
-      miTasksClick(Sender);
+    if OpenDialog1.execute then begin
+      addBackup(@workspace,wht_beforeTaskImport);
+      if workspace.getChallenges^.importChallenges(OpenDialog1.fileName,true) then begin
+        workspace.setFreeEditMode;
+        workspace.activePalette^.attachUI(@uiAdapter);
+        workspace.activeBoard  ^.attachUI(@uiAdapter);
+        updateUiElements;
+        miTasksClick(Sender);
+      end;
     end;
   end;
 
@@ -418,9 +419,9 @@ PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
 
-    if SelectTaskForm(@workspace).startTaskAfterShowing(workspace.getChallenges) and
+    if SelectTaskForm.startTaskAfterShowing(workspace.getChallenges) and
        continueWithOtherBoard and
-       workspace.startChallenge(SelectTaskForm(@workspace).selectedChallengeIndex) then begin
+       workspace.startChallenge(SelectTaskForm.selectedChallengeIndex) then begin
       workspace.activePalette^.attachUI(@uiAdapter);
       workspace.activeBoard  ^.attachUI(@uiAdapter);
       workspace.activeBoard  ^.reset(true);

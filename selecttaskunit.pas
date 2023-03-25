@@ -34,32 +34,36 @@ TYPE
     PROCEDURE StartTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   private
     challengeSet:P_challengeSet;
-    workspace:P_workspace;
-    exporting:boolean;
+    exporting,backupCreated:boolean;
     PROCEDURE updateTable;
+    PROCEDURE createBackupOnce(CONST reason:T_workspaceHistorizationTriggerEnum);
   public
     selectedChallengeIndex:longint;
     FUNCTION startTaskAfterShowing(CONST cSet:P_challengeSet):boolean;
     PROCEDURE showForExport(CONST cSet: P_challengeSet);
   end;
 
-FUNCTION SelectTaskForm(CONST ws:P_workspace): TSelectTaskForm;
+FUNCTION SelectTaskForm: TSelectTaskForm;
 
 IMPLEMENTATION
 USES visuals,createTaskUnit;
 VAR mySelectTaskForm:TSelectTaskForm=nil;
-FUNCTION SelectTaskForm(CONST ws:P_workspace): TSelectTaskForm;
+FUNCTION SelectTaskForm: TSelectTaskForm;
   begin
-    if mySelectTaskForm=nil then begin
-      mySelectTaskForm:=TSelectTaskForm.create(nil);
-      mySelectTaskForm.workspace:=ws;
-    end;
+    if mySelectTaskForm=nil then mySelectTaskForm:=TSelectTaskForm.create(nil);
     result:=mySelectTaskForm;
   end;
 
 {$R *.lfm}
 
 { TSelectTaskForm }
+
+PROCEDURE TSelectTaskForm.createBackupOnce(CONST reason:T_workspaceHistorizationTriggerEnum);
+  begin
+    if backupCreated then exit;
+    addBackup(@workspace,reason);
+    backupCreated:=true;
+  end;
 
 PROCEDURE TSelectTaskForm.FormShow(Sender: TObject);
   begin
@@ -75,11 +79,13 @@ PROCEDURE TSelectTaskForm.DeleteTaskShapeMouseDown(Sender: TObject; button: TMou
       end;
     end else begin
       if (selectedChallengeIndex<0) then exit;
+      createBackupOnce(wht_beforeDeletingTask);
       dispose(challengeSet^.challenge[selectedChallengeIndex],destroy);
       for i:=selectedChallengeIndex+1 to length(challengeSet^.challenge)-1 do
         challengeSet^.challenge[i-1]:=challengeSet^.challenge[i];
+
       setLength(challengeSet^.challenge,length(challengeSet^.challenge)-1);
-      workspace^.challengeDeleted(selectedChallengeIndex);
+      workspace.challengeDeleted(selectedChallengeIndex);
       updateTable;
     end;
   end;
@@ -98,16 +104,14 @@ PROCEDURE TSelectTaskForm.ChallengesGridGetCheckboxState(Sender: TObject; aCol, 
 
 PROCEDURE TSelectTaskForm.ChallengesGridSetCheckboxState(Sender: TObject; aCol, aRow: integer; CONST value: TCheckboxState);
   VAR i: integer;
-      anySelected:boolean;
+      anySelected:boolean=false;
   begin
     dec(aRow);
     if (not exporting) or (tutorial.equals(challengeSet^.challenge[aRow]))
     then exit;
 
     challengeSet^.challenge[aRow]^.marked:=not(challengeSet^.challenge[aRow]^.marked);
-
     ChallengesGrid.Cells[3,aRow+1]:=BoolToStr(challengeSet^.challenge[aRow]^.marked,'x','');
-
     for i:=0 to length(challengeSet^.challenge)-1 do anySelected:=anySelected or challengeSet^.challenge[i]^.marked;
     setEnableButton(StartTaskShape,StartTaskLabel,anySelected);
     setEnableButton(DeleteTaskShape,DeleteTaskLabel,anySelected);
@@ -192,6 +196,7 @@ PROCEDURE TSelectTaskForm.updateTable;
 
 FUNCTION TSelectTaskForm.startTaskAfterShowing(CONST cSet: P_challengeSet): boolean;
   begin
+    backupCreated:=false;
     challengeSet:=cSet;
     StartTaskLabel.caption:='Aufgabe starten';
     DeleteTaskLabel.caption:='Aufgabe löschen';
@@ -203,6 +208,7 @@ FUNCTION TSelectTaskForm.startTaskAfterShowing(CONST cSet: P_challengeSet): bool
 PROCEDURE TSelectTaskForm.showForExport(CONST cSet: P_challengeSet);
   VAR i:longint;
   begin
+    backupCreated:=false;
     for i:=0 to length(cSet^.challenge)-1 do cSet^.challenge[i]^.marked:=false;
     StartTaskLabel.caption:='Exportieren';
     DeleteTaskLabel.caption:='Exportieren (gesperrt)';

@@ -6,10 +6,9 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, Grids, ExtCtrls,
-  StdCtrls, Menus,paletteHandling;
+  StdCtrls, Menus, paletteHandling,workspaces;
 
 TYPE
-//TODO: Info box for currently selected entry with interfaces and dependencies.
   { TPaletteForm }
 
   TPaletteForm = class(TForm)
@@ -68,6 +67,8 @@ TYPE
       ascending:boolean;
       index:array of longint;
     end;
+    backupCreated:boolean;
+    PROCEDURE createBackupOnce(CONST reason: T_workspaceHistorizationTriggerEnum);
     PROCEDURE fillTable(CONST initial:boolean=false);
     PROCEDURE updateButtons;
   public
@@ -139,6 +140,7 @@ PROCEDURE TPaletteForm.DeleteShapeMouseDown(Sender: TObject; button: TMouseButto
     i:=lastClicked;
     if (i<0) or (i>length(sorting.index)) then exit;
 
+    createBackupOnce(wht_beforeDeletingEntry);
     palette^.deleteEntry(sorting.index[i]);
     fillTable(true);
     lastClicked-=1;
@@ -198,6 +200,7 @@ PROCEDURE TPaletteForm.FormCreate(Sender: TObject);
 
 PROCEDURE TPaletteForm.ImportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
+    createBackupOnce(wht_beforePaletteImport);
     if OpenDialog1.execute then palette^.importPalette(OpenDialog1.fileName);
     fillTable(true);
   end;
@@ -218,6 +221,7 @@ PROCEDURE TPaletteForm.MarkNoneShapeMouseDown(Sender: TObject; button: TMouseBut
 
 PROCEDURE TPaletteForm.miRemoveDuplicatesBehaviorClick(Sender: TObject);
   begin
+    createBackupOnce(wht_beforeDuplicateRemoval);
     palette^.removeDuplicates(true);
     fillTable;
     updateButtons;
@@ -225,6 +229,7 @@ PROCEDURE TPaletteForm.miRemoveDuplicatesBehaviorClick(Sender: TObject);
 
 PROCEDURE TPaletteForm.miRemoveDuplicatesExactClick(Sender: TObject);
   begin
+    createBackupOnce(wht_beforeDuplicateRemoval);
     palette^.removeDuplicates(false);
     fillTable;
     updateButtons;
@@ -268,6 +273,13 @@ PROCEDURE TPaletteForm.SubPaletteStringGridValidateEntry(Sender: TObject; aCol, 
     then newValue:=oldValue
     else palette^.paletteNames[lastClickedSubPalette]:=newValue;
     fillTable;
+  end;
+
+PROCEDURE TPaletteForm.createBackupOnce(CONST reason: T_workspaceHistorizationTriggerEnum);
+  begin
+    if backupCreated then exit;
+    addBackup(@workspace,reason);
+    backupCreated:=true;
   end;
 
 PROCEDURE TPaletteForm.fillTable(CONST initial: boolean);
@@ -357,6 +369,7 @@ PROCEDURE TPaletteForm.updateButtons;
 
 PROCEDURE TPaletteForm.showFor(CONST palette_: P_workspacePalette);
   begin
+    backupCreated:=false;
     palette:=palette_;
     sorting.byColumn:=255;
     setLength(sorting.index,0);
