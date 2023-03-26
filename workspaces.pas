@@ -345,7 +345,7 @@ PROCEDURE T_workspace.stateTransition(CONST newState: T_workspaceStateEnum);
         if state in [editingNewBoard,editingPaletteEntry]
         then paletteIndex:=workspacePalette^.lastSubPaletteIndex;
         if state=editingNewBoard
-        then currentState.newBoard:=workspaceBoard^.clone;
+        then currentState.newBoard:=workspaceBoard^.cloneAsTrueCopy;
         if state=solvingChallenge
         then originalChallengeIndex:=activeChallengeIndex;
       end;
@@ -425,7 +425,7 @@ PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT
       end;
       editingPaletteEntry: begin
         if workspaceBoard<>nil then dispose(workspaceBoard,destroy);
-        workspaceBoard:=currentState.prototypeInWorkspacePalette^.clone();
+        workspaceBoard:=currentState.prototypeInWorkspacePalette^.cloneWithBackReference;
 
         activeChallenge:=nil;
         activeChallengeIndex:=-1;
@@ -615,8 +615,7 @@ FUNCTION T_workspace.isEditingNewChallenge: boolean;
     result:=(currentState.state in [editingChallengeSolution,editingChallengeTemplate]) and (currentState.originalChallengeIndex<0);
   end;
 
-PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard;
-  CONST uiAdapter: P_uiAdapter);
+PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard; CONST uiAdapter: P_uiAdapter);
   begin
     if activeChallenge<>nil then exit;
 
@@ -625,7 +624,7 @@ PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard;
 
     dispose(workspaceBoard,destroy);
     workspacePalette^.setFilter(prototype^.getIndexInPalette);
-    workspaceBoard:=prototype^.clone;
+    workspaceBoard:=prototype^.cloneWithBackReference;
     workspaceBoard^.attachUI(uiAdapter);
     workspaceBoard^.reset(true);
     uiAdapter^.updateBoardScrollbars;
@@ -667,8 +666,8 @@ PROCEDURE T_workspace.startEditingChallenge(CONST challenge: P_challenge;
     currentState.challenge:=challenge;
     currentState.originalChallengeIndex:=challengeIndex;
     if editExpected
-    then workspaceBoard:=challenge^.expectedBehavior^.clone()
-    else workspaceBoard:=challenge^.resultTemplate^.clone();
+    then workspaceBoard:=challenge^.expectedBehavior^.cloneAsTrueCopy
+    else workspaceBoard:=challenge^.resultTemplate  ^.cloneAsTrueCopy;
     challenge^.palette^.finalizePalette(workspaceBoard,challenge^.expectedBehavior);
 
     workspaceBoard^.attachUI(uiAdapter);

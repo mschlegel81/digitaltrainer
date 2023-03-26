@@ -806,7 +806,7 @@ FUNCTION T_workspacePalette.addBoard(CONST board: P_visualBoard; subPaletteIndex
     setLength(paletteEntries,i+1);
 
     paletteEntries[i].entryType      :=gt_compound;
-    paletteEntries[i].prototype      :=board^.clone;
+    paletteEntries[i].prototype      :=board^.cloneAsTrueCopy;
     result:=paletteEntries[i].prototype;
     paletteEntries[i].subPaletteIndex:=subPaletteIndex;
     paletteEntries[i].visualSorting  :=visualIndex;
@@ -835,7 +835,7 @@ PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard; subPaletteI
     end;
     i:=board^.getIndexInPalette;
     paletteEntries[i].entryType:=gt_compound;
-    clonedBoard:=board^.clone;
+    clonedBoard:=board^.cloneAsTrueCopy;
 
     //Update prototype everywhere
     ui^.prototypeUpdated(paletteEntries[i].prototype,clonedBoard);
@@ -1120,7 +1120,7 @@ PROCEDURE T_workspacePalette.exportSelected(CONST fileName: string);
       visualSorting:=i;
       subPaletteIndex:=originalProtoypes[i].spi;
       entryType:=gt_compound;
-      prototype:=originalProtoypes[i].proto^.clone;
+      prototype:=originalProtoypes[i].proto^.cloneAsTrueCopy;
       prototype^.moveToPalette(@temp);
       for j:=0 to i-1 do prototype^.prototypeUpdated(originalProtoypes[j].proto,temp.paletteEntries[j].prototype);
     end;

@@ -94,7 +94,7 @@ PROCEDURE TCreateTaskForm.rbIncludeAllGatesChange(Sender: TObject);
 PROCEDURE TCreateTaskForm.resetTemplateShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     dispose(challenge^.resultTemplate,destroy);
-    challenge^.resultTemplate:=challenge^.expectedBehavior^.clone();
+    challenge^.resultTemplate:=challenge^.expectedBehavior^.cloneAsTrueCopy;
   end;
 
 PROCEDURE TCreateTaskForm.FormShow(Sender: TObject);

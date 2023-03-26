@@ -42,7 +42,7 @@ TYPE
     PROCEDURE detachTestGenerator;
     PROCEDURE importTable(CONST fileName:string);
     PROCEDURE exportTable(CONST fileName:string);
-    PROCEDURE copyToClipboard;
+    PROCEDURE CopyToClipboard;
   end;
 
 IMPLEMENTATION
@@ -213,7 +213,7 @@ PROCEDURE TTestCreationFrame.exportTable(CONST fileName:string);
     TestCasesStringGrid.SaveToCSVFile(fileName,';');
   end;
 
-PROCEDURE TTestCreationFrame.copyToClipboard;
+PROCEDURE TTestCreationFrame.CopyToClipboard;
   begin
     TestCasesStringGrid.CopyToClipboard;
   end;

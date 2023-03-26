@@ -79,8 +79,8 @@ T_visualBoard=object(T_captionedAndIndexed)
     PROCEDURE extractChallenge(CONST challengePalette: P_abstractPrototypeSource; OUT expectedBehavior: P_visualBoard);
     FUNCTION getInterfaces:T_gateInterfaces;
 
-    FUNCTION clone(CONST fixProperties:boolean=false):P_visualBoard;
-
+    FUNCTION cloneAsTrueCopy(CONST fixProperties:boolean=false):P_visualBoard;
+    FUNCTION cloneWithBackReference:P_visualBoard;
     PROCEDURE enumerateIo;
 
     FUNCTION getWireGraph(CONST dropExistingWires:boolean):P_wireGraph;
@@ -807,7 +807,7 @@ FUNCTION T_visualBoard.interfaceHash: word;
     {$Q+}{$R+}
   end;
 
-FUNCTION T_visualBoard.clone(CONST fixProperties: boolean): P_visualBoard;
+FUNCTION T_visualBoard.cloneAsTrueCopy(CONST fixProperties: boolean): P_visualBoard;
   VAR cloned:P_visualBoard;
       i,j:longint;
   FUNCTION gateInClone(CONST gate:P_visualGate):P_visualGate;
@@ -825,7 +825,7 @@ FUNCTION T_visualBoard.clone(CONST fixProperties: boolean): P_visualBoard;
     cloned^.captionString:=captionString;
     cloned^.descriptionString:=descriptionString;
     cloned^.myIndex:=-1;
-    cloned^.underlyingPrototype:=@self;
+    cloned^.underlyingPrototype:=nil;
     cloned^.gridX0:=gridX0;
     cloned^.gridX1:=gridX1;
     cloned^.gridY0:=gridY0;
@@ -845,6 +845,12 @@ FUNCTION T_visualBoard.clone(CONST fixProperties: boolean): P_visualBoard;
       end;
     end;
     result:=cloned;
+  end;
+
+FUNCTION T_visualBoard.cloneWithBackReference:P_visualBoard;
+  begin
+    result:=cloneAsTrueCopy;
+    result^.underlyingPrototype:=@self;
   end;
 
 PROCEDURE T_visualBoard.enumerateIo;

@@ -302,7 +302,7 @@ PROCEDURE T_uiAdapter.saveStateToUndoList;
   begin
     with helperState do begin
       setLength(undoList,length(undoList)+1);
-      undoList[length(undoList)-1]:=activeBoard^.clone;
+      undoList[length(undoList)-1]:=activeBoard^.cloneAsTrueCopy;
       for i:=0 to length(redoList)-1 do dispose(redoList[i],destroy); setLength(redoList,0);
     end;
   end;

@@ -149,7 +149,7 @@ VAR
   DigitaltrainerMainForm: TDigitaltrainerMainForm;
 
 IMPLEMENTATION
-USES compoundGates, boardTestUnit, boardChangedUi,welcomeDialog,restoreWorkspaceUi;
+USES compoundGates, boardTestUnit, boardChangedUi,welcomeDialog,RestoreWorkspaceUi;
 CONST playPauseGlyph:array[false..true] of string=('⏵','⏸');
 
 {$R *.lfm}

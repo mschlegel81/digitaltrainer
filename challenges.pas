@@ -581,9 +581,9 @@ FUNCTION T_challenge.clone: P_challenge;
     result^.challengeDescription:=challengeDescription;
 
     dispose(result^.resultTemplate,destroy);
-    result^.resultTemplate  :=resultTemplate^.clone();
+    result^.resultTemplate  :=resultTemplate^.cloneAsTrueCopy;
     dispose(result^.expectedBehavior,destroy);
-    result^.expectedBehavior:=expectedBehavior^.clone();
+    result^.expectedBehavior:=expectedBehavior^.cloneAsTrueCopy;
     dispose(result^.palette,destroy);
     result^.palette:=palette^.cloneAndMigrate(result^.resultTemplate,result^.expectedBehavior);
 
@@ -662,7 +662,7 @@ FUNCTION T_challenge.resetChallenge: P_visualBoard;
       i:longint;
       g:P_visualGate;
   begin
-    board:=resultTemplate^.clone(not(palette^.allowConfiguration));
+    board:=resultTemplate^.cloneAsTrueCopy(not(palette^.allowConfiguration));
     for g in board^.inputs  do g^.fixedPosition:=true;
     for g in board^.outputs do g^.fixedPosition:=true;
     for g in board^.gates   do g^.fixedPosition:=true;
@@ -764,7 +764,7 @@ PROCEDURE T_challenge.initNewChallenge(CONST expectedAsVisual: P_visualBoard);
     expectedAsVisual^.extractChallenge(palette,expectedBehavior);
     palette^.constructingChallenge:=false;
     behavior      :=expectedBehavior^.extractBehavior;
-    resultTemplate:=expectedBehavior^.clone();
+    resultTemplate:=expectedBehavior^.cloneAsTrueCopy;
 
     if length(tests)>0 then exit;
     Interfaces:=expectedAsVisual^.getInterfaces;

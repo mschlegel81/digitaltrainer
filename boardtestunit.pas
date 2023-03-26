@@ -47,7 +47,7 @@ PROCEDURE TBoardTestForm.miExportToCsvClick(Sender: TObject);
 
 PROCEDURE TBoardTestForm.miExportToClipboardClick(Sender: TObject);
   begin
-    TestCreationFrame1.copyToClipboard;
+    TestCreationFrame1.CopyToClipboard;
   end;
 
 PROCEDURE TBoardTestForm.showForBoard(CONST board: P_visualBoard);
