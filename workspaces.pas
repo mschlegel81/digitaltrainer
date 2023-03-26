@@ -628,6 +628,7 @@ PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard;
     workspaceBoard:=prototype^.clone;
     workspaceBoard^.attachUI(uiAdapter);
     workspaceBoard^.reset(true);
+    uiAdapter^.updateBoardScrollbars;
     uiAdapter^.paintAll;
   end;
 
@@ -643,6 +644,7 @@ PROCEDURE T_workspace.clearBoard(CONST uiAdapter: P_uiAdapter);
       workspacePalette^.setFilter(maxLongint);
     end;
     workspaceBoard^.attachUI(uiAdapter);
+    uiAdapter^.updateBoardScrollbars;
   end;
 
 FUNCTION T_workspace.getInfoLabelText(CONST uiIdle: boolean): string;

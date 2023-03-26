@@ -337,7 +337,7 @@ PROCEDURE TDigitaltrainerMainForm.miGoBackClick(Sender: TObject);
     challenge: P_challenge;
     originalChallengeIndex: longint;
   begin
-    if workspace.canGoBack then begin
+    if workspace.canGoBack and continueWithOtherBoard then begin
       workspace.goBack(@uiAdapter,challenge,originalChallengeIndex);
       if challenge<>nil then CreateTaskForm.reShowFor(challenge,originalChallengeIndex,workspace.getChallenges);
     end;
