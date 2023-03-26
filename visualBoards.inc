@@ -646,6 +646,7 @@ PROCEDURE T_visualBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper;
 
 PROCEDURE T_visualBoard.savePaletteEntryToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST paletteIndex: longint);
   begin
+    underlyingPrototype:=nil;
     myIndex:=paletteIndex;
     saveToStream(stream,false);
   end;

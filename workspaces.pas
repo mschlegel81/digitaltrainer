@@ -633,7 +633,7 @@ PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard;
 
 PROCEDURE T_workspace.clearBoard(CONST uiAdapter: P_uiAdapter);
   begin
-    stateTransition(editingNewBoard);
+    clearPreviousStates;
 
     if activeChallenge<>nil then begin
       dispose(workspaceBoard,destroy);
