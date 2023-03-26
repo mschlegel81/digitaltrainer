@@ -214,6 +214,7 @@
         <Filename Value="restoreworkspaceui.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="RestoreWorkspaceDialog"/>
+        <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="RestoreWorkspaceUi"/>
       </Unit>
