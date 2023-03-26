@@ -21,6 +21,7 @@ T_visualBoard=object(T_captionedAndIndexed)
   private
     wiresCs:TRTLCriticalSection;
     associatedPalette:P_abstractPrototypeSource;
+    underlyingPrototype:P_visualBoard;
     myIndex:longint;
 
     captionString:shortstring;
@@ -140,6 +141,7 @@ PROCEDURE T_visualBoard.clear;
   VAR i:longint;
   begin
     myIndex:=-1;
+    underlyingPrototype:=nil;
     gridX0:=0;
     gridX1:=32;
     gridY0:=0;
@@ -510,8 +512,7 @@ PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray;
     ui^.callback.boardModifiedCallback();
   end;
 
-FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper;
-  CONST includeFixing: boolean): boolean;
+FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper; CONST includeFixing: boolean): boolean;
   FUNCTION gateByIndex(index:longint):P_visualGate;
     begin
       if index<length(inputs) then exit(inputs[index]); dec(index,length(inputs));
@@ -599,7 +600,7 @@ PROCEDURE T_visualBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper;
   begin
     stream.writeAnsiString(captionString);
     stream.writeAnsiString(descriptionString);
-    stream.writeInteger(myIndex);
+    stream.writeInteger(getIndexInPalette);
 
     stream.writeNaturalNumber(length(inputs));
     for i:=0 to length(inputs)-1 do begin
@@ -643,8 +644,7 @@ PROCEDURE T_visualBoard.saveToStream(VAR stream: T_bufferedOutputStreamWrapper;
     end;
   end;
 
-PROCEDURE T_visualBoard.savePaletteEntryToStream(
-  VAR stream: T_bufferedOutputStreamWrapper; CONST paletteIndex: longint);
+PROCEDURE T_visualBoard.savePaletteEntryToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST paletteIndex: longint);
   begin
     myIndex:=paletteIndex;
     saveToStream(stream,false);
@@ -823,7 +823,8 @@ FUNCTION T_visualBoard.clone(CONST fixProperties: boolean): P_visualBoard;
     cloned^.wiresHaveChangedInBackground:=false;
     cloned^.captionString:=captionString;
     cloned^.descriptionString:=descriptionString;
-    cloned^.myIndex:=myIndex;
+    cloned^.myIndex:=-1;
+    cloned^.underlyingPrototype:=@self;
     cloned^.gridX0:=gridX0;
     cloned^.gridX1:=gridX1;
     cloned^.gridY0:=gridY0;
@@ -1686,11 +1687,10 @@ end;
 
 FUNCTION T_visualBoard.getIndexInPalette: longint;
   begin
-    result:=myIndex;
+    if underlyingPrototype=nil then result:=myIndex else result:=underlyingPrototype^.myIndex;
   end;
 
-PROCEDURE T_visualBoard.afterGatePropertiesEdited(
-  CONST editedGate: P_visualGate; CONST editedIsBoardElement: boolean);
+PROCEDURE T_visualBoard.afterGatePropertiesEdited(CONST editedGate: P_visualGate; CONST editedIsBoardElement: boolean);
   VAR g:P_visualGate;
   begin
     for g in gates do if g^.behavior^.equals(editedGate^.behavior) then g^.propertyEditDone();
@@ -1698,6 +1698,7 @@ PROCEDURE T_visualBoard.afterGatePropertiesEdited(
       dropWatchersAssociatedWith(editedGate);
       repositionElement(editedGate,true,true);
       checkBoardExtend(false,false);
+      modified:=true;
     end;
     rewire(true);
   end;
