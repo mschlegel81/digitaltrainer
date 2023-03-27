@@ -51,6 +51,15 @@ TYPE
     prototype:P_visualBoard;
   end;
 
+  T_paletteImportOptions=record
+    removeExactDuplicatesOnImport:boolean;
+    removeBehavDuplicatesOnImport:boolean;
+    addPrefixToGroupName:boolean;
+    moveAllToSameGroup:boolean;
+
+    prefixOrSharedGroupName:string;
+  end;
+
   P_workspacePalette=^T_workspacePalette;
   T_workspacePalette=object(T_palette)
   private
@@ -97,9 +106,9 @@ TYPE
     PROCEDURE markEntryForExportToggle(CONST index:longint);
     PROCEDURE markEntryForExport(CONST index:longint; CONST Selected:boolean);
     PROCEDURE exportSelected(CONST fileName:string);
-    PROCEDURE importPalette(CONST fileName:string);
+    PROCEDURE importPalette(CONST fileName:string; CONST options:T_paletteImportOptions);
     PROCEDURE swapPaletteName(CONST index:longint; CONST up:boolean);
-    PROCEDURE removeDuplicates(CONST byBehavior:boolean);
+    PROCEDURE removeDuplicates(CONST byBehavior:boolean; CONST startAtIndex:longint=0);
 
     FUNCTION describeEntry(CONST index:longint):string;
   end;
@@ -560,7 +569,7 @@ PROCEDURE T_workspacePalette.reindex;
       if paletteEntries[i].prototype<>nil then begin
         j:=i+1;
         while (j<length(paletteEntries)) and ((paletteEntries[j].prototype=nil) or not(paletteEntries[i].prototype^.usesPrototype(paletteEntries[j].prototype,true))) do inc(j);
-        if j<length(paletteEntries) then begin
+        if (j<length(paletteEntries)) and (paletteEntries[j].prototype<>nil) then begin
           anySwapped:=true;
           tmp:=paletteEntries[i];
           paletteEntries[i]:=paletteEntries[j];
@@ -569,7 +578,7 @@ PROCEDURE T_workspacePalette.reindex;
       end;
     until not(anySwapped);
 
-    for i:=0 to length(paletteEntries)-1 do if paletteEntries[i].prototype<>nil then paletteEntries[i].prototype^.setIndexInPalette(i);
+    for i:=0 to length(paletteEntries)-1 do if paletteEntries[i].prototype<>nil then paletteEntries[i].prototype^.setIndexInPalette(i,true);
   end;
 
 CONSTRUCTOR T_workspacePalette.create;
@@ -689,10 +698,8 @@ PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
 
   VAR items:array of T_item;
       tmp:T_item;
-
       i,j,k:longint;
       behavior: P_abstractGate;
-
   begin
     for i:=0 to length(visualPaletteItems)-1 do dispose(visualPaletteItems[i],destroy);
     setLength(items,0);
@@ -964,7 +971,7 @@ PROCEDURE T_workspacePalette.ensureIndexes;
   begin
     for i:=0 to length(paletteEntries)-1 do
       if paletteEntries[i].prototype<>nil
-      then paletteEntries[i].prototype^.setIndexInPalette(i);
+      then paletteEntries[i].prototype^.setIndexInPalette(i,true);
   end;
 
 PROCEDURE T_workspacePalette.dropPaletteItem(CONST gatePtr: pointer);
@@ -1120,7 +1127,7 @@ PROCEDURE T_workspacePalette.exportSelected(CONST fileName: string);
       visualSorting:=i;
       subPaletteIndex:=originalProtoypes[i].spi;
       entryType:=gt_compound;
-      prototype:=originalProtoypes[i].proto^.cloneAsTrueCopy;
+      prototype:=originalProtoypes[i].proto^.cloneWithBackReference;
       prototype^.moveToPalette(@temp);
       for j:=0 to i-1 do prototype^.prototypeUpdated(originalProtoypes[j].proto,temp.paletteEntries[j].prototype);
     end;
@@ -1132,22 +1139,35 @@ PROCEDURE T_workspacePalette.exportSelected(CONST fileName: string);
     reindex;
   end;
 
-PROCEDURE T_workspacePalette.importPalette(CONST fileName: string);
+PROCEDURE T_workspacePalette.importPalette(CONST fileName: string; CONST options:T_paletteImportOptions);
   VAR temp:T_workspacePalette;
-      i,j:longint;
+      i,j,firstImportedIndex:longint;
       updatedPrototypes:array of P_visualBoard;
+
+  FUNCTION fixedGroupName(CONST i:longint):string;
+    begin
+      if options.moveAllToSameGroup then exit(options.prefixOrSharedGroupName);
+      result:=temp.paletteNames[temp.paletteEntries[i].subPaletteIndex];
+      if options.addPrefixToGroupName then result:=options.prefixOrSharedGroupName+result;
+    end;
+
   begin
     temp.create;
     if not(temp.loadFromFile(fileName)) then begin
       temp.destroy;
       exit;
     end;
+
     setLength(updatedPrototypes,length(temp.paletteEntries));
+    firstImportedIndex:=length(paletteEntries);
     for i:=0 to length(temp.paletteEntries)-1 do if (temp.paletteEntries[i].entryType=gt_compound) then begin
-      updatedPrototypes[i]:=addBoard(temp.paletteEntries[i].prototype,-1,temp.paletteNames[temp.paletteEntries[i].subPaletteIndex]);
+      updatedPrototypes[i]:=addBoard(temp.paletteEntries[i].prototype,-1,fixedGroupName(i));
       updatedPrototypes[i]^.moveToPalette(@self);
       for j:=0 to i-1 do updatedPrototypes[i]^.prototypeUpdated(temp.paletteEntries[j].prototype,updatedPrototypes[j]);
     end;
+    if options.removeBehavDuplicatesOnImport or options.removeExactDuplicatesOnImport then
+      removeDuplicates(options.removeBehavDuplicatesOnImport,firstImportedIndex);
+
     temp.destroy;
   end;
 
@@ -1174,7 +1194,7 @@ PROCEDURE T_workspacePalette.swapPaletteName(CONST index: longint; CONST up: boo
       then paletteEntries[k].subPaletteIndex:=index;
   end;
 
-PROCEDURE T_workspacePalette.removeDuplicates(CONST byBehavior:boolean);
+PROCEDURE T_workspacePalette.removeDuplicates(CONST byBehavior:boolean; CONST startAtIndex:longint=0);
   VAR hashGroups:array of T_arrayOfLongint;
       k:longint;
       i,j:longint;
@@ -1222,7 +1242,7 @@ PROCEDURE T_workspacePalette.removeDuplicates(CONST byBehavior:boolean);
 
     for h:=0 to 65535 do begin
       if length(hashGroups[h])>1 then begin
-        for i:=0 to length(hashGroups[h])-2 do for j:=i+1 to length(hashGroups[h])-1 do begin
+        for i:=0 to length(hashGroups[h])-2 do for j:=i+1 to length(hashGroups[h])-1 do if hashGroups[h,j]>=startAtIndex then begin
           protRetain:=paletteEntries[hashGroups[h,i]].prototype;
           protRemove:=paletteEntries[hashGroups[h,j]].prototype;
           if byBehavior then begin

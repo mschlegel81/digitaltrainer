@@ -137,6 +137,7 @@ object CreateTaskForm: TCreateTaskForm
     BorderSpacing.Left = 4
     BorderSpacing.Top = 4
     BorderSpacing.Right = 4
+    BevelColor = clBlack
     BorderWidth = 5
     ClientHeight = 88
     ClientWidth = 656

@@ -7,8 +7,8 @@ INTERFACE
 USES
   Classes, sysutils, StdCtrls,ExtCtrls;
 
-TYPE   T_shapeAndLabel=record colorIndex:byte; Shape:TShape; labl:TLabel; end;
-
+TYPE  T_shapeAndLabel=record colorIndex:byte; Shape:TShape; labl:TLabel; end;
+//TODO support different color schemes?
 CONST ENABLED_BUTTON_COLOR =$00603030;
       DISABLED_BUTTON_COLOR=$00703838;
       ENABLED_TEXT_COLOR   =$00FFFFFF;

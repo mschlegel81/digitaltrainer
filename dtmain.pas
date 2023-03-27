@@ -185,7 +185,8 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
                      @repositionPropertyEditor,
                      @boardChanged);
 
-    createTaskUnit.uiAdapter:=@uiAdapter;
+    createTaskUnit  .uiAdapter:=@uiAdapter;
+    paletteHandingUi.uiAdapter:=@uiAdapter;
 
     workspace.activePalette^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
@@ -298,6 +299,8 @@ PROCEDURE TDigitaltrainerMainForm.miEditPaletteClick(Sender: TObject);
     PaletteForm.showFor(workspace.getWorkspacePalette);
     workspace.activePalette^.detachUI;
     workspace.activePalette^.attachUI(@uiAdapter);
+    updateUiElements;
+    uiAdapter.resetState;
 
     SimulationTimer.enabled:=timerEnabledBefore;
   end;
@@ -510,7 +513,7 @@ PROCEDURE TDigitaltrainerMainForm.propEditShapeMouseDown(Sender: TObject; button
 
     buttonClicked(propEditShape);
     ValueListEditor1.OnValidateEntry:=nil;
-    if {not(gateProperties.arePropertiesForBoard) and} continueWithOtherBoard
+    if continueWithOtherBoard
     then begin
       AddToPaletteForm.setSubpalette(workspace.activePalette^.lastSubPaletteIndex);
       workspace.editPaletteEntry(prototype,@uiAdapter);

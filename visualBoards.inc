@@ -60,7 +60,7 @@ T_visualBoard=object(T_captionedAndIndexed)
     PROPERTY isModified:boolean read modified;
 
     PROCEDURE handleInputKey(CONST key:word; CONST shiftPressed:boolean);
-    PROCEDURE setIndexInPalette(CONST index:longint);
+    PROCEDURE setIndexInPalette(CONST index:longint; CONST dropBackReference:boolean);
     PROCEDURE checkBoardExtend(CONST movingLeft,movingBottom:boolean; CONST autoshrink:boolean=false);
 
     PROCEDURE detachUI;
@@ -198,8 +198,9 @@ PROCEDURE T_visualBoard.handleInputKey(CONST key: word;
     else inputGate^.flipInputBits;
   end;
 
-PROCEDURE T_visualBoard.setIndexInPalette(CONST index: longint);
+PROCEDURE T_visualBoard.setIndexInPalette(CONST index: longint; CONST dropBackReference:boolean);
   begin
+    if dropBackReference then underlyingPrototype:=nil;
     myIndex:=index;
   end;
 

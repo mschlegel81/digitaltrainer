@@ -6,7 +6,7 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, Grids, ExtCtrls,
-  StdCtrls, Menus, paletteHandling,workspaces;
+  StdCtrls, Menus, paletteHandling,workspaces,visualGates;
 
 TYPE
   { TPaletteForm }
@@ -77,9 +77,10 @@ TYPE
 
   end;
 
+VAR uiAdapter:P_uiAdapter;
 FUNCTION PaletteForm: TPaletteForm;
 IMPLEMENTATION
-USES visuals,logicalGates;
+USES visuals,logicalGates,paletteImportUi;
 VAR
   myPaletteForm: TPaletteForm=nil;
 
@@ -134,11 +135,17 @@ PROCEDURE TPaletteForm.entriesGridGetCheckboxState(Sender: TObject; aCol, aRow: 
     end else value:=cbGrayed;
   end;
 
-PROCEDURE TPaletteForm.EditBoardShapeMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
-begin
-  //TODO: Implement me!
-end;
+PROCEDURE TPaletteForm.EditBoardShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  VAR i:longint;
+  begin
+    i:=lastClicked;
+    if (i<0) or (i>length(sorting.index)) then exit else i:=sorting.index[i];
+    if palette^.paletteEntries[i].entryType=gt_compound
+    then begin
+      workspace.editPaletteEntry(palette^.paletteEntries[i].prototype,uiAdapter);
+      ModalResult:=mrYes;
+    end;
+  end;
 
 PROCEDURE TPaletteForm.DeleteShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR i:longint;
@@ -207,9 +214,12 @@ PROCEDURE TPaletteForm.FormCreate(Sender: TObject);
 
 PROCEDURE TPaletteForm.ImportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
-    //TODO Ask for details before importing (sub palette, duplicate removal, etc.)
     createBackupOnce(wht_beforePaletteImport);
-    if OpenDialog1.execute then palette^.importPalette(OpenDialog1.fileName);
+    if OpenDialog1.execute then begin
+      if PaletteImportForm.ShowModal=mrOk
+      then palette^.importPalette(OpenDialog1.fileName,PaletteImportForm.importOptions)
+      else exit;
+    end else exit;
     fillTable(true);
   end;
 
@@ -353,6 +363,22 @@ PROCEDURE TPaletteForm.fillTable(CONST initial: boolean);
       entriesGrid.Columns[2].PickList.add(palette^.paletteNames[i]);
     end;
 
+    entriesGrid.Columns[3].visible:=not(workspace.simplisticUi);
+    ImportShape      .visible:=not(workspace.simplisticUi);
+    ImportLabel      .visible:=not(workspace.simplisticUi);
+    ExportShape      .visible:=not(workspace.simplisticUi);
+    ExportLabel      .visible:=not(workspace.simplisticUi);
+    DeleteShape      .visible:=not(workspace.simplisticUi);
+    DeleteLabel      .visible:=not(workspace.simplisticUi);
+    MarkAllShape     .visible:=not(workspace.simplisticUi);
+    MarkAllLabel     .visible:=not(workspace.simplisticUi);
+    MarkNoneShape    .visible:=not(workspace.simplisticUi);
+    MarkNoneLabel    .visible:=not(workspace.simplisticUi);
+    MoveTaskDownShape.visible:=not(workspace.simplisticUi);
+    MoveTaskDownLabel.visible:=not(workspace.simplisticUi);
+    MoveTaskUpShape  .visible:=not(workspace.simplisticUi);
+    MoveTaskUpLabel  .visible:=not(workspace.simplisticUi);
+
     if not(initial) then exit;
     entriesGrid.AutoSizeColumn(0);
     entriesGrid.AutoSizeColumn(2);
@@ -372,6 +398,9 @@ PROCEDURE TPaletteForm.updateButtons;
       (lastClicked>=0) and
       (palette^.paletteEntries[sorting.index[lastClicked]].entryType=gt_compound) and
       palette^.allowDeletion(sorting.index[lastClicked]));
+    setEnableButton(EditBoardShape,EditBoardLabel,
+      (lastClicked>=0) and
+      (palette^.paletteEntries[sorting.index[lastClicked]].entryType=gt_compound));
     setEnableButton(ExportShape,ExportLabel,anyMarked);
   end;
 
