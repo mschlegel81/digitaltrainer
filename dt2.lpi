@@ -222,6 +222,7 @@
         <Filename Value="paletteimportui.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="PaletteImportForm"/>
+        <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="paletteImportUi"/>
       </Unit>

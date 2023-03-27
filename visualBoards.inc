@@ -526,61 +526,65 @@ FUNCTION T_visualBoard.loadFromStream(VAR stream: T_bufferedInputStreamWrapper; 
       outputGate:P_outputGate;
       behavior  :P_abstractGate;
   begin
-    result:=true;
-    captionString:=stream.readAnsiString;
-    descriptionString:=stream.readAnsiString;
-    myIndex:=stream.readInteger;
+    try
+      result:=true;
+      captionString:=stream.readAnsiString;
+      descriptionString:=stream.readAnsiString;
+      myIndex:=stream.readInteger;
 
-    if not(stream.allOkay) then exit(false);
-    gridX1:=0;
-    gridY1:=0;
-    setLength(inputs,stream.readNaturalNumber);
-    for i:=0 to length(inputs)-1 do begin
-      new(inputGate,create);
-      inputGate^.readMetaDataFromStream(stream);
-      new(inputs[i],create(inputGate));
-      inputs[i]^.gridPos:=readPoint(stream);
-      if includeFixing then begin
-        inputs[i]^.fixedPosition:=stream.readBoolean;
-        inputs[i]^.fixedProperties:=stream.readBoolean;
+      if not(stream.allOkay) then exit(false);
+      gridX1:=0;
+      gridY1:=0;
+      setLength(inputs,stream.readNaturalNumber);
+      for i:=0 to length(inputs)-1 do begin
+        new(inputGate,create);
+        inputGate^.readMetaDataFromStream(stream);
+        new(inputs[i],create(inputGate));
+        inputs[i]^.gridPos:=readPoint(stream);
+        if includeFixing then begin
+          inputs[i]^.fixedPosition:=stream.readBoolean;
+          inputs[i]^.fixedProperties:=stream.readBoolean;
+        end;
       end;
-    end;
-    if not(stream.allOkay) then exit(false);
+      if not(stream.allOkay) then exit(false);
 
-    setLength(gates,stream.readNaturalNumber);
-    for i:=0 to length(gates)-1 do begin
-      behavior:=associatedPalette^.readGate(stream);
-      new(gates[i],create(behavior));
-      gates[i]^.gridPos:=readPoint(stream);
-      if includeFixing then begin
-        gates[i]^.fixedPosition:=stream.readBoolean;
-        gates[i]^.fixedProperties:=stream.readBoolean;
+      setLength(gates,stream.readNaturalNumber);
+      for i:=0 to length(gates)-1 do begin
+        behavior:=associatedPalette^.readGate(stream);
+        new(gates[i],create(behavior));
+        gates[i]^.gridPos:=readPoint(stream);
+        if includeFixing then begin
+          gates[i]^.fixedPosition:=stream.readBoolean;
+          gates[i]^.fixedProperties:=stream.readBoolean;
+        end;
       end;
-    end;
-    if not(stream.allOkay) then exit(false);
+      if not(stream.allOkay) then exit(false);
 
-    setLength(outputs,stream.readNaturalNumber);
-    for i:=0 to length(outputs)-1 do begin
-      new(outputGate,create);
-      outputGate^.readMetaDataFromStream(stream);
-      new(outputs[i],create(outputGate));
-      outputs[i]^.gridPos:=readPoint(stream);
-      if includeFixing then begin
-        outputs[i]^.fixedPosition:=stream.readBoolean;
-        outputs[i]^.fixedProperties:=stream.readBoolean;
+      setLength(outputs,stream.readNaturalNumber);
+      for i:=0 to length(outputs)-1 do begin
+        new(outputGate,create);
+        outputGate^.readMetaDataFromStream(stream);
+        new(outputs[i],create(outputGate));
+        outputs[i]^.gridPos:=readPoint(stream);
+        if includeFixing then begin
+          outputs[i]^.fixedPosition:=stream.readBoolean;
+          outputs[i]^.fixedProperties:=stream.readBoolean;
+        end;
       end;
-    end;
-    if not(stream.allOkay) then exit(false);
+      if not(stream.allOkay) then exit(false);
 
-    setLength(wires,stream.readNaturalNumber);
-    for i:=0 to length(wires)-1 do with wires[i] do begin
-      source:=gateByIndex(stream.readNaturalNumber);
-      sourceOutputIndex:= stream.readNaturalNumber;
-      setLength(sink,stream.readNaturalNumber);
-      for j:=0 to length(sink)-1 do with sink[j] do begin
-        gate:=gateByIndex(stream.readNaturalNumber);
-        gateInputIndex:=  stream.readNaturalNumber;
+      setLength(wires,stream.readNaturalNumber);
+      for i:=0 to length(wires)-1 do with wires[i] do begin
+        source:=gateByIndex(stream.readNaturalNumber);
+        sourceOutputIndex:= stream.readNaturalNumber;
+        setLength(sink,stream.readNaturalNumber);
+        for j:=0 to length(sink)-1 do with sink[j] do begin
+          gate:=gateByIndex(stream.readNaturalNumber);
+          gateInputIndex:=  stream.readNaturalNumber;
+        end;
       end;
+    except
+      stream.logWrongTypeError;
     end;
     result:=stream.allOkay;
   end;
