@@ -147,12 +147,12 @@
         <UnitName Value="gateProperties"/>
       </Unit>
       <Unit>
-        <Filename Value="selecttaskunit.pas"/>
+        <Filename Value="taskhandlingui.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="SelectTaskForm"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UnitName Value="selectTaskUnit"/>
+        <UnitName Value="taskHandlingUi"/>
       </Unit>
       <Unit>
         <Filename Value="taskfinishedunit.pas"/>

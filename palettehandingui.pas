@@ -12,6 +12,8 @@ TYPE
   { TPaletteForm }
 
   TPaletteForm = class(TForm)
+    EditBoardLabel: TLabel;
+    EditBoardShape: TShape;
     entriesGrid: TStringGrid;
     MainMenu1: TMainMenu;
     MarkNoneShape: TShape;
@@ -38,14 +40,13 @@ TYPE
     SubPalettePanel: TPanel;
     SaveDialog1: TSaveDialog;
     StartTaskLabel: TLabel;
-    PROCEDURE entriesGridGetCheckboxState(Sender: TObject; aCol, aRow: integer;
-      VAR value: TCheckboxState);
+    PROCEDURE EditBoardShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE entriesGridGetCheckboxState(Sender: TObject; aCol, aRow: integer; VAR value: TCheckboxState);
     PROCEDURE entriesGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);
     PROCEDURE entriesGridSelectEditor(Sender: TObject; aCol, aRow: integer; VAR editor: TWinControl);
     PROCEDURE entriesGridSelection(Sender: TObject; aCol, aRow: integer);
     PROCEDURE DeleteShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
-    PROCEDURE entriesGridSetCheckboxState(Sender: TObject; aCol, aRow: integer;
-      CONST value: TCheckboxState);
+    PROCEDURE entriesGridSetCheckboxState(Sender: TObject; aCol, aRow: integer; CONST value: TCheckboxState);
     PROCEDURE entriesGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
     PROCEDURE ExportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE FormCreate(Sender: TObject);
@@ -133,6 +134,12 @@ PROCEDURE TPaletteForm.entriesGridGetCheckboxState(Sender: TObject; aCol, aRow: 
     end else value:=cbGrayed;
   end;
 
+PROCEDURE TPaletteForm.EditBoardShapeMouseDown(Sender: TObject;
+  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+begin
+  //TODO: Implement me!
+end;
+
 PROCEDURE TPaletteForm.DeleteShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR i:longint;
       selection:TGridRect;
@@ -200,6 +207,7 @@ PROCEDURE TPaletteForm.FormCreate(Sender: TObject);
 
 PROCEDURE TPaletteForm.ImportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
+    //TODO Ask for details before importing (sub palette, duplicate removal, etc.)
     createBackupOnce(wht_beforePaletteImport);
     if OpenDialog1.execute then palette^.importPalette(OpenDialog1.fileName);
     fillTable(true);

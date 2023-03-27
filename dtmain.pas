@@ -8,14 +8,19 @@ USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
   Buttons, StdCtrls, Menus, ValEdit, Grids, visualGates, logicalGates,
   paletteHandling, gateProperties, addToPaletteDialog, visuals, workspaces,
-  createTaskUnit, selectTaskUnit, taskFinishedUnit, paletteHandingUi,
-  challenges, types;
+  createTaskUnit, taskHandlingUi, taskFinishedUnit, paletteHandingUi,
+  challenges, types, LCLType;
 
 TYPE
   { TDigitaltrainerMainForm }
   TDigitaltrainerMainForm = class(TForm)
     boardHorizontalScrollBar: TScrollBar;
     boardImage: TImage;
+    miAddToPalette: TMenuItem;
+    miStartNextUnsolvedTask: TMenuItem;
+    miManagePalette: TMenuItem;
+    miPalette: TMenuItem;
+    miCreateTask: TMenuItem;
     miBackups: TMenuItem;
     miGoBack: TMenuItem;
     miZoomOut: TMenuItem;
@@ -23,15 +28,8 @@ TYPE
     miSimpleUI: TMenuItem;
     miShrink: TMenuItem;
     miTestBoard: TMenuItem;
-    miMarkChallengesUnsolved: TMenuItem;
     miChallengesMenu: TMenuItem;
-    miExportChallenges: TMenuItem;
-    miImportChallenges: TMenuItem;
-    miImportAdd: TMenuItem;
-    miImportOverwrite: TMenuItem;
     miViewTasks: TMenuItem;
-    miEditPalette: TMenuItem;
-    OpenDialog1: TOpenDialog;
     Separator1: TMenuItem;
     Separator2: TMenuItem;
     WireTimer: TIdleTimer;
@@ -58,8 +56,6 @@ TYPE
     speedLabel: TLabel;
     miEditMode: TMenuItem;
     miNewBoard: TMenuItem;
-    miSaveAsTask: TMenuItem;
-    miAddToPalette: TMenuItem;
     miBoard: TMenuItem;
     miFullScreen: TMenuItem;
     miView: TMenuItem;
@@ -93,11 +89,8 @@ TYPE
     PROCEDURE miCopyClick(Sender: TObject);
     PROCEDURE miEditModeClick(Sender: TObject);
     PROCEDURE miEditPaletteClick(Sender: TObject);
-    PROCEDURE miExportChallengesClick(Sender: TObject);
     PROCEDURE miFullScreenClick(Sender: TObject);
     PROCEDURE miGoBackClick(Sender: TObject);
-    PROCEDURE miImportAddClick(Sender: TObject);
-    PROCEDURE miImportOverwriteClick(Sender: TObject);
     PROCEDURE miMarkChallengesUnsolvedClick(Sender: TObject);
     PROCEDURE miNewBoardClick(Sender: TObject);
     PROCEDURE miPasteClick(Sender: TObject);
@@ -105,6 +98,7 @@ TYPE
     PROCEDURE miSaveAsTaskClick(Sender: TObject);
     PROCEDURE miShrinkClick(Sender: TObject);
     PROCEDURE miSimpleUIClick(Sender: TObject);
+    PROCEDURE miStartNextUnsolvedTaskClick(Sender: TObject);
     PROCEDURE miTasksClick(Sender: TObject);
     PROCEDURE miTestBoardClick(Sender: TObject);
     PROCEDURE miUndoClick(Sender: TObject);
@@ -308,18 +302,6 @@ PROCEDURE TDigitaltrainerMainForm.miEditPaletteClick(Sender: TObject);
     SimulationTimer.enabled:=timerEnabledBefore;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.miExportChallengesClick(Sender: TObject);
-  VAR
-    timerEnabledBefore: boolean;
-  begin
-    timerEnabledBefore:=SimulationTimer.enabled;
-    SimulationTimer.enabled:=false;
-
-    SelectTaskForm.showForExport(workspace.getChallenges);
-
-    SimulationTimer.enabled:=timerEnabledBefore;
-  end;
-
 PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
   begin
     if miFullScreen.checked then begin
@@ -342,28 +324,6 @@ PROCEDURE TDigitaltrainerMainForm.miGoBackClick(Sender: TObject);
       if challenge<>nil then CreateTaskForm.reShowFor(challenge,originalChallengeIndex,workspace.getChallenges);
     end;
     updateUiElements;
-  end;
-
-PROCEDURE TDigitaltrainerMainForm.miImportAddClick(Sender: TObject);
-  begin
-    if OpenDialog1.execute then begin
-      addBackup(@workspace,wht_beforeTaskImport);
-      if workspace.getChallenges^.importChallenges(OpenDialog1.fileName,false) then miTasksClick(Sender);
-    end;
-  end;
-
-PROCEDURE TDigitaltrainerMainForm.miImportOverwriteClick(Sender: TObject);
-  begin
-    if OpenDialog1.execute then begin
-      addBackup(@workspace,wht_beforeTaskImport);
-      if workspace.getChallenges^.importChallenges(OpenDialog1.fileName,true) then begin
-        workspace.setFreeEditMode;
-        workspace.activePalette^.attachUI(@uiAdapter);
-        workspace.activeBoard  ^.attachUI(@uiAdapter);
-        updateUiElements;
-        miTasksClick(Sender);
-      end;
-    end;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miMarkChallengesUnsolvedClick(Sender: TObject);
@@ -424,13 +384,18 @@ PROCEDURE TDigitaltrainerMainForm.miShrinkClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miSimpleUIClick(Sender: TObject);
   begin
-    miSimpleUI.checked:=not(miSimpleUI).checked;
-    workspace.simplisticUi:=miSimpleUI.checked;
-    if miSimpleUI.checked then begin
+    workspace.simplisticUi:=not(workspace.simplisticUi);
+    miSimpleUI.checked:=workspace.simplisticUi;
+    if workspace.simplisticUi then begin
       pauseByUser:=false;
       speedTrackBar.position:=6;
     end;
     updateUiElements;
+  end;
+
+PROCEDURE TDigitaltrainerMainForm.miStartNextUnsolvedTaskClick(Sender: TObject);
+  begin
+    //TODO: Implement me!
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);
@@ -836,7 +801,7 @@ PROCEDURE TDigitaltrainerMainForm.updateUiElements;
     PlayPauseLabel.caption:=playPauseGlyph[SimulationTimer.enabled];
     miGoBack.enabled:=workspace.canGoBack;
 
-    showAll:=not(miSimpleUI.checked);
+    showAll:=not(workspace.simplisticUi);
 
     ZoomInShape       .visible:=showAll;
     ZoomInLabel       .visible:=showAll;
@@ -848,19 +813,9 @@ PROCEDURE TDigitaltrainerMainForm.updateUiElements;
     speedLabel        .visible:=showAll;
     speedTrackBar     .visible:=showAll;
     miShrink          .visible:=showAll;
-    miAddToPalette    .visible:=showAll;
-    miSaveAsTask      .visible:=showAll;
-    miEditPalette     .visible:=showAll;
-    miExportChallenges.visible:=showAll;
-    miImportChallenges.visible:=showAll;
     miGoBack          .visible:=showAll or (workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
     miNewBoard        .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
-    miAddToPalette    .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
-    miSaveAsTask      .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
     miViewTasks       .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
-    miEditPalette     .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
-    miExportChallenges.enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
-    miImportChallenges.enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
     miEditMode        .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
     miTestBoard       .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
   end;

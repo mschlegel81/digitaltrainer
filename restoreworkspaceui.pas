@@ -25,6 +25,7 @@ TYPE
     entryToRestore:T_workspaceHistoryEntryMetaData;
     PROCEDURE fillTable;
   public
+    //TODO: Add option to manually create a backup
     FUNCTION showFor(CONST afterErrorOnStartup:boolean):boolean;
   end;
 

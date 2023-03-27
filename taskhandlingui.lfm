@@ -1,0 +1,439 @@
+object SelectTaskForm: TSelectTaskForm
+  Left = 759
+  Height = 413
+  Top = 591
+  Width = 850
+  Caption = 'Aufgaben'
+  ClientHeight = 413
+  ClientWidth = 850
+  Color = 7354424
+  OnShow = FormShow
+  Position = poOwnerFormCenter
+  LCLVersion = '2.2.2.0'
+  object ChallengesGrid: TStringGrid
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = MarkAllShape
+    AnchorSideBottom.Control = ChallengesMemo
+    Left = 4
+    Height = 266
+    Top = 4
+    Width = 756
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    BorderSpacing.Left = 4
+    BorderSpacing.Top = 4
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 4
+    Color = 8405056
+    ColCount = 4
+    Columns = <    
+      item
+        ReadOnly = True
+        Title.Caption = 'Titel'
+      end    
+      item
+        ReadOnly = True
+        Title.Caption = 'Gelöst'
+      end    
+      item
+        ReadOnly = True
+        Title.Caption = 'Level'
+      end    
+      item
+        ButtonStyle = cbsCheckboxColumn
+        Title.Caption = 'exportieren'
+        ValueChecked = 'x'
+        ValueUnchecked = ' '
+      end>
+    ExtendedSelect = False
+    FixedColor = 6303792
+    FixedCols = 0
+    Flat = True
+    Font.Color = clWhite
+    Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goRangeSelect, goEditing, goRowSelect, goDblClickAutoSize, goSmoothScroll]
+    ParentFont = False
+    TabOrder = 0
+    OnGetCheckboxState = ChallengesGridGetCheckboxState
+    OnSelection = ChallengesGridSelection
+    OnSetCheckboxState = ChallengesGridSetCheckboxState
+    Cells = (
+      1
+      0
+      0
+      'Titel'
+    )
+  end
+  object ChallengesMemo: TMemo
+    AnchorSideLeft.Control = ChallengesGrid
+    AnchorSideTop.Control = ChallengesGrid
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = DeleteTaskShape
+    Left = 4
+    Height = 90
+    Top = 275
+    Width = 841
+    Anchors = [akLeft, akRight, akBottom]
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Color = 8405056
+    Font.Color = clWhite
+    ParentFont = False
+    ReadOnly = True
+    TabOrder = 1
+  end
+  object DeleteTaskShape: TShape
+    AnchorSideRight.Control = EditTaskShape
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 385
+    Height = 39
+    Top = 370
+    Width = 150
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 4
+    BorderSpacing.Bottom = 4
+    Brush.Color = 6303792
+    OnMouseDown = DeleteTaskShapeMouseDown
+    Shape = stRoundRect
+  end
+  object DeleteTaskLabel: TLabel
+    AnchorSideLeft.Control = DeleteTaskShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = DeleteTaskShape
+    AnchorSideTop.Side = asrCenter
+    Left = 403
+    Height = 21
+    Top = 379
+    Width = 115
+    Caption = 'Aufgabe löschen'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = DeleteTaskShapeMouseDown
+  end
+  object StartTaskShape: TShape
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 695
+    Height = 39
+    Top = 370
+    Width = 150
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 4
+    Brush.Color = 6303792
+    OnMouseDown = StartTaskShapeMouseDown
+    Shape = stRoundRect
+  end
+  object StartTaskLabel: TLabel
+    AnchorSideLeft.Control = StartTaskShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = StartTaskShape
+    AnchorSideTop.Side = asrCenter
+    Left = 715
+    Height = 21
+    Top = 379
+    Width = 110
+    Caption = 'Aufgabe starten'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = StartTaskShapeMouseDown
+  end
+  object EditTaskShape: TShape
+    AnchorSideRight.Control = StartTaskShape
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 540
+    Height = 39
+    Top = 370
+    Width = 150
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 4
+    Brush.Color = 6303792
+    OnMouseDown = EditTaskShapeMouseDown
+    Shape = stRoundRect
+  end
+  object EditTaskLabel: TLabel
+    AnchorSideLeft.Control = EditTaskShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = EditTaskShape
+    AnchorSideTop.Side = asrCenter
+    Left = 547
+    Height = 21
+    Top = 379
+    Width = 136
+    Caption = 'Aufgabe bearbeiten'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = EditTaskShapeMouseDown
+  end
+  object MoveTaskDownShape: TShape
+    AnchorSideTop.Control = MoveTaskUpShape
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 806
+    Height = 39
+    Top = 137
+    Width = 39
+    Anchors = [akTop, akRight]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 4
+    Brush.Color = 6303792
+    OnMouseDown = MoveTaskDownShapeMouseDown
+    Shape = stRoundRect
+  end
+  object MoveTaskDownLabel: TLabel
+    AnchorSideLeft.Control = MoveTaskDownShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = MoveTaskDownShape
+    AnchorSideTop.Side = asrCenter
+    Left = 821
+    Height = 21
+    Top = 146
+    Width = 8
+    Caption = '↓'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = MoveTaskDownShapeMouseDown
+  end
+  object MoveTaskUpShape: TShape
+    AnchorSideTop.Control = MarkNoneShape
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 806
+    Height = 39
+    Top = 93
+    Width = 39
+    Anchors = [akTop, akRight]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 4
+    Brush.Color = 6303792
+    OnMouseDown = MoveTaskUpShapeMouseDown
+    Shape = stRoundRect
+  end
+  object MoveTaskUpLabel: TLabel
+    AnchorSideLeft.Control = MoveTaskUpShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = MoveTaskUpShape
+    AnchorSideTop.Side = asrCenter
+    Left = 821
+    Height = 21
+    Top = 102
+    Width = 8
+    Caption = '↑'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = MoveTaskUpShapeMouseDown
+  end
+  object MarkAllShape: TShape
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 765
+    Height = 39
+    Top = 5
+    Width = 80
+    Anchors = [akTop, akRight]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = MarkAllShapeMouseDown
+    Shape = stRoundRect
+  end
+  object MarkAllLabel: TLabel
+    AnchorSideLeft.Control = MarkAllShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = MarkAllShape
+    AnchorSideTop.Side = asrCenter
+    Left = 785
+    Height = 21
+    Top = 14
+    Width = 40
+    Caption = '✓ alle'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = MarkAllShapeMouseDown
+  end
+  object MarkNoneShape: TShape
+    AnchorSideTop.Control = MarkAllShape
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 765
+    Height = 39
+    Top = 49
+    Width = 80
+    Anchors = [akTop, akRight]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = MarkNoneShapeMouseDown
+    Shape = stRoundRect
+  end
+  object MarkNoneLabel: TLabel
+    AnchorSideLeft.Control = MarkNoneShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = MarkNoneShape
+    AnchorSideTop.Side = asrCenter
+    Left = 779
+    Height = 21
+    Top = 58
+    Width = 53
+    Caption = '✓ keine'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = MarkNoneShapeMouseDown
+  end
+  object ImportShape: TShape
+    AnchorSideRight.Control = DeleteTaskShape
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 217
+    Height = 39
+    Top = 369
+    Width = 163
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = ImportShapeMouseDown
+    Shape = stRoundRect
+  end
+  object ImportLabel: TLabel
+    AnchorSideLeft.Control = ImportShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = ImportShape
+    AnchorSideTop.Side = asrCenter
+    Left = 222
+    Height = 21
+    Top = 378
+    Width = 153
+    Caption = 'Aufgaben importieren'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = ImportShapeMouseDown
+  end
+  object ExportShape: TShape
+    AnchorSideRight.Control = ImportShape
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 9
+    Height = 39
+    Top = 369
+    Width = 203
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = ExportShapeMouseDown
+    Shape = stRoundRect
+  end
+  object ExportLabel: TLabel
+    AnchorSideLeft.Control = ExportShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = ExportShape
+    AnchorSideTop.Side = asrCenter
+    Left = 24
+    Height = 21
+    Top = 378
+    Width = 172
+    Caption = 'Ausgewählte exportieren'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = ExportShapeMouseDown
+  end
+  object SaveDialog1: TSaveDialog
+    DefaultExt = '.challenges'
+    Filter = 'Challenges|*.challenges'
+    FilterIndex = 0
+    Options = [ofOverwritePrompt, ofEnableSizing, ofViewDetail]
+    Left = 240
+    Top = 119
+  end
+  object OpenDialog1: TOpenDialog
+    DefaultExt = '.challenges'
+    Filter = 'Challenges|*.challenges'
+    FilterIndex = 0
+    Options = [ofFileMustExist, ofEnableSizing, ofViewDetail]
+    Left = 369
+    Top = 132
+  end
+end

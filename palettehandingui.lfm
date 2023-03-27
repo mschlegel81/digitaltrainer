@@ -1,13 +1,12 @@
 object PaletteForm: TPaletteForm
-  Left = 845
-  Height = 738
-  Top = 134
-  Width = 882
+  Left = 964
+  Height = 590
+  Top = 224
+  Width = 673
   Caption = 'Palette verwalten'
-  ClientHeight = 713
-  ClientWidth = 882
+  ClientHeight = 570
+  ClientWidth = 673
   Color = 7354424
-  DesignTimePPI = 120
   Menu = MainMenu1
   OnCreate = FormCreate
   Position = poOwnerFormCenter
@@ -18,31 +17,31 @@ object PaletteForm: TPaletteForm
     AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = DetailsMemo
     AnchorSideBottom.Control = ExportShape
-    Left = 6
-    Height = 514
-    Top = 138
-    Width = 610
+    Left = 5
+    Height = 410
+    Top = 111
+    Width = 488
     Anchors = [akTop, akLeft, akRight, akBottom]
-    BorderSpacing.Left = 6
-    BorderSpacing.Top = 6
-    BorderSpacing.Right = 6
-    BorderSpacing.Bottom = 6
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
     Color = 8405056
     ColCount = 4
     Columns = <    
       item
-        MinSize = 10
-        MaxSize = 200
+        MinSize = 8
+        MaxSize = 160
         Title.Caption = 'Beschriftung'
       end    
       item
-        MinSize = 10
-        MaxSize = 200
+        MinSize = 8
+        MaxSize = 160
         Title.Caption = 'Beschreibung'
       end    
       item
-        MinSize = 10
-        MaxSize = 200
+        MinSize = 8
+        MaxSize = 160
         PickList.Strings = (
           'A'
           'B'
@@ -52,8 +51,8 @@ object PaletteForm: TPaletteForm
       end    
       item
         ButtonStyle = cbsCheckboxColumn
-        MinSize = 10
-        MaxSize = 200
+        MinSize = 8
+        MaxSize = 160
         Title.Caption = 'exportieren'
       end>
     FixedColor = 6303792
@@ -80,15 +79,15 @@ object PaletteForm: TPaletteForm
     AnchorSideRight.Control = ImportShape
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 20
-    Height = 49
-    Top = 658
-    Width = 254
+    Left = 9
+    Height = 39
+    Top = 526
+    Width = 203
     Anchors = [akRight, akBottom]
-    BorderSpacing.Left = 6
-    BorderSpacing.Top = 6
-    BorderSpacing.Right = 6
-    BorderSpacing.Bottom = 6
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
     Brush.Color = 6303792
     OnMouseDown = ExportShapeMouseDown
     Shape = stRoundRect
@@ -98,14 +97,14 @@ object PaletteForm: TPaletteForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = ExportShape
     AnchorSideTop.Side = asrCenter
-    Left = 39
-    Height = 28
-    Top = 668
-    Width = 216
+    Left = 24
+    Height = 21
+    Top = 535
+    Width = 172
     Caption = 'Ausgewählte exportieren'
     Font.CharSet = ANSI_CHARSET
     Font.Color = clWhite
-    Font.Height = -20
+    Font.Height = -16
     Font.Pitch = fpVariable
     Font.Quality = fqDraft
     ParentColor = False
@@ -115,14 +114,14 @@ object PaletteForm: TPaletteForm
   object StartTaskLabel: TLabel
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Side = asrCenter
-    Left = 262
-    Height = 28
-    Top = 226
-    Width = 139
+    Left = 210
+    Height = 21
+    Top = 181
+    Width = 110
     Caption = 'Aufgabe starten'
     Font.CharSet = ANSI_CHARSET
     Font.Color = clWhite
-    Font.Height = -20
+    Font.Height = -16
     Font.Pitch = fpVariable
     Font.Quality = fqDraft
     ParentColor = False
@@ -132,15 +131,15 @@ object PaletteForm: TPaletteForm
     AnchorSideRight.Control = DeleteShape
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 280
-    Height = 49
-    Top = 658
-    Width = 204
+    Left = 217
+    Height = 39
+    Top = 526
+    Width = 163
     Anchors = [akRight, akBottom]
-    BorderSpacing.Left = 6
-    BorderSpacing.Top = 6
-    BorderSpacing.Right = 6
-    BorderSpacing.Bottom = 6
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
     Brush.Color = 6303792
     OnMouseDown = ImportShapeMouseDown
     Shape = stRoundRect
@@ -150,14 +149,14 @@ object PaletteForm: TPaletteForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = ImportShape
     AnchorSideTop.Side = asrCenter
-    Left = 299
-    Height = 28
-    Top = 668
-    Width = 167
+    Left = 232
+    Height = 21
+    Top = 535
+    Width = 132
     Caption = 'Palette importieren'
     Font.CharSet = ANSI_CHARSET
     Font.Color = clWhite
-    Font.Height = -20
+    Font.Height = -16
     Font.Pitch = fpVariable
     Font.Quality = fqDraft
     ParentColor = False
@@ -165,18 +164,18 @@ object PaletteForm: TPaletteForm
     OnMouseDown = ImportShapeMouseDown
   end
   object DeleteShape: TShape
-    AnchorSideRight.Control = MarkAllShape
+    AnchorSideRight.Control = EditBoardShape
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 490
-    Height = 49
-    Top = 658
-    Width = 174
+    Left = 385
+    Height = 39
+    Top = 526
+    Width = 139
     Anchors = [akRight, akBottom]
-    BorderSpacing.Left = 6
-    BorderSpacing.Top = 6
-    BorderSpacing.Right = 6
-    BorderSpacing.Bottom = 6
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
     Brush.Color = 6303792
     OnMouseDown = DeleteShapeMouseDown
     Shape = stRoundRect
@@ -186,14 +185,14 @@ object PaletteForm: TPaletteForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = DeleteShape
     AnchorSideTop.Side = asrCenter
-    Left = 511
-    Height = 28
-    Top = 668
-    Width = 133
+    Left = 401
+    Height = 21
+    Top = 535
+    Width = 106
     Caption = 'Eintrag löschen'
     Font.CharSet = ANSI_CHARSET
     Font.Color = clWhite
-    Font.Height = -20
+    Font.Height = -16
     Font.Pitch = fpVariable
     Font.Quality = fqDraft
     ParentColor = False
@@ -201,18 +200,21 @@ object PaletteForm: TPaletteForm
     OnMouseDown = DeleteShapeMouseDown
   end
   object MarkAllShape: TShape
+    AnchorSideLeft.Control = entriesGrid
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = Splitter1
+    AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = MarkNoneShape
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 670
-    Height = 49
-    Top = 658
-    Width = 100
-    Anchors = [akRight, akBottom]
-    BorderSpacing.Left = 6
-    BorderSpacing.Top = 6
-    BorderSpacing.Right = 6
-    BorderSpacing.Bottom = 6
+    Left = 498
+    Height = 39
+    Top = 111
+    Width = 80
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
     Brush.Color = 6303792
     OnMouseDown = MarkAllShapeMouseDown
     Shape = stRoundRect
@@ -222,14 +224,14 @@ object PaletteForm: TPaletteForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = MarkAllShape
     AnchorSideTop.Side = asrCenter
-    Left = 695
-    Height = 28
-    Top = 668
-    Width = 50
+    Left = 518
+    Height = 21
+    Top = 120
+    Width = 40
     Caption = '✓ alle'
     Font.CharSet = ANSI_CHARSET
     Font.Color = clWhite
-    Font.Height = -20
+    Font.Height = -16
     Font.Pitch = fpVariable
     Font.Quality = fqDraft
     ParentColor = False
@@ -237,19 +239,22 @@ object PaletteForm: TPaletteForm
     OnMouseDown = MarkAllShapeMouseDown
   end
   object MarkNoneShape: TShape
+    AnchorSideLeft.Control = entriesGrid
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = MarkAllShape
+    AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 776
-    Height = 49
-    Top = 658
-    Width = 100
-    Anchors = [akRight, akBottom]
-    BorderSpacing.Left = 6
-    BorderSpacing.Top = 6
-    BorderSpacing.Right = 6
-    BorderSpacing.Bottom = 6
+    Left = 498
+    Height = 39
+    Top = 155
+    Width = 80
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
     Brush.Color = 6303792
     OnMouseDown = MarkNoneShapeMouseDown
     Shape = stRoundRect
@@ -259,14 +264,14 @@ object PaletteForm: TPaletteForm
     AnchorSideLeft.Side = asrCenter
     AnchorSideTop.Control = MarkNoneShape
     AnchorSideTop.Side = asrCenter
-    Left = 793
-    Height = 28
-    Top = 668
-    Width = 66
+    Left = 512
+    Height = 21
+    Top = 164
+    Width = 53
     Caption = '✓ keine'
     Font.CharSet = ANSI_CHARSET
     Font.Color = clWhite
-    Font.Height = -20
+    Font.Height = -16
     Font.Pitch = fpVariable
     Font.Quality = fqDraft
     ParentColor = False
@@ -274,17 +279,17 @@ object PaletteForm: TPaletteForm
     OnMouseDown = MarkNoneShapeMouseDown
   end
   object SubPalettePanel: TPanel
-    Left = 6
-    Height = 120
-    Top = 6
-    Width = 870
+    Left = 5
+    Height = 96
+    Top = 5
+    Width = 663
     Align = alTop
-    BorderSpacing.Left = 6
-    BorderSpacing.Top = 6
-    BorderSpacing.Right = 6
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
     BevelColor = clBlack
-    ClientHeight = 120
-    ClientWidth = 870
+    ClientHeight = 96
+    ClientWidth = 663
     TabOrder = 1
     object MoveTaskDownShape: TShape
       AnchorSideTop.Control = MoveTaskUpShape
@@ -293,15 +298,15 @@ object PaletteForm: TPaletteForm
       AnchorSideRight.Side = asrBottom
       AnchorSideBottom.Control = Owner
       AnchorSideBottom.Side = asrBottom
-      Left = 814
-      Height = 49
-      Top = 62
-      Width = 49
+      Left = 618
+      Height = 39
+      Top = 50
+      Width = 39
       Anchors = [akTop, akRight]
-      BorderSpacing.Left = 6
-      BorderSpacing.Top = 6
-      BorderSpacing.Right = 6
-      BorderSpacing.Bottom = 5
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      BorderSpacing.Bottom = 4
       Brush.Color = 6303792
       OnMouseDown = MoveTaskDownShapeMouseDown
       Shape = stRoundRect
@@ -311,14 +316,14 @@ object PaletteForm: TPaletteForm
       AnchorSideLeft.Side = asrCenter
       AnchorSideTop.Control = MoveTaskDownShape
       AnchorSideTop.Side = asrCenter
-      Left = 834
-      Height = 28
-      Top = 72
-      Width = 9
+      Left = 633
+      Height = 21
+      Top = 59
+      Width = 8
       Caption = '↓'
       Font.CharSet = ANSI_CHARSET
       Font.Color = clWhite
-      Font.Height = -20
+      Font.Height = -16
       Font.Pitch = fpVariable
       Font.Quality = fqDraft
       ParentColor = False
@@ -331,15 +336,15 @@ object PaletteForm: TPaletteForm
       AnchorSideRight.Side = asrBottom
       AnchorSideBottom.Control = SubPalettePanel
       AnchorSideBottom.Side = asrBottom
-      Left = 814
-      Height = 49
-      Top = 7
-      Width = 49
+      Left = 618
+      Height = 39
+      Top = 6
+      Width = 39
       Anchors = [akTop, akRight]
-      BorderSpacing.Left = 6
-      BorderSpacing.Top = 6
-      BorderSpacing.Right = 6
-      BorderSpacing.Bottom = 5
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      BorderSpacing.Bottom = 4
       Brush.Color = 6303792
       OnMouseDown = MoveTaskUpShapeMouseDown
       Shape = stRoundRect
@@ -349,14 +354,14 @@ object PaletteForm: TPaletteForm
       AnchorSideLeft.Side = asrCenter
       AnchorSideTop.Control = MoveTaskUpShape
       AnchorSideTop.Side = asrCenter
-      Left = 834
-      Height = 28
-      Top = 17
-      Width = 9
+      Left = 633
+      Height = 21
+      Top = 15
+      Width = 8
       Caption = '↑'
       Font.CharSet = ANSI_CHARSET
       Font.Color = clWhite
-      Font.Height = -20
+      Font.Height = -16
       Font.Pitch = fpVariable
       Font.Quality = fqDraft
       ParentColor = False
@@ -369,16 +374,16 @@ object PaletteForm: TPaletteForm
       AnchorSideRight.Control = MoveTaskDownShape
       AnchorSideBottom.Control = SubPalettePanel
       AnchorSideBottom.Side = asrBottom
-      Left = 7
-      Height = 106
-      Top = 7
-      Width = 801
+      Left = 6
+      Height = 84
+      Top = 6
+      Width = 607
       Anchors = [akTop, akLeft, akRight, akBottom]
       AutoFillColumns = True
-      BorderSpacing.Left = 6
-      BorderSpacing.Top = 6
-      BorderSpacing.Right = 6
-      BorderSpacing.Bottom = 6
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      BorderSpacing.Bottom = 5
       Color = 8405056
       ColCount = 1
       FixedColor = 6303792
@@ -391,7 +396,7 @@ object PaletteForm: TPaletteForm
       OnSelection = SubPaletteStringGridSelection
       OnValidateEntry = SubPaletteStringGridValidateEntry
       ColWidths = (
-        779
+        589
       )
       Cells = (
         1
@@ -404,25 +409,26 @@ object PaletteForm: TPaletteForm
   object Splitter1: TSplitter
     Cursor = crVSplit
     Left = 0
-    Height = 6
-    Top = 126
-    Width = 882
+    Height = 5
+    Top = 101
+    Width = 673
     Align = alTop
     ResizeAnchor = akTop
   end
   object DetailsMemo: TMemo
-    AnchorSideTop.Control = Splitter1
+    AnchorSideTop.Control = MarkNoneShape
+    AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = ExportShape
-    Left = 622
-    Height = 515
-    Top = 137
-    Width = 254
+    Left = 498
+    Height = 322
+    Top = 199
+    Width = 170
     Anchors = [akTop, akLeft, akRight, akBottom]
-    BorderSpacing.Top = 11
-    BorderSpacing.Right = 6
-    BorderSpacing.Bottom = 6
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
     BorderStyle = bsNone
     Color = 6303792
     Font.Color = clWhite
@@ -432,25 +438,62 @@ object PaletteForm: TPaletteForm
     TabOrder = 3
     WordWrap = False
   end
+  object EditBoardShape: TShape
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 529
+    Height = 39
+    Top = 526
+    Width = 139
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = EditBoardShapeMouseDown
+    Shape = stRoundRect
+  end
+  object EditBoardLabel: TLabel
+    AnchorSideLeft.Control = EditBoardShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = EditBoardShape
+    AnchorSideTop.Side = asrCenter
+    Left = 535
+    Height = 21
+    Top = 535
+    Width = 127
+    Caption = 'Eintrag bearbeiten'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = EditBoardShapeMouseDown
+  end
   object OpenDialog1: TOpenDialog
     DefaultExt = '.palette'
     Filter = 'Palette|*.palette'
     FilterIndex = 0
     Options = [ofPathMustExist, ofFileMustExist, ofEnableSizing, ofViewDetail]
-    Left = 114
-    Top = 255
+    Left = 91
+    Top = 204
   end
   object SaveDialog1: TSaveDialog
     DefaultExt = '.palette'
     Filter = 'Palette|*.palette'
     FilterIndex = 0
-    Options = [ofPathMustExist, ofEnableSizing, ofViewDetail]
-    Left = 201
-    Top = 199
+    Options = [ofOverwritePrompt, ofPathMustExist, ofEnableSizing, ofViewDetail]
+    Left = 161
+    Top = 159
   end
   object MainMenu1: TMainMenu
-    Left = 389
-    Top = 333
+    Left = 311
+    Top = 266
     object MenuItem1: TMenuItem
       Caption = '&Bereinigen'
       object miRemoveDuplicatesExact: TMenuItem
