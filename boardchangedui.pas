@@ -81,6 +81,7 @@ FUNCTION TboardChangedDialog.showFor(CONST state: T_workspaceStateEnum): TModalR
         setEnableButton(updatePaletteButton,updatePaletteLabel,true);
       end;
     end;
+    applyColorScheme(self);
     result:=ShowModal;
   end;
 

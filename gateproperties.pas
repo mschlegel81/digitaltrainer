@@ -104,7 +104,7 @@ TYPE
   end;
 
 IMPLEMENTATION
-USES sysutils,romEditorUnit,StdCtrls;
+USES sysutils,romEditorUnit,StdCtrls,visuals;
 { T_gatePropertyValues }
 
 FUNCTION T_gatePropertyValues.fetchValue(CONST prop: T_gatePropertyEnum): T_gatePropertyValue;
@@ -176,8 +176,8 @@ PROCEDURE T_gatePropertyValues.EditButtonClick(Sender: TObject; aCol,
 PROCEDURE T_gatePropertyValues.EditorSelectEditor(Sender: TObject; aCol, aRow: integer; VAR editor: TWinControl);
   begin
     if (editor is TPickListCellEditor) then begin
-      TPickListCellEditor(editor).color:=$00703838;
-      TPickListCellEditor(editor).Font.color:=$00FFFFFF;
+      TPickListCellEditor(editor).color:=colorScheme.editorBackgroundColor;
+      TPickListCellEditor(editor).Font.color:=colorScheme.ENABLED_TEXT_COLOR;
       TPickListCellEditor(editor).style:=csOwnerDrawEditableFixed;
       TPickListCellEditor(editor).AutoComplete:=true;
       TPickListCellEditor(editor).AutoCompleteText:=[cbactEnabled,cbactEndOfLineComplete,cbactSearchAscending];
@@ -284,8 +284,8 @@ PROCEDURE T_gatePropertyValues.connectEditor(editor: TValueListEditor);
         end;
       end;
     end;
-    editor.editor.color:=$00703838;
-    editor.editor.Font.color:=$00FFFFFF;
+    editor.editor.color:=colorScheme.editorBackgroundColor;
+    editor.editor.Font.color:=colorScheme.ENABLED_TEXT_COLOR;
     editor.OnSelectEditor:=@EditorSelectEditor;
     editor.AutoSizeColumn(0);
   end;

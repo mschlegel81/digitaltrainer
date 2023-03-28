@@ -57,6 +57,7 @@ TYPE
 VAR uiAdapter:P_uiAdapter;
 FUNCTION CreateTaskForm:TCreateTaskForm;
 IMPLEMENTATION
+USES visuals;
 {$R *.lfm}
 VAR
   myCreateTaskForm: TCreateTaskForm=nil;
@@ -99,6 +100,7 @@ PROCEDURE TCreateTaskForm.resetTemplateShapeMouseDown(Sender: TObject; button: T
 
 PROCEDURE TCreateTaskForm.FormShow(Sender: TObject);
   begin
+    applyColorScheme(self);
   end;
 
 PROCEDURE TCreateTaskForm.addTaskShapeMouseDown(Sender: TObject;

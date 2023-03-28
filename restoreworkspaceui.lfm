@@ -7,6 +7,7 @@ object RestoreWorkspaceDialog: TRestoreWorkspaceDialog
   ClientHeight = 344
   ClientWidth = 579
   Color = 7354424
+  OnShow = FormShow
   Position = poOwnerFormCenter
   LCLVersion = '2.2.2.0'
   object backupsGrid: TStringGrid

@@ -43,6 +43,7 @@ TYPE
     PROCEDURE deleteBShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
     PROCEDURE FormResize(Sender: TObject);
+    PROCEDURE FormShow(Sender: TObject);
     PROCEDURE generateTestCasesShape1MouseDown(Sender: TObject;
       button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE generateTestCasesShapeMouseDown(Sender: TObject;
@@ -68,7 +69,7 @@ TYPE
 FUNCTION DuplicateRemovalDialog: TDuplicateRemovalDialog;
 
 IMPLEMENTATION
-USES paletteHandling, logicalGates;
+USES paletteHandling, logicalGates,visuals;
 VAR myDuplicateRemovalDialog: TDuplicateRemovalDialog=nil;
 FUNCTION DuplicateRemovalDialog: TDuplicateRemovalDialog;
   begin
@@ -226,6 +227,11 @@ PROCEDURE TDuplicateRemovalDialog.FormResize(Sender: TObject);
     ElementAPanel.width:=k;
   end;
 
+PROCEDURE TDuplicateRemovalDialog.FormShow(Sender: TObject);
+  begin
+    applyColorScheme(self);
+  end;
+
 PROCEDURE TDuplicateRemovalDialog.generateTestCasesShape1MouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     testerA^.generateTestCases(true,false);
@@ -257,42 +263,42 @@ PROCEDURE TDuplicateRemovalDialog.fillTable;
     //Header
     i:=0;
     for gateInterface in testerA^.Interfaces.inputs do begin
-      TestCasesStringGrid.Columns[i].color:=$00804040;
+      TestCasesStringGrid.Columns[i].color:=colorScheme.tableColor;
       if gateInterface.wireWidth<=1
       then TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name
       else TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name+' ('+ C_multibitWireRepresentationName[gateInterface.representation]+')';
       inc(i);
     end;
 
-    TestCasesStringGrid.Columns[i].color:=$00603030;
+    TestCasesStringGrid.Columns[i].color:=colorScheme.tableAlternativeColor;
     TestCasesStringGrid.Columns[i].title.caption:='Schritte';
     inc(i);
     for gateInterface in testerA^.Interfaces.outputs do begin
-      TestCasesStringGrid.Columns[i].color:=$00804040;
+      TestCasesStringGrid.Columns[i].color:=colorScheme.tableColor;
       if gateInterface.wireWidth<=1
       then TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name
       else TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name+' ('+ C_multibitWireRepresentationName[gateInterface.representation]+')';
       TestCasesStringGrid.Columns[i].readonly:=true;
       inc(i);
     end;
-    TestCasesStringGrid.Columns[i].color:=$00804040;
+    TestCasesStringGrid.Columns[i].color:=colorScheme.tableColor;
     TestCasesStringGrid.Columns[i].title.caption:='aktiv für';
     TestCasesStringGrid.Columns[i].readonly:=true;
     inc(i);
 
     if testerB=nil then for gateInterface in testerA^.Interfaces.outputs do begin
-      TestCasesStringGrid.Columns[i].color:=$00603030;
+      TestCasesStringGrid.Columns[i].color:=colorScheme.tableAlternativeColor;
       TestCasesStringGrid.Columns[i].title.caption:='';
       TestCasesStringGrid.Columns[i].readonly:=true;
     end else for gateInterface in testerB^.Interfaces.outputs do begin
-      TestCasesStringGrid.Columns[i].color:=$00603030;
+      TestCasesStringGrid.Columns[i].color:=colorScheme.tableAlternativeColor;
       if gateInterface.wireWidth<=1
       then TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name
       else TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name+' ('+ C_multibitWireRepresentationName[gateInterface.representation]+')';
       TestCasesStringGrid.Columns[i].readonly:=true;
       inc(i);
     end;
-    TestCasesStringGrid.Columns[i].color:=$00603030;
+    TestCasesStringGrid.Columns[i].color:=colorScheme.tableAlternativeColor;
     TestCasesStringGrid.Columns[i].title.caption:='aktiv für';
     TestCasesStringGrid.Columns[i].readonly:=true;
     inc(i);

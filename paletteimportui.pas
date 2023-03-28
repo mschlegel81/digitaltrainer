@@ -31,6 +31,7 @@ TYPE
     PROCEDURE CancelShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE ExecuteShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE FormCreate(Sender: TObject);
+    PROCEDURE FormShow(Sender: TObject);
     PROCEDURE prefixEditEditingDone(Sender: TObject);
     PROCEDURE rbKeepPaletteNamesChange(Sender: TObject);
     PROCEDURE rbNoCleanupChange(Sender: TObject);
@@ -43,6 +44,7 @@ TYPE
 FUNCTION PaletteImportForm: TPaletteImportForm;
 
 IMPLEMENTATION
+USES visuals;
 VAR myPaletteImportForm: TPaletteImportForm=nil;
 FUNCTION PaletteImportForm: TPaletteImportForm;
   begin
@@ -82,6 +84,11 @@ PROCEDURE TPaletteImportForm.FormCreate(Sender: TObject);
     importOptions.moveAllToSameGroup:=false;
     importOptions.addPrefixToGroupName:=false;
     importOptions.prefixOrSharedGroupName:='';
+  end;
+
+PROCEDURE TPaletteImportForm.FormShow(Sender: TObject);
+  begin
+    applyColorScheme(self);
   end;
 
 PROCEDURE TPaletteImportForm.prefixEditEditingDone(Sender: TObject);

@@ -19,6 +19,7 @@ TYPE
     RestoreShape: TShape;
     PROCEDURE backupsGridSelectCell(Sender: TObject; aCol, aRow: integer;
       VAR CanSelect: boolean);
+    PROCEDURE FormShow(Sender: TObject);
     PROCEDURE RestoreShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   private
     index:T_workspaceHistoryEntryIndex;
@@ -68,6 +69,11 @@ PROCEDURE TRestoreWorkspaceDialog.backupsGridSelectCell(Sender: TObject; aCol,aR
       setEnableButton(RestoreShape,RestoreLabel,true);
       entryToRestore:=index.entries[index.size-1-aRow];
     end else setEnableButton(RestoreShape,RestoreLabel,false);
+  end;
+
+PROCEDURE TRestoreWorkspaceDialog.FormShow(Sender: TObject);
+  begin
+    applyColorScheme(self);
   end;
 
 PROCEDURE TRestoreWorkspaceDialog.fillTable;

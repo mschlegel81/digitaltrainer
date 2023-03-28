@@ -27,6 +27,7 @@ TYPE
     propOkShape1: TShape;
     PROCEDURE CaptionEditEditingDone(Sender: TObject);
     PROCEDURE DescriptionMemoEditingDone(Sender: TObject);
+    PROCEDURE FormShow(Sender: TObject);
     PROCEDURE PaletteComboboxDrawItem(control: TWinControl; index: integer;
       ARect: TRect; state: TOwnerDrawState);
     PROCEDURE propCancelShapeMouseDown(Sender: TObject; button: TMouseButton;
@@ -70,6 +71,11 @@ PROCEDURE TAddToPaletteForm.CaptionEditEditingDone(Sender: TObject);
 PROCEDURE TAddToPaletteForm.DescriptionMemoEditingDone(Sender: TObject);
   begin
     currentBoard^.setDescription(DescriptionMemo.text);
+  end;
+
+PROCEDURE TAddToPaletteForm.FormShow(Sender: TObject);
+  begin
+    applyColorScheme(self);
   end;
 
 PROCEDURE TAddToPaletteForm.PaletteComboboxDrawItem(control: TWinControl; index: integer; ARect: TRect; state: TOwnerDrawState);

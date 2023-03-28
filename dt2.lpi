@@ -8,7 +8,6 @@
       <Title Value="Digitaltrainer"/>
       <Scaled Value="True"/>
       <ResourceType Value="res"/>
-      <UseXPManifest Value="True"/>
       <XPManifest>
         <DpiAware Value="True/PM_V2"/>
       </XPManifest>

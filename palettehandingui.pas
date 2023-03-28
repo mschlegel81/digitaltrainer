@@ -51,6 +51,7 @@ TYPE
     PROCEDURE entriesGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
     PROCEDURE ExportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE FormCreate(Sender: TObject);
+    PROCEDURE FormShow(Sender: TObject);
     PROCEDURE ImportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE MarkAllShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE MarkNoneShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -105,8 +106,8 @@ PROCEDURE TPaletteForm.entriesGridSelection(Sender: TObject; aCol, aRow: integer
 PROCEDURE TPaletteForm.entriesGridSelectEditor(Sender: TObject; aCol, aRow: integer; VAR editor: TWinControl);
   begin
     if (editor is TPickListCellEditor) then begin
-      TPickListCellEditor(editor).color:=$00703838;
-      TPickListCellEditor(editor).Font.color:=$00FFFFFF;
+      TPickListCellEditor(editor).color:=colorScheme.editorBackgroundColor;
+      TPickListCellEditor(editor).Font.color:=colorScheme.ENABLED_TEXT_COLOR;
       TPickListCellEditor(editor).style:=csOwnerDrawEditableFixed;
       TPickListCellEditor(editor).AutoComplete:=true;
       TPickListCellEditor(editor).AutoCompleteText:=[cbactEnabled,cbactEndOfLineComplete,cbactSearchAscending];
@@ -211,6 +212,11 @@ PROCEDURE TPaletteForm.FormCreate(Sender: TObject);
     SubPaletteStringGrid.editor.Font.color:=SubPaletteStringGrid.Font.color;
     entriesGrid.editor     .color:=entriesGrid     .color;
     entriesGrid.editor.Font.color:=entriesGrid.Font.color;
+  end;
+
+PROCEDURE TPaletteForm.FormShow(Sender: TObject);
+  begin
+    applyColorScheme(self);
   end;
 
 PROCEDURE TPaletteForm.ImportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);

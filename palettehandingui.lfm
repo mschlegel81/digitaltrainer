@@ -9,6 +9,7 @@ object PaletteForm: TPaletteForm
   Color = 7354424
   Menu = MainMenu1
   OnCreate = FormCreate
+  OnShow = FormShow
   Position = poOwnerFormCenter
   LCLVersion = '2.2.2.0'
   object entriesGrid: TStringGrid

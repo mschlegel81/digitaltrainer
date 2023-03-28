@@ -87,6 +87,7 @@ T_visualBoard=object(T_captionedAndIndexed)
     PROCEDURE rewire(CONST forced:boolean);
     PROCEDURE updateWiresFromTask;
     PROCEDURE paintWires(CONST init:boolean=true; CONST draw:boolean=true);
+    PROCEDURE forceWireRepaint;
     PROCEDURE paintWirePreview(CONST wireStart:T_point; CONST screenX,screenY:longint);
 
     FUNCTION getCaption: shortstring; virtual;
@@ -1131,6 +1132,11 @@ PROCEDURE T_visualBoard.updateWiresFromTask;
     ui^.wiringInBackground:=wantToWireInBackground;
   end;
 
+PROCEDURE T_visualBoard.forceWireRepaint;
+  begin
+    wiresUpToDate:=false;
+  end;
+
 PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
   VAR i:longint;
       Canvas: TBGRACanvas;
@@ -1151,13 +1157,13 @@ PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
 
       if (ui^.uiElement.titleLayer.width<ui^.uiElement.wireLayer.width) or
          (ui^.uiElement.titleLayer.height<ui^.uiElement.wireLayer.height) then begin
-        Canvas.Brush.color:=BOARD_COLOR;
+        Canvas.Brush.color:=colorScheme.BOARD_COLOR;
         Canvas.FillRect(0,0,canvasWidth,canvasHeight);
       end;
       Canvas.draw(0,0,ui^.uiElement.titleLayer);
 
       //Draw boundaries:
-      Canvas.Pen.color:=BOARD_BOUNDARY_COLOR;
+      Canvas.Pen.color:=colorScheme.BOARD_BOUNDARY_COLOR;
       Canvas.Pen.width:=1;
       Canvas.MoveTo(0          ,gridY0*zoom);
       Canvas.LineTo(canvasWidth,gridY0*zoom);
@@ -1178,7 +1184,7 @@ PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
       leaveCriticalSection(wiresCs);
     end;
     if draw then begin
-      ui^.uiElement.boardImage.Canvas.Brush.color:=BOARD_COLOR;
+      ui^.uiElement.boardImage.Canvas.Brush.color:=colorScheme.BOARD_COLOR;
       ui^.uiElement.boardImage.Canvas.Brush.style:=bsSolid;
       ui^.uiElement.boardImage.Canvas.Pen.style:=psClear;
       ui^.uiElement.boardImage.Canvas.FillRect(0,0,ui^.uiElement.boardImage.width,ui^.uiElement.boardImage.height);

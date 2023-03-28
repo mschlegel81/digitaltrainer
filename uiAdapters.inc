@@ -260,10 +260,10 @@ PROCEDURE T_uiAdapter.updateTitleLayer;
     uiElement.titleLayer.setSize(canvasWidth,canvasHeight);
     //Clear image:
     Canvas:=uiElement.titleLayer.CanvasBGRA;
-    Canvas.Brush.color:=BOARD_COLOR;
+    Canvas.Brush.color:=colorScheme.BOARD_COLOR;
     Canvas.FillRect(0,0,canvasWidth,canvasHeight);
     //Draw title:
-    if activeBoard^.getCaption<>'' then textOut(Canvas,activeBoard^.getCaption,zoom,0,canvasWidth-zoom,canvasHeight,BOARD_BOUNDARY_COLOR,false);
+    if activeBoard^.getCaption<>'' then textOut(Canvas,activeBoard^.getCaption,zoom,0,canvasWidth-zoom,canvasHeight,colorScheme.BOARD_BOUNDARY_COLOR,false);
   end;
 
 PROCEDURE T_uiAdapter.zoomIn;
@@ -511,7 +511,7 @@ PROCEDURE T_uiAdapter.hideIoEdit;
 PROCEDURE T_uiAdapter.paintAll;
   begin
     with uiElement.boardImage do begin
-      Canvas.Brush.color:=BOARD_COLOR;
+      Canvas.Brush.color:=colorScheme.BOARD_COLOR;
       Canvas.Brush.style:=bsSolid;
       Canvas.Pen.style:=psClear;
       Canvas.FillRect(0,0,width,height);

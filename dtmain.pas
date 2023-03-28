@@ -16,6 +16,9 @@ TYPE
   TDigitaltrainerMainForm = class(TForm)
     boardHorizontalScrollBar: TScrollBar;
     boardImage: TImage;
+    MenuItem1: TMenuItem;
+    miColorSchemeDefault: TMenuItem;
+    miColorSchemeBlackOnWhite: TMenuItem;
     miAddToPalette: TMenuItem;
     miStartNextUnsolvedTask: TMenuItem;
     miManagePalette: TMenuItem;
@@ -32,6 +35,7 @@ TYPE
     miViewTasks: TMenuItem;
     Separator1: TMenuItem;
     Separator2: TMenuItem;
+    Separator3: TMenuItem;
     WireTimer: TIdleTimer;
     ioEdit: TEdit;
     infoLabel: TLabel;
@@ -86,6 +90,7 @@ TYPE
     PROCEDURE FormShow(Sender: TObject);
     PROCEDURE miAddToPaletteClick(Sender: TObject);
     PROCEDURE miBackupsClick(Sender: TObject);
+    PROCEDURE miColorSchemeDefaultClick(Sender: TObject);
     PROCEDURE miCopyClick(Sender: TObject);
     PROCEDURE miEditModeClick(Sender: TObject);
     PROCEDURE miEditPaletteClick(Sender: TObject);
@@ -143,7 +148,7 @@ VAR
   DigitaltrainerMainForm: TDigitaltrainerMainForm;
 
 IMPLEMENTATION
-USES compoundGates, boardTestUnit, boardChangedUi,welcomeDialog,RestoreWorkspaceUi;
+USES compoundGates, boardTestUnit, boardChangedUi,welcomeDialog,RestoreWorkspaceUi,sprites;
 CONST playPauseGlyph:array[false..true] of string=('⏵','⏸');
 
 {$R *.lfm}
@@ -192,6 +197,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     workspace.activeBoard  ^.attachUI(@uiAdapter);
     workspace.activeBoard  ^.reset(true);
     miSimpleUI.checked:=workspace.simplisticUi;
+    applyColorScheme(self);
     updateUiElements;
 
     pauseByUser:=false;
@@ -273,6 +279,21 @@ PROCEDURE TDigitaltrainerMainForm.miBackupsClick(Sender: TObject);
     SimulationTimer.enabled:=timerEnabledBefore;
   end;
 
+PROCEDURE TDigitaltrainerMainForm.miColorSchemeDefaultClick(Sender: TObject);
+  begin
+    if miColorSchemeBlackOnWhite.checked
+    then colorScheme:=BLACK_ON_WHITE_SCHEME
+    else colorScheme:=DEFAULT_SCHEME;
+    applyColorScheme(self);
+    clearSpriteCaches;
+    uiAdapter.updateTitleLayer;
+    workspace.activeBoard^.forceWireRepaint;
+    uiAdapter.paintAll;
+    repaint;
+    DefocusControl(speedTrackBar,false);
+    speedTrackBar.repaint;
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.miCopyClick(Sender: TObject);
   begin
     workspace.activeBoard^.copySelectionToClipboard;
@@ -349,6 +370,7 @@ PROCEDURE TDigitaltrainerMainForm.miNewBoardClick(Sender: TObject);
                      end;
     if fullInit then workspace.activeBoard^.attachUI(@uiAdapter);
     uiAdapter.paintAll;
+    infoLabel.color:=clNone;
     updateUiElements;
   end;
 
@@ -705,7 +727,7 @@ PROCEDURE TDigitaltrainerMainForm.ZoomOutShapeMouseDown(Sender: TObject; button:
 PROCEDURE TDigitaltrainerMainForm.buttonClicked(Shape: TShape);
   begin
     Buttons[Shape.Tag].colorIndex:=10;
-    Shape.Brush.color:=$00FF7F7F;
+    Shape.Brush.color:=colorScheme.buttonColorTable[10];
     if not(AnimationTimer.enabled) then AnimationTimer.enabled:=true;
   end;
 
@@ -851,14 +873,13 @@ FUNCTION TDigitaltrainerMainForm.continueWithOtherBoard: boolean;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.AnimationTimerTimer(Sender: TObject);
-  CONST buttonColorTable:array[0..9] of longint=($00603030,$00703838,$00804040,$00904848,$00A05050,$00B05858,$00BF5F5F,$00CF6767,$00DF6F6F,$00EF7777);
   VAR i:longint;
       anythingDone:boolean=false;
   begin
     for i:=0 to length(Buttons)-1 do with Buttons[i] do if colorIndex>0 then begin
       anythingDone:=true;
       dec(colorIndex);
-      Shape.Brush.color:=buttonColorTable[colorIndex];
+      Shape.Brush.color:=colorScheme.buttonColorTable[colorIndex];
     end;
     if not(anythingDone) then AnimationTimer.enabled:=false;
   end;

@@ -46,7 +46,7 @@ TYPE
   end;
 
 IMPLEMENTATION
-USES compoundGates,logicalGates, Graphics;
+USES compoundGates,logicalGates, Graphics,visuals;
 
 {$R *.lfm}
 
@@ -140,18 +140,18 @@ PROCEDURE TTestCreationFrame.fillTable;
     //Header
     i:=0;
     for gateInterface in testGenerator^.Interfaces.inputs do begin
-      TestCasesStringGrid.Columns[i].color:=$00804040;
+      TestCasesStringGrid.Columns[i].color:=colorScheme.tableColor;
       if gateInterface.wireWidth<=1
       then TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name
       else TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name+' ('+ C_multibitWireRepresentationName[gateInterface.representation]+')';
       inc(i);
     end;
 
-    TestCasesStringGrid.Columns[i].color:=$00603030;
+    TestCasesStringGrid.Columns[i].color:=colorScheme.tableAlternativeColor;
     TestCasesStringGrid.Columns[i].title.caption:='Steps';
     inc(i);
     for gateInterface in testGenerator^.Interfaces.outputs do begin
-      TestCasesStringGrid.Columns[i].color:=$00804040;
+      TestCasesStringGrid.Columns[i].color:=colorScheme.tableColor;
       if gateInterface.wireWidth<=1
       then TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name
       else TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name+' ('+ C_multibitWireRepresentationName[gateInterface.representation]+')';

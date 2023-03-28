@@ -7,6 +7,7 @@ object BoardTestForm: TBoardTestForm
   ClientHeight = 373
   ClientWidth = 645
   Menu = MainMenu1
+  OnShow = FormShow
   Position = poOwnerFormCenter
   LCLVersion = '2.2.2.0'
   inline TestCreationFrame1: TTestCreationFrame
@@ -31,10 +32,10 @@ object BoardTestForm: TBoardTestForm
         Left = 530
       end
       inherited generateTestCasesShape1: TShape
-        Left = 354
+        Left = 365
       end
       inherited generateTestCasesLabel1: TLabel
-        Left = 380
+        Left = 391
       end
     end
   end

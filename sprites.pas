@@ -111,7 +111,7 @@ TYPE
 
   T_spriteMap=specialize G_stringKeyMap<P_sprite>;
 
-PROCEDURE textOut(CONST CanvasBGRA:TBGRACanvas; CONST s:string; CONST x0,y0,x1,y1:longint; CONST textColor:longint=$00FFFFFF; CONST autoRotate:boolean=true);
+PROCEDURE textOut(CONST CanvasBGRA:TBGRACanvas; CONST s:string; CONST x0,y0,x1,y1:longint; CONST textColor:longint; CONST autoRotate:boolean=true);
 
 FUNCTION getIoSprite(CONST pos:T_ioDirection; CONST wireValue:T_wireValue; CONST caption:string):P_sprite;
 FUNCTION getBlockSprite(CONST caption:shortstring; CONST gridWidth,gridHeight:longint; CONST marked:boolean):P_sprite;
@@ -119,6 +119,7 @@ FUNCTION getIoBlockSprite(CONST caption:shortstring; CONST inputIndex:longint; C
 FUNCTION getIoTextSprite(CONST wireValue:T_wireValue; mode:T_multibitWireRepresentation):P_sprite;
 FUNCTION get7SegmentSprite(CONST wireValue: T_wireValue; CONST marked:boolean):P_sprite;
 FUNCTION getWatcherSprite(CONST ioLabel_:shortstring; CONST ioIndex:longint; CONST wireValue:T_wireValue; CONST isInput,leftOrRight:boolean):P_sprite;
+PROCEDURE clearSpriteCaches;
 VAR gradientSprite:T_gradientSprite;
 IMPLEMENTATION
 USES sysutils,types,Classes,math,strutils;
@@ -178,6 +179,17 @@ PROCEDURE finalize;
     ioTextSpriteMap .destroy;
     sevSegSpriteMap .destroy;
     watcherSpriteMap.destroy;
+  end;
+
+PROCEDURE clearSpriteCaches;
+  begin
+    lastCleanupTime:=now;
+    ioSpriteMap     .clear;
+    blockSpriteMap  .clear;
+    ioBlockSpriteMap.clear;
+    ioTextSpriteMap .clear;
+    sevSegSpriteMap .clear;
+    watcherSpriteMap.clear;
   end;
 
 PROCEDURE spriteAllocated;
@@ -323,16 +335,16 @@ PROCEDURE T_gradientSprite.setZoom(CONST zoom: longint);
   begin
     screenOffset:=pointOf(0,0);
     if Bitmap=nil
-    then Bitmap:=TBGRABitmap.create(zoom,1,BOARD_COLOR)
+    then Bitmap:=TBGRABitmap.create(zoom,1,colorScheme.BOARD_COLOR)
     else Bitmap.setSize(zoom,1);
 
-    b0:= BOARD_COLOR         and 255;
-    g0:=(BOARD_COLOR shr  8) and 255;
-    r0:=(BOARD_COLOR shr 16) and 255;
+    b0:= colorScheme.BOARD_COLOR         and 255;
+    g0:=(colorScheme.BOARD_COLOR shr  8) and 255;
+    r0:=(colorScheme.BOARD_COLOR shr 16) and 255;
 
-    b1:= SHADOW_COLOR         and 255; b1-=b0; b0:=b0 shl 8;
-    g1:=(SHADOW_COLOR shr  8) and 255; g1-=g0; g0:=g0 shl 8;
-    r1:=(SHADOW_COLOR shr 16) and 255; r1-=r0; r0:=r0 shl 8;
+    b1:= colorScheme.SHADOW_COLOR         and 255; b1-=b0; b0:=b0 shl 8;
+    g1:=(colorScheme.SHADOW_COLOR shr  8) and 255; g1-=g0; g0:=g0 shl 8;
+    r1:=(colorScheme.SHADOW_COLOR shr 16) and 255; r1-=r0; r0:=r0 shl 8;
 
     Canvas:=Bitmap.CanvasBGRA;
     for i:=0 to zoom-1 do begin
@@ -440,11 +452,11 @@ PROCEDURE T_watcherSprite.setZoom(CONST zoom: longint);
     end;
 
     if Bitmap=nil
-    then Bitmap:=TBGRABitmap.create(width,height,BOARD_COLOR)
+    then Bitmap:=TBGRABitmap.create(width,height,colorScheme.BOARD_COLOR)
     else Bitmap.setSize(width,height);
-    Bitmap.CanvasBGRA.Brush.color:=BOARD_COLOR;
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.BOARD_COLOR;
     Bitmap.CanvasBGRA.Pen.style:=psSolid;
-    Bitmap.CanvasBGRA.Pen.color:=WIRE_COLOR;
+    Bitmap.CanvasBGRA.Pen.color:=colorScheme.WIRE_COLOR;
 
     Bitmap.CanvasBGRA.Polygon(poly);
 
@@ -452,7 +464,7 @@ PROCEDURE T_watcherSprite.setZoom(CONST zoom: longint);
     Bitmap.CanvasBGRA.Font.quality:=fqFineAntialiasing;
     Bitmap.CanvasBGRA.Font.Antialiasing:=true;
     Bitmap.CanvasBGRA.Font.height:=16;
-    Bitmap.CanvasBGRA.Font.color:=GATE_LABEL_COLOR;
+    Bitmap.CanvasBGRA.Font.color:=colorScheme.GATE_LABEL_COLOR;
     Bitmap.CanvasBGRA.textOut(x0+2,y0+2 ,ioLabel);
     Bitmap.CanvasBGRA.textOut(x0+2,y0+18,'dec: '+getDecimalString(wire));
     Bitmap.CanvasBGRA.textOut(x0+2,y0+34,'2cmp: '+get2ComplementString(wire));
@@ -461,9 +473,9 @@ PROCEDURE T_watcherSprite.setZoom(CONST zoom: longint);
     Bitmap.CanvasBGRA.Pen.color:=0;
     for i:=0 to wire.width-1 do begin
       case wire.bit[i] of
-        tsv_true        : Bitmap.CanvasBGRA.Brush.color:=$000080ff;
-        tsv_false       : Bitmap.CanvasBGRA.Brush.color:=0;
-        tsv_undetermined: Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+        tsv_true        : Bitmap.CanvasBGRA.Brush.color:=colorScheme.TRUE_COLOR;
+        tsv_false       : Bitmap.CanvasBGRA.Brush.color:=colorScheme.FALSE_COLOR;
+        tsv_undetermined: Bitmap.CanvasBGRA.Brush.color:=colorScheme.UNDETERMINED_COLOR;
       end;
       Bitmap.CanvasBGRA.Rectangle(x0+2+8* i   ,y0+50,
                                   x0+2+8*(i+1),y0+50+8);
@@ -492,9 +504,7 @@ PROCEDURE T_7SegmentSprite.setZoom(CONST zoom: longint);
     poly[4]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*0.50));
     poly[5]:=point(round(screenOffset[0]+zoom*0.90),round(screenOffset[1]+zoom*0.70));
     poly[6]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*0.90));
-    if (active and 1)>0
-    then Bitmap.CanvasBGRA.Brush.color:=MARK_COLOR
-    else Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.SEVEN_SEGMENT_COLOR[(active and 1)>0];
     Bitmap.CanvasBGRA.Polygon(poly);
 
     poly[0]:=point(round(screenOffset[0]+zoom*1.00),round(screenOffset[1]+zoom*1.00));
@@ -504,9 +514,7 @@ PROCEDURE T_7SegmentSprite.setZoom(CONST zoom: longint);
     poly[4]:=point(round(screenOffset[0]+zoom*0.60),round(screenOffset[1]+zoom*1.00));
     poly[5]:=point(round(screenOffset[0]+zoom*0.80),round(screenOffset[1]+zoom*0.80));
     poly[6]:=point(round(screenOffset[0]+zoom*1.00),round(screenOffset[1]+zoom*1.00));
-    if (active and 2)>0
-    then Bitmap.CanvasBGRA.Brush.color:=MARK_COLOR
-    else Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.SEVEN_SEGMENT_COLOR[(active and 2)>0];
     Bitmap.CanvasBGRA.Polygon(poly);
 
     poly[0]:=point(round(screenOffset[0]+zoom*3.40),round(screenOffset[1]+zoom*1.00));
@@ -516,9 +524,7 @@ PROCEDURE T_7SegmentSprite.setZoom(CONST zoom: longint);
     poly[4]:=point(round(screenOffset[0]+zoom*3.00),round(screenOffset[1]+zoom*1.00));
     poly[5]:=point(round(screenOffset[0]+zoom*3.20),round(screenOffset[1]+zoom*0.80));
     poly[6]:=point(round(screenOffset[0]+zoom*3.40),round(screenOffset[1]+zoom*1.00));
-    if (active and 4)>0
-    then Bitmap.CanvasBGRA.Brush.color:=MARK_COLOR
-    else Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.SEVEN_SEGMENT_COLOR[(active and 4)>0];
     Bitmap.CanvasBGRA.Polygon(poly);
 
     poly[0]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*3.30));
@@ -528,9 +534,7 @@ PROCEDURE T_7SegmentSprite.setZoom(CONST zoom: longint);
     poly[4]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*2.90));
     poly[5]:=point(round(screenOffset[0]+zoom*0.90),round(screenOffset[1]+zoom*3.10));
     poly[6]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*3.30));
-    if (active and 8)>0
-    then Bitmap.CanvasBGRA.Brush.color:=MARK_COLOR
-    else Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.SEVEN_SEGMENT_COLOR[(active and 8)>0];
     Bitmap.CanvasBGRA.Polygon(poly);
 
     poly[0]:=point(round(screenOffset[0]+zoom*1.00),round(screenOffset[1]+zoom*3.40));
@@ -540,9 +544,7 @@ PROCEDURE T_7SegmentSprite.setZoom(CONST zoom: longint);
     poly[4]:=point(round(screenOffset[0]+zoom*0.60),round(screenOffset[1]+zoom*3.40));
     poly[5]:=point(round(screenOffset[0]+zoom*0.80),round(screenOffset[1]+zoom*3.20));
     poly[6]:=point(round(screenOffset[0]+zoom*1.00),round(screenOffset[1]+zoom*3.40));
-    if (active and 16)>0
-    then Bitmap.CanvasBGRA.Brush.color:=MARK_COLOR
-    else Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.SEVEN_SEGMENT_COLOR[(active and 16)>0];
     Bitmap.CanvasBGRA.Polygon(poly);
 
     poly[0]:=point(round(screenOffset[0]+zoom*3.40),round(screenOffset[1]+zoom*3.40));
@@ -552,9 +554,7 @@ PROCEDURE T_7SegmentSprite.setZoom(CONST zoom: longint);
     poly[4]:=point(round(screenOffset[0]+zoom*3.00),round(screenOffset[1]+zoom*3.40));
     poly[5]:=point(round(screenOffset[0]+zoom*3.20),round(screenOffset[1]+zoom*3.20));
     poly[6]:=point(round(screenOffset[0]+zoom*3.40),round(screenOffset[1]+zoom*3.40));
-    if (active and 32)>0
-    then Bitmap.CanvasBGRA.Brush.color:=MARK_COLOR
-    else Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.SEVEN_SEGMENT_COLOR[(active and 32)>0];
     Bitmap.CanvasBGRA.Polygon(poly);
 
     poly[0]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*5.70));
@@ -564,9 +564,7 @@ PROCEDURE T_7SegmentSprite.setZoom(CONST zoom: longint);
     poly[4]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*5.30));
     poly[5]:=point(round(screenOffset[0]+zoom*0.90),round(screenOffset[1]+zoom*5.50));
     poly[6]:=point(round(screenOffset[0]+zoom*1.10),round(screenOffset[1]+zoom*5.70));
-    if (active and 64)>0
-    then Bitmap.CanvasBGRA.Brush.color:=MARK_COLOR
-    else Bitmap.CanvasBGRA.Brush.color:=SHADOW_COLOR;
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.SEVEN_SEGMENT_COLOR[(active and 64)>0];
     Bitmap.CanvasBGRA.Polygon(poly);
     preparedForZoom:=zoom;
   end;
@@ -587,19 +585,19 @@ PROCEDURE T_ioTextSprite.setZoom(CONST zoom: longint);
     newWidth :=4*zoom-8;
     newHeight:=2*zoom-6;
     if Bitmap=nil
-    then Bitmap:=TBGRABitmap.create(newWidth,newHeight,GATE_COLOR)
+    then Bitmap:=TBGRABitmap.create(newWidth,newHeight,colorScheme.GATE_COLOR)
     else Bitmap.setSize(newWidth,newHeight);
 
-    Bitmap.CanvasBGRA.Brush.color:=GATE_COLOR;
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.GATE_COLOR;
     Bitmap.CanvasBGRA.Brush.style:=bsSolid;
     Bitmap.CanvasBGRA.Pen.style:=psClear;
     Bitmap.CanvasBGRA.Rectangle(0,0,newWidth,newHeight);
     Bitmap.CanvasBGRA.DrawFontBackground:=true;
-    textOut(Bitmap.CanvasBGRA,wireModeText,0,0,newWidth shr 1,newHeight,SHADOW_COLOR);
+    textOut(Bitmap.CanvasBGRA,wireModeText,0,0,newWidth shr 1,newHeight,colorScheme.SHADOW_COLOR);
 
     Bitmap.CanvasBGRA.Brush.style:=bsClear;
     Bitmap.CanvasBGRA.DrawFontBackground:=false;
-    textOut(Bitmap.CanvasBGRA,caption,newWidth shr 3,0,newWidth,newHeight);
+    textOut(Bitmap.CanvasBGRA,caption,newWidth shr 3,0,newWidth,newHeight,colorScheme.ENABLED_TEXT_COLOR);
     preparedForZoom:=zoom;
   end;
 
@@ -643,10 +641,10 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
       dtc:=sqrt(fx*fx+fy*fy);
       if dtc>radius then begin
         case position of
-          io_left  : if fx<0 then addCol(GATE_COLOR) else addCol(BOARD_COLOR);
-          io_right : if fx<0 then addCol(BOARD_COLOR) else addCol(GATE_COLOR);
-          io_top   : if fy<0 then addCol(GATE_COLOR) else addCol(BOARD_COLOR);
-          io_bottom: if fy<0 then addCol(BOARD_COLOR) else addCol(GATE_COLOR);
+          io_left  : if fx<0 then addCol(colorScheme.GATE_COLOR) else addCol(colorScheme.BOARD_COLOR);
+          io_right : if fx<0 then addCol(colorScheme.BOARD_COLOR) else addCol(colorScheme.GATE_COLOR);
+          io_top   : if fy<0 then addCol(colorScheme.GATE_COLOR) else addCol(colorScheme.BOARD_COLOR);
+          io_bottom: if fy<0 then addCol(colorScheme.BOARD_COLOR) else addCol(colorScheme.GATE_COLOR);
         end;
       end else if dtc>radius-1 then begin
         case position of
@@ -655,10 +653,10 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
           io_top   : dtc:= fy/radius;
           io_bottom: dtc:=-fy/radius;
         end;
-        if dtc<0 then level:=0 else level:=round(dtc*255);
-        r+=level;
-        g+=level;
-        b+=level;
+        if dtc<0 then level:=0 else level:=round(dtc*256);
+        r+=(level*( colorScheme.WIRE_COLOR         and 255)) shr 8;
+        g+=(level*((colorScheme.WIRE_COLOR shr  8) and 255)) shr 8;
+        b+=(level*((colorScheme.WIRE_COLOR shr 16) and 255)) shr 8;
       end else begin
         fz:=sqrt(1-sqr(dtc/radius))*radius;
         dtc:=1/sqrt(sqr(fx)+sqr(fy)+sqr(fz));
@@ -683,16 +681,16 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
       ll:longint;
   begin
     case state of
-      io_undetermined: begin baseR:=BOARD_COLOR and 255; baseG:=(BOARD_COLOR shr 8) and 255; baseB:=(BOARD_COLOR shr 16) and 255; end;
-      io_high        : begin baseR:=255; baseG:=128; baseB:=0; end;
-      io_low         : begin baseR:=0;   baseG:=0;   baseB:=0; end;
-      io_multibit    : begin baseR:=128; baseG:=128; baseB:=128; end;
+      io_undetermined: begin baseR:=colorScheme.UNDETERMINED_COLOR and 255; baseG:=(colorScheme.UNDETERMINED_COLOR shr 8) and 255; baseB:=(colorScheme.UNDETERMINED_COLOR shr 16) and 255; end;
+      io_high        : begin baseR:=colorScheme.TRUE_COLOR         and 255; baseG:=(colorScheme.TRUE_COLOR         shr 8) and 255; baseB:=(colorScheme.TRUE_COLOR         shr 16) and 255; end;
+      io_low         : begin baseR:=colorScheme.FALSE_COLOR        and 255; baseG:=(colorScheme.FALSE_COLOR        shr 8) and 255; baseB:=(colorScheme.FALSE_COLOR        shr 16) and 255; end;
+      io_multibit    : begin baseR:=colorScheme.MULTIBIT_COLOR     and 255; baseG:=(colorScheme.MULTIBIT_COLOR     shr 8) and 255; baseB:=(colorScheme.MULTIBIT_COLOR     shr 16) and 255; end;
     end;
     radius:=zoom shr 1;
     screenOffset:=pointOf(radius,radius);
     c:=radius;
     if Bitmap=nil
-    then Bitmap:=TBGRABitmap.create(radius*2+1,radius*2+1,BOARD_COLOR)
+    then Bitmap:=TBGRABitmap.create(radius*2+1,radius*2+1,colorScheme.BOARD_COLOR)
     else Bitmap            .setSize(radius*2+1,radius*2+1);
 
     Bitmap.CanvasBGRA.Brush.color:=0;
@@ -710,7 +708,7 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
       Bitmap.CanvasBGRA.Brush.style:=bsSolid;
 
       Bitmap.CanvasBGRA.DrawFontBackground:=true;
-      textOut(Bitmap.CanvasBGRA,cap,x,x,radius*2-x,radius*2-x);
+      textOut(Bitmap.CanvasBGRA,cap,x,x,radius*2-x,radius*2-x,colorScheme.ENABLED_TEXT_COLOR);
     end;
 
     for y:=0 to radius*2 do begin
@@ -858,9 +856,9 @@ PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint; CONST ioMark:T_ioMark
         mw:=256-bw;
 
         Bitmap.CanvasBGRA.Pen.color:=
-        (((( BOARD_COLOR         and 255)*bw+( FrameColor         and 255)*mw) shr 8) and 255) or
-        (((((BOARD_COLOR shr  8) and 255)*bw+((FrameColor shr  8) and 255)*mw) shr 8) and 255) shl 8 or
-        (((((BOARD_COLOR shr 16) and 255)*bw+((FrameColor shr 16) and 255)*mw) shr 8) and 255) shl 16;
+        (((( colorScheme.BOARD_COLOR         and 255)*bw+( FrameColor         and 255)*mw) shr 8) and 255) or
+        (((((colorScheme.BOARD_COLOR shr  8) and 255)*bw+((FrameColor shr  8) and 255)*mw) shr 8) and 255) shl 8 or
+        (((((colorScheme.BOARD_COLOR shr 16) and 255)*bw+((FrameColor shr 16) and 255)*mw) shr 8) and 255) shl 16;
 
         Bitmap.CanvasBGRA.Rectangle(3          -i,
                                     3          -i,
@@ -877,9 +875,9 @@ PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint; CONST ioMark:T_ioMark
         bw:=i*256 div 4;
 
         Bitmap.CanvasBGRA.Pen.color:=
-        ((( BOARD_COLOR         and 255)*bw shr 8) and 255) or
-        ((((BOARD_COLOR shr  8) and 255)*bw shr 8) and 255) shl 8 or
-        ((((BOARD_COLOR shr 16) and 255)*bw shr 8) and 255) shl 16;
+         round( colorScheme.BOARD_COLOR         and 255*i/5+ colorScheme.SHADOW_COLOR         and 255*(1-i/5)) or
+         round((colorScheme.BOARD_COLOR shr  8) and 255*i/5+(colorScheme.SHADOW_COLOR shr  8) and 255*(1-i/5)) shl 8 or
+         round((colorScheme.BOARD_COLOR shr 16) and 255*i/5+(colorScheme.SHADOW_COLOR shr 16) and 255*(1-i/5)) shl 16;
 
         Bitmap.CanvasBGRA.MoveTo(3+i         ,newHeight-4+i);
         Bitmap.CanvasBGRA.LineTo(newWidth-4+i,newHeight-4+i);
@@ -892,14 +890,14 @@ PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint; CONST ioMark:T_ioMark
     newWidth :=width *zoom;
     newHeight:=height*zoom;
     if Bitmap=nil
-    then Bitmap:=TBGRABitmap.create(newWidth,newHeight,BOARD_COLOR)
+    then Bitmap:=TBGRABitmap.create(newWidth,newHeight,colorScheme.BOARD_COLOR)
     else Bitmap.setSize(newWidth,newHeight);
 
-    Bitmap.CanvasBGRA.Brush.color:=BOARD_COLOR;
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.BOARD_COLOR;
     Bitmap.CanvasBGRA.Pen.style:=psClear;
     Bitmap.CanvasBGRA.Rectangle(0,0,newWidth+1,newHeight+1);
 
-    Bitmap.CanvasBGRA.Brush.color:=GATE_COLOR;
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.GATE_COLOR;
     Bitmap.CanvasBGRA.Pen.style:=psSolid;
 
     Bitmap.CanvasBGRA.Pen.color:=0;
@@ -909,11 +907,11 @@ PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint; CONST ioMark:T_ioMark
                                 newWidth -3,
                                 newHeight-3);
     if marked
-    then drawGlowingFrame(MARK_COLOR)
+    then drawGlowingFrame(colorScheme.MARK_COLOR)
     else case ioMark of
       iom_none: drawShadow;
-      iom_correctOutput:   drawGlowingFrame(CORRECT_COLOR);
-      iom_incorrectOutput: drawGlowingFrame(INCORRECT_COLOR);
+      iom_correctOutput:   drawGlowingFrame(colorScheme.CORRECT_COLOR);
+      iom_incorrectOutput: drawGlowingFrame(colorScheme.INCORRECT_COLOR);
     end;
   end;
 
@@ -934,7 +932,8 @@ PROCEDURE T_blockSprite.setZoom(CONST zoom: longint);
             screenOffset[0]            +zoom shr 1,
             screenOffset[1]            +zoom shr 1,
             screenOffset[0]+zoom*width -zoom shr 1,
-            screenOffset[1]+zoom*height-zoom shr 1);
+            screenOffset[1]+zoom*height-zoom shr 1,
+            colorScheme.ENABLED_TEXT_COLOR);
     preparedForZoom:=zoom;
   end;
 
@@ -962,7 +961,8 @@ PROCEDURE T_ioBlockSprite.setZoom(CONST zoom: longint);
             screenOffset[0]            +zoom shr 1,
             screenOffset[1]            +zoom shr 1,
             screenOffset[0]+ zoom*width-zoom shr 1,
-            screenOffset[1]+(zoom*height div 2));
+            screenOffset[1]+(zoom*height div 2),
+            colorScheme.ENABLED_TEXT_COLOR);
     preparedForZoom:=zoom;
   end;
 

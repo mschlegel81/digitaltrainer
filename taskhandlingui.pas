@@ -87,6 +87,7 @@ PROCEDURE TSelectTaskForm.createBackupOnce(CONST reason:T_workspaceHistorization
 
 PROCEDURE TSelectTaskForm.FormShow(Sender: TObject);
   begin
+    applyColorScheme(self);
   end;
 
 PROCEDURE TSelectTaskForm.DeleteTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);

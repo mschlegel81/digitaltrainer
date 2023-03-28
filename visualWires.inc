@@ -44,8 +44,8 @@ PROCEDURE paintPreviewWire(CONST zoom:longint; CONST Canvas:TBGRACanvas; CONST b
       Canvas.Pen.width:=w;
       w+=1-surround;
       if run=0
-      then Canvas.Pen.color:=BOARD_COLOR
-      else Canvas.Pen.color:=MARK_COLOR;
+      then Canvas.Pen.color:=colorScheme.BOARD_COLOR
+      else Canvas.Pen.color:=colorScheme.MARK_COLOR;
                                     Canvas.MoveTo(path[0,0]*zoom,path[0,1]*zoom);
       for j:=1 to length(path)-1 do Canvas.LineTo(path[j,0]*zoom,path[j,1]*zoom);
     end;
@@ -97,14 +97,14 @@ PROCEDURE T_visualWire.paint(CONST zoom: longint; CONST Canvas: TBGRACanvas);
       case run of
         0: begin
              Canvas.Pen.width:=w+surround;
-             Canvas.Pen.color:=BOARD_COLOR;
+             Canvas.Pen.color:=colorScheme.BOARD_COLOR;
            end;
         1: begin
-             Canvas.Pen.color:=WIRE_COLOR;
+             Canvas.Pen.color:=colorScheme.WIRE_COLOR;
              Canvas.Pen.width:=w;
            end;
         2: begin
-             Canvas.Pen.color:=MARK_COLOR;
+             Canvas.Pen.color:=colorScheme.MARK_COLOR;
              Canvas.Pen.width:=w+1;
            end;
       end;

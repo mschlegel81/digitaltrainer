@@ -187,7 +187,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       Anchors = [akLeft, akRight, akBottom]
       BorderSpacing.Left = 2
       BorderSpacing.Right = 2
-      Color = 6303792
+      Color = 7354424
       ParentColor = False
       TabOrder = 0
     end
@@ -661,6 +661,25 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
         ShortCut = 16573
         ShortCutKey2 = 16493
         OnClick = miZoomOutClick
+      end
+      object Separator3: TMenuItem
+        Caption = '-'
+      end
+      object MenuItem1: TMenuItem
+        Caption = 'Farbschema'
+        object miColorSchemeDefault: TMenuItem
+          AutoCheck = True
+          Caption = 'Standard'
+          Checked = True
+          RadioItem = True
+          OnClick = miColorSchemeDefaultClick
+        end
+        object miColorSchemeBlackOnWhite: TMenuItem
+          AutoCheck = True
+          Caption = 'Schwarz auf Weiß'
+          RadioItem = True
+          OnClick = miColorSchemeDefaultClick
+        end
       end
     end
   end

@@ -2,26 +2,27 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
   Left = 596
   Height = 768
   Top = 314
-  Width = 602
+  Width = 622
   Caption = 'Duplikate entfernen...'
   ClientHeight = 768
-  ClientWidth = 602
+  ClientWidth = 622
   Color = 7354424
   OnResize = FormResize
+  OnShow = FormShow
   Position = poOwnerFormCenter
   LCLVersion = '2.2.2.0'
   object CandidatesPanel: TPanel
     Left = 5
     Height = 96
     Top = 5
-    Width = 592
+    Width = 612
     Align = alTop
     BorderSpacing.Left = 5
     BorderSpacing.Top = 5
     BorderSpacing.Right = 5
     BevelColor = clBlack
     ClientHeight = 96
-    ClientWidth = 592
+    ClientWidth = 612
     TabOrder = 0
     object CandidateStringGrid: TStringGrid
       AnchorSideLeft.Control = CandidatesPanel
@@ -33,7 +34,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       Left = 6
       Height = 84
       Top = 6
-      Width = 580
+      Width = 600
       Anchors = [akTop, akLeft, akRight, akBottom]
       AutoFillColumns = True
       BorderSpacing.Left = 5
@@ -52,7 +53,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       TabOrder = 0
       OnSelection = CandidateStringGridSelection
       ColWidths = (
-        562
+        582
       )
       Cells = (
         1
@@ -67,7 +68,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
     Left = 5
     Height = 356
     Top = 106
-    Width = 592
+    Width = 612
     Align = alTop
     Anchors = [akTop, akLeft, akRight, akBottom]
     BorderSpacing.Left = 5
@@ -76,7 +77,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
     BorderSpacing.Bottom = 5
     BevelColor = clBlack
     ClientHeight = 356
-    ClientWidth = 592
+    ClientWidth = 612
     TabOrder = 1
     object TestCasesStringGrid: TStringGrid
       AnchorSideLeft.Control = ComparisonPanel
@@ -89,7 +90,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       Left = 6
       Height = 284
       Top = 66
-      Width = 580
+      Width = 600
       Anchors = [akTop, akLeft, akRight, akBottom]
       AutoFillColumns = True
       BorderSpacing.Left = 5
@@ -108,7 +109,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       OnHeaderClick = TestCasesStringGridHeaderClick
       OnValidateEntry = TestCasesStringGridValidateEntry
       ColWidths = (
-        579
+        599
       )
       Cells = (
         1
@@ -136,8 +137,9 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       AnchorSideLeft.Side = asrBottom
       AnchorSideTop.Control = StepCountEdit
       AnchorSideTop.Side = asrCenter
+      AnchorSideRight.Control = ComparisonPanel
       AnchorSideRight.Side = asrBottom
-      Left = 468
+      Left = 478
       Height = 28
       Top = 30
       Width = 129
@@ -154,7 +156,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       AnchorSideTop.Control = generateTestCasesShape
       AnchorSideTop.Side = asrCenter
       AnchorSideRight.Side = asrBottom
-      Left = 500
+      Left = 510
       Height = 21
       Top = 34
       Width = 64
@@ -175,7 +177,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       AnchorSideTop.Control = StepCountEdit
       AnchorSideTop.Side = asrCenter
       AnchorSideRight.Control = generateTestCasesShape
-      Left = 335
+      Left = 345
       Height = 28
       Top = 30
       Width = 129
@@ -193,7 +195,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       AnchorSideTop.Control = generateTestCasesShape1
       AnchorSideTop.Side = asrCenter
       AnchorSideRight.Side = asrBottom
-      Left = 361
+      Left = 371
       Height = 21
       Top = 34
       Width = 77
@@ -386,7 +388,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
     AnchorSideTop.Control = ElementAPanel
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
-    Left = 314
+    Left = 334
     Height = 296
     Top = 467
     Width = 283

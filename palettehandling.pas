@@ -1513,7 +1513,7 @@ PROCEDURE T_palette.paint;
       Canvas: TCanvas;
   begin
     Canvas:=ui^.paletteCanvas;
-    Canvas.Brush.color:=BOARD_COLOR;
+    Canvas.Brush.color:=colorScheme.BOARD_COLOR;
     Canvas.Brush.style:=bsSolid;
     Canvas.Pen.color:=clBlack;
     Canvas.Pen.style:=psSolid;
