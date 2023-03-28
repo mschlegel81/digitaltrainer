@@ -689,6 +689,12 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           RadioItem = True
           OnClick = miColorSchemeDefaultClick
         end
+        object miColorSchemeRust: TMenuItem
+          AutoCheck = True
+          Caption = 'Rost'
+          RadioItem = True
+          OnClick = miColorSchemeDefaultClick
+        end
       end
     end
   end

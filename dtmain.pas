@@ -17,6 +17,7 @@ TYPE
     boardHorizontalScrollBar: TScrollBar;
     boardImage: TImage;
     MenuItem1: TMenuItem;
+    miColorSchemeRust: TMenuItem;
     miColorSchemeNeon: TMenuItem;
     miColorSchemeDefault: TMenuItem;
     miColorSchemeBlackOnWhite: TMenuItem;
@@ -206,7 +207,9 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     if getColorSchemeIndex=1
     then miColorSchemeBlackOnWhite.checked:=true
     else if getColorSchemeIndex=2
-    then miColorSchemeNeon   .Checked:=true
+    then miColorSchemeNeon.Checked:=true
+    else if getColorSchemeIndex=3
+    then miColorSchemeRust.Checked:=true
     else miColorSchemeDefault.checked:=true;
 
     Application.AddOnKeyDownHandler(@FormKeyDown,false);
@@ -292,6 +295,8 @@ PROCEDURE TDigitaltrainerMainForm.miColorSchemeDefaultClick(Sender: TObject);
     then setColorScheme(1)
     else if miColorSchemeNeon.Checked
     then setColorScheme(2)
+    else if miColorSchemeRust.Checked
+    then setColorScheme(3)
     else setColorScheme(0);
     applyColorScheme(self);
 

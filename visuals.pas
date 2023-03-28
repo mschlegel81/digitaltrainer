@@ -154,10 +154,10 @@ CONST DEFAULT_SCHEME:T_colorScheme=
        GATE_LABEL_COLOR     :$000000FF;
        MARK_COLOR           :$0000FFFF;
        BOARD_COLOR          :$00500000;
-       SHADOW_COLOR         :$00508080;
+       SHADOW_COLOR         :$000000ff;
        CORRECT_COLOR        :$0000FF00;
        INCORRECT_COLOR      :$000000ff;
-       WIRE_COLOR           :$00FF8000;
+       WIRE_COLOR           :$0000FF00;
        BOARD_BOUNDARY_COLOR :$00FF0000;
        TRUE_COLOR           :$0000FF00;
        FALSE_COLOR          :$00000040;
@@ -173,13 +173,45 @@ CONST DEFAULT_SCHEME:T_colorScheme=
        editorBackgroundColor:$00000000;
        secondaryFormColor: $00600000;
        panelColor:$00700000;
-       GATE_BORDER_COLOR:$0000FF00;
+       GATE_BORDER_COLOR:$00500080;
        MENU_BORDER_COLOR:$00FF0000);
+
+       RUST_SCHEME:T_colorScheme=
+       (ENABLED_BUTTON_COLOR :$00004080;
+        DISABLED_BUTTON_COLOR:$00404040;
+        ENABLED_TEXT_COLOR   :$00E0E0E0;
+        DISABLED_TEXT_COLOR  :$00606060;
+        GATE_COLOR           :$000060B0;
+        GATE_LABEL_COLOR     :$00909090;
+        MARK_COLOR           :$002090FF;
+        BOARD_COLOR          :$00002040;
+        SHADOW_COLOR         :$00000000;
+        CORRECT_COLOR        :$00008000;
+        INCORRECT_COLOR      :$00000080;
+        WIRE_COLOR           :$00aaaaaa;
+        BOARD_BOUNDARY_COLOR :$00001020;
+        TRUE_COLOR           :$000080ff;
+        FALSE_COLOR          :0;
+        UNDETERMINED_COLOR   :$00002040;
+        MULTIBIT_COLOR       :$00808080;
+        SEVEN_SEGMENT_COLOR  :($00004080,$00000000);
+
+        buttonColorTable:($00603030,$00703838,$00804040,$00904848,$00A05050,$00B05858,$00BF5F5F,$00CF6767,$00DF6F6F,$00EF7777,$00FF7F7F);
+
+        tableColor     :$00004080;
+        tableFixedColor:$00002040;
+        tableAlternativeColor:$00002040;
+        editorBackgroundColor:$00002040;
+        secondaryFormColor: $00003060;
+        panelColor:$00003060;
+        GATE_BORDER_COLOR:0;
+        MENU_BORDER_COLOR:0);
 
   begin
     colorSchemeIndex:=index;
     if      index=1 then colorScheme:=BLACK_ON_WHITE_SCHEME
     else if index=2 then colorScheme:=NEON_SCHEME
+    else if index=3 then colorScheme:=RUST_SCHEME
                     else colorScheme:=DEFAULT_SCHEME;
   end;
 
@@ -218,8 +250,6 @@ PROCEDURE applyColorScheme(CONST form:TForm);
         control.color:=colorScheme.tableColor;
         TPanel(control).BevelColor:=colorScheme.MENU_BORDER_COLOR;
       end else if control.color<>clNone then control.color:=colorScheme.panelColor;
-
-
       if control is TWinControl
       then for i:=0 to TWinControl(control).ControlCount-1
            do applyScheme(TWinControl(control).Controls[i]);

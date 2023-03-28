@@ -597,7 +597,7 @@ PROCEDURE T_ioTextSprite.setZoom(CONST zoom: longint);
 
     Bitmap.CanvasBGRA.Brush.style:=bsClear;
     Bitmap.CanvasBGRA.DrawFontBackground:=false;
-    textOut(Bitmap.CanvasBGRA,caption,newWidth shr 3,0,newWidth,newHeight,colorScheme.ENABLED_TEXT_COLOR);
+    textOut(Bitmap.CanvasBGRA,caption,newWidth shr 3,0,newWidth,newHeight,colorScheme.GATE_LABEL_COLOR);
     preparedForZoom:=zoom;
   end;
 
@@ -654,9 +654,9 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
           io_bottom: dtc:=-fy/radius;
         end;
         if dtc<0 then level:=0 else level:=round(dtc*256);
-        r+=(level*( colorScheme.WIRE_COLOR         and 255)) shr 8;
-        g+=(level*((colorScheme.WIRE_COLOR shr  8) and 255)) shr 8;
-        b+=(level*((colorScheme.WIRE_COLOR shr 16) and 255)) shr 8;
+        r+=((256-level)*( colorScheme.GATE_BORDER_COLOR         and 255)+level*( colorScheme.WIRE_COLOR         and 255)) shr 8;
+        g+=((256-level)*((colorScheme.GATE_BORDER_COLOR shr  8) and 255)+level*((colorScheme.WIRE_COLOR shr  8) and 255)) shr 8;
+        b+=((256-level)*((colorScheme.GATE_BORDER_COLOR shr 16) and 255)+level*((colorScheme.WIRE_COLOR shr 16) and 255)) shr 8;
       end else begin
         fz:=sqrt(1-sqr(dtc/radius))*radius;
         dtc:=1/sqrt(sqr(fx)+sqr(fy)+sqr(fz));
@@ -722,9 +722,9 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
         if captioned then begin
           ll:=px^ and 255;
           if ll>0 then begin
-            r:=((ll*( colorScheme.ENABLED_TEXT_COLOR         and 255))+(256-ll)*r) shr 8;
-            g:=((ll*((colorScheme.ENABLED_TEXT_COLOR shr  8) and 255))+(256-ll)*g) shr 8;
-            b:=((ll*((colorScheme.ENABLED_TEXT_COLOR shr 16) and 255))+(256-ll)*b) shr 8;
+            r:=((ll*( colorScheme.GATE_LABEL_COLOR         and 255))+(256-ll)*r) shr 8;
+            g:=((ll*((colorScheme.GATE_LABEL_COLOR shr  8) and 255))+(256-ll)*g) shr 8;
+            b:=((ll*((colorScheme.GATE_LABEL_COLOR shr 16) and 255))+(256-ll)*b) shr 8;
           end;
         end;
         px^:=(b       ) or
@@ -933,7 +933,7 @@ PROCEDURE T_blockSprite.setZoom(CONST zoom: longint);
             screenOffset[1]            +zoom shr 1,
             screenOffset[0]+zoom*width -zoom shr 1,
             screenOffset[1]+zoom*height-zoom shr 1,
-            colorScheme.ENABLED_TEXT_COLOR);
+            colorScheme.GATE_LABEL_COLOR);
     preparedForZoom:=zoom;
   end;
 
@@ -962,7 +962,7 @@ PROCEDURE T_ioBlockSprite.setZoom(CONST zoom: longint);
             screenOffset[1]            +zoom shr 1,
             screenOffset[0]+ zoom*width-zoom shr 1,
             screenOffset[1]+(zoom*height div 2),
-            colorScheme.ENABLED_TEXT_COLOR);
+            colorScheme.GATE_LABEL_COLOR);
     preparedForZoom:=zoom;
   end;
 
