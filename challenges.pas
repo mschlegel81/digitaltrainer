@@ -56,6 +56,7 @@ TYPE
       PROCEDURE reInitStepCounts;
       PROCEDURE updateTestCaseResults;
       FUNCTION lastTestCasePrepared:longint;
+      PROCEDURE copyTestInputs(CONST origin:P_testCreator);
   end;
 
   { T_challenge }
@@ -874,6 +875,16 @@ PROCEDURE T_testCreator.updateTestCaseResults;
 FUNCTION T_testCreator.lastTestCasePrepared: longint;
   begin
     result:=challengeTestCreationThread.lastPreparedIndex;
+  end;
+
+PROCEDURE T_testCreator.copyTestInputs(CONST origin:P_testCreator);
+  VAR i:longint;
+  begin
+    setLength(tests,length(origin^.tests));
+    for i:=0 to length(tests)-1 do begin
+      tests[i].inputs       :=origin^.tests[i].inputs;
+      tests[i].maxTotalSteps:=origin^.tests[i].maxTotalSteps;
+    end;
   end;
 
 FUNCTION T_challenge.equals(CONST c: P_challenge): boolean;

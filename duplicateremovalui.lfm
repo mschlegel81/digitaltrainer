@@ -1,0 +1,462 @@
+object DuplicateRemovalDialog: TDuplicateRemovalDialog
+  Left = 596
+  Height = 768
+  Top = 314
+  Width = 602
+  Caption = 'Duplikate entfernen...'
+  ClientHeight = 768
+  ClientWidth = 602
+  Color = 7354424
+  Position = poOwnerFormCenter
+  LCLVersion = '2.2.2.0'
+  object CandidatesPanel: TPanel
+    Left = 5
+    Height = 96
+    Top = 5
+    Width = 592
+    Align = alTop
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BevelColor = clBlack
+    ClientHeight = 96
+    ClientWidth = 592
+    TabOrder = 0
+    object CandidateStringGrid: TStringGrid
+      AnchorSideLeft.Control = CandidatesPanel
+      AnchorSideTop.Control = CandidatesPanel
+      AnchorSideRight.Control = CandidatesPanel
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = CandidatesPanel
+      AnchorSideBottom.Side = asrBottom
+      Left = 6
+      Height = 84
+      Top = 6
+      Width = 580
+      Anchors = [akTop, akLeft, akRight, akBottom]
+      AutoFillColumns = True
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      BorderSpacing.Bottom = 5
+      Color = 8405056
+      ColCount = 1
+      FixedColor = 6303792
+      FixedCols = 0
+      Flat = True
+      Font.Color = clWhite
+      Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goSmoothScroll]
+      ParentFont = False
+      TabOrder = 0
+      OnSelection = CandidateStringGridSelection
+      ColWidths = (
+        562
+      )
+      Cells = (
+        1
+        0
+        0
+        'Andere Einträge mit kompatiblen Anschlüssen'
+      )
+    end
+  end
+  object ComparisonPanel: TPanel
+    AnchorSideBottom.Control = ElementAPanel
+    Left = 5
+    Height = 356
+    Top = 106
+    Width = 592
+    Align = alTop
+    Anchors = [akTop, akLeft, akRight, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    BevelColor = clBlack
+    ClientHeight = 356
+    ClientWidth = 592
+    TabOrder = 1
+    object TestCasesStringGrid: TStringGrid
+      AnchorSideLeft.Control = ComparisonPanel
+      AnchorSideTop.Control = generateTestCasesShape1
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = ComparisonPanel
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = ComparisonPanel
+      AnchorSideBottom.Side = asrBottom
+      Left = 6
+      Height = 284
+      Top = 66
+      Width = 580
+      Anchors = [akTop, akLeft, akRight, akBottom]
+      AutoFillColumns = True
+      BorderSpacing.Left = 5
+      BorderSpacing.Top = 8
+      BorderSpacing.Right = 5
+      BorderSpacing.Bottom = 5
+      Color = 8405056
+      ColCount = 1
+      FixedColor = 6303792
+      FixedCols = 0
+      Flat = True
+      Font.Color = clWhite
+      Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goEditing, goSmoothScroll]
+      ParentFont = False
+      TabOrder = 0
+      OnHeaderClick = TestCasesStringGridHeaderClick
+      OnValidateEntry = TestCasesStringGridValidateEntry
+      ColWidths = (
+        579
+      )
+      Cells = (
+        1
+        0
+        0
+        'Andere Einträge mit kompatiblen Anschlüssen'
+      )
+    end
+    object CompareCaptionLabel: TLabel
+      AnchorSideLeft.Control = ComparisonPanel
+      AnchorSideTop.Control = ComparisonPanel
+      Left = 7
+      Height = 23
+      Top = 6
+      Width = 165
+      BorderSpacing.Left = 6
+      BorderSpacing.Top = 5
+      Caption = 'Verhalten vergleichen'
+      Font.Color = clWhite
+      Font.Height = -17
+      ParentColor = False
+      ParentFont = False
+    end
+    object generateTestCasesShape: TShape
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = StepCountEdit
+      AnchorSideTop.Side = asrCenter
+      AnchorSideRight.Side = asrBottom
+      Left = 468
+      Height = 28
+      Top = 30
+      Width = 129
+      Anchors = [akTop, akRight]
+      BorderSpacing.Top = 4
+      BorderSpacing.Right = 4
+      Brush.Color = 6303792
+      Shape = stRoundRect
+    end
+    object generateTestCasesLabel: TLabel
+      AnchorSideLeft.Control = generateTestCasesShape
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = generateTestCasesShape
+      AnchorSideTop.Side = asrCenter
+      AnchorSideRight.Side = asrBottom
+      Left = 500
+      Height = 21
+      Top = 34
+      Width = 64
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      Caption = 'erzeugen'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object generateTestCasesShape1: TShape
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = StepCountEdit
+      AnchorSideTop.Side = asrCenter
+      AnchorSideRight.Control = generateTestCasesShape
+      Left = 335
+      Height = 28
+      Top = 30
+      Width = 129
+      Anchors = [akTop, akRight]
+      BorderSpacing.Left = 4
+      BorderSpacing.Top = 4
+      BorderSpacing.Right = 4
+      Brush.Color = 6303792
+      Shape = stRoundRect
+    end
+    object generateTestCasesLabel1: TLabel
+      AnchorSideLeft.Control = generateTestCasesShape1
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = generateTestCasesShape1
+      AnchorSideTop.Side = asrCenter
+      AnchorSideRight.Side = asrBottom
+      Left = 361
+      Height = 21
+      Top = 34
+      Width = 77
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      Caption = 'fortlaufend'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object StepCountEdit: TEdit
+      AnchorSideLeft.Control = Label7
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = CompareCaptionLabel
+      AnchorSideTop.Side = asrBottom
+      Left = 259
+      Height = 23
+      Top = 33
+      Width = 80
+      BorderSpacing.Left = 4
+      BorderSpacing.Top = 4
+      Color = 7354424
+      Font.Color = clWhite
+      NumbersOnly = True
+      OnEditingDone = StepCountEditEditingDone
+      ParentFont = False
+      TabOrder = 1
+    end
+    object Label7: TLabel
+      AnchorSideLeft.Control = TestCaseCountEdit
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = TestCaseCountEdit
+      AnchorSideTop.Side = asrCenter
+      Left = 137
+      Height = 15
+      Top = 37
+      Width = 118
+      BorderSpacing.Left = 10
+      BorderSpacing.Top = 4
+      Caption = 'Schritte für alle setzen:'
+      Font.Color = clWhite
+      ParentColor = False
+      ParentFont = False
+    end
+    object TestCaseCountEdit: TEdit
+      AnchorSideLeft.Control = Label6
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = CompareCaptionLabel
+      AnchorSideTop.Side = asrBottom
+      Left = 47
+      Height = 23
+      Top = 33
+      Width = 80
+      BorderSpacing.Left = 4
+      BorderSpacing.Top = 4
+      Color = 7354424
+      Font.Color = clWhite
+      NumbersOnly = True
+      OnEditingDone = TestCaseCountEditEditingDone
+      ParentFont = False
+      TabOrder = 2
+      Text = '16'
+    end
+    object Label6: TLabel
+      AnchorSideLeft.Control = CompareCaptionLabel
+      AnchorSideTop.Control = TestCaseCountEdit
+      AnchorSideTop.Side = asrCenter
+      Left = 7
+      Height = 15
+      Top = 37
+      Width = 36
+      BorderSpacing.Top = 4
+      Caption = 'Anzahl'
+      Font.Color = clWhite
+      ParentColor = False
+      ParentFont = False
+    end
+  end
+  object ElementAPanel: TPanel
+    AnchorSideLeft.Control = Owner
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 5
+    Height = 296
+    Top = 467
+    Width = 283
+    Align = alCustom
+    Anchors = [akLeft, akBottom]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    BevelColor = clBlack
+    ClientHeight = 296
+    ClientWidth = 283
+    Color = 8405056
+    ParentColor = False
+    TabOrder = 2
+    object CaptionLabelA: TLabel
+      AnchorSideLeft.Control = ComparisonPanel
+      AnchorSideTop.Control = ComparisonPanel
+      Left = 7
+      Height = 23
+      Top = 6
+      Width = 78
+      BorderSpacing.Left = 6
+      BorderSpacing.Top = 5
+      Caption = 'Element A'
+      Font.Color = clWhite
+      Font.Height = -17
+      ParentColor = False
+      ParentFont = False
+    end
+    object deleteAShape: TShape
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = StepCountEdit
+      AnchorSideTop.Side = asrCenter
+      AnchorSideRight.Control = ElementAPanel
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = ElementAPanel
+      AnchorSideBottom.Side = asrBottom
+      Left = 148
+      Height = 28
+      Top = 262
+      Width = 129
+      Anchors = [akRight, akBottom]
+      BorderSpacing.Left = 4
+      BorderSpacing.Top = 4
+      BorderSpacing.Right = 5
+      BorderSpacing.Bottom = 5
+      Brush.Color = 6303792
+      Shape = stRoundRect
+    end
+    object deleteALabel: TLabel
+      AnchorSideLeft.Control = deleteAShape
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = deleteAShape
+      AnchorSideTop.Side = asrCenter
+      AnchorSideRight.Side = asrBottom
+      Left = 179
+      Height = 21
+      Top = 266
+      Width = 67
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      Caption = 'entfernen'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object ImageA: TImage
+      AnchorSideLeft.Control = ElementAPanel
+      AnchorSideTop.Control = CaptionLabelA
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = ElementAPanel
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = deleteAShape
+      Left = 6
+      Height = 217
+      Top = 40
+      Width = 271
+      Anchors = [akLeft, akRight, akBottom]
+      BorderSpacing.Left = 5
+      BorderSpacing.Right = 5
+      BorderSpacing.Bottom = 5
+    end
+  end
+  object ElementBPanel: TPanel
+    AnchorSideLeft.Control = ElementAPanel
+    AnchorSideLeft.Side = asrBottom
+    AnchorSideTop.Control = ElementAPanel
+    Left = 293
+    Height = 296
+    Top = 467
+    Width = 283
+    Align = alCustom
+    BorderSpacing.Left = 5
+    BorderSpacing.Right = 5
+    BevelColor = clBlack
+    ClientHeight = 296
+    ClientWidth = 283
+    Color = 6303792
+    ParentColor = False
+    TabOrder = 3
+    object CaptionLabelB: TLabel
+      AnchorSideLeft.Control = ComparisonPanel
+      AnchorSideTop.Control = ComparisonPanel
+      Left = 7
+      Height = 23
+      Top = 6
+      Width = 77
+      BorderSpacing.Left = 6
+      BorderSpacing.Top = 5
+      Caption = 'Element B'
+      Font.Color = clWhite
+      Font.Height = -17
+      ParentColor = False
+      ParentFont = False
+    end
+    object deleteBShape: TShape
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = StepCountEdit
+      AnchorSideTop.Side = asrCenter
+      AnchorSideRight.Control = ElementBPanel
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = ElementBPanel
+      AnchorSideBottom.Side = asrBottom
+      Left = 148
+      Height = 28
+      Top = 262
+      Width = 129
+      Anchors = [akRight, akBottom]
+      BorderSpacing.Left = 4
+      BorderSpacing.Top = 4
+      BorderSpacing.Right = 5
+      BorderSpacing.Bottom = 5
+      Brush.Color = 4202528
+      Shape = stRoundRect
+    end
+    object deleteBLabel: TLabel
+      AnchorSideLeft.Control = deleteBShape
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = deleteBShape
+      AnchorSideTop.Side = asrCenter
+      AnchorSideRight.Side = asrBottom
+      Left = 179
+      Height = 21
+      Top = 266
+      Width = 67
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      Caption = 'entfernen'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+    end
+    object ImageB: TImage
+      AnchorSideLeft.Control = ElementBPanel
+      AnchorSideTop.Control = CaptionLabelB
+      AnchorSideTop.Side = asrBottom
+      AnchorSideRight.Control = ElementBPanel
+      AnchorSideRight.Side = asrBottom
+      AnchorSideBottom.Control = deleteBShape
+      Left = 6
+      Height = 217
+      Top = 40
+      Width = 271
+      Anchors = [akLeft, akRight, akBottom]
+      BorderSpacing.Left = 5
+      BorderSpacing.Right = 5
+      BorderSpacing.Bottom = 5
+    end
+  end
+  object Timer1: TTimer
+    OnTimer = Timer1Timer
+    Left = 152
+    Top = 196
+  end
+end

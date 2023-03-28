@@ -226,6 +226,14 @@
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="paletteImportUi"/>
       </Unit>
+      <Unit>
+        <Filename Value="duplicateremovalui.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="DuplicateRemovalDialog"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="duplicateRemovalUi"/>
+      </Unit>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

@@ -114,8 +114,19 @@ TYPE
       FUNCTION getInterfaces:T_gateInterfaces;
     end;
 
+FUNCTION areInterfacesCompatible(CONST a,b:T_gateInterfaces):boolean;
 IMPLEMENTATION
 USES math;
+FUNCTION areInterfacesCompatible(CONST a,b:T_gateInterfaces):boolean;
+  VAR i:longint;
+  begin
+    result:=(length(a.inputs )=length(b.inputs )) and
+            (length(a.outputs)=length(b.outputs));
+    if not(result) then exit(false);
+    for i:=0 to length(a.inputs )-1 do if a.inputs [i].wireWidth<>b.inputs [i].wireWidth then exit(false);
+    for i:=0 to length(a.outputs)-1 do if a.outputs[i].wireWidth<>b.outputs[i].wireWidth then exit(false);
+  end;
+
 { T_wire }
 
 FUNCTION T_wire.simulateStep: boolean;

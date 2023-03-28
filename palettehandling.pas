@@ -111,6 +111,7 @@ TYPE
     PROCEDURE removeDuplicates(CONST byBehavior:boolean; CONST startAtIndex:longint=0);
 
     FUNCTION describeEntry(CONST index:longint):string;
+    FUNCTION findEntriesWithSameInterfaceAs(CONST index:longint):T_arrayOfLongint;
   end;
 
   T_challengePaletteEntry=record
@@ -1370,6 +1371,23 @@ FUNCTION T_workspacePalette.describeEntry(CONST index:longint):string;
       'Beschreibung:'      +LineEnding+SPACES+indent(descriptionOf(paletteEntries[index]),SPACES)+LineEnding+
       getInterfaceDescription+LineEnding+
       getDependencyDescription;
+  end;
+
+FUNCTION T_workspacePalette.findEntriesWithSameInterfaceAs(CONST index:longint):T_arrayOfLongint;
+  VAR interfaceHash: word;
+      i:longint;
+      Interfaces: T_gateInterfaces;
+  begin
+    setLength(result,0);
+    if paletteEntries[index].prototype=nil then exit;
+    interfaceHash:=paletteEntries[index].prototype^.interfaceHash;
+    Interfaces   :=paletteEntries[index].prototype^.getInterfaces;
+    for i:=0 to length(paletteEntries)-1 do
+      if (i<>index) and
+         (paletteEntries[i].prototype<>nil) and
+         (paletteEntries[i].prototype^.interfaceHash=interfaceHash) and
+         areInterfacesCompatible(Interfaces,paletteEntries[i].prototype^.getInterfaces)
+      then append(result,i);
   end;
 
 { T_palette }
