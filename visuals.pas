@@ -35,7 +35,9 @@ TYPE  T_shapeAndLabel=record colorIndex:byte; Shape:TShape; labl:TLabel; end;
         tableAlternativeColor,
         editorBackgroundColor,
         secondaryFormColor,
-        panelColor:longint;
+        panelColor,
+        GATE_BORDER_COLOR,
+        MENU_BORDER_COLOR:longint;
       end;
 
 VAR colorScheme:T_colorScheme;
@@ -108,7 +110,9 @@ CONST DEFAULT_SCHEME:T_colorScheme=
        tableAlternativeColor:$00603030;
        editorBackgroundColor:$00703838;
        secondaryFormColor: $00703838;
-       panelColor:$00703838);
+       panelColor:$00703838;
+       GATE_BORDER_COLOR:0;
+       MENU_BORDER_COLOR:0);
 
        BLACK_ON_WHITE_SCHEME:T_colorScheme=
       (ENABLED_BUTTON_COLOR :$00FFFFFF;
@@ -137,12 +141,46 @@ CONST DEFAULT_SCHEME:T_colorScheme=
        tableAlternativeColor:$00E0E0E0;
        editorBackgroundColor:$00FFFFFF;
        secondaryFormColor: $00FFFFFF;
-       panelColor:$00FFFFFF);
+       panelColor:$00FFFFFF;
+       GATE_BORDER_COLOR:0;
+       MENU_BORDER_COLOR:0);
+
+       NEON_SCHEME:T_colorScheme=(
+       ENABLED_BUTTON_COLOR :$00500000;
+       DISABLED_BUTTON_COLOR:$00800000;
+       ENABLED_TEXT_COLOR   :$0000FF00;
+       DISABLED_TEXT_COLOR  :$00808000;
+       GATE_COLOR           :$00500000;
+       GATE_LABEL_COLOR     :$000000FF;
+       MARK_COLOR           :$0000FFFF;
+       BOARD_COLOR          :$00500000;
+       SHADOW_COLOR         :$00508080;
+       CORRECT_COLOR        :$0000FF00;
+       INCORRECT_COLOR      :$000000ff;
+       WIRE_COLOR           :$00FF8000;
+       BOARD_BOUNDARY_COLOR :$00FF0000;
+       TRUE_COLOR           :$0000FF00;
+       FALSE_COLOR          :$00000040;
+       UNDETERMINED_COLOR   :$00808080;
+       MULTIBIT_COLOR       :$00500000;
+       SEVEN_SEGMENT_COLOR  :($00300000,$0000FF00);
+
+       buttonColorTable:($00300000,$00800000,$00FF0000,$00FF5000,$00FF8000,$00FFFF00,$00FFFF30,$00FFFF50,$00FFFF80,$00FFFFA0,$00FFFFFF);
+
+       tableColor     :$00300000;
+       tableFixedColor:$00000000;
+       tableAlternativeColor:$00000000;
+       editorBackgroundColor:$00000000;
+       secondaryFormColor: $00600000;
+       panelColor:$00700000;
+       GATE_BORDER_COLOR:$0000FF00;
+       MENU_BORDER_COLOR:$00FF0000);
 
   begin
     colorSchemeIndex:=index;
-    if index=1 then colorScheme:=BLACK_ON_WHITE_SCHEME else colorScheme:=DEFAULT_SCHEME;
-
+    if      index=1 then colorScheme:=BLACK_ON_WHITE_SCHEME
+    else if index=2 then colorScheme:=NEON_SCHEME
+                    else colorScheme:=DEFAULT_SCHEME;
   end;
 
 PROCEDURE setEnableButton(Shape: TShape; CONST labl:TLabel; CONST enable: boolean);
@@ -151,10 +189,10 @@ PROCEDURE setEnableButton(Shape: TShape; CONST labl:TLabel; CONST enable: boolea
     labl .enabled:=enable;
     if enable then begin
       Shape.Brush.color:=colorScheme.ENABLED_BUTTON_COLOR;
-      labl.Font.color:=colorScheme.ENABLED_TEXT_COLOR;
+      labl.Font.color  :=colorScheme.ENABLED_TEXT_COLOR;
     end else begin
       Shape.Brush.color:=colorScheme.DISABLED_BUTTON_COLOR;
-      labl.Font.color:=colorScheme.DISABLED_TEXT_COLOR;
+      labl.Font.color  :=colorScheme.DISABLED_TEXT_COLOR;
     end;
   end;
 
@@ -166,14 +204,21 @@ PROCEDURE applyColorScheme(CONST form:TForm);
       if control is TShape then begin
         if TShape(control).Brush.style<>bsClear
         then TShape(control).Brush.color:=colorScheme.ENABLED_BUTTON_COLOR;
+        TShape(control).Pen.Color:=colorScheme.MENU_BORDER_COLOR;
       end
       else if control is TStringGrid then begin
         TStringGrid(control).FixedColor:=colorScheme.tableFixedColor;
         control.color:=colorScheme.tableColor;
+        TStringGrid(control).BorderColor:=colorScheme.MENU_BORDER_COLOR;
       end else if control is TValueListEditor then begin
         TValueListEditor(control).FixedColor:=colorScheme.tableFixedColor;
         control.color:=colorScheme.tableColor;
+        TValueListEditor(control).BorderColor:=colorScheme.MENU_BORDER_COLOR;
+      end else if control is TPanel then begin
+        control.color:=colorScheme.tableColor;
+        TPanel(control).BevelColor:=colorScheme.MENU_BORDER_COLOR;
       end else if control.color<>clNone then control.color:=colorScheme.panelColor;
+
 
       if control is TWinControl
       then for i:=0 to TWinControl(control).ControlCount-1

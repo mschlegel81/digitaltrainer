@@ -900,7 +900,7 @@ PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint; CONST ioMark:T_ioMark
     Bitmap.CanvasBGRA.Brush.color:=colorScheme.GATE_COLOR;
     Bitmap.CanvasBGRA.Pen.style:=psSolid;
 
-    Bitmap.CanvasBGRA.Pen.color:=0;
+    Bitmap.CanvasBGRA.Pen.color:=colorScheme.GATE_BORDER_COLOR;
 
     Bitmap.CanvasBGRA.Rectangle(3,
                                 3,

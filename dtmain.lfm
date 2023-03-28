@@ -683,6 +683,12 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           RadioItem = True
           OnClick = miColorSchemeDefaultClick
         end
+        object miColorSchemeNeon: TMenuItem
+          AutoCheck = True
+          Caption = 'Neon'
+          RadioItem = True
+          OnClick = miColorSchemeDefaultClick
+        end
       end
     end
   end
