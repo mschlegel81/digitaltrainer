@@ -202,6 +202,10 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
 
     pauseByUser:=false;
 
+    if getColorSchemeIndex=1
+    then miColorSchemeBlackOnWhite.checked:=true
+    else miColorSchemeDefault     .checked:=true;
+
     Application.AddOnKeyDownHandler(@FormKeyDown,false);
   end;
 
@@ -848,6 +852,8 @@ PROCEDURE TDigitaltrainerMainForm.updateUiElements;
     miViewTasks       .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
     miEditMode        .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
     miTestBoard       .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
+    miCreateTask      .visible:=showAll;
+    miAddToPalette    .visible:=showAll;
   end;
 
 FUNCTION TDigitaltrainerMainForm.continueWithOtherBoard: boolean;

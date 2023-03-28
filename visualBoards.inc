@@ -113,8 +113,7 @@ T_visualBoard=object(T_captionedAndIndexed)
     FUNCTION startMultiDrag(CONST primaryGate:P_visualGate):boolean;
     FUNCTION isVisualBoard: boolean; virtual;
     FUNCTION usesPrototype(CONST p:P_captionedAndIndexed; CONST transitiveScan:boolean):boolean;
-    PROCEDURE prototypeUpdated(CONST oldPrototype,newPrototype:P_visualBoard);
-    PROCEDURE prototypeUpdated(CONST oldPrototype,newPrototype:P_compoundGate);
+    PROCEDURE prototypeUpdated(CONST oldPrototype,newPrototype:P_captionedAndIndexed);
 
     PROCEDURE copySelectionToClipboard;
     PROCEDURE pasteFromClipboard(CONST tgtX,tgtY:longint);
@@ -127,6 +126,8 @@ T_visualBoard=object(T_captionedAndIndexed)
     FUNCTION equals(CONST other:P_visualBoard):boolean;
     FUNCTION hash:word;
     FUNCTION interfaceHash:word;
+
+    FUNCTION newGateFromPrototype: P_abstractGate; virtual;
 end;
 {$endif}
 {$ifdef includeImplementation}
@@ -681,8 +682,8 @@ FUNCTION T_visualBoard.extractBehavior: P_compoundGate;
     new(cloned,create(associatedPalette));
 
     cloned^.prototype:=@self;
-    cloned^.captionString:='';
-    cloned^.descriptionString:='';
+    cloned^.captionString:=captionString;
+    cloned^.descriptionString:=descriptionString;
     setLength(cloned^.inputs ,length(inputs )); for i:=0 to length(inputs )-1 do cloned^.inputs [i]:=P_inputGate (inputs [i]^.behavior^.clone(false));
     setLength(cloned^.outputs,length(outputs)); for i:=0 to length(outputs)-1 do cloned^.outputs[i]:=P_outputGate(outputs[i]^.behavior^.clone(false));
     setLength(cloned^.gates  ,length(gates));   for i:=0 to length(gates  )-1 do cloned^.gates  [i]:=             gates  [i]^.behavior^.clone(false);
@@ -697,6 +698,11 @@ FUNCTION T_visualBoard.extractBehavior: P_compoundGate;
       end;
     end;
     result:=cloned;
+  end;
+
+FUNCTION T_visualBoard.newGateFromPrototype: P_abstractGate;
+  begin
+    result:=extractBehavior;
   end;
 
 PROCEDURE T_visualBoard.extractChallenge(CONST challengePalette: P_abstractPrototypeSource; OUT expectedBehavior: P_visualBoard);
@@ -1884,14 +1890,14 @@ FUNCTION T_visualBoard.usesPrototype(CONST p: P_captionedAndIndexed; CONST trans
     end;
   end;
 
-PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype, newPrototype: P_visualBoard);
+PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype, newPrototype: P_captionedAndIndexed);
   VAR g:P_visualGate;
       anyGateUpdated:boolean=false;
   begin
     for g in gates do if (g^.behavior^.gateType=gt_compound) then begin
       if P_compoundGate(g^.behavior)^.prototype=P_captionedAndIndexed(oldPrototype) then begin
         dispose(g^.behavior,destroy);
-        g^.behavior:=newPrototype^.extractBehavior;
+        g^.behavior:=newPrototype^.newGateFromPrototype;
         if ui<>nil then begin
           g^.setupVisuals;
           repositionElement(g,true,true);
@@ -1901,25 +1907,6 @@ PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype, newPrototype: P_vis
       end else P_compoundGate(g^.behavior)^.prototypeUpdated(oldPrototype,newPrototype);
     end;
     if anyGateUpdated and (ui<>nil) then rewire(true);
-  end;
-
-PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype,newPrototype:P_compoundGate);
-  VAR g:P_visualGate;
-      anyGateUpdated:boolean=false;
-  begin
-    for g in gates do if (g^.behavior^.gateType=gt_compound) then begin
-      if P_compoundGate(g^.behavior)^.prototype=P_captionedAndIndexed(oldPrototype) then begin
-        dispose(g^.behavior,destroy);
-        g^.behavior:=newPrototype^.clone(true);
-        if ui<>nil then begin
-          g^.setupVisuals;
-          repositionElement(g,true,true);
-          dropWatchersAssociatedWith(g);
-        end;
-        anyGateUpdated:=true;
-      end else P_compoundGate(g^.behavior)^.prototypeUpdated(oldPrototype,newPrototype);
-    end;
-    if anyGateUpdated then rewire(true);
   end;
 
 PROCEDURE addGate(VAR arr:T_visualGateArray; CONST toAdd:P_visualGate);

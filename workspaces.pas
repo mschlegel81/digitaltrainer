@@ -112,7 +112,7 @@ FUNCTION dropBackup(CONST toDrop:T_workspaceHistoryEntryMetaData):T_workspaceHis
 VAR workspace:T_workspace;
     errorOnLoadWorkspace:boolean=false;
 IMPLEMENTATION
-USES sysutils,FileUtil,Classes,zstream;
+USES sysutils,FileUtil,Classes,zstream,Dialogs;
 FUNCTION backupsFileName:string;
   begin
     result:=ChangeFileExt(paramStr(0),'.backups');
@@ -293,11 +293,6 @@ FUNCTION workspaceFilename:string;
     result:=ChangeFileExt(paramStr(0),'.workspace');
   end;
 
-FUNCTION workspaceBackupFilename:string;
-  begin
-    result:=ChangeFileExt(paramStr(0),'.workspace.backup');
-  end;
-
 { T_workspace }
 
 PROCEDURE T_workspace.clearPreviousStates;
@@ -465,7 +460,6 @@ CONSTRUCTOR T_workspace.createAndRestore;
     create;
     if loadFromFile(workspaceFilename)
     then begin
-      CopyFile(workspaceFilename,workspaceBackupFilename);
       addBackup(@self,wht_onStartup);
     end else begin
       dispose(challenges,destroy);
@@ -513,8 +507,7 @@ FUNCTION T_workspace.getSerialVersion: dword;
     result:=serialVersionOf('T_workspace',2);
   end;
 
-FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
-  ): boolean;
+FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
   begin
     result:=inherited and challenges^.loadFromStream(stream);
     activeChallengeIndex:=stream.readLongint;
@@ -689,7 +682,12 @@ FUNCTION T_workspace.canGoBack: boolean;
   end;
 
 INITIALIZATION
-  workspace.createAndRestore;
+  try
+    workspace.createAndRestore;
+  except
+    DeleteFile(workspaceFilename);
+    halt;
+  end;
 FINALIZATION
   workspace.saveToFile(workspaceFilename);
   workspace.destroy;

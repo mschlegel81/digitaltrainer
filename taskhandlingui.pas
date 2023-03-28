@@ -242,6 +242,24 @@ PROCEDURE TSelectTaskForm.updateTable;
 
 FUNCTION TSelectTaskForm.startTaskAfterShowing(CONST cSet: P_challengeSet): boolean;
   begin
+    EditTaskShape  .visible:=not(workspace.simplisticUi);
+    EditTaskLabel  .visible:=not(workspace.simplisticUi);
+    ExportShape    .visible:=not(workspace.simplisticUi);
+    ExportLabel    .visible:=not(workspace.simplisticUi);
+    ImportShape    .visible:=not(workspace.simplisticUi);
+    ImportLabel    .visible:=not(workspace.simplisticUi);
+    DeleteTaskShape.visible:=not(workspace.simplisticUi);
+    DeleteTaskLabel.visible:=not(workspace.simplisticUi);
+    ChallengesGrid.Columns[3].visible:=not(workspace.simplisticUi);
+    MarkAllShape     .visible:=not(workspace.simplisticUi);
+    MarkAllLabel     .visible:=not(workspace.simplisticUi);
+    MarkNoneShape    .visible:=not(workspace.simplisticUi);
+    MarkNoneLabel    .visible:=not(workspace.simplisticUi);
+    MoveTaskDownShape.visible:=not(workspace.simplisticUi);
+    MoveTaskDownLabel.visible:=not(workspace.simplisticUi);
+    MoveTaskUpShape  .visible:=not(workspace.simplisticUi);
+    MoveTaskUpLabel  .visible:=not(workspace.simplisticUi);
+
     backupCreated:=false;
     challengeSet:=cSet;
     updateTable;

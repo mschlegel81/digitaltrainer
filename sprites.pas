@@ -690,7 +690,7 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
     screenOffset:=pointOf(radius,radius);
     c:=radius;
     if Bitmap=nil
-    then Bitmap:=TBGRABitmap.create(radius*2+1,radius*2+1,colorScheme.BOARD_COLOR)
+    then Bitmap:=TBGRABitmap.create(radius*2+1,radius*2+1,0)
     else Bitmap            .setSize(radius*2+1,radius*2+1);
 
     Bitmap.CanvasBGRA.Brush.color:=0;
@@ -708,7 +708,7 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
       Bitmap.CanvasBGRA.Brush.style:=bsSolid;
 
       Bitmap.CanvasBGRA.DrawFontBackground:=true;
-      textOut(Bitmap.CanvasBGRA,cap,x,x,radius*2-x,radius*2-x,colorScheme.ENABLED_TEXT_COLOR);
+      textOut(Bitmap.CanvasBGRA,cap,x,x,radius*2-x,radius*2-x,$00FFFFFF);    //This will be replaced by the actual color down below
     end;
 
     for y:=0 to radius*2 do begin
@@ -722,9 +722,9 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
         if captioned then begin
           ll:=px^ and 255;
           if ll>0 then begin
-            r:=ll+((256-ll)*r) shr 8;
-            g:=ll+((256-ll)*g) shr 8;
-            b:=ll+((256-ll)*b) shr 8;
+            r:=((ll*( colorScheme.ENABLED_TEXT_COLOR         and 255))+(256-ll)*r) shr 8;
+            g:=((ll*((colorScheme.ENABLED_TEXT_COLOR shr  8) and 255))+(256-ll)*g) shr 8;
+            b:=((ll*((colorScheme.ENABLED_TEXT_COLOR shr 16) and 255))+(256-ll)*b) shr 8;
           end;
         end;
         px^:=(b       ) or

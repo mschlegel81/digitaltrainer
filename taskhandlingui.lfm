@@ -69,7 +69,7 @@ object SelectTaskForm: TSelectTaskForm
     AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
-    AnchorSideBottom.Control = DeleteTaskShape
+    AnchorSideBottom.Control = StartTaskShape
     Left = 4
     Height = 90
     Top = 275

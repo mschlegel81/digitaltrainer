@@ -162,10 +162,11 @@ PROCEDURE applyColorScheme(CONST form:TForm);
   PROCEDURE applyScheme(CONST control:TControl);
     VAR i:longint;
     begin
-
       control.Font.color:=colorScheme.ENABLED_TEXT_COLOR;
-
-      if control is TShape then (TShape(control).Brush.color:=colorScheme.ENABLED_BUTTON_COLOR)
+      if control is TShape then begin
+        if TShape(control).Brush.style<>bsClear
+        then TShape(control).Brush.color:=colorScheme.ENABLED_BUTTON_COLOR;
+      end
       else if control is TStringGrid then begin
         TStringGrid(control).FixedColor:=colorScheme.tableFixedColor;
         control.color:=colorScheme.tableColor;

@@ -533,6 +533,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
     Height = 65
     Top = 440
     Width = 65
+    Brush.Color = clNone
     Brush.Style = bsClear
     Pen.Color = 43775
     OnMouseDown = selectionShapeMouseDown
@@ -585,6 +586,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
       object miAddToPalette: TMenuItem
         Caption = '&Eintrag aus aktueller Schaltung erstellen'
+        ShortCut = 16464
         OnClick = miAddToPaletteClick
       end
     end
@@ -596,6 +598,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
       end
       object miCreateTask: TMenuItem
         Caption = 'Aufgabe aus aktueller Schaltung &erstellen'
+        ShortCut = 16449
         OnClick = miSaveAsTaskClick
       end
       object miStartNextUnsolvedTask: TMenuItem

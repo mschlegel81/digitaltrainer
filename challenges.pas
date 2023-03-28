@@ -582,10 +582,10 @@ FUNCTION T_challenge.clone: P_challenge;
     result^.challengeDescription:=challengeDescription;
 
     dispose(result^.resultTemplate,destroy);
-    result^.resultTemplate  :=resultTemplate^.cloneAsTrueCopy;
     dispose(result^.expectedBehavior,destroy);
-    result^.expectedBehavior:=expectedBehavior^.cloneAsTrueCopy;
     dispose(result^.palette,destroy);
+    result^.resultTemplate  :=resultTemplate^.cloneAsTrueCopy;
+    result^.expectedBehavior:=expectedBehavior^.cloneAsTrueCopy;
     result^.palette:=palette^.cloneAndMigrate(result^.resultTemplate,result^.expectedBehavior);
 
     setLength(result^.tests,length(tests));

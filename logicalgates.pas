@@ -104,6 +104,7 @@ TYPE
   T_romContents=array of word;
 
   { T_captionedAndIndexed }
+  P_abstractGate=^T_abstractGate;
 
   P_captionedAndIndexed=^T_captionedAndIndexed;
   T_captionedAndIndexed=object
@@ -114,9 +115,8 @@ TYPE
     PROCEDURE setDescription(CONST s:string);   virtual;
     FUNCTION  getIndexInPalette:longint; virtual;
     FUNCTION  isVisualBoard:boolean; virtual;
+    FUNCTION  newGateFromPrototype:P_abstractGate; virtual; abstract;
   end;
-
-  P_abstractGate=^T_abstractGate;
 
   { T_abstractGate }
 
@@ -145,6 +145,7 @@ TYPE
       PROCEDURE countGates(VAR gateCount:T_gateCount); virtual;
       FUNCTION equals(CONST other:P_abstractGate):boolean; virtual;
       FUNCTION behaviorEquals(CONST other:P_abstractGate):boolean; virtual;
+      FUNCTION newGateFromPrototype:P_abstractGate; virtual;
     end;
 
   { T_constantGate }
@@ -1642,7 +1643,8 @@ FUNCTION T_abstractGate.inputWidth(CONST index: longint): byte;
 FUNCTION T_abstractGate.outputWidth(CONST index: longint): byte;
   begin result:=1; end;
 
-PROCEDURE T_abstractGate.writeToStream(VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly:boolean=false);
+PROCEDURE T_abstractGate.writeToStream(
+  VAR stream: T_bufferedOutputStreamWrapper; CONST metaDataOnly: boolean);
   begin
     if not(metaDataOnly) then stream.writeByte(byte(gateType));
   end;
@@ -2026,6 +2028,11 @@ FUNCTION T_abstractGate.behaviorEquals(CONST other: P_abstractGate): boolean;
       until not(stillSimulating) or (stepsUntilConfidence<=0);
     end;
     result:=true;
+  end;
+
+FUNCTION T_abstractGate.newGateFromPrototype: P_abstractGate;
+  begin
+    result:=clone(false);
   end;
 
 end.

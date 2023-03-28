@@ -243,8 +243,7 @@ FUNCTION T_challengePalette.loadFromStream(VAR stream: T_bufferedInputStreamWrap
     result:=stream.allOkay;
   end;
 
-PROCEDURE T_challengePalette.saveToStream(
-  VAR stream: T_bufferedOutputStreamWrapper);
+PROCEDURE T_challengePalette.saveToStream(VAR stream: T_bufferedOutputStreamWrapper);
   VAR i:longint;
   begin
     stream.writeByte(byte(paletteOption));
@@ -379,8 +378,6 @@ PROCEDURE T_challengePalette.addPrototype(CONST prototypeIndex: longint; CONST b
 
     paletteEntries[i].entryType         :=gt_compound;
     paletteEntries[i].prototype         :=behavior;
-    behavior^.captionString    :=behavior^.prototype^.getCaption;
-    behavior^.descriptionString:=behavior^.prototype^.getDescription;
     paletteEntries[i].sourcePaletteIndex:=prototypeIndex;
     paletteEntries[i].currentAvailableCount:=0;
     paletteEntries[i].initialAvailableCount:=0;
@@ -506,7 +503,14 @@ FUNCTION T_challengePalette.cloneAndMigrate(CONST b1, b2: P_visualBoard): P_chal
   FUNCTION clone(CONST original:T_challengePaletteEntry):T_challengePaletteEntry;
     begin
       result:=original;
-      if original.prototype<>nil then result.prototype:=original.prototype^.clone(true);
+      if original.prototype<>nil then begin
+        result.prototype:=original.prototype^.clone(true);
+        if result.entryType=gt_compound then begin
+          P_compoundGate(result.prototype)^.prototype:=nil; //This one is the "real" prototype
+          P_compoundGate(result.prototype)^.captionString    :=original.prototype^.getCaption;
+          P_compoundGate(result.prototype)^.descriptionString:=original.prototype^.getDescription;
+        end;
+      end;
     end;
 
   VAR i,j:longint;

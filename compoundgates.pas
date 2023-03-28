@@ -112,6 +112,7 @@ TYPE
       FUNCTION getPrototypeIndex:longint;
 
       FUNCTION getInterfaces:T_gateInterfaces;
+      FUNCTION newGateFromPrototype: P_abstractGate; virtual;
     end;
 
 FUNCTION areInterfacesCompatible(CONST a,b:T_gateInterfaces):boolean;
@@ -518,7 +519,7 @@ PROCEDURE T_compoundGate.prototypeUpdated(CONST oldPrototype, newPrototype: P_ca
     assert(prototypeSource<>nil);
     for i:=0 to length(gates)-1 do if (gates[i]^.gateType=gt_compound) then begin
       if (P_compoundGate(gates[i])^.prototype=oldPrototype) then begin
-        replacement:=prototypeSource^.obtainGate(oldPrototype^.getIndexInPalette);
+        replacement:=P_compoundGate(newPrototype^.newGateFromPrototype);
         rewire(P_compoundGate(gates[i]),replacement);
         dispose(gates[i],destroy);
         gates[i]:=replacement;
@@ -551,6 +552,12 @@ FUNCTION T_compoundGate.getInterfaces: T_gateInterfaces;
       then result.outputs[i].representation:=wr_binary
       else result.outputs[i].representation:=wr_decimal;
     end;
+  end;
+
+FUNCTION T_compoundGate.newGateFromPrototype: P_abstractGate;
+  begin
+    result:=clone(false);
+    P_compoundGate(result)^.prototype:=@self;
   end;
 
 end.

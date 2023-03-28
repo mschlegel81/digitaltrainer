@@ -80,15 +80,15 @@ FUNCTION TTaskFinishedForm.showAfterTest(CONST success, furtherTasksAvailable: b
   begin
     applyColorScheme(self);
     if success then begin
-      label1.Caption:='✓';
-      label2.caption:='✓';
-      label1.font.Color:=colorScheme.CORRECT_COLOR;
-      label2.Font.Color:=colorScheme.SHADOW_COLOR;
+      Label1.caption:='✓';
+      Label2.caption:='✓';
+      Label1.Font.color:=colorScheme.CORRECT_COLOR;
+      Label2.Font.color:=colorScheme.SHADOW_COLOR;
     end else begin
-      label1.Caption:='x';
-      label2.Caption:='x';
-      label1.font.color:=colorScheme.INCORRECT_COLOR;
-      label2.Font.Color:=colorScheme.SHADOW_COLOR;
+      Label1.caption:='x';
+      Label2.caption:='x';
+      Label1.Font.color:=colorScheme.INCORRECT_COLOR;
+      Label2.Font.color:=colorScheme.SHADOW_COLOR;
     end;
     setEnableButton(NextChallengeShape,NextChallengeLabel,furtherTasksAvailable);
     mr:=ShowModal;
