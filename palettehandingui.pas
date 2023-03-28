@@ -428,6 +428,7 @@ PROCEDURE TPaletteForm.showFor(CONST palette_: P_workspacePalette);
     sorting.byColumn:=255;
     setLength(sorting.index,0);
     fillTable(true);
+    updateButtons;
     ShowModal;
   end;
 

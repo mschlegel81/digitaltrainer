@@ -3,7 +3,7 @@ object TaskFinishedForm: TTaskFinishedForm
   Height = 605
   Top = 168
   Width = 630
-  BorderStyle = bsNone
+  BorderStyle = bsSingle
   Caption = 'Test beendet'
   ClientHeight = 605
   ClientWidth = 630

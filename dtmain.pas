@@ -17,6 +17,7 @@ TYPE
     boardHorizontalScrollBar: TScrollBar;
     boardImage: TImage;
     MenuItem1: TMenuItem;
+    miColorSchemeMediumGray: TMenuItem;
     miColorSchemeRust: TMenuItem;
     miColorSchemeNeon: TMenuItem;
     miColorSchemeDefault: TMenuItem;
@@ -207,9 +208,11 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     if getColorSchemeIndex=1
     then miColorSchemeBlackOnWhite.checked:=true
     else if getColorSchemeIndex=2
-    then miColorSchemeNeon.Checked:=true
+    then miColorSchemeNeon.checked:=true
     else if getColorSchemeIndex=3
-    then miColorSchemeRust.Checked:=true
+    then miColorSchemeRust.checked:=true
+    else if getColorSchemeIndex=4
+    then miColorSchemeMediumGray.checked:=true
     else miColorSchemeDefault.checked:=true;
 
     Application.AddOnKeyDownHandler(@FormKeyDown,false);
@@ -293,14 +296,16 @@ PROCEDURE TDigitaltrainerMainForm.miColorSchemeDefaultClick(Sender: TObject);
   begin
     if miColorSchemeBlackOnWhite.checked
     then setColorScheme(1)
-    else if miColorSchemeNeon.Checked
+    else if miColorSchemeNeon.checked
     then setColorScheme(2)
-    else if miColorSchemeRust.Checked
+    else if miColorSchemeRust.checked
     then setColorScheme(3)
+    else if miColorSchemeMediumGray.checked
+    then setColorScheme(4)
     else setColorScheme(0);
     applyColorScheme(self);
 
-    selectionShape.Pen.Color:=colorScheme.MARK_COLOR;
+    selectionShape.Pen.color:=colorScheme.MARK_COLOR;
 
     clearSpriteCaches;
     uiAdapter.updateTitleLayer;

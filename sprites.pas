@@ -646,7 +646,7 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
           io_top   : if fy<0 then addCol(colorScheme.GATE_COLOR) else addCol(colorScheme.BOARD_COLOR);
           io_bottom: if fy<0 then addCol(colorScheme.BOARD_COLOR) else addCol(colorScheme.GATE_COLOR);
         end;
-      end else if dtc>radius-1 then begin
+      end else if dtc>radius-1.5 then begin
         case position of
           io_left  : dtc:= fx/radius;
           io_right : dtc:=-fx/radius;
@@ -654,6 +654,7 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
           io_bottom: dtc:=-fy/radius;
         end;
         if dtc<0 then level:=0 else level:=round(dtc*256);
+        if level<0 then level:=0 else if level>256 then level:=256;
         r+=((256-level)*( colorScheme.GATE_BORDER_COLOR         and 255)+level*( colorScheme.WIRE_COLOR         and 255)) shr 8;
         g+=((256-level)*((colorScheme.GATE_BORDER_COLOR shr  8) and 255)+level*((colorScheme.WIRE_COLOR shr  8) and 255)) shr 8;
         b+=((256-level)*((colorScheme.GATE_BORDER_COLOR shr 16) and 255)+level*((colorScheme.WIRE_COLOR shr 16) and 255)) shr 8;
@@ -672,7 +673,9 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
       end;
     end;
 
-  CONST sub:array[0..7] of double=(0.0625,0.1875,0.3125,0.4375,0.5625,0.6875,0.8125,0.9375);
+  CONST sub:array[0..7] of double=(-0.4375,-0.3125,-0.1875,-0.0625,0.0625,0.1875,0.3125,0.4375);
+
+      //(0.0625,0.1875,0.3125,0.4375,0.5625,0.6875,0.8125,0.9375);
 
   VAR x,y:longint;
       subX,subY:double;
@@ -941,8 +944,8 @@ PROCEDURE T_ioBlockSprite.setZoom(CONST zoom: longint);
   begin
     initBaseShape(zoom,ioMark);
     Bitmap.CanvasBGRA.Pen.color:=0;
-    Bitmap.CanvasBGRA.MoveTo(screenOffset[0]           ,screenOffset[1]+(zoom*height   shr 1));
-    Bitmap.CanvasBGRA.LineTo(screenOffset[0]+zoom*width,screenOffset[1]+(zoom*height   shr 1));
+    Bitmap.CanvasBGRA.MoveTo(screenOffset[0]           +3,screenOffset[1]+(zoom*height   shr 1));
+    Bitmap.CanvasBGRA.LineTo(screenOffset[0]+zoom*width-3,screenOffset[1]+(zoom*height   shr 1));
     if (inIdx>=0) and (inIdx<length(C_inputKey)) then begin
       Bitmap.CanvasBGRA.DrawFontBackground:=true;
       textOut(Bitmap.CanvasBGRA,

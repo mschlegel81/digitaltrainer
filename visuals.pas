@@ -151,10 +151,10 @@ CONST DEFAULT_SCHEME:T_colorScheme=
        ENABLED_TEXT_COLOR   :$0000FF00;
        DISABLED_TEXT_COLOR  :$00808000;
        GATE_COLOR           :$00500000;
-       GATE_LABEL_COLOR     :$000000FF;
+       GATE_LABEL_COLOR     :$000000ff;
        MARK_COLOR           :$0000FFFF;
        BOARD_COLOR          :$00500000;
-       SHADOW_COLOR         :$000000ff;
+       SHADOW_COLOR         :$00000000;
        CORRECT_COLOR        :$0000FF00;
        INCORRECT_COLOR      :$000000ff;
        WIRE_COLOR           :$0000FF00;
@@ -165,7 +165,7 @@ CONST DEFAULT_SCHEME:T_colorScheme=
        MULTIBIT_COLOR       :$00500000;
        SEVEN_SEGMENT_COLOR  :($00300000,$0000FF00);
 
-       buttonColorTable:($00300000,$00800000,$00FF0000,$00FF5000,$00FF8000,$00FFFF00,$00FFFF30,$00FFFF50,$00FFFF80,$00FFFFA0,$00FFFFFF);
+       buttonColorTable:($00500000,$00700000,$00900000,$00B00000,$00D00000,$00F00000,$00FF1000,$00FF3000,$00FF5000,$00FF7000,$00FF9000);
 
        tableColor     :$00300000;
        tableFixedColor:$00000000;
@@ -183,7 +183,7 @@ CONST DEFAULT_SCHEME:T_colorScheme=
         DISABLED_TEXT_COLOR  :$00606060;
         GATE_COLOR           :$000060B0;
         GATE_LABEL_COLOR     :$00909090;
-        MARK_COLOR           :$002090FF;
+        MARK_COLOR           :$002090ff;
         BOARD_COLOR          :$00002040;
         SHADOW_COLOR         :$00000000;
         CORRECT_COLOR        :$00008000;
@@ -196,7 +196,7 @@ CONST DEFAULT_SCHEME:T_colorScheme=
         MULTIBIT_COLOR       :$00808080;
         SEVEN_SEGMENT_COLOR  :($00004080,$00000000);
 
-        buttonColorTable:($00603030,$00703838,$00804040,$00904848,$00A05050,$00B05858,$00BF5F5F,$00CF6767,$00DF6F6F,$00EF7777,$00FF7F7F);
+        buttonColorTable:($00004080,$00003870,$00003060,$00002850,$00002040,$00001830,$00001020,$00000810,$00000000,$00000000,$00000000);
 
         tableColor     :$00004080;
         tableFixedColor:$00002040;
@@ -207,12 +207,45 @@ CONST DEFAULT_SCHEME:T_colorScheme=
         GATE_BORDER_COLOR:0;
         MENU_BORDER_COLOR:0);
 
+       MEDIUM_GRAY_SCHEME:T_colorScheme=
+         (ENABLED_BUTTON_COLOR :$00808080;
+          DISABLED_BUTTON_COLOR:$00606060;
+          ENABLED_TEXT_COLOR   :$00202020;
+          DISABLED_TEXT_COLOR  :$00404040;
+          GATE_COLOR           :$00B0B0B0;
+          GATE_LABEL_COLOR     :$00404040;
+          MARK_COLOR           :$00FF0000;
+          BOARD_COLOR          :$00a0a0a0;
+          SHADOW_COLOR         :$00909090;
+          CORRECT_COLOR        :$00008000;
+          INCORRECT_COLOR      :$00000080;
+          WIRE_COLOR           :$00000000;
+          BOARD_BOUNDARY_COLOR :$00808080;
+          TRUE_COLOR           :$00c0e0c0;
+          FALSE_COLOR          :$008080b0;
+          UNDETERMINED_COLOR   :$00a0a0a0;
+          MULTIBIT_COLOR       :$00A09080;
+          SEVEN_SEGMENT_COLOR  :($00A0A0A0,$00000000);
+
+          buttonColorTable:($00808080,$00908888,$00A09090,$00B09898,$00C0A0A0,$00D0A8A8,$00E0B0B0,$00F0B8B8,$00FFC0C0,$00FFD0D0,$00FFE0E0);
+
+          tableColor     :$00a0a0a0;
+          tableFixedColor:$00808080;
+          tableAlternativeColor:$00808080;
+          editorBackgroundColor:$00808080;
+          secondaryFormColor: $00909090;
+          panelColor:$00808080;
+          GATE_BORDER_COLOR:0;
+          MENU_BORDER_COLOR:0);
+
   begin
     colorSchemeIndex:=index;
     if      index=1 then colorScheme:=BLACK_ON_WHITE_SCHEME
     else if index=2 then colorScheme:=NEON_SCHEME
     else if index=3 then colorScheme:=RUST_SCHEME
+    else if index=4 then colorScheme:=MEDIUM_GRAY_SCHEME
                     else colorScheme:=DEFAULT_SCHEME;
+
   end;
 
 PROCEDURE setEnableButton(Shape: TShape; CONST labl:TLabel; CONST enable: boolean);
@@ -236,7 +269,7 @@ PROCEDURE applyColorScheme(CONST form:TForm);
       if control is TShape then begin
         if TShape(control).Brush.style<>bsClear
         then TShape(control).Brush.color:=colorScheme.ENABLED_BUTTON_COLOR;
-        TShape(control).Pen.Color:=colorScheme.MENU_BORDER_COLOR;
+        TShape(control).Pen.color:=colorScheme.MENU_BORDER_COLOR;
       end
       else if control is TStringGrid then begin
         TStringGrid(control).FixedColor:=colorScheme.tableFixedColor;

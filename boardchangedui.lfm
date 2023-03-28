@@ -3,7 +3,7 @@ object boardChangedDialog: TboardChangedDialog
   Height = 116
   Top = 565
   Width = 421
-  BorderStyle = bsNone
+  BorderStyle = bsSingle
   Caption = 'Schaltung geändert'
   ClientHeight = 116
   ClientWidth = 421
