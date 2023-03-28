@@ -204,6 +204,7 @@ PROCEDURE TDuplicateRemovalDialog.CandidateStringGridSelection(Sender: TObject; 
 
 PROCEDURE TDuplicateRemovalDialog.deleteAShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
+    Timer1.enabled:=false;
     addBackup(@workspace,wht_beforeDuplicateRemoval);
     workspace.clearPreviousStates;
     workspace.getWorkspacePalette^.removeEntryReplacing(indexB,indexA);
@@ -212,6 +213,7 @@ PROCEDURE TDuplicateRemovalDialog.deleteAShapeMouseDown(Sender: TObject; button:
 
 PROCEDURE TDuplicateRemovalDialog.deleteBShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
+    Timer1.enabled:=false;
     addBackup(@workspace,wht_beforeDuplicateRemoval);
     workspace.clearPreviousStates;
     workspace.getWorkspacePalette^.removeEntryReplacing(indexA,indexB);
@@ -230,6 +232,8 @@ PROCEDURE TDuplicateRemovalDialog.FormResize(Sender: TObject);
 PROCEDURE TDuplicateRemovalDialog.FormShow(Sender: TObject);
   begin
     applyColorScheme(self);
+    ElementBPanel.color:=colorScheme.tableAlternativeColor;
+    DetailsMemoB .color:=colorScheme.tableAlternativeColor;
   end;
 
 PROCEDURE TDuplicateRemovalDialog.generateTestCasesShape1MouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
