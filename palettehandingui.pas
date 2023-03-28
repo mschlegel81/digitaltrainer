@@ -28,6 +28,7 @@ TYPE
     MarkNoneLabel: TLabel;
     DetailsMemo: TMemo;
     MenuItem1: TMenuItem;
+    miCleanupManually: TMenuItem;
     miRemoveDuplicatesExact: TMenuItem;
     miRemoveDuplicatesBehavior: TMenuItem;
     MoveTaskDownLabel: TLabel;
@@ -53,6 +54,7 @@ TYPE
     PROCEDURE ImportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE MarkAllShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE MarkNoneShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE miCleanupManuallyClick(Sender: TObject);
     PROCEDURE miRemoveDuplicatesBehaviorClick(Sender: TObject);
     PROCEDURE miRemoveDuplicatesExactClick(Sender: TObject);
     PROCEDURE MoveTaskDownShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -80,7 +82,7 @@ TYPE
 VAR uiAdapter:P_uiAdapter;
 FUNCTION PaletteForm: TPaletteForm;
 IMPLEMENTATION
-USES visuals,logicalGates,paletteImportUi;
+USES visuals,logicalGates,paletteImportUi,duplicateRemovalUi;
 VAR
   myPaletteForm: TPaletteForm=nil;
 
@@ -198,8 +200,7 @@ PROCEDURE TPaletteForm.entriesGridValidateEntry(Sender: TObject; aCol, aRow: int
   end;
 
 PROCEDURE TPaletteForm.ExportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
-  begin
-    if SaveDialog1.execute then palette^.exportSelected(SaveDialog1.fileName);
+  begin    if SaveDialog1.execute then palette^.exportSelected(SaveDialog1.fileName);
   end;
 
 PROCEDURE TPaletteForm.FormCreate(Sender: TObject);
@@ -235,6 +236,16 @@ PROCEDURE TPaletteForm.MarkNoneShapeMouseDown(Sender: TObject; button: TMouseBut
     palette^.markAllEntriesForExport(false);
     fillTable;
     updateButtons;
+  end;
+
+PROCEDURE TPaletteForm.miCleanupManuallyClick(Sender: TObject);
+  begin
+
+    if (lastClicked>=0) and (lastClicked<length(sorting.index))
+    then begin
+      DuplicateRemovalDialog.showFor(sorting.index[lastClicked]);
+      fillTable(true);
+    end;
   end;
 
 PROCEDURE TPaletteForm.miRemoveDuplicatesBehaviorClick(Sender: TObject);

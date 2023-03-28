@@ -109,6 +109,7 @@ TYPE
     PROCEDURE importPalette(CONST fileName:string; CONST options:T_paletteImportOptions);
     PROCEDURE swapPaletteName(CONST index:longint; CONST up:boolean);
     PROCEDURE removeDuplicates(CONST byBehavior:boolean; CONST startAtIndex:longint=0);
+    PROCEDURE removeEntryReplacing(CONST retainIndex,removeIndex:longint);
 
     FUNCTION describeEntry(CONST index:longint):string;
     FUNCTION findEntriesWithSameInterfaceAs(CONST index:longint):T_arrayOfLongint;
@@ -1290,6 +1291,32 @@ PROCEDURE T_workspacePalette.removeDuplicates(CONST byBehavior:boolean; CONST st
       inc(j);
     end;
     setLength(paletteEntries,j);
+  end;
+
+PROCEDURE T_workspacePalette.removeEntryReplacing(CONST retainIndex,removeIndex:longint);
+  VAR i,j:longint;
+      protRetain, protRemove: P_visualBoard;
+  begin
+    {$ifdef debugMode}
+    writeln('Retain ',retainIndex,'; remove: ',removeIndex);
+    {$endif}
+    protRetain:=paletteEntries[retainIndex].prototype;
+    protRemove:=paletteEntries[removeIndex].prototype;
+    ui^.prototypeUpdated(protRemove,protRetain);
+    for i:=removeIndex+1 to length(paletteEntries)-1 do
+      if paletteEntries[i].entryType=gt_compound
+      then paletteEntries[i].prototype^.prototypeUpdated(protRemove,protRetain);
+
+    //Actually remove the entries:
+    j:=0;
+    for i:=0 to length(paletteEntries)-1 do if i=removeIndex then begin
+      dispose(paletteEntries[i].prototype,destroy);
+    end else begin
+      paletteEntries[j]:=paletteEntries[i];
+      inc(j);
+    end;
+    setLength(paletteEntries,j);
+    reindex;
   end;
 
 FUNCTION T_workspacePalette.describeEntry(CONST index:longint):string;

@@ -55,7 +55,7 @@ TYPE
       PROCEDURE generateTestCases(CONST continuous:boolean=false; CONST scramble:boolean=true);
       PROCEDURE reInitStepCounts;
       PROCEDURE updateTestCaseResults;
-      FUNCTION lastTestCasePrepared:longint;
+      PROPERTY lastTestCasePrepared:longint read challengeTestCreationThread.lastPreparedIndex;
       PROCEDURE copyTestInputs(CONST origin:P_testCreator);
   end;
 
@@ -872,19 +872,17 @@ PROCEDURE T_testCreator.updateTestCaseResults;
     challengeTestCreationThread.restart;
   end;
 
-FUNCTION T_testCreator.lastTestCasePrepared: longint;
-  begin
-    result:=challengeTestCreationThread.lastPreparedIndex;
-  end;
-
 PROCEDURE T_testCreator.copyTestInputs(CONST origin:P_testCreator);
   VAR i:longint;
   begin
+    challengeTestCreationThread.ensureStop;
     setLength(tests,length(origin^.tests));
     for i:=0 to length(tests)-1 do begin
       tests[i].inputs       :=origin^.tests[i].inputs;
       tests[i].maxTotalSteps:=origin^.tests[i].maxTotalSteps;
     end;
+    for i:=0 to length(Interfaces.outputs)-1 do Interfaces.outputs[i].representation:=origin^.Interfaces.outputs[i].representation;
+    challengeTestCreationThread.restart;
   end;
 
 FUNCTION T_challenge.equals(CONST c: P_challenge): boolean;

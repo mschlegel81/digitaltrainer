@@ -7,6 +7,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
   ClientHeight = 768
   ClientWidth = 602
   Color = 7354424
+  OnResize = FormResize
   Position = poOwnerFormCenter
   LCLVersion = '2.2.2.0'
   object CandidatesPanel: TPanel
@@ -41,6 +42,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       BorderSpacing.Bottom = 5
       Color = 8405056
       ColCount = 1
+      ExtendedSelect = False
       FixedColor = 6303792
       FixedCols = 0
       Flat = True
@@ -143,6 +145,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       BorderSpacing.Top = 4
       BorderSpacing.Right = 4
       Brush.Color = 6303792
+      OnMouseDown = generateTestCasesShapeMouseDown
       Shape = stRoundRect
     end
     object generateTestCasesLabel: TLabel
@@ -165,6 +168,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       Font.Quality = fqDraft
       ParentColor = False
       ParentFont = False
+      OnMouseDown = generateTestCasesShapeMouseDown
     end
     object generateTestCasesShape1: TShape
       AnchorSideLeft.Side = asrBottom
@@ -180,6 +184,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       BorderSpacing.Top = 4
       BorderSpacing.Right = 4
       Brush.Color = 6303792
+      OnMouseDown = generateTestCasesShape1MouseDown
       Shape = stRoundRect
     end
     object generateTestCasesLabel1: TLabel
@@ -202,6 +207,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       Font.Quality = fqDraft
       ParentColor = False
       ParentFont = False
+      OnMouseDown = generateTestCasesShape1MouseDown
     end
     object StepCountEdit: TEdit
       AnchorSideLeft.Control = Label7
@@ -292,8 +298,8 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
     ParentColor = False
     TabOrder = 2
     object CaptionLabelA: TLabel
-      AnchorSideLeft.Control = ComparisonPanel
-      AnchorSideTop.Control = ComparisonPanel
+      AnchorSideLeft.Control = ElementAPanel
+      AnchorSideTop.Control = ElementAPanel
       Left = 7
       Height = 23
       Top = 6
@@ -324,6 +330,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       BorderSpacing.Right = 5
       BorderSpacing.Bottom = 5
       Brush.Color = 6303792
+      OnMouseDown = deleteAShapeMouseDown
       Shape = stRoundRect
     end
     object deleteALabel: TLabel
@@ -346,33 +353,45 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       Font.Quality = fqDraft
       ParentColor = False
       ParentFont = False
+      OnMouseDown = deleteAShapeMouseDown
     end
-    object ImageA: TImage
+    object DetailsMemoA: TMemo
       AnchorSideLeft.Control = ElementAPanel
       AnchorSideTop.Control = CaptionLabelA
       AnchorSideTop.Side = asrBottom
       AnchorSideRight.Control = ElementAPanel
       AnchorSideRight.Side = asrBottom
       AnchorSideBottom.Control = deleteAShape
-      Left = 6
-      Height = 217
-      Top = 40
-      Width = 271
-      Anchors = [akLeft, akRight, akBottom]
-      BorderSpacing.Left = 5
+      Left = 1
+      Height = 223
+      Top = 34
+      Width = 276
+      Anchors = [akTop, akLeft, akRight, akBottom]
+      BorderSpacing.Top = 5
       BorderSpacing.Right = 5
       BorderSpacing.Bottom = 5
+      BorderStyle = bsNone
+      Color = 8405056
+      Font.Color = clWhite
+      ParentFont = False
+      ReadOnly = True
+      ScrollBars = ssAutoBoth
+      TabOrder = 0
+      WordWrap = False
     end
   end
   object ElementBPanel: TPanel
     AnchorSideLeft.Control = ElementAPanel
     AnchorSideLeft.Side = asrBottom
     AnchorSideTop.Control = ElementAPanel
-    Left = 293
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 314
     Height = 296
     Top = 467
     Width = 283
     Align = alCustom
+    Anchors = [akTop, akRight]
     BorderSpacing.Left = 5
     BorderSpacing.Right = 5
     BevelColor = clBlack
@@ -382,8 +401,8 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
     ParentColor = False
     TabOrder = 3
     object CaptionLabelB: TLabel
-      AnchorSideLeft.Control = ComparisonPanel
-      AnchorSideTop.Control = ComparisonPanel
+      AnchorSideLeft.Control = ElementBPanel
+      AnchorSideTop.Control = ElementBPanel
       Left = 7
       Height = 23
       Top = 6
@@ -414,6 +433,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       BorderSpacing.Right = 5
       BorderSpacing.Bottom = 5
       Brush.Color = 4202528
+      OnMouseDown = deleteBShapeMouseDown
       Shape = stRoundRect
     end
     object deleteBLabel: TLabel
@@ -436,22 +456,31 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       Font.Quality = fqDraft
       ParentColor = False
       ParentFont = False
+      OnMouseDown = deleteBShapeMouseDown
     end
-    object ImageB: TImage
+    object DetailsMemoB: TMemo
       AnchorSideLeft.Control = ElementBPanel
       AnchorSideTop.Control = CaptionLabelB
       AnchorSideTop.Side = asrBottom
       AnchorSideRight.Control = ElementBPanel
       AnchorSideRight.Side = asrBottom
       AnchorSideBottom.Control = deleteBShape
-      Left = 6
-      Height = 217
-      Top = 40
-      Width = 271
-      Anchors = [akLeft, akRight, akBottom]
-      BorderSpacing.Left = 5
+      Left = 1
+      Height = 223
+      Top = 34
+      Width = 276
+      Anchors = [akTop, akLeft, akRight, akBottom]
+      BorderSpacing.Top = 5
       BorderSpacing.Right = 5
       BorderSpacing.Bottom = 5
+      BorderStyle = bsNone
+      Color = 6303792
+      Font.Color = clWhite
+      ParentFont = False
+      ReadOnly = True
+      ScrollBars = ssAutoBoth
+      TabOrder = 0
+      WordWrap = False
     end
   end
   object Timer1: TTimer

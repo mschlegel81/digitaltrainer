@@ -36,7 +36,9 @@ TYPE
     currentState:T_workspaceState;
     previousState:array of T_workspaceState;
 
+  public
     PROCEDURE clearPreviousStates;
+  private
     PROCEDURE initCurrentState;
     PROCEDURE stateTransition(CONST newState:T_workspaceStateEnum);
     CONSTRUCTOR create;

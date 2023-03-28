@@ -504,6 +504,10 @@ object PaletteForm: TPaletteForm
         Caption = 'Einträge mit gleichem Verhalten entfernen'
         OnClick = miRemoveDuplicatesBehaviorClick
       end
+      object miCleanupManually: TMenuItem
+        Caption = 'Duplikat &manuell entfernen'
+        OnClick = miCleanupManuallyClick
+      end
     end
   end
 end
