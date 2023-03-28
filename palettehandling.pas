@@ -370,8 +370,7 @@ FUNCTION T_challengePalette.hasPrototype(CONST prototypeIndex: longint): boolean
     end;
   end;
 
-PROCEDURE T_challengePalette.addPrototype(CONST prototypeIndex: longint;
-  CONST behavior: P_compoundGate);
+PROCEDURE T_challengePalette.addPrototype(CONST prototypeIndex: longint; CONST behavior: P_compoundGate);
   VAR i:longint;
   begin
     assert(constructingChallenge,'This should only be called during challenge creation');
@@ -380,6 +379,8 @@ PROCEDURE T_challengePalette.addPrototype(CONST prototypeIndex: longint;
 
     paletteEntries[i].entryType         :=gt_compound;
     paletteEntries[i].prototype         :=behavior;
+    behavior^.captionString    :=behavior^.prototype^.getCaption;
+    behavior^.descriptionString:=behavior^.prototype^.getDescription;
     paletteEntries[i].sourcePaletteIndex:=prototypeIndex;
     paletteEntries[i].currentAvailableCount:=0;
     paletteEntries[i].initialAvailableCount:=0;
