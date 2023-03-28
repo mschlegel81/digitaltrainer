@@ -13,6 +13,8 @@ TYPE
   { TTaskFinishedForm }
 
   TTaskFinishedForm = class(TForm)
+    Label1: TLabel;
+    Label2: TLabel;
     NextChallengeLabel: TLabel;
     CancelLabel: TLabel;
     SetEditModeLabel: TLabel;
@@ -21,8 +23,6 @@ TYPE
     RestartChallengeShape: TShape;
     NextChallengeShape: TShape;
     CancelShape: TShape;
-    SuccessImage: TImage;
-    FailedImage: TImage;
     PROCEDURE CancelShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
     PROCEDURE NextChallengeShapeMouseDown(Sender: TObject;
@@ -79,8 +79,17 @@ FUNCTION TTaskFinishedForm.showAfterTest(CONST success, furtherTasksAvailable: b
     mr: integer;
   begin
     applyColorScheme(self);
-    SuccessImage.visible:=success;
-    FailedImage.visible:=not(success);
+    if success then begin
+      label1.Caption:='✓';
+      label2.caption:='✓';
+      label1.font.Color:=colorScheme.CORRECT_COLOR;
+      label2.Font.Color:=colorScheme.SHADOW_COLOR;
+    end else begin
+      label1.Caption:='x';
+      label2.Caption:='x';
+      label1.font.color:=colorScheme.INCORRECT_COLOR;
+      label2.Font.Color:=colorScheme.SHADOW_COLOR;
+    end;
     setEnableButton(NextChallengeShape,NextChallengeLabel,furtherTasksAvailable);
     mr:=ShowModal;
     result:=fr_cancel;
