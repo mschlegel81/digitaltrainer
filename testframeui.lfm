@@ -9,8 +9,8 @@ object TestCreationFrame: TTestCreationFrame
   ParentBackground = False
   ParentColor = False
   TabOrder = 0
-  DesignLeft = 708
-  DesignTop = 422
+  DesignLeft = 1182
+  DesignTop = 409
   object TestInputsPanel: TPanel
     Left = 4
     Height = 370
@@ -29,10 +29,11 @@ object TestCreationFrame: TTestCreationFrame
     TabOrder = 0
     object Label6: TLabel
       AnchorSideLeft.Control = TestInputsPanel
-      AnchorSideTop.Control = TestInputsPanel
+      AnchorSideTop.Control = TestCaseCountEdit
+      AnchorSideTop.Side = asrCenter
       Left = 6
       Height = 15
-      Top = 10
+      Top = 14
       Width = 36
       BorderSpacing.Top = 4
       Caption = 'Anzahl'
@@ -144,10 +145,11 @@ object TestCreationFrame: TTestCreationFrame
     object Label7: TLabel
       AnchorSideLeft.Control = TestCaseCountEdit
       AnchorSideLeft.Side = asrBottom
-      AnchorSideTop.Control = TestInputsPanel
+      AnchorSideTop.Control = TestCaseCountEdit
+      AnchorSideTop.Side = asrCenter
       Left = 136
       Height = 15
-      Top = 10
+      Top = 14
       Width = 118
       BorderSpacing.Left = 10
       BorderSpacing.Top = 4

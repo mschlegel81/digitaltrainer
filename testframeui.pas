@@ -133,22 +133,28 @@ PROCEDURE TTestCreationFrame.fillTable;
       gateInterface: T_gateInterface;
   begin
     TestCasesStringGrid.rowCount:=1+length(testGenerator^.tests);
-    TestCasesStringGrid.colCount:=length(testGenerator^.Interfaces.inputs)+length(testGenerator^.Interfaces.outputs)+1;
+    k:=length(testGenerator^.Interfaces.inputs)+length(testGenerator^.Interfaces.outputs)+1;
+    while TestCasesStringGrid.Columns.count>k do TestCasesStringGrid.Columns.delete(TestCasesStringGrid.Columns.count-1);
+    while TestCasesStringGrid.Columns.count<k do TestCasesStringGrid.Columns.add;
 
     //Header
     i:=0;
     for gateInterface in testGenerator^.Interfaces.inputs do begin
+      TestCasesStringGrid.Columns[i].color:=$00804040;
       if gateInterface.wireWidth<=1
-      then TestCasesStringGrid.Cells[i,0]:=gateInterface.name
-      else TestCasesStringGrid.Cells[i,0]:=gateInterface.name+' ('+ C_multibitWireRepresentationName[gateInterface.representation]+')';
+      then TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name
+      else TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name+' ('+ C_multibitWireRepresentationName[gateInterface.representation]+')';
       inc(i);
     end;
-    TestCasesStringGrid.Cells[i,0]:='Steps';
+
+    TestCasesStringGrid.Columns[i].color:=$00603030;
+    TestCasesStringGrid.Columns[i].title.caption:='Steps';
     inc(i);
     for gateInterface in testGenerator^.Interfaces.outputs do begin
+      TestCasesStringGrid.Columns[i].color:=$00804040;
       if gateInterface.wireWidth<=1
-      then TestCasesStringGrid.Cells[i,0]:=gateInterface.name
-      else TestCasesStringGrid.Cells[i,0]:=gateInterface.name+' ('+ C_multibitWireRepresentationName[gateInterface.representation]+')';
+      then TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name
+      else TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name+' ('+ C_multibitWireRepresentationName[gateInterface.representation]+')';
       inc(i);
     end;
 
