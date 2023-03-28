@@ -38,6 +38,49 @@ TYPE  T_shapeAndLabel=record colorIndex:byte; Shape:TShape; labl:TLabel; end;
         panelColor:longint;
       end;
 
+VAR colorScheme:T_colorScheme;
+FUNCTION getColorSchemeIndex:longint;
+PROCEDURE setColorScheme(CONST index:longint);
+PROCEDURE setEnableButton(Shape:TShape; CONST labl:TLabel; CONST enable:boolean);
+PROCEDURE applyColorScheme(CONST form:TForm);
+IMPLEMENTATION
+USES Controls, Graphics, Grids,ValEdit;
+VAR colorSchemeIndex:longint;
+
+FUNCTION settingsFileName:string;
+  begin
+    result:=ChangeFileExt(paramStr(0),'.visuals');
+  end;
+
+PROCEDURE saveSettins;
+  VAR handle:textFile;
+  begin
+    assign(handle,settingsFileName);
+    rewrite(handle);
+    writeln(handle,colorSchemeIndex);
+    close(handle);
+  end;
+
+PROCEDURE loadSettings;
+  VAR handle:textFile;
+  begin
+    try
+      assign(handle,settingsFileName);
+      reset(handle);
+      readln(handle,colorSchemeIndex);
+      close(handle);
+    except
+      colorSchemeIndex:=0;
+    end;
+    setColorScheme(colorSchemeIndex);
+  end;
+
+FUNCTION getColorSchemeIndex: longint;
+  begin
+    result:=colorSchemeIndex;
+  end;
+
+PROCEDURE setColorScheme(CONST index: longint);
 CONST DEFAULT_SCHEME:T_colorScheme=
       (ENABLED_BUTTON_COLOR :$00603030;
        DISABLED_BUTTON_COLOR:$00703838;
@@ -96,11 +139,12 @@ CONST DEFAULT_SCHEME:T_colorScheme=
        secondaryFormColor: $00FFFFFF;
        panelColor:$00FFFFFF);
 
-VAR colorScheme:T_colorScheme;
-PROCEDURE setEnableButton(Shape:TShape; CONST labl:TLabel; CONST enable:boolean);
-PROCEDURE applyColorScheme(CONST form:TForm);
-IMPLEMENTATION
-USES Controls, Graphics, Grids,ValEdit;
+  begin
+    colorSchemeIndex:=index;
+    if index=1 then colorScheme:=BLACK_ON_WHITE_SCHEME else colorScheme:=DEFAULT_SCHEME;
+
+  end;
+
 PROCEDURE setEnableButton(Shape: TShape; CONST labl:TLabel; CONST enable: boolean);
   begin
     Shape.enabled:=enable;
@@ -142,8 +186,11 @@ PROCEDURE applyColorScheme(CONST form:TForm);
     for i:=0 to form.ControlCount-1
     do applyScheme(form.Controls[i]);
   end;
+
 INITIALIZATION
-  colorScheme:=DEFAULT_SCHEME;
+  loadSettings;
+FINALIZATION
+  saveSettins;
 
 end.
 

@@ -78,6 +78,7 @@ FUNCTION TTaskFinishedForm.showAfterTest(CONST success, furtherTasksAvailable: b
   VAR
     mr: integer;
   begin
+    applyColorScheme(self);
     SuccessImage.visible:=success;
     FailedImage.visible:=not(success);
     setEnableButton(NextChallengeShape,NextChallengeLabel,furtherTasksAvailable);

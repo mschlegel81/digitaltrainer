@@ -282,8 +282,8 @@ PROCEDURE TDigitaltrainerMainForm.miBackupsClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miColorSchemeDefaultClick(Sender: TObject);
   begin
     if miColorSchemeBlackOnWhite.checked
-    then colorScheme:=BLACK_ON_WHITE_SCHEME
-    else colorScheme:=DEFAULT_SCHEME;
+    then setColorScheme(1)
+    else setColorScheme(0);
     applyColorScheme(self);
     clearSpriteCaches;
     uiAdapter.updateTitleLayer;
@@ -420,7 +420,12 @@ PROCEDURE TDigitaltrainerMainForm.miSimpleUIClick(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.miStartNextUnsolvedTaskClick(Sender: TObject);
   begin
-    //TODO: Implement me!
+    workspace.startChallenge(workspace.nextUncompletedChallenge);
+    workspace.activePalette^.attachUI(@uiAdapter);
+    workspace.activeBoard  ^.attachUI(@uiAdapter);
+    uiAdapter.paintAll;
+    infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
+    updateUiElements;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);

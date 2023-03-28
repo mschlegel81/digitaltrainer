@@ -54,7 +54,7 @@ TYPE
     PROCEDURE StartTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   private
     challengeSet:P_challengeSet;
-    exporting,backupCreated:boolean;
+    backupCreated:boolean;
     PROCEDURE updateTable;
     PROCEDURE createBackupOnce(CONST reason:T_workspaceHistorizationTriggerEnum);
   public
@@ -114,7 +114,7 @@ PROCEDURE TSelectTaskForm.DeleteTaskShapeMouseDown(Sender: TObject; button: TMou
 PROCEDURE TSelectTaskForm.ChallengesGridGetCheckboxState(Sender: TObject; aCol, aRow: integer; VAR value: TCheckboxState);
   begin
     dec(aRow);
-    if (not exporting) or (tutorial.equals(challengeSet^.challenge[aRow]))
+    if (tutorial.equals(challengeSet^.challenge[aRow]))
     then value:=cbGrayed
     else begin
       if challengeSet^.challenge[aRow]^.marked
@@ -128,7 +128,7 @@ PROCEDURE TSelectTaskForm.ChallengesGridSetCheckboxState(Sender: TObject; aCol, 
       anySelected:boolean=false;
   begin
     dec(aRow);
-    if (not exporting) or (tutorial.equals(challengeSet^.challenge[aRow]))
+    if (tutorial.equals(challengeSet^.challenge[aRow]))
     then exit;
 
     challengeSet^.challenge[aRow]^.marked:=not(challengeSet^.challenge[aRow]^.marked);
@@ -161,7 +161,6 @@ PROCEDURE TSelectTaskForm.ChallengesGridSelection(Sender: TObject; aCol, aRow: i
     setEnableButton(EditTaskShape,EditTaskLabel,challengeSet^.challenge[aRow]^.editable);
     setEnableButton(MoveTaskUpShape,MoveTaskUpLabel,aRow>0);
     setEnableButton(MoveTaskDownShape,MoveTaskDownLabel,aRow<length(challengeSet^.challenge)-1);
-    if exporting then exit;
     setEnableButton(StartTaskShape,StartTaskLabel,true);
     setEnableButton(DeleteTaskShape,DeleteTaskLabel,not(tutorial.equals(challengeSet^.challenge[aRow])));
   end;
@@ -226,7 +225,6 @@ PROCEDURE TSelectTaskForm.updateTable;
   begin
     ChallengesMemo.text:='';
     ChallengesGrid.rowCount:=1+length(challengeSet^.challenge);
-    ChallengesGrid.Columns[3].visible:=exporting;
     for i:=0 to length(challengeSet^.challenge)-1 do begin
       ChallengesGrid.Cells[0,i+1]:=challengeSet^.challenge[i]^.challengeTitle;
       ChallengesGrid.Cells[1,i+1]:=BoolToStr(challengeSet^.challenge[i]^.callengeCompleted,checkMark,'');
@@ -246,7 +244,6 @@ FUNCTION TSelectTaskForm.startTaskAfterShowing(CONST cSet: P_challengeSet): bool
   begin
     backupCreated:=false;
     challengeSet:=cSet;
-    exporting:=false;
     updateTable;
     result:=ShowModal=mrOk;
   end;
