@@ -701,6 +701,12 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           RadioItem = True
           OnClick = miColorSchemeDefaultClick
         end
+        object miColorSchemeDark: TMenuItem
+          AutoCheck = True
+          Caption = 'Dunkel'
+          RadioItem = True
+          OnClick = miColorSchemeDefaultClick
+        end
       end
     end
   end

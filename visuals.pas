@@ -178,14 +178,14 @@ CONST DEFAULT_SCHEME:T_colorScheme=
 
        RUST_SCHEME:T_colorScheme=
        (ENABLED_BUTTON_COLOR :$00004080;
-        DISABLED_BUTTON_COLOR:$00404040;
+        DISABLED_BUTTON_COLOR:$00003060;
         ENABLED_TEXT_COLOR   :$00E0E0E0;
-        DISABLED_TEXT_COLOR  :$00606060;
-        GATE_COLOR           :$000060B0;
-        GATE_LABEL_COLOR     :$00909090;
+        DISABLED_TEXT_COLOR  :$007890A8;
+        GATE_COLOR           :$00003060;
+        GATE_LABEL_COLOR     :$00B0B0B0;
         MARK_COLOR           :$002090ff;
         BOARD_COLOR          :$00002040;
-        SHADOW_COLOR         :$00000000;
+        SHADOW_COLOR         :$00001020;
         CORRECT_COLOR        :$00008000;
         INCORRECT_COLOR      :$00000080;
         WIRE_COLOR           :$00aaaaaa;
@@ -194,9 +194,9 @@ CONST DEFAULT_SCHEME:T_colorScheme=
         FALSE_COLOR          :0;
         UNDETERMINED_COLOR   :$00002040;
         MULTIBIT_COLOR       :$00808080;
-        SEVEN_SEGMENT_COLOR  :($000050A8,$00000000);
+        SEVEN_SEGMENT_COLOR  :($00003870,$00000000);
 
-        buttonColorTable:($00004080,$00003870,$00003060,$00002850,$00002040,$00001830,$00001020,$00000810,$00000000,$00000000,$00000000);
+        buttonColorTable:($00004080,$00003C78,$00003870,$00003468,$00003060,$00002850,$00002040,$00001830,$00001020,$00000810,$00000000);
 
         tableColor     :$00004080;
         tableFixedColor:$00002040;
@@ -204,8 +204,8 @@ CONST DEFAULT_SCHEME:T_colorScheme=
         editorBackgroundColor:$00002040;
         secondaryFormColor: $00003060;
         panelColor:$00003060;
-        GATE_BORDER_COLOR:0;
-        MENU_BORDER_COLOR:0);
+        GATE_BORDER_COLOR:$00001830;
+        MENU_BORDER_COLOR:$00001020);
 
        MEDIUM_GRAY_SCHEME:T_colorScheme=
          (ENABLED_BUTTON_COLOR :$00808080;
@@ -232,11 +232,42 @@ CONST DEFAULT_SCHEME:T_colorScheme=
           tableColor     :$00a0a0a0;
           tableFixedColor:$00808080;
           tableAlternativeColor:$00808080;
-          editorBackgroundColor:$00808080;
+          editorBackgroundColor:$00B0B0B0;
           secondaryFormColor: $00909090;
           panelColor:$00808080;
           GATE_BORDER_COLOR:0;
           MENU_BORDER_COLOR:0);
+
+       DARK_GRAY_SCHEME:T_colorScheme=
+         (ENABLED_BUTTON_COLOR :$00303030;
+          DISABLED_BUTTON_COLOR:$00383838;
+          ENABLED_TEXT_COLOR   :$00B0B0B0;
+          DISABLED_TEXT_COLOR  :$00909090;
+          GATE_COLOR           :$00303030;
+          GATE_LABEL_COLOR     :$00B0B0B0;
+          MARK_COLOR           :$000060ff;
+          BOARD_COLOR          :$00202020;
+          SHADOW_COLOR         :$00181818;
+          CORRECT_COLOR        :$00008000;
+          INCORRECT_COLOR      :$000000C0;
+          WIRE_COLOR           :$00C0C0C0;
+          BOARD_BOUNDARY_COLOR :$00606060;
+          TRUE_COLOR           :$0030A030;
+          FALSE_COLOR          :0;
+          UNDETERMINED_COLOR   :$00202020;
+          MULTIBIT_COLOR       :$00802020;
+          SEVEN_SEGMENT_COLOR  :($00202020,$0030A030);
+
+          buttonColorTable:($00303030,$00305030,$00307030,$00309030,$0030B030,$0030E030,$0030E030,$0030B030,$00309030,$00307030,$00305030);
+
+          tableColor     :$00404040;
+          tableFixedColor:$00303030;
+          tableAlternativeColor:$00303030;
+          editorBackgroundColor:$00383838;
+          secondaryFormColor: $00383838;
+          panelColor:$00383838;
+          GATE_BORDER_COLOR:0;
+          MENU_BORDER_COLOR:$00909090);
 
   begin
     colorSchemeIndex:=index;
@@ -244,8 +275,8 @@ CONST DEFAULT_SCHEME:T_colorScheme=
     else if index=2 then colorScheme:=NEON_SCHEME
     else if index=3 then colorScheme:=RUST_SCHEME
     else if index=4 then colorScheme:=MEDIUM_GRAY_SCHEME
+    else if index=5 then colorScheme:=DARK_GRAY_SCHEME
                     else colorScheme:=DEFAULT_SCHEME;
-
   end;
 
 PROCEDURE setEnableButton(Shape: TShape; CONST labl:TLabel; CONST enable: boolean);

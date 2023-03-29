@@ -328,6 +328,11 @@ PROCEDURE T_workspace.initCurrentState;
     end else if workspaceBoard^.getIndexInPalette>=0 then begin
       currentState.state:=editingPaletteEntry;
       currentState.prototypeInWorkspacePalette:=workspacePalette^.paletteEntries[workspaceBoard^.getIndexInPalette].prototype;
+      if currentState.prototypeInWorkspacePalette=nil then begin
+        currentState.state:=editingNewBoard;
+        currentState.newBoard:=workspaceBoard;
+        workspaceBoard^.setIndexInPalette(-1,true);
+      end;
     end else begin
       currentState.state:=editingNewBoard;
       currentState.newBoard:=workspaceBoard;
@@ -452,7 +457,6 @@ CONSTRUCTOR T_workspace.create;
     activeChallengeIndex:=-1;
     activeChallenge:=nil;
     setLength(previousState,0);
-    initCurrentState;
   end;
 
 CONSTRUCTOR T_workspace.createAndRestore;

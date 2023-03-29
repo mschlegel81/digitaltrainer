@@ -85,21 +85,18 @@ PROCEDURE TAddToPaletteForm.PaletteComboboxDrawItem(control: TWinControl; index:
     paletteComboBox.Canvas.TextRect(ARect, 5, ARect.top, paletteComboBox.items[index]);  //paint item text
   end;
 
-PROCEDURE TAddToPaletteForm.propCancelShapeMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TAddToPaletteForm.propCancelShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     ModalResult:=mrCancel;
   end;
 
-PROCEDURE TAddToPaletteForm.propOkShape1MouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TAddToPaletteForm.propOkShape1MouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     ModalResult:=mrOk;
     currentPalette^.updateEntry(currentBoard,paletteComboBox.ItemIndex,paletteComboBox.text);
   end;
 
-PROCEDURE TAddToPaletteForm.propOkShapeMouseDown(Sender: TObject;
-  button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TAddToPaletteForm.propOkShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     ModalResult:=mrOk;
     currentPalette^.addBoard(currentBoard,paletteComboBox.ItemIndex,paletteComboBox.text);
