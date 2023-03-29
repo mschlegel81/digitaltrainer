@@ -221,6 +221,8 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
 
 PROCEDURE TDigitaltrainerMainForm.FormDestroy(Sender: TObject);
   begin
+    workspace.activeBoard  ^.detachUI;
+    workspace.activePalette^.detachUI;
     uiAdapter.destroy;
   end;
 

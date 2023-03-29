@@ -283,7 +283,10 @@ PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft,
 PROCEDURE T_visualBoard.detachUI;
   VAR e:P_visualGate;
   begin
-    if ui<>nil then ui^.activeBoard:=nil;
+    if ui<>nil then begin
+      ui^.activeBoard:=nil;
+      ui^.hideIoEdit;
+    end;
     for e in inputs  do begin e^.uiAdapter:=nil; end;
     for e in outputs do begin e^.uiAdapter:=nil; end;
     for e in gates   do begin e^.uiAdapter:=nil; end;

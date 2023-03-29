@@ -454,9 +454,9 @@ PROCEDURE T_watcherSprite.setZoom(CONST zoom: longint);
     if Bitmap=nil
     then Bitmap:=TBGRABitmap.create(width,height,colorScheme.BOARD_COLOR)
     else Bitmap.setSize(width,height);
-    Bitmap.CanvasBGRA.Brush.color:=colorScheme.BOARD_COLOR;
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.GATE_COLOR;
     Bitmap.CanvasBGRA.Pen.style:=psSolid;
-    Bitmap.CanvasBGRA.Pen.color:=colorScheme.WIRE_COLOR;
+    Bitmap.CanvasBGRA.Pen.color:=colorScheme.GATE_BORDER_COLOR;
 
     Bitmap.CanvasBGRA.Polygon(poly);
 
