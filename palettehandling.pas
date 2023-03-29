@@ -548,6 +548,7 @@ FUNCTION T_challengePalette.allowConfiguration:boolean;
 
 PROCEDURE T_workspacePalette.removeSubPalette(CONST index: longint);
   VAR i:longint;
+      s:string;
   begin
     for i:=0 to length(paletteEntries)-1 do
       if paletteEntries[i].subPaletteIndex>index
@@ -557,6 +558,13 @@ PROCEDURE T_workspacePalette.removeSubPalette(CONST index: longint);
     for i:=index to length(paletteNames)-2 do
       paletteNames[i]:=paletteNames[i+1];
     setLength(paletteNames,length(paletteNames)-1);
+
+    if ui=nil then exit;
+    i:=ui^.paletteComboBox.ItemIndex;
+    if i>=index then dec(i);
+    ui^.paletteComboBox.items.clear;
+    for s in paletteNames do ui^.paletteComboBox.items.add(s);
+    ui^.paletteComboBox.ItemIndex:=i;
   end;
 
 PROCEDURE T_workspacePalette.reindex;
