@@ -109,10 +109,11 @@ FUNCTION addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistoriz
 FUNCTION getBackupsIndex:T_workspaceHistoryEntryIndex;
 FUNCTION tryRestoreBackup(CONST workspace:P_workspace; CONST entry:T_workspaceHistoryEntryMetaData):boolean;
 FUNCTION dropBackup(CONST toDrop:T_workspaceHistoryEntryMetaData):T_workspaceHistoryEntryIndex;
+PROCEDURE cleanUpBackups(CONST checkForBrokenBackups:boolean);
 VAR workspace:T_workspace;
     errorOnLoadWorkspace:boolean=false;
 IMPLEMENTATION
-USES sysutils,FileUtil,Classes,zstream,Dialogs;
+USES sysutils,FileUtil,Classes,zstream,Dialogs,visuals;
 FUNCTION backupsFileName:string;
   begin
     result:=ChangeFileExt(paramStr(0),'.backups');
@@ -284,6 +285,131 @@ FUNCTION dropBackup(CONST toDrop: T_workspaceHistoryEntryMetaData): T_workspaceH
         fileStream.Seek(0,soBeginning);
         fileStream.write(result,sizeOf(T_workspaceHistoryEntryIndex));
       end;
+    end;
+    fileStream.destroy;
+  end;
+
+PROCEDURE cleanUpBackups(CONST checkForBrokenBackups:boolean);
+  VAR index:T_workspaceHistoryEntryIndex;
+      i,j, acutallyRead:longint;
+      fileStream: TFileStream;
+  FUNCTION areBackupsIdentical(CONST x,y:T_workspaceHistoryEntryMetaData):boolean;
+    VAR dataX,dataY:PByte;
+        k:longint;
+    begin
+      result:=(x.dataSize=y.dataSize) and (x.numberOfPaletteEntries=y.numberOfPaletteEntries) and (x.numberOfTasks=y.numberOfTasks);
+
+      if result then begin
+        //load data regions and do actual comparison
+        getMem(dataX,x.dataSize); fileStream.Seek(x.dataStartAt,soBeginning); fileStream.read(dataX^,x.dataSize);
+        getMem(dataY,y.dataSize); fileStream.Seek(y.dataStartAt,soBeginning); fileStream.read(dataY^,y.dataSize);
+
+        for k:=0 to x.dataSize-1 do result:=result and (dataX[k]=dataY[k]);
+
+        freeMem(dataX,x.dataSize);
+        freeMem(dataY,y.dataSize);
+      end;
+    end;
+
+  FUNCTION canRestoreBackup(CONST entry:T_workspaceHistoryEntryMetaData):boolean;
+    VAR ws:T_workspace;
+      memoryStream: TMemoryStream;
+      decompressionstream: TDecompressionStream;
+      streamWrapper: T_bufferedInputStreamWrapper;
+    begin
+      result:=false;
+      try
+        memoryStream:=TMemoryStream.create;
+        fileStream.Seek(entry.dataStartAt,soBeginning);
+        memoryStream.setSize(entry.dataSize);
+        fileStream.read(memoryStream.memory^,entry.dataSize);
+        memoryStream.Seek(0,soBeginning);
+        decompressionstream:=TDecompressionStream.create(memoryStream);
+        streamWrapper.create(decompressionstream);
+        ws.create;
+        result:=ws.loadFromStream(streamWrapper);
+      finally
+        streamWrapper.destroy;
+        memoryStream.destroy;
+        ws.destroy;
+      end;
+    end;
+
+  PROCEDURE rewriteHistory;
+    VAR rawData:array[0..254] of PByte;
+        i:longint;
+    begin
+      for i:=0 to index.size-1 do begin
+        getMem(rawData[i],index.entries[i].dataSize);
+        fileStream.Seek(index.entries[i].dataStartAt,soBeginning);
+        fileStream.read(rawData[i]^,index.entries[i].dataSize);
+      end;
+
+      //move positions in index
+      index.entries[0].dataStartAt:=sizeOf(T_workspaceHistoryEntryIndex);
+      for i:=1 to index.size-1 do index.entries[i].dataStartAt:=index.entries[i-1].dataStartAt+index.entries[i-1].dataSize;
+
+      fileStream.destroy;
+      fileStream:=TFileStream.create(backupsFileName,fmCreate or fmShareDenyWrite);
+      fileStream.Seek(0,soBeginning);
+
+      fileStream.Seek(0,soBeginning);
+      fileStream.write(index,sizeOf(T_workspaceHistoryEntryIndex));
+      for i:=0 to index.size-1 do begin
+        fileStream.Seek (index.entries[i].dataStartAt,soBeginning);
+        fileStream.write(rawData[i]^,index.entries[i].dataSize);
+        freeMem (rawData[i],index.entries[i].dataSize);
+      end;
+    end;
+
+  begin
+    if not fileExists(backupsFileName) then exit;
+    fileStream:=TFileStream.create(backupsFileName,fmOpenReadWrite or fmShareDenyWrite);
+
+    fileStream.Seek(0,soBeginning);
+    acutallyRead:=fileStream.read(index,sizeOf(T_workspaceHistoryEntryIndex));
+    if acutallyRead<sizeOf(T_workspaceHistoryEntryIndex) then index.size:=0;
+
+    i:=0;
+    while i<index.size-1 do begin
+      if areBackupsIdentical(index.entries[i],index.entries[i+1]) then begin
+        {$ifdef debugMode}
+        writeln('Backups ',i,' and ',i+1,' are identical');
+        {$endif}
+
+        //backups are in chronological order; dropping the lower index means dropping the older one...
+        for j:=i to index.size-2 do index.entries[j]:=index.entries[j+1];
+        dec(index.size);
+        //By dropping we moved closer to the end, so don't inc(i)
+      end else inc(i);
+    end;
+
+    if checkForBrokenBackups then begin
+      //Remaining backups may be broken...
+      i:=0;
+      while i<index.size do begin
+        if not(canRestoreBackup(index.entries[i])) then begin
+          {$ifdef debugMode}
+          writeln('Backup ',i,' cannot be restored.');
+          {$endif}
+          for j:=i to index.size-2 do index.entries[j]:=index.entries[j+1];
+          dec(index.size);
+        end else inc(i);
+      end;
+    end;
+
+    j:=0;
+    for i:=0 to index.size-1 do j+=index.entries[i].dataSize;
+
+    {$ifdef debugMode}
+    writeln('Data size: ',j,'; file size: ',fileStream.size,'; overhead: ',(fileStream.size/j-1)*100:0:3,'%');
+    {$endif}
+    if fileStream.size>2*j
+    then rewriteHistory
+    else begin
+      //Update index:
+      fileStream.Seek(0,soBeginning);
+      fileStream.write(index,sizeOf(T_workspaceHistoryEntryIndex));
     end;
     fileStream.destroy;
   end;
@@ -695,5 +821,6 @@ INITIALIZATION
 FINALIZATION
   workspace.saveToFile(workspaceFilename);
   workspace.destroy;
+  if cleanupHistoryOnShutdown>0 then cleanUpBackups(cleanupHistoryOnShutdown>1);
 end.
 

@@ -41,6 +41,7 @@ TYPE  T_shapeAndLabel=record colorIndex:byte; Shape:TShape; labl:TLabel; end;
       end;
 
 VAR colorScheme:T_colorScheme;
+    cleanupHistoryOnShutdown:longint=0;
 FUNCTION getColorSchemeIndex:longint;
 PROCEDURE setColorScheme(CONST index:longint);
 PROCEDURE setEnableButton(Shape:TShape; CONST labl:TLabel; CONST enable:boolean);
@@ -51,7 +52,7 @@ VAR colorSchemeIndex:longint;
 
 FUNCTION settingsFileName:string;
   begin
-    result:=ChangeFileExt(paramStr(0),'.visuals');
+    result:=ChangeFileExt(paramStr(0),'.settings');
   end;
 
 PROCEDURE saveSettins;
@@ -60,6 +61,7 @@ PROCEDURE saveSettins;
     assign(handle,settingsFileName);
     rewrite(handle);
     writeln(handle,colorSchemeIndex);
+    writeln(handle,cleanupHistoryOnShutdown);
     close(handle);
   end;
 
@@ -70,9 +72,11 @@ PROCEDURE loadSettings;
       assign(handle,settingsFileName);
       reset(handle);
       readln(handle,colorSchemeIndex);
+      readln(handle,cleanupHistoryOnShutdown);
       close(handle);
     except
       colorSchemeIndex:=0;
+      cleanupHistoryOnShutdown:=0;
     end;
     setColorScheme(colorSchemeIndex);
   end;

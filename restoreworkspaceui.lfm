@@ -4,9 +4,10 @@ object RestoreWorkspaceDialog: TRestoreWorkspaceDialog
   Top = 239
   Width = 579
   Caption = 'Früher war alles besser...'
-  ClientHeight = 344
+  ClientHeight = 324
   ClientWidth = 579
   Color = 7354424
+  Menu = MainMenu1
   OnShow = FormShow
   Position = poOwnerFormCenter
   LCLVersion = '2.2.2.0'
@@ -18,7 +19,7 @@ object RestoreWorkspaceDialog: TRestoreWorkspaceDialog
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = RestoreShape
     Left = 5
-    Height = 227
+    Height = 207
     Top = 68
     Width = 569
     Anchors = [akTop, akLeft, akRight, akBottom]
@@ -66,7 +67,7 @@ object RestoreWorkspaceDialog: TRestoreWorkspaceDialog
     AnchorSideBottom.Side = asrBottom
     Left = 5
     Height = 39
-    Top = 300
+    Top = 280
     Width = 569
     Anchors = [akLeft, akRight, akBottom]
     BorderSpacing.Left = 5
@@ -84,7 +85,7 @@ object RestoreWorkspaceDialog: TRestoreWorkspaceDialog
     AnchorSideTop.Side = asrCenter
     Left = 151
     Height = 21
-    Top = 309
+    Top = 289
     Width = 277
     Caption = 'Ausgewählten Zustand wiederherstellen'
     Font.CharSet = ANSI_CHARSET
@@ -116,5 +117,34 @@ object RestoreWorkspaceDialog: TRestoreWorkspaceDialog
     ParentColor = False
     ParentFont = False
     OnMouseDown = RestoreShapeMouseDown
+  end
+  object MainMenu1: TMainMenu
+    Left = 167
+    Top = 163
+    object MenuItem1: TMenuItem
+      Caption = 'Bereinigen'
+      object miCleanupOnShutdown: TMenuItem
+        Caption = 'Bei Programmende aufräumen'
+        object miCleanupOnShutdown1: TMenuItem
+          Caption = 'Einfach (Duplikate entfernen)'
+          OnClick = miCleanupOnShutdown1Click
+        end
+        object miCleanupOnShutdown2: TMenuItem
+          Caption = 'Erweitert (nicht wiederherstellbare Einträge löschen)'
+          OnClick = miCleanupOnShutdown2Click
+        end
+      end
+      object miCleanupNow: TMenuItem
+        Caption = 'Jetzt aufräumen'
+        object miCleanupNow1: TMenuItem
+          Caption = 'Einfach'
+          OnClick = miCleanupNow1Click
+        end
+        object miCleanupNow2: TMenuItem
+          Caption = 'Erweitert (Achtung! Langsam!)'
+          OnClick = miCleanupNow2Click
+        end
+      end
+    end
   end
 end

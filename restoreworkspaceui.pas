@@ -6,7 +6,7 @@ INTERFACE
 
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, Grids, StdCtrls,
-  ExtCtrls, workspaces;
+  ExtCtrls, Menus, workspaces;
 
 TYPE
 
@@ -14,19 +14,29 @@ TYPE
 
   TRestoreWorkspaceDialog = class(TForm)
     backupsGrid: TStringGrid;
+    MainMenu1: TMainMenu;
+    MenuItem1: TMenuItem;
+    miCleanupOnShutdown: TMenuItem;
+    miCleanupNow: TMenuItem;
+    miCleanupOnShutdown1: TMenuItem;
+    miCleanupOnShutdown2: TMenuItem;
+    miCleanupNow1: TMenuItem;
+    miCleanupNow2: TMenuItem;
     RestoreLabel: TLabel;
     ErrorOcurredLabel: TLabel;
     RestoreShape: TShape;
-    PROCEDURE backupsGridSelectCell(Sender: TObject; aCol, aRow: integer;
-      VAR CanSelect: boolean);
+    PROCEDURE backupsGridSelectCell(Sender: TObject; aCol, aRow: integer; VAR CanSelect: boolean);
     PROCEDURE FormShow(Sender: TObject);
+    procedure miCleanupNow1Click(Sender: TObject);
+    procedure miCleanupNow2Click(Sender: TObject);
+    procedure miCleanupOnShutdown1Click(Sender: TObject);
+    procedure miCleanupOnShutdown2Click(Sender: TObject);
     PROCEDURE RestoreShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   private
     index:T_workspaceHistoryEntryIndex;
     entryToRestore:T_workspaceHistoryEntryMetaData;
     PROCEDURE fillTable;
   public
-    //TODO: Add option to manually create a backup
     FUNCTION showFor(CONST afterErrorOnStartup:boolean):boolean;
   end;
 
@@ -74,6 +84,35 @@ PROCEDURE TRestoreWorkspaceDialog.backupsGridSelectCell(Sender: TObject; aCol,aR
 PROCEDURE TRestoreWorkspaceDialog.FormShow(Sender: TObject);
   begin
     applyColorScheme(self);
+    miCleanupOnShutdown1.Checked:=cleanupHistoryOnShutdown=1;
+    miCleanupOnShutdown2.Checked:=cleanupHistoryOnShutdown=2;
+    miCleanupOnShutdown.Checked:=cleanupHistoryOnShutdown>0;
+  end;
+
+procedure TRestoreWorkspaceDialog.miCleanupNow1Click(Sender: TObject);
+  begin
+    cleanUpBackups(false);
+  end;
+
+procedure TRestoreWorkspaceDialog.miCleanupNow2Click(Sender: TObject);
+  begin
+    cleanUpBackups(true);
+  end;
+
+procedure TRestoreWorkspaceDialog.miCleanupOnShutdown1Click(Sender: TObject);
+  begin
+    if cleanupHistoryOnShutdown=1 then cleanupHistoryOnShutdown:=0 else cleanupHistoryOnShutdown:=1;
+    miCleanupOnShutdown1.Checked:=cleanupHistoryOnShutdown=1;
+    miCleanupOnShutdown2.Checked:=cleanupHistoryOnShutdown=2;
+    miCleanupOnShutdown.Checked:=cleanupHistoryOnShutdown>0;
+  end;
+
+procedure TRestoreWorkspaceDialog.miCleanupOnShutdown2Click(Sender: TObject);
+  begin
+    if cleanupHistoryOnShutdown=2 then cleanupHistoryOnShutdown:=0 else cleanupHistoryOnShutdown:=2;
+    miCleanupOnShutdown1.Checked:=cleanupHistoryOnShutdown=1;
+    miCleanupOnShutdown2.Checked:=cleanupHistoryOnShutdown=2;
+    miCleanupOnShutdown.Checked:=cleanupHistoryOnShutdown>0;
   end;
 
 PROCEDURE TRestoreWorkspaceDialog.fillTable;
