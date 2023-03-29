@@ -150,17 +150,17 @@ CONST DEFAULT_SCHEME:T_colorScheme=
        DISABLED_BUTTON_COLOR:$00800000;
        ENABLED_TEXT_COLOR   :$0000FF00;
        DISABLED_TEXT_COLOR  :$00808000;
-       GATE_COLOR           :$00500000;
+       GATE_COLOR           :$00804000;
        GATE_LABEL_COLOR     :$000000ff;
        MARK_COLOR           :$0000FFFF;
-       BOARD_COLOR          :$00500000;
-       SHADOW_COLOR         :$00000000;
+       BOARD_COLOR          :$00000000;
+       SHADOW_COLOR         :$00800000;
        CORRECT_COLOR        :$0000FF00;
        INCORRECT_COLOR      :$000000ff;
        WIRE_COLOR           :$0000FF00;
        BOARD_BOUNDARY_COLOR :$00FF0000;
        TRUE_COLOR           :$0000FF00;
-       FALSE_COLOR          :$00000040;
+       FALSE_COLOR          :$000000ff;
        UNDETERMINED_COLOR   :$00808080;
        MULTIBIT_COLOR       :$00500000;
        SEVEN_SEGMENT_COLOR  :($00300000,$0000FF00);
@@ -173,7 +173,7 @@ CONST DEFAULT_SCHEME:T_colorScheme=
        editorBackgroundColor:$00000000;
        secondaryFormColor: $00600000;
        panelColor:$00700000;
-       GATE_BORDER_COLOR:$00500080;
+       GATE_BORDER_COLOR:$00FF0000;
        MENU_BORDER_COLOR:$00FF0000);
 
        RUST_SCHEME:T_colorScheme=
@@ -194,7 +194,7 @@ CONST DEFAULT_SCHEME:T_colorScheme=
         FALSE_COLOR          :0;
         UNDETERMINED_COLOR   :$00002040;
         MULTIBIT_COLOR       :$00808080;
-        SEVEN_SEGMENT_COLOR  :($00004080,$00000000);
+        SEVEN_SEGMENT_COLOR  :($000050A8,$00000000);
 
         buttonColorTable:($00004080,$00003870,$00003060,$00002850,$00002040,$00001830,$00001020,$00000810,$00000000,$00000000,$00000000);
 
@@ -251,13 +251,15 @@ CONST DEFAULT_SCHEME:T_colorScheme=
 PROCEDURE setEnableButton(Shape: TShape; CONST labl:TLabel; CONST enable: boolean);
   begin
     Shape.enabled:=enable;
-    labl .enabled:=enable;
+    labl .enabled:=true;
     if enable then begin
       Shape.Brush.color:=colorScheme.ENABLED_BUTTON_COLOR;
       labl.Font.color  :=colorScheme.ENABLED_TEXT_COLOR;
+      labl.OnMouseDown :=Shape.OnMouseDown;
     end else begin
       Shape.Brush.color:=colorScheme.DISABLED_BUTTON_COLOR;
       labl.Font.color  :=colorScheme.DISABLED_TEXT_COLOR;
+      labl.OnMouseDown :=nil;
     end;
   end;
 

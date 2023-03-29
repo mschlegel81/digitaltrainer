@@ -201,6 +201,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
     workspace.activeBoard  ^.reset(true);
     miSimpleUI.checked:=workspace.simplisticUi;
     applyColorScheme(self);
+    selectionShape.Pen.color:=colorScheme.MARK_COLOR;
     updateUiElements;
 
     pauseByUser:=false;

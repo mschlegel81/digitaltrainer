@@ -45,6 +45,7 @@ TYPE
 
 FUNCTION RomEditorForm: TRomEditorForm;
 IMPLEMENTATION
+USES visuals;
 VAR
   myRomEditorForm: TRomEditorForm=nil;
 
@@ -178,6 +179,7 @@ FUNCTION TRomEditorForm.showFor(VAR dataIO: T_romContents):boolean;
     StringGrid1.editor.Font.color:=StringGrid1.Font.color;
     clone(dataIO,data);
     fillTable;
+    applyColorScheme(self);
     result:=ShowModal=mrOk;
     if result then clone(data,dataIO);
   end;
