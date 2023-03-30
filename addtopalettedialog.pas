@@ -76,6 +76,7 @@ PROCEDURE TAddToPaletteForm.DescriptionMemoEditingDone(Sender: TObject);
 PROCEDURE TAddToPaletteForm.FormShow(Sender: TObject);
   begin
     applyColorScheme(self);
+    setEnableButton(propOkShape1,propOkLabel1,currentBoard^.getIndexInPalette>=0);
   end;
 
 PROCEDURE TAddToPaletteForm.PaletteComboboxDrawItem(control: TWinControl; index: integer; ARect: TRect; state: TOwnerDrawState);
