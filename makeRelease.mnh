@@ -1,0 +1,69 @@
+LAZ_BUILD:='..\lazarus64\lazbuild.exe';
+LPI:='dt2.lpi';
+BUILD_MODE:='--bm=opt';
+
+memoized getVersionFromLPI->
+  begin
+    local lpiLines:=fileLines('dt2.lpi');
+    [lpiLines.filter((l)->l.matches('MajorVersionNr'))[0] orElse '',
+     lpiLines.filter((l)->l.matches('MinorVersionNr'))[0] orElse '',
+     lpiLines.filter((l)->l.matches('RevisionNr'    ))[0] orElse '']
+    .split('"').softCast.map((l)->l.filter(::isInt)[0] orElse '?').join('.');
+  end;
+
+patchAbout->begin
+  local lines:=fileLines('aboutUi.lfm');
+  local toPatch:=indexOf(lines.matches('Digitaltrainer Version \d+\.\d+\.\d+'));
+  assert(toPatch.size=1);
+  toPatch:=toPatch[0];
+  lines[toPatch]:=regex.replace(lines[toPatch],'Digitaltrainer Version \d+\.\d+\.\d+','Digitaltrainer Version '&getVersionFromLPI);
+  writeFileLines('aboutUi.lfm',lines);
+end;
+
+patchInstallerScript->begin
+  local lines:=fileLines('installer\installer.iss');
+  local toPatch:=indexOf(lines.matches('AppVersion=\d+\.\d+\.\d+'));
+  assert(toPatch.size=1);
+  toPatch:=toPatch[0];
+  lines[toPatch]:=regex.replace(lines[toPatch],'AppVersion=\d+\.\d+\.\d+','AppVersion='&getVersionFromLPI);
+  writeFileLines('installer\installer.iss',lines);
+end;
+
+main->begin
+  log('Current version: ',getVersionFromLPI);
+  local existentTags:=exec('git',['tag'])[0];
+  local matchingTag :=existentTags[existentTags.matches(getVersionFromLPI)][0];
+  matchingTag.isVoid
+  ? begin
+      log('Matching tag   : <none>');
+    end
+  : begin
+      log('Matching tag   : ',matchingTag);
+      log('Done.');
+      halt;
+    end;
+  log('Patching about');
+  patchAbout;
+  log('Patching installer script');
+  patchInstallerScript;
+  log('Building');
+  assert(teeExec(LAZ_BUILD,[LPI,BUILD_MODE])[1]==0,'Build failed');
+
+  changeDirectory('installer');
+  log('Creating installer');
+  assert(teeExec('c:\Program Files (x86)\Inno Setup 6\ISCC.exe',['installer.iss'])[1]==0,'Build failed');
+  changeDirectory('..');
+
+  log('Staging everything...');
+  teeExec('git',['stage','*']);
+
+  log('Committing...');
+  teeExec('git',['commit','-m',"Release V"&getVersionFromLPI]);
+
+  log('Creating Tag...');
+  teeExec('git',['tag','V'&getVersionFromLPI]);
+
+  log("Done.\n",
+      'Please review the generated changes before comitting.');
+end;
+
