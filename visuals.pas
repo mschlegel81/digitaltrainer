@@ -46,13 +46,14 @@ FUNCTION getColorSchemeIndex:longint;
 PROCEDURE setColorScheme(CONST index:longint);
 PROCEDURE setEnableButton(Shape:TShape; CONST labl:TLabel; CONST enable:boolean);
 PROCEDURE applyColorScheme(CONST form:TForm);
+PROCEDURE initializeVisuals;
 IMPLEMENTATION
 USES Controls, Graphics, Grids,ValEdit;
 VAR colorSchemeIndex:longint;
 
 FUNCTION settingsFileName:string;
   begin
-    result:=ChangeFileExt(paramStr(0),'.settings');
+    result:=GetAppConfigDir(false)+'settings';
   end;
 
 PROCEDURE saveSettins;
@@ -307,8 +308,9 @@ PROCEDURE applyColorScheme(CONST form:TForm);
         if TShape(control).Brush.style<>bsClear
         then TShape(control).Brush.color:=colorScheme.ENABLED_BUTTON_COLOR;
         TShape(control).Pen.color:=colorScheme.MENU_BORDER_COLOR;
-      end
-      else if control is TStringGrid then begin
+      end else if (control is TMemo) or (control is TEdit) or (control is TComboBox) then begin
+        control.color:=colorScheme.editorBackgroundColor;
+      end else if control is TStringGrid then begin
         TStringGrid(control).FixedColor:=colorScheme.tableFixedColor;
         control.color:=colorScheme.tableColor;
         TStringGrid(control).BorderColor:=colorScheme.MENU_BORDER_COLOR;
@@ -333,8 +335,11 @@ PROCEDURE applyColorScheme(CONST form:TForm);
     do applyScheme(form.Controls[i]);
   end;
 
-INITIALIZATION
-  loadSettings;
+PROCEDURE initializeVisuals;
+  begin
+    loadSettings;
+  end;
+
 FINALIZATION
   saveSettins;
 

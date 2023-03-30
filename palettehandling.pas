@@ -87,7 +87,7 @@ TYPE
     PROCEDURE reassignEntry(CONST gate:P_abstractGate; CONST newPalette:string);
 
     FUNCTION  addBoard   (CONST board:P_visualBoard; subPaletteIndex:longint; CONST subPaletteName:string):P_visualBoard;
-    PROCEDURE updateEntry(CONST board:P_visualBoard; subPaletteIndex:longint; CONST subPaletteName:string);
+    FUNCTION  updateEntry(CONST board:P_visualBoard; subPaletteIndex:longint; CONST subPaletteName:string):P_visualBoard;
     PROCEDURE updateEntry(CONST board:P_visualBoard);
     PROCEDURE deleteEntry(CONST prototype:P_captionedAndIndexed);
     FUNCTION  allowDeletion(CONST gate:P_abstractGate; OUT reasonForFalse:string):boolean; virtual;
@@ -844,7 +844,7 @@ PROCEDURE T_workspacePalette.updateEntry(CONST board:P_visualBoard);
     updateEntry(board,paletteEntries[i].subPaletteIndex,paletteNames[paletteEntries[i].subPaletteIndex]);
   end;
 
-PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string);
+FUNCTION T_workspacePalette.updateEntry(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string):P_visualBoard;
   VAR i,j:longint;
       clonedBoard: P_visualBoard;
   begin
@@ -860,6 +860,7 @@ PROCEDURE T_workspacePalette.updateEntry(CONST board: P_visualBoard; subPaletteI
     clonedBoard:=board^.cloneAsTrueCopy;
 
     //Update prototype everywhere
+    result:=clonedBoard;
     ui^.prototypeUpdated(paletteEntries[i].prototype,clonedBoard);
     for j:=0 to length(paletteEntries)-1 do
     if (j<>i) and (paletteEntries[j].prototype<>nil)

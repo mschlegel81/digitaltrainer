@@ -93,13 +93,15 @@ PROCEDURE TAddToPaletteForm.propCancelShapeMouseDown(Sender: TObject; button: TM
 PROCEDURE TAddToPaletteForm.propOkShape1MouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     ModalResult:=mrOk;
-    currentPalette^.updateEntry(currentBoard,paletteComboBox.ItemIndex,paletteComboBox.text);
+    currentBoard^.underlyingPrototype:=currentPalette^.updateEntry(currentBoard,paletteComboBox.ItemIndex,paletteComboBox.text);
+    currentBoard^.modified:=false;
   end;
 
 PROCEDURE TAddToPaletteForm.propOkShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     ModalResult:=mrOk;
-    currentPalette^.addBoard(currentBoard,paletteComboBox.ItemIndex,paletteComboBox.text);
+    currentBoard^.underlyingPrototype:=currentPalette^.addBoard(currentBoard,paletteComboBox.ItemIndex,paletteComboBox.text);
+    currentBoard^.modified:=false;
   end;
 
 PROCEDURE TAddToPaletteForm.setSubpalette(CONST idx: longint);

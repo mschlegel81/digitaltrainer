@@ -21,7 +21,6 @@ T_visualBoard=object(T_captionedAndIndexed)
   private
     wiresCs:TRTLCriticalSection;
     associatedPalette:P_abstractPrototypeSource;
-    underlyingPrototype:P_visualBoard;
     myIndex:longint;
 
     captionString:shortstring;
@@ -30,7 +29,6 @@ T_visualBoard=object(T_captionedAndIndexed)
     simStepCounter:longint;
     wiresUpToDate:boolean;
     ui:P_uiAdapter;
-    modified:boolean;
 
     wiringTask:P_wiringTask;
 
@@ -46,6 +44,9 @@ T_visualBoard=object(T_captionedAndIndexed)
     PROCEDURE deleteMarkedGates;
     PROCEDURE unhoverAllWires;
   public
+    underlyingPrototype:P_visualBoard;
+    modified:boolean;
+
     inputs : T_visualGateArray;
     outputs: T_visualGateArray;
     gates  : T_visualGateArray;

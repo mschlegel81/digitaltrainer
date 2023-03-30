@@ -18,9 +18,11 @@ TYPE
     generateTestCasesShape1: TShape;
     Label6: TLabel;
     Label7: TLabel;
+    Splitter1: TSplitter;
     TestCaseCountEdit: TEdit;
     StepCountEdit: TEdit;
     TestCasesStringGrid: TStringGrid;
+    TimingGrid: TStringGrid;
     TestInputsPanel: TPanel;
     Timer1: TTimer;
     PROCEDURE generateTestCasesShape1MouseDown(Sender: TObject;
@@ -106,6 +108,7 @@ PROCEDURE TTestCreationFrame.Timer1Timer(Sender: TObject);
 PROCEDURE TTestCreationFrame.updateTableRow(CONST j: longint);
   VAR i,k:longint;
       gateInterface: T_gateInterface;
+      timing: T_timingDecils;
   begin
     if (j<0) then begin
       fillTable;
@@ -124,6 +127,11 @@ PROCEDURE TTestCreationFrame.updateTableRow(CONST j: longint);
       TestCasesStringGrid.Cells[i,j+1]:=getWireString(testGenerator^.tests[j].outputs[k],gateInterface.representation);
       inc(i); inc(k);
     end;
+
+    timing:=testGenerator^.getTimingDecils;
+    for i:=0 to 10 do TimingGrid.Cells[1,i+1]:=intToStr(timing[i]);
+    TimingGrid.AutoSizeColumns();
+
     if (j=length(testGenerator^.tests)-1) then TestCasesStringGrid.AutoSizeColumns;
     Application.ProcessMessages;
   end;
@@ -131,6 +139,7 @@ PROCEDURE TTestCreationFrame.updateTableRow(CONST j: longint);
 PROCEDURE TTestCreationFrame.fillTable;
   VAR i,j,k:longint;
       gateInterface: T_gateInterface;
+      timing: T_timingDecils;
   begin
     TestCasesStringGrid.rowCount:=1+length(testGenerator^.tests);
     k:=length(testGenerator^.Interfaces.inputs)+length(testGenerator^.Interfaces.outputs)+1;
@@ -176,6 +185,10 @@ PROCEDURE TTestCreationFrame.fillTable;
       end;
     end;
     TestCasesStringGrid.AutoSizeColumns;
+
+    timing:=testGenerator^.getTimingDecils;
+    for i:=0 to 10 do TimingGrid.Cells[1,i+1]:=intToStr(timing[i]);
+    TimingGrid.AutoSizeColumns();
 
   end;
 

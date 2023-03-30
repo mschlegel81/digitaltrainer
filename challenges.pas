@@ -12,6 +12,8 @@ TYPE
   P_challenge=^T_challenge;
   P_testCreator=^T_testCreator;
 
+  T_timingDecils=array[0..10] of longint;
+
   F_caseUpdatedCallback=PROCEDURE(CONST index:longint) of object;
   P_TestCreationThread=^T_testCreationThread;
 
@@ -57,6 +59,7 @@ TYPE
       PROCEDURE updateTestCaseResults;
       PROPERTY lastTestCasePrepared:longint read challengeTestCreationThread.lastPreparedIndex;
       PROCEDURE copyTestInputs(CONST origin:P_testCreator);
+      FUNCTION getTimingDecils:T_timingDecils;
   end;
 
   { T_challenge }
@@ -146,7 +149,7 @@ TYPE
 CONST checkMark='✓';
 VAR tutorial:T_tutorial;
 IMPLEMENTATION
-USES sysutils;
+USES sysutils,myGenerics;
 
 { T_tutorial }
 
@@ -883,6 +886,25 @@ PROCEDURE T_testCreator.copyTestInputs(CONST origin:P_testCreator);
     end;
     for i:=0 to length(Interfaces.outputs)-1 do Interfaces.outputs[i].representation:=origin^.Interfaces.outputs[i].representation;
     challengeTestCreationThread.restart;
+  end;
+
+FUNCTION T_testCreator.getTimingDecils:T_timingDecils;
+  VAR samples:T_arrayOfLongint;
+      i:longint;
+      j:longint=0;
+  begin
+    setLength(samples,length(tests));
+    for i:=0 to length(samples)-1 do if i<lastTestCasePrepared then begin
+      samples[i]:=tests[i].actuallyActive;
+      inc(j);
+    end;
+    setLength(samples,j);
+    if j=0 then for i:=0 to 10 do result[i]:=0
+    else begin
+      sort(samples);
+      for i:=0 to 10 do result[i]:=samples[round(i/10*(length(samples)-1))];
+      setLength(samples,0);
+    end;
   end;
 
 FUNCTION T_challenge.equals(CONST c: P_challenge): boolean;

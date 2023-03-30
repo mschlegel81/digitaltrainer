@@ -10,13 +10,15 @@ USES
   athreads,
   {$endif}
   Interfaces, // this includes the LCL widgetset
-  Forms, dtMain;
+  Forms, dtMain,visuals,workspaces;
 
 {$R *.res}
 
 begin
   RequireDerivedFormResource:=true;
   Application.title:='Digitaltrainer';
+  initializeWorkspaces;
+  initializeVisuals;
   Application.Scaled:=true;
   Application.initialize;
   Application.CreateForm(TDigitaltrainerMainForm, DigitaltrainerMainForm);

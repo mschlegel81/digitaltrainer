@@ -111,13 +111,14 @@ FUNCTION getBackupsIndex:T_workspaceHistoryEntryIndex;
 FUNCTION tryRestoreBackup(CONST workspace:P_workspace; CONST entry:T_workspaceHistoryEntryMetaData):boolean;
 FUNCTION dropBackup(CONST toDrop:T_workspaceHistoryEntryMetaData):T_workspaceHistoryEntryIndex;
 PROCEDURE cleanUpBackups(CONST checkForBrokenBackups:boolean);
+PROCEDURE initializeWorkspaces;
 VAR workspace:T_workspace;
     errorOnLoadWorkspace:boolean=false;
 IMPLEMENTATION
 USES sysutils,FileUtil,Classes,zstream,Dialogs,visuals;
 FUNCTION backupsFileName:string;
   begin
-    result:=ChangeFileExt(paramStr(0),'.backups');
+    result:=GetAppConfigDir(false)+'backups';
   end;
 
 PROCEDURE listBackups(CONST historyIndex:T_workspaceHistoryEntryIndex);
@@ -417,7 +418,7 @@ PROCEDURE cleanUpBackups(CONST checkForBrokenBackups:boolean);
 
 FUNCTION workspaceFilename:string;
   begin
-    result:=ChangeFileExt(paramStr(0),'.workspace');
+    result:=GetAppConfigDir(false)+'workspace';
   end;
 
 { T_workspace }
@@ -826,13 +827,16 @@ FUNCTION T_workspace.canGoBack: boolean;
     result:=length(previousState)>0;
   end;
 
-INITIALIZATION
-  try
-    workspace.createAndRestore;
-  except
-    DeleteFile(workspaceFilename);
-    halt;
+PROCEDURE initializeWorkspaces;
+  begin
+    try
+      workspace.createAndRestore;
+    except
+      DeleteFile(workspaceFilename);
+      halt;
+    end;
   end;
+
 FINALIZATION
   workspace.saveToFile(workspaceFilename);
   workspace.destroy;
