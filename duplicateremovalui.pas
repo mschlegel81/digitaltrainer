@@ -261,9 +261,10 @@ PROCEDURE TDuplicateRemovalDialog.fillTable;
     while TestCasesStringGrid.Columns.count>k do TestCasesStringGrid.Columns.delete(TestCasesStringGrid.Columns.count-1);
     while TestCasesStringGrid.Columns.count<k do TestCasesStringGrid.Columns.add;
 
-    TestCasesStringGrid.editor.Font.color:=clWhite;
-    TestCasesStringGrid.editor.color:=clBlack;
-
+    if Assigned(TestCasesStringGrid.editor) then begin
+      TestCasesStringGrid.editor.Font.color:=colorScheme.ENABLED_TEXT_COLOR;
+      TestCasesStringGrid.editor.color     :=colorScheme.editorBackgroundColor;
+    end;
     //Header
     i:=0;
     for gateInterface in testerA^.Interfaces.inputs do begin

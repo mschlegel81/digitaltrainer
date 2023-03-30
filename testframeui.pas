@@ -92,9 +92,10 @@ PROCEDURE TTestCreationFrame.TestCasesStringGridValidateEntry(Sender: TObject; a
 
 PROCEDURE TTestCreationFrame.Timer1Timer(Sender: TObject);
   VAR i, newUpdatedRow: longint;
+      timing: T_timingDecils;
   begin
     if testGenerator=nil then exit;
-    if TestCasesStringGrid.editor.showing then exit;
+    if Assigned(TestCasesStringGrid.editor) and TestCasesStringGrid.editor.showing then exit;
 
     newUpdatedRow:=testGenerator^.lastTestCasePrepared;
     if (newUpdatedRow<>lastUpdatedRow) then begin
@@ -102,15 +103,18 @@ PROCEDURE TTestCreationFrame.Timer1Timer(Sender: TObject);
       then fillTable
       else for i:=lastUpdatedRow+1 to newUpdatedRow do updateTableRow(i);
       lastUpdatedRow:=newUpdatedRow;
+
+      timing:=testGenerator^.getTimingDecils;
+      for i:=0 to 10 do TimingGrid.Cells[1,i+1]:=intToStr(timing[i]);
+      TimingGrid.AutoSizeColumns();
     end;
   end;
 
 PROCEDURE TTestCreationFrame.updateTableRow(CONST j: longint);
   VAR i,k:longint;
       gateInterface: T_gateInterface;
-      timing: T_timingDecils;
   begin
-    if (j<0) then begin
+    if (j<0) or (j+1>=TestCasesStringGrid.rowCount) or (j>=length(testGenerator^.tests)) then begin
       fillTable;
       exit;
     end;
@@ -128,12 +132,7 @@ PROCEDURE TTestCreationFrame.updateTableRow(CONST j: longint);
       inc(i); inc(k);
     end;
 
-    timing:=testGenerator^.getTimingDecils;
-    for i:=0 to 10 do TimingGrid.Cells[1,i+1]:=intToStr(timing[i]);
-    TimingGrid.AutoSizeColumns();
-
     if (j=length(testGenerator^.tests)-1) then TestCasesStringGrid.AutoSizeColumns;
-    Application.ProcessMessages;
   end;
 
 PROCEDURE TTestCreationFrame.fillTable;
