@@ -304,7 +304,7 @@ PROCEDURE T_visualBoard.attachUI(CONST uiAdapter: P_uiAdapter);
     for e in outputs do begin e^.uiAdapter:=uiAdapter; end;
     for e in gates   do begin e^.uiAdapter:=uiAdapter; end;
     checkBoardExtend(false,false);
-    rewire(true);
+    rewire(false); //only missing wires...
     ui^.resetState;
     ui^.uiElement.boardImage.OnMouseMove:=@boardMouseMove;
     ui^.uiElement.boardImage.OnMouseDown:=@boardMouseDown;
@@ -824,7 +824,7 @@ FUNCTION T_visualBoard.interfaceHash: word;
 
 FUNCTION T_visualBoard.cloneAsTrueCopy(CONST fixProperties: boolean): P_visualBoard;
   VAR cloned:P_visualBoard;
-      i,j:longint;
+      i,j,k:longint;
   FUNCTION gateInClone(CONST gate:P_visualGate):P_visualGate;
     VAR i:longint;
     begin
@@ -857,6 +857,8 @@ FUNCTION T_visualBoard.cloneAsTrueCopy(CONST fixProperties: boolean): P_visualBo
       for j:=0 to length(wires[i].sink)-1 do begin
         cloned^.wires[i].sink[j].gate:=gateInClone(wires[i].sink[j].gate);
         cloned^.wires[i].sink[j].gateInputIndex:=  wires[i].sink[j].gateInputIndex;
+        setLength(cloned^.wires[i].sink[j].path,length(wires[i].sink[j].path));
+        for k:=0 to length(wires[i].sink[j].path)-1 do cloned^.wires[i].sink[j].path[k]:=wires[i].sink[j].path[k];
       end;
     end;
     result:=cloned;
