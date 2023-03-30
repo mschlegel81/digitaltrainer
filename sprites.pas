@@ -200,6 +200,9 @@ PROCEDURE clearSpriteCaches;
     ioTextSpriteMap .clear;
     sevSegSpriteMap .clear;
     watcherSpriteMap.clear;
+
+    gradientSprite.preparedForZoom:=-1;
+    binSprite     .preparedForZoom:=-1;
   end;
 
 PROCEDURE spriteAllocated;
