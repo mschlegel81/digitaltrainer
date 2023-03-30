@@ -80,13 +80,13 @@ FUNCTION TTaskFinishedForm.showAfterTest(CONST success, furtherTasksAvailable: b
   begin
     applyColorScheme(self);
     if success then begin
-      Label1.caption:='✓';
-      Label2.caption:='✓';
+      Label1.caption:='✔';
+      Label2.caption:='✔';
       Label1.Font.color:=colorScheme.CORRECT_COLOR;
       Label2.Font.color:=colorScheme.SHADOW_COLOR;
     end else begin
-      Label1.caption:='x';
-      Label2.caption:='x';
+      Label1.caption:='✘';
+      Label2.caption:='✘';
       Label1.Font.color:=colorScheme.INCORRECT_COLOR;
       Label2.Font.color:=colorScheme.SHADOW_COLOR;
     end;

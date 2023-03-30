@@ -17,6 +17,7 @@ TYPE
     boardHorizontalScrollBar: TScrollBar;
     boardImage: TImage;
     MenuItem1: TMenuItem;
+    miAbout: TMenuItem;
     miColorSchemeDark: TMenuItem;
     miColorSchemeMediumGray: TMenuItem;
     miColorSchemeRust: TMenuItem;
@@ -40,6 +41,7 @@ TYPE
     Separator1: TMenuItem;
     Separator2: TMenuItem;
     Separator3: TMenuItem;
+    Separator4: TMenuItem;
     WireTimer: TIdleTimer;
     ioEdit: TEdit;
     infoLabel: TLabel;
@@ -92,6 +94,7 @@ TYPE
     PROCEDURE FormKeyDown(Sender: TObject; VAR key: word; Shift: TShiftState);
     PROCEDURE FormResize(Sender: TObject);
     PROCEDURE FormShow(Sender: TObject);
+    PROCEDURE miAboutClick(Sender: TObject);
     PROCEDURE miAddToPaletteClick(Sender: TObject);
     PROCEDURE miBackupsClick(Sender: TObject);
     PROCEDURE miColorSchemeDefaultClick(Sender: TObject);
@@ -152,7 +155,7 @@ VAR
   DigitaltrainerMainForm: TDigitaltrainerMainForm;
 
 IMPLEMENTATION
-USES compoundGates, boardTestUnit, boardChangedUi,welcomeDialog,RestoreWorkspaceUi,sprites;
+USES compoundGates, boardTestUnit, boardChangedUi,welcomeDialog,RestoreWorkspaceUi,sprites,aboutUi;
 CONST playPauseGlyph:array[false..true] of string=('⏵','⏸');
 
 {$R *.lfm}
@@ -269,6 +272,11 @@ PROCEDURE TDigitaltrainerMainForm.FormShow(Sender: TObject);
     end;
   end;
 
+PROCEDURE TDigitaltrainerMainForm.miAboutClick(Sender: TObject);
+  begin
+    AboutDialog.ShowModal;
+  end;
+
 PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
   VAR timerEnabledBefore:boolean;
   begin
@@ -276,10 +284,10 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
     SimulationTimer.enabled:=false;
     if (workspace.state in [editingNewBoard,editingPaletteEntry]) and AddToPaletteForm.showFor(P_workspacePalette(workspace.activePalette),workspace.activeBoard) then begin
       repositionPropertyEditor(0,0,true);
-      workspace.activePalette^.attachUI(@uiAdapter);
-      workspace.activePalette^.checkSizes;
-      workspace.activeBoard^.clear;
-      uiAdapter.clearUndoList;
+      //workspace.activePalette^.attachUI(@uiAdapter);
+      //workspace.activePalette^.checkSizes;
+      //workspace.activeBoard^.clear;
+      //uiAdapter.clearUndoList;
       uiAdapter.paintAll;
       infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
     end;
@@ -372,11 +380,12 @@ PROCEDURE TDigitaltrainerMainForm.miFullScreenClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.miGoBackClick(Sender: TObject);
   VAR
     challenge: P_challenge;
-    originalChallengeIndex: longint;
+    originalChallengeIndex, paletteAssociation: longint;
   begin
     if workspace.canGoBack and ((workspace.state in [editingChallengeSolution,editingChallengeTemplate]) or continueWithOtherBoard) then begin
-      workspace.goBack(@uiAdapter,challenge,originalChallengeIndex);
-      if challenge<>nil then CreateTaskForm.reShowFor(challenge,originalChallengeIndex,workspace.getChallenges);
+      workspace.goBack(@uiAdapter,challenge,originalChallengeIndex,paletteAssociation);
+      if paletteAssociation>=0 then AddToPaletteForm.setSubpalette(paletteAssociation);
+      if challenge       <>nil then CreateTaskForm.reShowFor(challenge,originalChallengeIndex,workspace.getChallenges);
     end;
     updateUiElements;
   end;
@@ -887,7 +896,7 @@ FUNCTION TDigitaltrainerMainForm.continueWithOtherBoard: boolean;
   VAR mr: TModalResult;
       simulationEnabledBefore:boolean;
       challenge: P_challenge;
-      originalChallengeIndex: longint;
+      originalChallengeIndex, paletteAssociation: longint;
   begin
 
     if not(workspace.isEditingNewChallenge) and not(workspace.activeBoard^.isModified) then exit(true);
@@ -902,7 +911,8 @@ FUNCTION TDigitaltrainerMainForm.continueWithOtherBoard: boolean;
       if workspace.state=editingPaletteEntry
       then P_workspacePalette(workspace.activePalette)^.updateEntry(workspace.activeBoard)
       else begin
-        workspace.goBack(@uiAdapter,challenge,originalChallengeIndex);
+        workspace.goBack(@uiAdapter,challenge,originalChallengeIndex,paletteAssociation);
+        if paletteAssociation>=0 then AddToPaletteForm.setSubpalette(paletteAssociation);
         if challenge<>nil then CreateTaskForm.reShowFor(challenge,originalChallengeIndex,workspace.getChallenges);
       end;
     end;

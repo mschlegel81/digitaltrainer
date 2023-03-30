@@ -13,6 +13,7 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   OnShow = FormShow
+  UseDockManager = True
   LCLVersion = '2.2.2.0'
   WindowState = wsMaximized
   object Panel1: TPanel
@@ -707,6 +708,13 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
           RadioItem = True
           OnClick = miColorSchemeDefaultClick
         end
+      end
+      object Separator4: TMenuItem
+        Caption = '-'
+      end
+      object miAbout: TMenuItem
+        Caption = 'Über...'
+        OnClick = miAboutClick
       end
     end
   end

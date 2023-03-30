@@ -18,7 +18,7 @@ TYPE
     newBoard:P_visualBoard;
     challenge:P_challenge;
     originalChallengeIndex:longint;
-    paletteIndex:longint;
+    paletteIndex,paletteAssociation:longint;
   end;
 
   { T_workspace }
@@ -76,7 +76,7 @@ TYPE
 
     FUNCTION firstStart:boolean;
     FUNCTION canGoBack:boolean;
-    PROCEDURE goBack(CONST uiAdapter: P_uiAdapter; OUT challenge:P_challenge; OUT originalChallengeIndex:longint);
+    PROCEDURE goBack(CONST uiAdapter: P_uiAdapter; OUT challenge:P_challenge; OUT originalChallengeIndex:longint; OUT paletteAssociation:longint);
   end;
 
   T_workspaceHistorizationTriggerEnum=(wht_onStartup,wht_beforeDeletingEntry,wht_beforeDuplicateRemoval,wht_beforeTaskImport,wht_beforePaletteImport,wht_beforeDeletingTask,wht_beforeRestore);
@@ -516,8 +516,7 @@ PROCEDURE T_workspace.stateTransition(CONST newState: T_workspaceStateEnum);
      currentState.paletteIndex               :=0;
   end;
 
-PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT
-  challenge: P_challenge; OUT originalChallengeIndex: longint);
+PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT challenge: P_challenge; OUT originalChallengeIndex: longint; OUT paletteAssociation:longint);
   begin
     challenge             :=currentState.challenge;
     originalChallengeIndex:=currentState.originalChallengeIndex;
@@ -537,6 +536,7 @@ PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT
       end;
     end;
 
+    paletteAssociation:=-1;
     currentState:=previousState[length(previousState)-1];
     setLength    (previousState,length(previousState)-1);
     case currentState.state of
@@ -562,6 +562,7 @@ PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT
         workspacePalette^.attachUI(uiAdapter);
         workspacePalette^.setFilter(workspaceBoard^.getIndexInPalette);
         workspacePalette^.selectSubPalette(currentState.paletteIndex);
+        paletteAssociation:=currentState.paletteAssociation;
         uiAdapter^.paintAll;
       end;
       solvingChallenge: begin
@@ -747,7 +748,7 @@ PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard; CONST uiA
 
     stateTransition(editingPaletteEntry);
     currentState.prototypeInWorkspacePalette:=prototype;
-
+    currentState.paletteAssociation:=workspacePalette^.lastSubPaletteIndex;
     dispose(workspaceBoard,destroy);
     workspacePalette^.setFilter(prototype^.getIndexInPalette);
     workspaceBoard:=prototype^.cloneWithBackReference;

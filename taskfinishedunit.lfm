@@ -155,7 +155,8 @@ object TaskFinishedForm: TTaskFinishedForm
     BorderSpacing.Top = 10
     Caption = '✓'
     Font.Color = clBlack
-    Font.Height = 526
+    Font.Height = 521
+    Font.Quality = fqCleartypeNatural
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False
@@ -179,6 +180,7 @@ object TaskFinishedForm: TTaskFinishedForm
     Caption = '✓'
     Font.Color = clLime
     Font.Height = 526
+    Font.Quality = fqCleartypeNatural
     Font.Style = [fsBold]
     ParentColor = False
     ParentFont = False

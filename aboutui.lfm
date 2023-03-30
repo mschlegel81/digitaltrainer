@@ -1,0 +1,113 @@
+object AboutDialog: TAboutDialog
+  Left = 1253
+  Height = 136
+  Top = 405
+  Width = 549
+  Caption = 'Über...'
+  ClientHeight = 136
+  ClientWidth = 549
+  Color = 8405056
+  OnShow = FormShow
+  Position = poOwnerFormCenter
+  LCLVersion = '2.2.2.0'
+  object VersionLabel: TLabel
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = Owner
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    Left = 0
+    Height = 42
+    Top = 0
+    Width = 549
+    Alignment = taCenter
+    Anchors = [akTop, akLeft, akRight]
+    Caption = 'Digitaltrainer Version 2.2.0'#13#10'© Martin Schlegel, 2023 '
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+  end
+  object DownloadLinkShape: TShape
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = VersionLabel
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 5
+    Height = 39
+    Top = 47
+    Width = 539
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = DownloadLinkShapeMouseDown
+    Shape = stRoundRect
+  end
+  object DownloadLinkLabel: TLabel
+    AnchorSideLeft.Control = DownloadLinkShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = DownloadLinkShape
+    AnchorSideTop.Side = asrCenter
+    Left = 189
+    Height = 21
+    Top = 56
+    Width = 170
+    Caption = 'Digitaltrainer auf GitHub'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = DownloadLinkShapeMouseDown
+  end
+  object LicenseShape: TShape
+    AnchorSideLeft.Control = Owner
+    AnchorSideTop.Control = DownloadLinkShape
+    AnchorSideTop.Side = asrBottom
+    AnchorSideRight.Control = Owner
+    AnchorSideRight.Side = asrBottom
+    AnchorSideBottom.Control = Owner
+    AnchorSideBottom.Side = asrBottom
+    Left = 5
+    Height = 39
+    Top = 91
+    Width = 539
+    Anchors = [akTop, akLeft, akRight]
+    BorderSpacing.Left = 5
+    BorderSpacing.Top = 5
+    BorderSpacing.Right = 5
+    BorderSpacing.Bottom = 5
+    Brush.Color = 6303792
+    OnMouseDown = LicenseShapeMouseDown
+    Shape = stRoundRect
+  end
+  object LicenseLabel: TLabel
+    AnchorSideLeft.Control = LicenseShape
+    AnchorSideLeft.Side = asrCenter
+    AnchorSideTop.Control = LicenseShape
+    AnchorSideTop.Side = asrCenter
+    Left = 118
+    Height = 21
+    Top = 100
+    Width = 313
+    Caption = 'Lizenz: Creative Commons (CC-BY-SA 3.0 DE)'
+    Font.CharSet = ANSI_CHARSET
+    Font.Color = clWhite
+    Font.Height = -16
+    Font.Pitch = fpVariable
+    Font.Quality = fqDraft
+    ParentColor = False
+    ParentFont = False
+    OnMouseDown = LicenseShapeMouseDown
+  end
+end

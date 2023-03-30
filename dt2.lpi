@@ -7,9 +7,13 @@
       <SessionStorage Value="InProjectDir"/>
       <Title Value="Digitaltrainer"/>
       <Scaled Value="True"/>
+      <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
+      <UseXPManifest Value="True"/>
       <XPManifest>
         <DpiAware Value="True/PM_V2"/>
+        <TextName Value="Schlegel.Digitaltrainer"/>
+        <TextDesc Value="Ein Digitaltrainer für spielerische Zwecke"/>
       </XPManifest>
       <Icon Value="0"/>
     </General>
@@ -232,6 +236,14 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="duplicateRemovalUi"/>
+      </Unit>
+      <Unit>
+        <Filename Value="aboutui.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="AboutDialog"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="aboutUi"/>
       </Unit>
     </Units>
   </ProjectOptions>
