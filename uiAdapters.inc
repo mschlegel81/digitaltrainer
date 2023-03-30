@@ -13,6 +13,7 @@ T_uiState=(uas_initial,
 F_showPropertyEditorCallback=PROCEDURE (CONST gate:P_visualGate; CONST fromBoard:boolean; CONST mouseX,mouseY:longint) of object;
 F_repositionPropertyEditorCallback=PROCEDURE (CONST mouseX,mouseY:longint; CONST hideEditor:boolean) of object;
 F_procedure=PROCEDURE() of object;
+F_paintPalette=PROCEDURE(CONST showBin:boolean) of object;
 F_setBoardCallback=PROCEDURE (CONST board:P_visualBoard) of object;
 F_gateHitInfo=FUNCTION (CONST gridPos:T_point; OUT gate:P_visualGate):boolean of object;
 F_prototypeUpdated=PROCEDURE (CONST oldPrototype, newPrototype: P_visualBoard) of object;
@@ -38,7 +39,7 @@ T_uiAdapter=object
       repositionPropertyEditorCallback:F_repositionPropertyEditorCallback;
       boardModifiedCallback:F_procedure;
       paletteItemAt:F_gateHitInfo;
-      paintPalette:F_procedure;
+      paintPalette:F_paintPalette;
       workspacePrototypeUpdated:F_prototypeUpdated;
     end;
 
@@ -105,7 +106,7 @@ T_uiAdapter=object
     FUNCTION canvasToGrid(CONST p:T_point):T_point;
     FUNCTION canvasToGrid(CONST x,y:longint):T_point;
 
-    PROCEDURE palletteConnected(CONST paintEvent:F_procedure; CONST gateHitInfo:F_gateHitInfo);
+    PROCEDURE palletteConnected(CONST paintEvent:F_paintPalette; CONST gateHitInfo:F_gateHitInfo);
     PROPERTY paletteComboBox:TComboBox read uiElement.paletteComboBox;
     FUNCTION paletteCanvas:TCanvas;
     PROCEDURE updateBoardScrollbars;
@@ -398,8 +399,7 @@ FUNCTION T_uiAdapter.canvasToGrid(CONST x, y: longint): T_point;
     result:=canvasToGrid(pointOf(x,y));
   end;
 
-PROCEDURE T_uiAdapter.palletteConnected(CONST paintEvent: F_procedure;
-  CONST gateHitInfo: F_gateHitInfo);
+PROCEDURE T_uiAdapter.palletteConnected(CONST paintEvent: F_paintPalette; CONST gateHitInfo: F_gateHitInfo);
   begin
     callback.paintPalette:=paintEvent;
     callback.paletteItemAt:=gateHitInfo;

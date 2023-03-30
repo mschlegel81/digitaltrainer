@@ -30,7 +30,7 @@ TYPE
     FUNCTION isGateHit(CONST gridPos:T_point; OUT gate:P_visualGate):boolean;
     PROCEDURE comboBoxSelect(Sender:TObject);
     FUNCTION allowDeletion(CONST gate:P_abstractGate; OUT reasonForFalse:string):boolean; virtual;
-    PROCEDURE paint;
+    PROCEDURE paint(CONST showBinSymbol:boolean);
     PROCEDURE dropPaletteItem(CONST gatePtr:pointer); virtual;
     FUNCTION findEntry(CONST gate:P_abstractGate):longint; virtual; abstract;
 
@@ -1037,7 +1037,7 @@ PROCEDURE T_workspacePalette.dropPaletteItem(CONST gatePtr: pointer);
     for k:=0 to length(items)-1 do paletteEntries[items[k].index].visualSorting:=items[k].visualSorting;
     ensureVisualPaletteItems;
     checkSizes;
-    paint;
+    paint(false);
   end;
 
 FUNCTION T_workspacePalette.isWorkspacePalette: boolean;
@@ -1520,7 +1520,7 @@ FUNCTION T_palette.allowDeletion(CONST gate: P_abstractGate; OUT reasonForFalse:
     result:=false;
   end;
 
-PROCEDURE T_palette.paint;
+PROCEDURE T_palette.paint(CONST showBinSymbol:boolean);
   VAR g:P_visualGate;
       yOffset:longint;
       Canvas: TCanvas;
@@ -1533,11 +1533,15 @@ PROCEDURE T_palette.paint;
     Canvas.Rectangle(-1,-1,ui^.paletteWidth,2000);
     gradientSprite.renderRect(Canvas,ui^.getZoom,ui^.paletteWidth-ui^.getZoom,0,Canvas.height-1);
 
-    yOffset:=ui^.paletteYOffset;
-    for g in visualPaletteItems do begin
-      g^.canvasPos:=pointOf(g^.gridPos[0]*ui^.getZoom,
-                            g^.gridPos[1]*ui^.getZoom+yOffset);
-      g^.paintAll(Canvas,ui^.getZoom);
+    if showBinSymbol
+    then binSprite.renderAt(Canvas,ui^.getZoom,pointOf(ui^.paletteWidth shr 1,Canvas.height shr 1))
+    else begin
+      yOffset:=ui^.paletteYOffset;
+      for g in visualPaletteItems do begin
+        g^.canvasPos:=pointOf(g^.gridPos[0]*ui^.getZoom,
+                              g^.gridPos[1]*ui^.getZoom+yOffset);
+        g^.paintAll(Canvas,ui^.getZoom);
+      end;
     end;
   end;
 

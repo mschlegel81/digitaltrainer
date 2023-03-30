@@ -109,6 +109,15 @@ TYPE
     PROCEDURE setZoom(CONST zoom:longint); virtual;
   end;
 
+  P_binSprite=^T_binSprite;
+
+  { T_binSprite }
+
+  T_binSprite=object(T_sprite)
+    CONSTRUCTOR create();
+    PROCEDURE setZoom(CONST zoom:longint); virtual;
+  end;
+
   T_spriteMap=specialize G_stringKeyMap<P_sprite>;
 
 PROCEDURE textOut(CONST CanvasBGRA:TBGRACanvas; CONST s:string; CONST x0,y0,x1,y1:longint; CONST textColor:longint; CONST autoRotate:boolean=true);
@@ -121,6 +130,7 @@ FUNCTION get7SegmentSprite(CONST wireValue: T_wireValue; CONST marked:boolean):P
 FUNCTION getWatcherSprite(CONST ioLabel_:shortstring; CONST ioIndex:longint; CONST wireValue:T_wireValue; CONST isInput,leftOrRight:boolean):P_sprite;
 PROCEDURE clearSpriteCaches;
 VAR gradientSprite:T_gradientSprite;
+    binSprite:T_binSprite;
 IMPLEMENTATION
 USES sysutils,types,Classes,math,strutils;
 VAR ioSpriteMap,
@@ -320,6 +330,49 @@ FUNCTION getWatcherSprite(CONST ioLabel_: shortstring; CONST ioIndex:longint; CO
     result^.lastUsed:=now;
   end;
 
+{ T_binSprite }
+
+CONSTRUCTOR T_binSprite.create;
+  begin
+    inherited;
+  end;
+
+PROCEDURE T_binSprite.setZoom(CONST zoom: longint);
+  VAR sz:longint;
+      poly: array of TPoint;
+  begin
+    sz:=zoom*6;
+    screenOffset:=pointOf(zoom*3,zoom*3);
+    if Bitmap=nil
+    then Bitmap:=TBGRABitmap.create(sz,sz,colorScheme.BOARD_COLOR)
+    else Bitmap.setSize(sz,sz);
+    preparedForZoom:=zoom;
+
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.BOARD_COLOR;
+    Bitmap.CanvasBGRA.Pen.style:=psClear;
+    Bitmap.CanvasBGRA.Rectangle(0,0,sz+1,sz+1);
+
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.GATE_COLOR;
+    Bitmap.CanvasBGRA.Pen.style:=psSolid;
+    Bitmap.CanvasBGRA.Pen.color:=colorScheme.GATE_BORDER_COLOR;
+
+    setLength(poly,9);
+    poly[0]:=point((sz-1)*0,(sz-1)*0);
+    poly[1]:=point((sz-1)*1,(sz-1)*0);
+    poly[2]:=point((sz-1)*1,round((sz-1)*0.099999999999999978));
+    poly[3]:=point(round((sz-1)*0.95),round((sz-1)*0.099999999999999978));
+    poly[4]:=point(round((sz-1)*0.8),(sz-1)*1);
+    poly[5]:=point(round((sz-1)*0.2),(sz-1)*1);
+    poly[6]:=point(round((sz-1)*0.05),round((sz-1)*0.099999999999999978));
+    poly[7]:=point((sz-1)*0,round((sz-1)*0.099999999999999978));
+    poly[8]:=point((sz-1)*0,(sz-1)*0);
+
+    Bitmap.CanvasBGRA.Polygon(poly);
+    textOut(Bitmap.CanvasBGRA,'♺',round(sz*0.2),round(sz*0.2),round(sz*0.8),round(sz*0.8),colorScheme.SHADOW_COLOR);
+
+    preparedForZoom:=zoom;
+  end;
+
 { T_gradientSprite }
 
 CONSTRUCTOR T_gradientSprite.create();
@@ -353,6 +406,7 @@ PROCEDURE T_gradientSprite.setZoom(CONST zoom: longint);
                           (((g0+step*g1) shr 8) shl  8) or
                           (((r0+step*r1) shr 8) shl 16);
     end;
+    preparedForZoom:=zoom;
   end;
 
 PROCEDURE T_gradientSprite.renderRect(CONST Canvas: TCanvas; CONST zoom: longint; CONST x, y0, y1: longint);
@@ -1013,10 +1067,12 @@ FUNCTION T_sprite.isAtPixel(CONST p: T_point): boolean;
 
 INITIALIZATION
   gradientSprite.create;
+  binSprite.create;
   init;
 
 FINALIZATION
   gradientSprite.destroy;
+  binSprite.destroy;
   finalize;
 
 end.

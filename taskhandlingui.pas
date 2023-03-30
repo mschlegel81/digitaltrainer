@@ -67,7 +67,6 @@ FUNCTION SelectTaskForm: TSelectTaskForm;
 IMPLEMENTATION
 USES visuals,createTaskUnit;
 VAR mySelectTaskForm:TSelectTaskForm=nil;
-//TODO: Harmonize task handling UI/UX wit hpalette handling
 FUNCTION SelectTaskForm: TSelectTaskForm;
   begin
     if mySelectTaskForm=nil then mySelectTaskForm:=TSelectTaskForm.create(nil);

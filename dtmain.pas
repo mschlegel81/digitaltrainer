@@ -42,6 +42,7 @@ TYPE
     Separator2: TMenuItem;
     Separator3: TMenuItem;
     Separator4: TMenuItem;
+    StatusBar1: TStatusBar;
     WireTimer: TIdleTimer;
     ioEdit: TEdit;
     infoLabel: TLabel;
@@ -284,8 +285,8 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
     SimulationTimer.enabled:=false;
     if (workspace.state in [editingNewBoard,editingPaletteEntry]) and AddToPaletteForm.showFor(P_workspacePalette(workspace.activePalette),workspace.activeBoard) then begin
       repositionPropertyEditor(0,0,true);
-      //workspace.activePalette^.attachUI(@uiAdapter);
-      //workspace.activePalette^.checkSizes;
+      workspace.activePalette^.attachUI(@uiAdapter);
+      workspace.activePalette^.checkSizes;
       //workspace.activeBoard^.clear;
       //uiAdapter.clearUndoList;
       uiAdapter.paintAll;
@@ -527,7 +528,7 @@ PROCEDURE TDigitaltrainerMainForm.miZoomOutClick(Sender: TObject);
 PROCEDURE TDigitaltrainerMainForm.PaletteScrollBarScroll(Sender: TObject; ScrollCode: TScrollCode; VAR ScrollPos: integer);
   VAR g:P_visualGate;
   begin
-    workspace.activePalette^.paint;
+    workspace.activePalette^.paint(uiAdapter.getState<>uas_draggingFromBoard);
     if uiAdapter.getState=uas_propertyEditFromPalette then begin
       g:=uiAdapter.draggedGate;
       repositionPropertyEditor(
@@ -890,6 +891,7 @@ PROCEDURE TDigitaltrainerMainForm.updateUiElements;
     miTestBoard       .enabled:=not(workspace.state in [editingChallengeSolution,editingChallengeTemplate]);
     miCreateTask      .visible:=showAll;
     miAddToPalette    .visible:=showAll;
+    StatusBar1.visible:=workspace.simplisticUi;
   end;
 
 FUNCTION TDigitaltrainerMainForm.continueWithOtherBoard: boolean;

@@ -1688,7 +1688,7 @@ PROCEDURE T_visualBoard.paintWirePreview(CONST wireStart: T_point;
     for w in watchers do w^.paint(ui,Canvas);
     wiresUpToDate:=false;
 
-    ui^.callback.paintPalette();
+    ui^.callback.paintPalette(false);
     ui^.repaintImage;
   end;
 
@@ -2062,7 +2062,7 @@ PROCEDURE T_visualBoard.paintBoard(CONST exludeDragged: boolean);
     for g in gates   do if not isExcluded(g) then g^.paintAll(Canvas);
     for g in outputs do if not isExcluded(g) then g^.paintAll(Canvas);
     for w in watchers do w^.paint(ui,Canvas);
-    ui^.callback.paintPalette();
+    ui^.callback.paintPalette(ui^.state=uas_draggingFromBoard);
     {$ifdef debugMode} writeln('Full paint done in ',GetTickCount64-start,' ticks'); {$endif}
   end;
 
