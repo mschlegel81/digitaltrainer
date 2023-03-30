@@ -217,6 +217,7 @@ PROCEDURE TPaletteForm.FormCreate(Sender: TObject);
 PROCEDURE TPaletteForm.FormShow(Sender: TObject);
   begin
     applyColorScheme(self);
+    updateButtons;
   end;
 
 PROCEDURE TPaletteForm.ImportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
