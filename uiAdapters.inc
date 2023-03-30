@@ -15,7 +15,7 @@ F_repositionPropertyEditorCallback=PROCEDURE (CONST mouseX,mouseY:longint; CONST
 F_procedure=PROCEDURE() of object;
 F_setBoardCallback=PROCEDURE (CONST board:P_visualBoard) of object;
 F_gateHitInfo=FUNCTION (CONST gridPos:T_point; OUT gate:P_visualGate):boolean of object;
-
+F_prototypeUpdated=PROCEDURE (CONST oldPrototype, newPrototype: P_visualBoard) of object;
 { T_uiAdapter }
 
 T_uiAdapter=object
@@ -39,6 +39,7 @@ T_uiAdapter=object
       boardModifiedCallback:F_procedure;
       paletteItemAt:F_gateHitInfo;
       paintPalette:F_procedure;
+      workspacePrototypeUpdated:F_prototypeUpdated;
     end;
 
     zoom:longint;
@@ -73,7 +74,8 @@ T_uiAdapter=object
                        CONST ioEdit:TEdit;
                        CONST showPropertyEditorCallback:F_showPropertyEditorCallback;
                        CONST repositionPropertyEditorCallback:F_repositionPropertyEditorCallback;
-                       CONST boardModifiedCallback:F_procedure);
+                       CONST boardModifiedCallback:F_procedure;
+                       CONST workspacePrototypeUpdated:F_prototypeUpdated);
     DESTRUCTOR destroy;
 
     PROCEDURE propertyEditorShown(CONST gate:P_visualGate; CONST fromBoard:boolean);
@@ -128,7 +130,8 @@ CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape;
                                CONST ioEdit: TEdit;
                                CONST showPropertyEditorCallback: F_showPropertyEditorCallback;
                                CONST repositionPropertyEditorCallback:F_repositionPropertyEditorCallback;
-                               CONST boardModifiedCallback: F_procedure);
+                               CONST boardModifiedCallback: F_procedure;
+                               CONST workspacePrototypeUpdated:F_prototypeUpdated);
   begin
     uiElement.selectionShape          :=selectionShape;
     uiElement.boardImage              :=boardImage;
@@ -142,6 +145,7 @@ CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape;
     callback.showPropertyEditorCallback:=showPropertyEditorCallback;
     callback.repositionPropertyEditorCallback:=repositionPropertyEditorCallback;
     callback.boardModifiedCallback:=boardModifiedCallback;
+    callback.workspacePrototypeUpdated:=workspacePrototypeUpdated;
     uiElement.boardImage.OnMouseWheel:=@boardImageMouseWheel;
     zoom:=30;
     state:=uas_initial;
@@ -363,6 +367,7 @@ PROCEDURE T_uiAdapter.prototypeUpdated(CONST oldPrototype, newPrototype: P_visua
       for b in undoList do b^.prototypeUpdated(oldPrototype,newPrototype);
       for b in redoList do b^.prototypeUpdated(oldPrototype,newPrototype);
     end;
+    callback.workspacePrototypeUpdated(oldPrototype,newPrototype);
   end;
 
 FUNCTION T_uiAdapter.boardOrigin: T_point;

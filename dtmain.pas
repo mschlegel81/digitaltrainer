@@ -192,7 +192,8 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
                      ioEdit,
                      @showPropertyEditor,
                      @repositionPropertyEditor,
-                     @boardChanged);
+                     @boardChanged,
+                     @workspace.prototypeUpdated);
 
     createTaskUnit  .uiAdapter:=@uiAdapter;
     paletteHandingUi.uiAdapter:=@uiAdapter;

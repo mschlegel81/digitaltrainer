@@ -1897,6 +1897,7 @@ PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype, newPrototype: P_cap
   VAR g:P_visualGate;
       anyGateUpdated:boolean=false;
   begin
+    if pointer(underlyingPrototype)=pointer(oldPrototype) then underlyingPrototype:=P_visualBoard(newPrototype);
     for g in gates do if (g^.behavior^.gateType=gt_compound) then begin
       if P_compoundGate(g^.behavior)^.prototype=P_captionedAndIndexed(oldPrototype) then begin
         dispose(g^.behavior,destroy);

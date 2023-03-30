@@ -27,10 +27,10 @@ TYPE
     RestoreShape: TShape;
     PROCEDURE backupsGridSelectCell(Sender: TObject; aCol, aRow: integer; VAR CanSelect: boolean);
     PROCEDURE FormShow(Sender: TObject);
-    procedure miCleanupNow1Click(Sender: TObject);
-    procedure miCleanupNow2Click(Sender: TObject);
-    procedure miCleanupOnShutdown1Click(Sender: TObject);
-    procedure miCleanupOnShutdown2Click(Sender: TObject);
+    PROCEDURE miCleanupNow1Click(Sender: TObject);
+    PROCEDURE miCleanupNow2Click(Sender: TObject);
+    PROCEDURE miCleanupOnShutdown1Click(Sender: TObject);
+    PROCEDURE miCleanupOnShutdown2Click(Sender: TObject);
     PROCEDURE RestoreShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   private
     index:T_workspaceHistoryEntryIndex;
@@ -84,35 +84,35 @@ PROCEDURE TRestoreWorkspaceDialog.backupsGridSelectCell(Sender: TObject; aCol,aR
 PROCEDURE TRestoreWorkspaceDialog.FormShow(Sender: TObject);
   begin
     applyColorScheme(self);
-    miCleanupOnShutdown1.Checked:=cleanupHistoryOnShutdown=1;
-    miCleanupOnShutdown2.Checked:=cleanupHistoryOnShutdown=2;
-    miCleanupOnShutdown.Checked:=cleanupHistoryOnShutdown>0;
+    miCleanupOnShutdown1.checked:=cleanupHistoryOnShutdown=1;
+    miCleanupOnShutdown2.checked:=cleanupHistoryOnShutdown=2;
+    miCleanupOnShutdown.checked:=cleanupHistoryOnShutdown>0;
   end;
 
-procedure TRestoreWorkspaceDialog.miCleanupNow1Click(Sender: TObject);
+PROCEDURE TRestoreWorkspaceDialog.miCleanupNow1Click(Sender: TObject);
   begin
     cleanUpBackups(false);
   end;
 
-procedure TRestoreWorkspaceDialog.miCleanupNow2Click(Sender: TObject);
+PROCEDURE TRestoreWorkspaceDialog.miCleanupNow2Click(Sender: TObject);
   begin
     cleanUpBackups(true);
   end;
 
-procedure TRestoreWorkspaceDialog.miCleanupOnShutdown1Click(Sender: TObject);
+PROCEDURE TRestoreWorkspaceDialog.miCleanupOnShutdown1Click(Sender: TObject);
   begin
     if cleanupHistoryOnShutdown=1 then cleanupHistoryOnShutdown:=0 else cleanupHistoryOnShutdown:=1;
-    miCleanupOnShutdown1.Checked:=cleanupHistoryOnShutdown=1;
-    miCleanupOnShutdown2.Checked:=cleanupHistoryOnShutdown=2;
-    miCleanupOnShutdown.Checked:=cleanupHistoryOnShutdown>0;
+    miCleanupOnShutdown1.checked:=cleanupHistoryOnShutdown=1;
+    miCleanupOnShutdown2.checked:=cleanupHistoryOnShutdown=2;
+    miCleanupOnShutdown.checked:=cleanupHistoryOnShutdown>0;
   end;
 
-procedure TRestoreWorkspaceDialog.miCleanupOnShutdown2Click(Sender: TObject);
+PROCEDURE TRestoreWorkspaceDialog.miCleanupOnShutdown2Click(Sender: TObject);
   begin
     if cleanupHistoryOnShutdown=2 then cleanupHistoryOnShutdown:=0 else cleanupHistoryOnShutdown:=2;
-    miCleanupOnShutdown1.Checked:=cleanupHistoryOnShutdown=1;
-    miCleanupOnShutdown2.Checked:=cleanupHistoryOnShutdown=2;
-    miCleanupOnShutdown.Checked:=cleanupHistoryOnShutdown>0;
+    miCleanupOnShutdown1.checked:=cleanupHistoryOnShutdown=1;
+    miCleanupOnShutdown2.checked:=cleanupHistoryOnShutdown=2;
+    miCleanupOnShutdown.checked:=cleanupHistoryOnShutdown>0;
   end;
 
 PROCEDURE TRestoreWorkspaceDialog.fillTable;

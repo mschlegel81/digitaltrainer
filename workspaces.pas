@@ -65,6 +65,7 @@ TYPE
     PROPERTY  state:T_workspaceStateEnum read currentState.state;
     FUNCTION  isEditingNewChallenge:boolean;
     PROCEDURE editPaletteEntry(CONST prototype:P_visualBoard; CONST uiAdapter:P_uiAdapter);
+    PROCEDURE prototypeUpdated(CONST oldPrototype,newPrototype:P_visualBoard);
     PROCEDURE clearBoard(CONST uiAdapter: P_uiAdapter);
     PROPERTY  getChallenges:P_challengeSet read challenges;
 
@@ -754,6 +755,19 @@ PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard; CONST uiA
     workspaceBoard^.reset(true);
     uiAdapter^.updateBoardScrollbars;
     uiAdapter^.paintAll;
+  end;
+
+PROCEDURE T_workspace.prototypeUpdated(CONST oldPrototype, newPrototype: P_visualBoard);
+  PROCEDURE update(VAR entry:T_workspaceState);
+    begin
+      if   entry.prototypeInWorkspacePalette =oldPrototype
+      then entry.prototypeInWorkspacePalette:=newPrototype;
+    end;
+
+  VAR i:longint;
+  begin
+    update(currentState);
+    for i:=0 to length(previousState)-1 do update(previousState[i]);
   end;
 
 PROCEDURE T_workspace.clearBoard(CONST uiAdapter: P_uiAdapter);
