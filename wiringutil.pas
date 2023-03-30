@@ -378,9 +378,12 @@ PROCEDURE T_wiringTask.execute;
 
 FUNCTION wiringTaskThread(p:pointer):ptrint; Register;
   begin
-    P_wiringTask(p)^.execute;
-    if P_wiringTask(p)^.toBeDisposed then dispose(P_wiringTask(p),destroy);
-    result:=0;
+    try
+      P_wiringTask(p)^.execute;
+      if P_wiringTask(p)^.toBeDisposed then dispose(P_wiringTask(p),destroy);
+    finally
+      result:=0;
+    end;
   end;
 
 PROCEDURE T_wiringTask.executeInBackground;

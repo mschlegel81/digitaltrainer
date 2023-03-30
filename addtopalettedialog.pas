@@ -36,7 +36,6 @@ TYPE
       Shift: TShiftState; X, Y: integer);
     PROCEDURE propOkShapeMouseDown(Sender: TObject; button: TMouseButton;
       Shift: TShiftState; X, Y: integer);
-    PROCEDURE setSubpalette(CONST idx:longint);
   private
     currentBoard:P_visualBoard;
     currentPalette:P_workspacePalette;
@@ -49,6 +48,7 @@ TYPE
 
 FUNCTION AddToPaletteForm: TAddToPaletteForm;
 IMPLEMENTATION
+USES workspaces;
 VAR
   myAddToPaletteForm: TAddToPaletteForm=nil;
 
@@ -105,11 +105,6 @@ PROCEDURE TAddToPaletteForm.propOkShapeMouseDown(Sender: TObject; button: TMouse
     currentBoard^.modified:=false;
   end;
 
-PROCEDURE TAddToPaletteForm.setSubpalette(CONST idx: longint);
-  begin
-    subPaletteIndex:=idx;
-  end;
-
 FUNCTION TAddToPaletteForm.showFor(CONST palette: P_workspacePalette; CONST board: P_visualBoard): boolean;
   VAR s:string;
   begin
@@ -123,7 +118,7 @@ FUNCTION TAddToPaletteForm.showFor(CONST palette: P_workspacePalette; CONST boar
     setEnableButton(propOkShape1,propOkLabel1,board^.getIndexInPalette>=0);
 
     for s in palette^.subPaletteNames do paletteComboBox.items.add(s);
-    paletteComboBox.ItemIndex:=subPaletteIndex;
+    paletteComboBox.ItemIndex:=workspace.currentPaletteAssociation;
 
     if ShowModal=mrOk
     then result:=true

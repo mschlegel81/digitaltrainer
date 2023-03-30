@@ -63,6 +63,7 @@ TYPE
     PROPERTY  getActiveChallenge:P_challenge read activeChallenge;
 
     PROPERTY  state:T_workspaceStateEnum read currentState.state;
+    PROPERTY  currentPaletteAssociation:longint read currentState.paletteAssociation;
     FUNCTION  isEditingNewChallenge:boolean;
     PROCEDURE editPaletteEntry(CONST prototype:P_visualBoard; CONST uiAdapter:P_uiAdapter);
     PROCEDURE prototypeUpdated(CONST oldPrototype,newPrototype:P_visualBoard);
@@ -76,7 +77,7 @@ TYPE
 
     FUNCTION firstStart:boolean;
     FUNCTION canGoBack:boolean;
-    PROCEDURE goBack(CONST uiAdapter: P_uiAdapter; OUT challenge:P_challenge; OUT originalChallengeIndex:longint; OUT paletteAssociation:longint);
+    PROCEDURE goBack(CONST uiAdapter: P_uiAdapter; OUT challenge:P_challenge; OUT originalChallengeIndex:longint);
   end;
 
   T_workspaceHistorizationTriggerEnum=(wht_onStartup,wht_beforeDeletingEntry,wht_beforeDuplicateRemoval,wht_beforeTaskImport,wht_beforePaletteImport,wht_beforeDeletingTask,wht_beforeRestore);
@@ -456,6 +457,7 @@ PROCEDURE T_workspace.initCurrentState;
     end else if workspaceBoard^.getIndexInPalette>=0 then begin
       currentState.state:=editingPaletteEntry;
       currentState.prototypeInWorkspacePalette:=workspacePalette^.paletteEntries[workspaceBoard^.getIndexInPalette].prototype;
+      currentState.paletteAssociation         :=workspacePalette^.paletteEntries[workspaceBoard^.getIndexInPalette].subPaletteIndex;
       if currentState.prototypeInWorkspacePalette=nil then begin
         currentState.state:=editingNewBoard;
         currentState.newBoard:=workspaceBoard;
@@ -517,7 +519,7 @@ PROCEDURE T_workspace.stateTransition(CONST newState: T_workspaceStateEnum);
      currentState.paletteIndex               :=0;
   end;
 
-PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT challenge: P_challenge; OUT originalChallengeIndex: longint; OUT paletteAssociation:longint);
+PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT challenge: P_challenge; OUT originalChallengeIndex: longint);
   begin
     challenge             :=currentState.challenge;
     originalChallengeIndex:=currentState.originalChallengeIndex;
@@ -537,7 +539,6 @@ PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT challenge: P_chal
       end;
     end;
 
-    paletteAssociation:=-1;
     currentState:=previousState[length(previousState)-1];
     setLength    (previousState,length(previousState)-1);
     case currentState.state of
@@ -563,7 +564,6 @@ PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT challenge: P_chal
         workspacePalette^.attachUI(uiAdapter);
         workspacePalette^.setFilter(workspaceBoard^.getIndexInPalette);
         workspacePalette^.selectSubPalette(currentState.paletteIndex);
-        paletteAssociation:=currentState.paletteAssociation;
         uiAdapter^.paintAll;
       end;
       solvingChallenge: begin
