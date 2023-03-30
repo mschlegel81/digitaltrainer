@@ -2062,7 +2062,7 @@ PROCEDURE T_visualBoard.paintBoard(CONST exludeDragged: boolean);
     for g in gates   do if not isExcluded(g) then g^.paintAll(Canvas);
     for g in outputs do if not isExcluded(g) then g^.paintAll(Canvas);
     for w in watchers do w^.paint(ui,Canvas);
-    ui^.callback.paintPalette(ui^.state=uas_draggingFromBoard);
+    ui^.callback.paintPalette(ui^.state in [uas_draggingFromBoard,uas_multiDragFromBoard]);
     {$ifdef debugMode} writeln('Full paint done in ',GetTickCount64-start,' ticks'); {$endif}
   end;
 
