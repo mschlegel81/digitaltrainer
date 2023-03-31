@@ -15,6 +15,7 @@ TYPE
     updatePaletteButton: TShape;
     startTutorialLabel: TLabel;
     WelcomeLabel: TLabel;
+    PROCEDURE FormShow(Sender: TObject);
     PROCEDURE startTutorialLabelMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   private
 
@@ -25,6 +26,7 @@ TYPE
 FUNCTION FirstStartForm: TFirstStartForm;
 
 IMPLEMENTATION
+USES visuals;
 VAR alreadyAsked:boolean=false;
     myFirstStartForm: TFirstStartForm=nil;
 FUNCTION FirstStartForm: TFirstStartForm;
@@ -40,6 +42,11 @@ FUNCTION FirstStartForm: TFirstStartForm;
 PROCEDURE TFirstStartForm.startTutorialLabelMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     ModalResult:=mrYes;
+  end;
+
+PROCEDURE TFirstStartForm.FormShow(Sender: TObject);
+  begin
+    applyColorScheme(self);
   end;
 
 FUNCTION TFirstStartForm.wantToStartTutorial: boolean;
