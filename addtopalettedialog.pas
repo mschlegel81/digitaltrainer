@@ -102,6 +102,7 @@ PROCEDURE TAddToPaletteForm.propOkShapeMouseDown(Sender: TObject; button: TMouse
   begin
     ModalResult:=mrOk;
     currentBoard^.underlyingPrototype:=currentPalette^.addBoard(currentBoard,paletteComboBox.ItemIndex,paletteComboBox.text);
+    currentPalette^.setFilter(currentBoard^.underlyingPrototype^.getIndexInPalette);
     currentBoard^.modified:=false;
   end;
 

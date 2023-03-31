@@ -462,7 +462,7 @@ PROCEDURE T_workspace.initCurrentState;
         currentState.state:=editingNewBoard;
         currentState.newBoard:=workspaceBoard;
         workspaceBoard^.setIndexInPalette(-1,true);
-      end;
+      end else workspacePalette^.setFilter(workspaceBoard^.getIndexInPalette);
     end else begin
       currentState.state:=editingNewBoard;
       currentState.newBoard:=workspaceBoard;
