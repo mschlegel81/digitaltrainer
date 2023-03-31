@@ -17,8 +17,9 @@ Name: "de"; MessagesFile: "compiler:Languages\German.isl"
 [Files]
 Source: "..\dt2.exe"; DestDir: "{app}"; DestName: "Digitaltrainer.exe"
 Source: "dt2.workspace"; DestDir: "{localappdata}\Digitaltrainer"; DestName: "workspace" 
-// The following files only exist to ensure that they are removed properly on uninstall
-Source: "dt2.settings"; DestDir: "{localappdata}\Digitaltrainer"; DestName: "settings" 
-Source: "dt2.backups"; DestDir: "{localappdata}\Digitaltrainer"; DestName: "backups" 
 [Icons]
 Name: "{group}\Digitaltrainer"; Filename: "{app}\Digitaltrainer.exe"
+[CustomMessages]
+LaunchProgram=Nach Installation starten.
+[Run]
+Filename: {app}\Digitaltrainer.exe; Description: {cm:LaunchProgram}; Flags: nowait postinstall skipifsilent
