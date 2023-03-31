@@ -638,23 +638,24 @@ PROCEDURE T_ioTextSprite.setZoom(CONST zoom: longint);
   VAR
     newWidth, newHeight: longint;
   begin
-    screenOffset:=pointOf(-4,-2-2*zoom);
-    newWidth :=4*zoom-8;
-    newHeight:=2*zoom-6;
+    screenOffset:=pointOf(-3,-2*zoom);
+    newWidth :=4*zoom-6;
+    newHeight:=2*zoom-3;
     if Bitmap=nil
     then Bitmap:=TBGRABitmap.create(newWidth,newHeight,colorScheme.GATE_COLOR)
     else Bitmap.setSize(newWidth,newHeight);
 
     Bitmap.CanvasBGRA.Brush.color:=colorScheme.GATE_COLOR;
     Bitmap.CanvasBGRA.Brush.style:=bsSolid;
-    Bitmap.CanvasBGRA.Pen.style:=psClear;
+    Bitmap.CanvasBGRA.Pen.style:=psSolid;
+    Bitmap.CanvasBGRA.Pen.color:=colorScheme.GATE_BORDER_COLOR;
     Bitmap.CanvasBGRA.Rectangle(0,0,newWidth,newHeight);
     Bitmap.CanvasBGRA.DrawFontBackground:=true;
-    textOut(Bitmap.CanvasBGRA,wireModeText,0,0,newWidth shr 1,newHeight,colorScheme.SHADOW_COLOR);
+    textOut(Bitmap.CanvasBGRA,wireModeText,1,0,newWidth shr 1,newHeight,colorScheme.SHADOW_COLOR,false);
 
     Bitmap.CanvasBGRA.Brush.style:=bsClear;
     Bitmap.CanvasBGRA.DrawFontBackground:=false;
-    textOut(Bitmap.CanvasBGRA,caption,newWidth shr 3,0,newWidth,newHeight,colorScheme.GATE_LABEL_COLOR);
+    textOut(Bitmap.CanvasBGRA,caption,2,0,newWidth-2,newHeight-2,colorScheme.GATE_LABEL_COLOR);
     preparedForZoom:=zoom;
   end;
 
@@ -693,7 +694,7 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
 
   PROCEDURE getColorAt(CONST fx,fy:double);
     VAR dtc,fz:double;
-        level:word;
+        level:longint;
     begin
       dtc:=sqrt(fx*fx+fy*fy);
       if dtc>radius then begin
@@ -920,35 +921,36 @@ PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint; CONST ioMark:T_ioMark
         (((((colorScheme.BOARD_COLOR shr  8) and 255)*bw+((FrameColor shr  8) and 255)*mw) shr 8) and 255) shl 8 or
         (((((colorScheme.BOARD_COLOR shr 16) and 255)*bw+((FrameColor shr 16) and 255)*mw) shr 8) and 255) shl 16;
 
-        Bitmap.CanvasBGRA.Rectangle(3          -i,
-                                    3          -i,
-                                    newWidth -3+i,
-                                    newHeight-3+i,false);
+        Bitmap.CanvasBGRA.Rectangle(3          -i+screenOffset[0],
+                                    3          -i+screenOffset[1],
+                                    newWidth -3+i+screenOffset[0],
+                                    newHeight-3+i+screenOffset[1],false);
       end;
     end;
 
   PROCEDURE drawShadow;
     VAR i:longint;
-        bw:longint;
     begin
       for i:=1 to 4 do begin
-        bw:=i*256 div 4;
 
         Bitmap.CanvasBGRA.Pen.color:=
          round( colorScheme.BOARD_COLOR         and 255*i/5+ colorScheme.SHADOW_COLOR         and 255*(1-i/5)) or
          round((colorScheme.BOARD_COLOR shr  8) and 255*i/5+(colorScheme.SHADOW_COLOR shr  8) and 255*(1-i/5)) shl 8 or
          round((colorScheme.BOARD_COLOR shr 16) and 255*i/5+(colorScheme.SHADOW_COLOR shr 16) and 255*(1-i/5)) shl 16;
 
-        Bitmap.CanvasBGRA.MoveTo(3+i         ,newHeight-4+i);
-        Bitmap.CanvasBGRA.LineTo(newWidth-4+i,newHeight-4+i);
-        Bitmap.CanvasBGRA.LineTo(newWidth-4+i,3+i);
+        Bitmap.CanvasBGRA.MoveTo(3+i         +screenOffset[0],newHeight-4+i                );
+        Bitmap.CanvasBGRA.LineTo(newWidth-4+i                ,newHeight-4+i                );
+        Bitmap.CanvasBGRA.LineTo(newWidth-4+i                ,          3+i+screenOffset[1]);
       end;
     end;
 
   begin
-    screenOffset:=pointOf(0,0);
-    newWidth :=width *zoom;
-    newHeight:=height*zoom;
+    if not marked and (ioMark=iom_none)
+    then screenOffset:=pointOf(-3,-3)
+    else screenOffset:=pointOf(0,0);
+
+    newWidth :=width *zoom+screenOffset[0];
+    newHeight:=height*zoom+screenOffset[1];
     if Bitmap=nil
     then Bitmap:=TBGRABitmap.create(newWidth,newHeight,colorScheme.BOARD_COLOR)
     else Bitmap.setSize(newWidth,newHeight);
@@ -962,10 +964,10 @@ PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint; CONST ioMark:T_ioMark
 
     Bitmap.CanvasBGRA.Pen.color:=colorScheme.GATE_BORDER_COLOR;
 
-    Bitmap.CanvasBGRA.Rectangle(3,
-                                3,
-                                newWidth -3,
-                                newHeight-3);
+    Bitmap.CanvasBGRA.Rectangle(3+screenOffset[0],
+                                3+screenOffset[1],
+                      newWidth -3                ,
+                      newHeight-3                );
     if marked
     then drawGlowingFrame(colorScheme.MARK_COLOR)
     else case ioMark of
@@ -1007,13 +1009,13 @@ PROCEDURE T_ioBlockSprite.setZoom(CONST zoom: longint);
       Bitmap.CanvasBGRA.DrawFontBackground:=true;
       textOut(Bitmap.CanvasBGRA,
               C_inputKey[inIdx],
-              screenOffset[0]+(width-1)*zoom,
+              screenOffset[0]+(width-1)*zoom-3,
               screenOffset[1]               +4,
-              screenOffset[0]+(width  )*zoom-3,
+              screenOffset[0]+(width  )*zoom-6,
               screenOffset[1]+zoom,0);
-      Bitmap.CanvasBGRA.MoveTo(screenOffset[0]+(width-1)*zoom,screenOffset[1]+3);
-      Bitmap.CanvasBGRA.LineTo(screenOffset[0]+(width-1)*zoom,screenOffset[1]+zoom);
-      Bitmap.CanvasBGRA.LineTo(screenOffset[0]+(width  )*zoom-3,screenOffset[1]+zoom);
+      Bitmap.CanvasBGRA.MoveTo(screenOffset[0]+(width-1)*zoom-3,screenOffset[1]+3);
+      Bitmap.CanvasBGRA.LineTo(screenOffset[0]+(width-1)*zoom-3,screenOffset[1]+zoom);
+      Bitmap.CanvasBGRA.LineTo(screenOffset[0]+(width  )*zoom-6,screenOffset[1]+zoom);
     end;
     Bitmap.CanvasBGRA.DrawFontBackground:=false;
     textOut(Bitmap.CanvasBGRA,
