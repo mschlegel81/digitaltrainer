@@ -304,6 +304,7 @@ PROCEDURE applyColorScheme(CONST form:TForm);
     VAR i:longint;
     begin
       control.Font.color:=colorScheme.ENABLED_TEXT_COLOR;
+      control.Font.Name:='Roboto Light';
       if control is TShape then begin
         if TShape(control).Brush.style<>bsClear
         then TShape(control).Brush.color:=colorScheme.ENABLED_BUTTON_COLOR;
@@ -331,6 +332,7 @@ PROCEDURE applyColorScheme(CONST form:TForm);
   begin
     form.color:=colorScheme.secondaryFormColor;
     form.Font.color:=colorScheme.ENABLED_TEXT_COLOR;
+    form.Font.Name:='Roboto Light';
     for i:=0 to form.ControlCount-1
     do applyScheme(form.Controls[i]);
   end;

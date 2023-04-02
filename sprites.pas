@@ -522,6 +522,7 @@ PROCEDURE T_watcherSprite.setZoom(CONST zoom: longint);
     Bitmap.CanvasBGRA.Font.Antialiasing:=true;
     Bitmap.CanvasBGRA.Font.height:=16;
     Bitmap.CanvasBGRA.Font.color:=colorScheme.GATE_LABEL_COLOR;
+    Bitmap.CanvasBGRA.Font.Name:='Roboto Medium';
     Bitmap.CanvasBGRA.textOut(x0+2,y0+2 ,ioLabel);
     Bitmap.CanvasBGRA.textOut(x0+2,y0+18,'dec: '+getDecimalString(wire));
     Bitmap.CanvasBGRA.textOut(x0+2,y0+34,'2cmp: '+get2ComplementString(wire));
@@ -872,6 +873,7 @@ PROCEDURE textOut(CONST CanvasBGRA:TBGRACanvas; CONST s: string; CONST x0, y0, x
     CanvasBGRA.Font.orientation:=0;
     CanvasBGRA.Font.quality:=fqFineAntialiasing;
     CanvasBGRA.Font.Antialiasing:=true;
+    CanvasBGRA.Font.Name:='Roboto Medium';
     updateTextExtend;
     if (maxTextWidth=0) or (textHeight=0) then exit;
 
