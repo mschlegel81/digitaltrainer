@@ -5,7 +5,8 @@ UNIT testFrameUI;
 INTERFACE
 
 USES
-  Classes, sysutils, Forms, Controls, ExtCtrls, Grids, StdCtrls, challenges;
+  Classes, sysutils, Forms, Controls, ExtCtrls, Grids, StdCtrls, ComCtrls,
+  challenges;
 
 TYPE
 
@@ -16,8 +17,10 @@ TYPE
     generateTestCasesLabel1: TLabel;
     generateTestCasesShape: TShape;
     generateTestCasesShape1: TShape;
+    ProgressLabel: TLabel;
     Label6: TLabel;
     Label7: TLabel;
+    ProgressShape: TShape;
     Splitter1: TSplitter;
     TestCaseCountEdit: TEdit;
     StepCountEdit: TEdit;
@@ -37,6 +40,7 @@ TYPE
     testGenerator:P_testCreator;
     lastUpdatedRow:longint;
     maximumNumberOfTestCases:longint;
+    lastStepsForAll:longint;
     PROCEDURE updateTableRow(CONST j:longint);
   public
     PROCEDURE fillTable;
@@ -107,6 +111,10 @@ PROCEDURE TTestCreationFrame.Timer1Timer(Sender: TObject);
       timing:=testGenerator^.getTimingDecils;
       for i:=0 to 10 do TimingGrid.Cells[1,i+1]:=intToStr(timing[i]);
       TimingGrid.AutoSizeColumns();
+      if (length(testGenerator^.tests)<=1) or (newUpdatedRow<0)
+      then ProgressShape.width:=0
+      else ProgressShape.width:=round(TimingGrid.width*newUpdatedRow/(length(testGenerator^.tests)-1));
+      ProgressLabel.caption:=intToStr(newUpdatedRow+1)+' ausgeführt';
     end;
   end;
 
@@ -124,7 +132,9 @@ PROCEDURE TTestCreationFrame.updateTableRow(CONST j: longint);
       TestCasesStringGrid.Cells[i,j+1]:=getWireString(testGenerator^.tests[j].inputs[i],gateInterface.representation);
       inc(i);
     end;
-    TestCasesStringGrid.Cells[i,j+1]:=intToStr(testGenerator^.tests[j].maxTotalSteps)+' ('+intToStr(testGenerator^.tests[j].actuallyActive)+')';
+    TestCasesStringGrid.Cells[i,j+1]:=intToStr(testGenerator^.tests[j].maxTotalSteps);
+    inc(i);
+    TestCasesStringGrid.Cells[i,j+1]:=intToStr(testGenerator^.tests[j].actuallyActive);
     inc(i);
     k:=0;
     for gateInterface in testGenerator^.Interfaces.outputs do begin
@@ -141,7 +151,7 @@ PROCEDURE TTestCreationFrame.fillTable;
       timing: T_timingDecils;
   begin
     TestCasesStringGrid.rowCount:=1+length(testGenerator^.tests);
-    k:=length(testGenerator^.Interfaces.inputs)+length(testGenerator^.Interfaces.outputs)+1;
+    k:=length(testGenerator^.Interfaces.inputs)+length(testGenerator^.Interfaces.outputs)+2;
     while TestCasesStringGrid.Columns.count>k do TestCasesStringGrid.Columns.delete(TestCasesStringGrid.Columns.count-1);
     while TestCasesStringGrid.Columns.count<k do TestCasesStringGrid.Columns.add;
 
@@ -156,7 +166,10 @@ PROCEDURE TTestCreationFrame.fillTable;
     end;
 
     TestCasesStringGrid.Columns[i].color:=colorScheme.tableAlternativeColor;
-    TestCasesStringGrid.Columns[i].title.caption:='Steps';
+    TestCasesStringGrid.Columns[i].title.caption:='Schritte';
+    inc(i);
+    TestCasesStringGrid.Columns[i].color:=colorScheme.tableAlternativeColor;
+    TestCasesStringGrid.Columns[i].title.caption:='aktiv für';
     inc(i);
     for gateInterface in testGenerator^.Interfaces.outputs do begin
       TestCasesStringGrid.Columns[i].color:=colorScheme.tableColor;
@@ -173,7 +186,9 @@ PROCEDURE TTestCreationFrame.fillTable;
         TestCasesStringGrid.Cells[i,j+1]:=getWireString(testGenerator^.tests[j].inputs[i],gateInterface.representation);
         inc(i);
       end;
-      TestCasesStringGrid.Cells[i,j+1]:=intToStr(testGenerator^.tests[j].maxTotalSteps)+' ('+intToStr(testGenerator^.tests[j].actuallyActive)+')';
+      TestCasesStringGrid.Cells[i,j+1]:=intToStr(testGenerator^.tests[j].maxTotalSteps);
+      inc(i);
+      TestCasesStringGrid.Cells[i,j+1]:=intToStr(testGenerator^.tests[j].actuallyActive);
       inc(i);
       k:=0;
       for gateInterface in testGenerator^.Interfaces.outputs do begin
@@ -200,6 +215,7 @@ PROCEDURE TTestCreationFrame.setTestGenerator(CONST generator: P_testCreator; CO
     TestCaseCountEdit.text:=intToStr(length(testGenerator^.tests));
     fillTable;
     lastUpdatedRow:=-1;
+    lastStepsForAll:=-1;
     Timer1.enabled:=true;
   end;
 
@@ -261,8 +277,9 @@ PROCEDURE TTestCreationFrame.StepCountEditEditingDone(Sender: TObject);
       StepCountEdit.text:='';
       exit;
     end;
+    if newCount=lastStepsForAll then exit;
+    lastStepsForAll:=newCount;
     for i:=0 to length(testGenerator^.tests)-1 do testGenerator^.tests[i].maxTotalSteps:=newCount;
-    testGenerator^.reInitStepCounts;
     testGenerator^.updateTestCaseResults;
     lastUpdatedRow:=-1;
   end;
@@ -276,7 +293,7 @@ PROCEDURE TTestCreationFrame.TestCasesStringGridHeaderClick(Sender: TObject; IsC
       fillTable;
       exit;
     end;
-    dec(index,1+length(testGenerator^.Interfaces.inputs));
+    dec(index,2+length(testGenerator^.Interfaces.inputs));
     if index<0 then exit;
     if index<length(testGenerator^.Interfaces.outputs) then begin
       testGenerator^.Interfaces.outputs[index].representation:=nextMode[testGenerator^.Interfaces.outputs[index].representation];

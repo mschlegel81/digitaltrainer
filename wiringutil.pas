@@ -354,7 +354,7 @@ PROCEDURE T_wiringTask.execute;
 
       allOk:=true;
       for i in wiringOrder do if not(cancelled) then begin
-        toFind[i].foundPath:=workGraph^.findPaths(toFind[i].startPoint,toFind[i].endPoints,true);
+        toFind[i].foundPath:=workGraph^.findPaths(toFind[i].startPoint,toFind[i].endPoints,attemptsRemaining<3);
         searchOk:=true;
         for path in toFind[i].foundPath do
           if length(path)=0

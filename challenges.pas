@@ -841,11 +841,11 @@ PROCEDURE T_testCreator.generateTestCases(CONST continuous:boolean=false; CONST 
   VAR i,j,k:longint;
 
   begin
+    challengeTestCreationThread.ensureStop;
     if continuous then begin
       for i:=0 to length(tests)-1 do begin
         tests[i].inputs:=inputsByIndex(i);
         tests[i].outputs:=undeterminedOutput(Interfaces);
-        tests[i].maxTotalSteps:=1000;
       end;
       if scramble then begin
         k:=length(tests); setLength(tests,k+1);
@@ -858,7 +858,6 @@ PROCEDURE T_testCreator.generateTestCases(CONST continuous:boolean=false; CONST 
       for i:=0 to length(tests)-1 do begin
         tests[i].inputs:=randomInput(Interfaces);
         tests[i].outputs:=undeterminedOutput(Interfaces);
-        tests[i].maxTotalSteps:=1000;
       end;
     end;
     challengeTestCreationThread.restart;
@@ -961,7 +960,11 @@ DESTRUCTOR T_testCreator.destroy;
   VAR i: integer;
   begin
     challengeTestCreationThread.destroy;
-    for i:=0 to length(tests)-1 do setLength(tests[i].inputs,0); setLength(tests,0);
+    for i:=0 to length(tests)-1 do begin
+      setLength(tests[i].inputs,0);
+      setLength(tests[i].outputs,0);
+    end;
+    setLength(tests,0);
     if behavior<>nil then dispose(behavior,destroy);
     setLength(Interfaces.inputs,0);
     setLength(Interfaces.outputs,0);

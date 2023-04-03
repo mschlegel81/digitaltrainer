@@ -656,7 +656,7 @@ PROCEDURE T_ioTextSprite.setZoom(CONST zoom: longint);
 
     Bitmap.CanvasBGRA.Brush.style:=bsClear;
     Bitmap.CanvasBGRA.DrawFontBackground:=false;
-    textOut(Bitmap.CanvasBGRA,caption,2,0,newWidth-2,newHeight-2,colorScheme.GATE_LABEL_COLOR);
+    textOut(Bitmap.CanvasBGRA,caption,3,3,newWidth-3,newHeight-3,colorScheme.GATE_LABEL_COLOR);
     preparedForZoom:=zoom;
   end;
 
