@@ -1,6 +1,6 @@
 [Setup]
 AppName=Digitaltrainer
-AppVersion=2.2.1
+AppVersion=2.2.2
 WizardStyle=modern
 DefaultDirName={autopf}\Digitaltrainer
 DefaultGroupName=Digitaltrainer
