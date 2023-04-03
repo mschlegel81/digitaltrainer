@@ -25,3 +25,5 @@ LaunchProgram=Nach Installation starten.
 Filename: {app}\Digitaltrainer.exe; Description: {cm:LaunchProgram}; Flags: nowait postinstall skipifsilent
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
+[InstallDelete]
+Type: files; Name: "{app}\Digitaltrainer.exe"
