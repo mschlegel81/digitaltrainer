@@ -15,8 +15,10 @@ TYPE
   TTestCreationFrame = class(TFrame)
     generateTestCasesLabel: TLabel;
     generateTestCasesLabel1: TLabel;
+    adaptStepsLabel: TLabel;
     generateTestCasesShape: TShape;
     generateTestCasesShape1: TShape;
+    adaptStepsShape: TShape;
     ProgressLabel: TLabel;
     Label6: TLabel;
     Label7: TLabel;
@@ -28,6 +30,8 @@ TYPE
     TimingGrid: TStringGrid;
     TestInputsPanel: TPanel;
     Timer1: TTimer;
+    PROCEDURE adaptStepsShapeMouseDown(Sender: TObject; button: TMouseButton;
+      Shift: TShiftState; X, Y: integer);
     PROCEDURE generateTestCasesShape1MouseDown(Sender: TObject;
       button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE generateTestCasesShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -40,7 +44,6 @@ TYPE
     testGenerator:P_testCreator;
     lastUpdatedRow:longint;
     maximumNumberOfTestCases:longint;
-    lastStepsForAll:longint;
     PROCEDURE updateTableRow(CONST j:longint);
   public
     PROCEDURE fillTable;
@@ -215,7 +218,6 @@ PROCEDURE TTestCreationFrame.setTestGenerator(CONST generator: P_testCreator; CO
     TestCaseCountEdit.text:=intToStr(length(testGenerator^.tests));
     fillTable;
     lastUpdatedRow:=-1;
-    lastStepsForAll:=-1;
     Timer1.enabled:=true;
   end;
 
@@ -264,8 +266,15 @@ PROCEDURE TTestCreationFrame.generateTestCasesShape1MouseDown(Sender: TObject; b
     testGenerator^.generateTestCases(true,false);
   end;
 
+PROCEDURE TTestCreationFrame.adaptStepsShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  begin
+    lastUpdatedRow:=-1;
+    testGenerator^.reInitStepCounts;
+  end;
+
 PROCEDURE TTestCreationFrame.StepCountEditEditingDone(Sender: TObject);
   VAR newCount: int64;
+      anyChange:boolean=false;
       i:longint;
   begin
     newCount:=StrToInt64Def(StepCountEdit.text,-1);
@@ -277,11 +286,15 @@ PROCEDURE TTestCreationFrame.StepCountEditEditingDone(Sender: TObject);
       StepCountEdit.text:='';
       exit;
     end;
-    if newCount=lastStepsForAll then exit;
-    lastStepsForAll:=newCount;
-    for i:=0 to length(testGenerator^.tests)-1 do testGenerator^.tests[i].maxTotalSteps:=newCount;
-    testGenerator^.updateTestCaseResults;
-    lastUpdatedRow:=-1;
+    for i:=0 to length(testGenerator^.tests)-1 do
+    if testGenerator^.tests[i].maxTotalSteps<>newCount then begin
+      testGenerator^.tests[i].maxTotalSteps:=newCount;
+      anyChange:=true;
+    end;
+    if anyChange then begin
+      testGenerator^.updateTestCaseResults;
+      lastUpdatedRow:=-1;
+    end;
   end;
 
 PROCEDURE TTestCreationFrame.TestCasesStringGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);

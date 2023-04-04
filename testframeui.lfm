@@ -2,9 +2,9 @@ object TestCreationFrame: TTestCreationFrame
   Left = 0
   Height = 378
   Top = 0
-  Width = 656
+  Width = 812
   ClientHeight = 378
-  ClientWidth = 656
+  ClientWidth = 812
   Color = 7354424
   ParentBackground = False
   ParentColor = False
@@ -15,7 +15,7 @@ object TestCreationFrame: TTestCreationFrame
     Left = 4
     Height = 370
     Top = 4
-    Width = 648
+    Width = 804
     Align = alClient
     BorderSpacing.Left = 4
     BorderSpacing.Top = 4
@@ -23,7 +23,7 @@ object TestCreationFrame: TTestCreationFrame
     BorderSpacing.Bottom = 4
     BorderWidth = 5
     ClientHeight = 370
-    ClientWidth = 648
+    ClientWidth = 804
     Color = 7354424
     ParentColor = False
     TabOrder = 0
@@ -56,6 +56,7 @@ object TestCreationFrame: TTestCreationFrame
       NumbersOnly = True
       OnEditingDone = TestCaseCountEditEditingDone
       ParentFont = False
+      ParentShowHint = False
       TabOrder = 0
       Text = '16'
     end
@@ -69,7 +70,7 @@ object TestCreationFrame: TTestCreationFrame
       Left = 10
       Height = 318
       Top = 42
-      Width = 437
+      Width = 546
       Anchors = [akTop, akLeft, akRight, akBottom]
       BorderSpacing.Left = 4
       BorderSpacing.Top = 4
@@ -91,10 +92,10 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideTop.Control = TestInputsPanel
       AnchorSideRight.Control = TestInputsPanel
       AnchorSideRight.Side = asrBottom
-      Left = 509
+      Left = 694
       Height = 28
       Top = 10
-      Width = 129
+      Width = 100
       Anchors = [akTop, akRight]
       BorderSpacing.Top = 4
       BorderSpacing.Right = 4
@@ -108,7 +109,7 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideTop.Control = generateTestCasesShape
       AnchorSideTop.Side = asrCenter
       AnchorSideRight.Side = asrBottom
-      Left = 541
+      Left = 712
       Height = 21
       Top = 14
       Width = 64
@@ -130,6 +131,7 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideTop.Control = TestInputsPanel
       Left = 258
       Height = 23
+      Hint = 'Setzt die Anzahl der Schritte'#13#10'für alle Testfälle.'
       Top = 10
       Width = 80
       BorderSpacing.Left = 4
@@ -139,6 +141,8 @@ object TestCreationFrame: TTestCreationFrame
       NumbersOnly = True
       OnEditingDone = StepCountEditEditingDone
       ParentFont = False
+      ParentShowHint = False
+      ShowHint = True
       TabOrder = 2
     end
     object Label7: TLabel
@@ -161,17 +165,20 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideLeft.Side = asrBottom
       AnchorSideTop.Control = TestInputsPanel
       AnchorSideRight.Control = generateTestCasesShape
-      Left = 376
+      Left = 590
       Height = 28
+      Hint = 'Erzeugt Eingaben der Reihe nach.'
       Top = 10
-      Width = 129
+      Width = 100
       Anchors = [akTop, akRight]
       BorderSpacing.Left = 4
       BorderSpacing.Top = 4
       BorderSpacing.Right = 4
       Brush.Color = 6303792
+      ParentShowHint = False
       OnMouseDown = generateTestCasesShape1MouseDown
       Shape = stRoundRect
+      ShowHint = True
     end
     object generateTestCasesLabel1: TLabel
       AnchorSideLeft.Control = generateTestCasesShape1
@@ -179,8 +186,9 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideTop.Control = generateTestCasesShape1
       AnchorSideTop.Side = asrCenter
       AnchorSideRight.Side = asrBottom
-      Left = 402
+      Left = 602
       Height = 21
+      Hint = 'Erzeugt Eingaben der Reihe nach.'
       Top = 14
       Width = 77
       BorderSpacing.Top = 5
@@ -193,6 +201,8 @@ object TestCreationFrame: TTestCreationFrame
       Font.Quality = fqDraft
       ParentColor = False
       ParentFont = False
+      ParentShowHint = False
+      ShowHint = True
       OnMouseDown = generateTestCasesShape1MouseDown
     end
     object Splitter1: TSplitter
@@ -201,7 +211,7 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideTop.Control = TestCasesStringGrid
       AnchorSideBottom.Control = TestCasesStringGrid
       AnchorSideBottom.Side = asrBottom
-      Left = 451
+      Left = 560
       Height = 318
       Top = 42
       Width = 5
@@ -216,10 +226,10 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideRight.Control = TestInputsPanel
       AnchorSideRight.Side = asrBottom
       AnchorSideBottom.Control = ProgressShape
-      Left = 456
+      Left = 565
       Height = 294
       Top = 42
-      Width = 181
+      Width = 228
       Anchors = [akTop, akLeft, akRight, akBottom]
       BorderSpacing.Top = 4
       BorderSpacing.Right = 5
@@ -284,7 +294,7 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideLeft.Control = Splitter1
       AnchorSideBottom.Control = TestInputsPanel
       AnchorSideBottom.Side = asrBottom
-      Left = 456
+      Left = 565
       Height = 24
       Top = 336
       Width = 65
@@ -298,7 +308,7 @@ object TestCreationFrame: TTestCreationFrame
       AnchorSideLeft.Side = asrCenter
       AnchorSideTop.Control = ProgressShape
       AnchorSideTop.Side = asrCenter
-      Left = 544
+      Left = 677
       Height = 15
       Top = 341
       Width = 5
@@ -307,6 +317,50 @@ object TestCreationFrame: TTestCreationFrame
       Font.Color = clWhite
       ParentColor = False
       ParentFont = False
+    end
+    object adaptStepsShape: TShape
+      AnchorSideLeft.Control = StepCountEdit
+      AnchorSideLeft.Side = asrBottom
+      AnchorSideTop.Control = TestInputsPanel
+      AnchorSideRight.Control = generateTestCasesShape1
+      Left = 342
+      Height = 28
+      Hint = 'Setzt Schritte auf einen Wert,'#13#10'der ein wenig über "aktiv für" liegt.'
+      Top = 10
+      Width = 140
+      BorderSpacing.Left = 4
+      BorderSpacing.Top = 4
+      BorderSpacing.Right = 4
+      Brush.Color = 6303792
+      ParentShowHint = False
+      OnMouseDown = adaptStepsShapeMouseDown
+      Shape = stRoundRect
+      ShowHint = True
+    end
+    object adaptStepsLabel: TLabel
+      AnchorSideLeft.Control = adaptStepsShape
+      AnchorSideLeft.Side = asrCenter
+      AnchorSideTop.Control = adaptStepsShape
+      AnchorSideTop.Side = asrCenter
+      AnchorSideRight.Side = asrBottom
+      Left = 351
+      Height = 21
+      Hint = 'Setzt Schritte auf einen Wert,'#13#10'der ein wenig über "aktiv für" liegt.'
+      Top = 14
+      Width = 122
+      BorderSpacing.Top = 5
+      BorderSpacing.Right = 5
+      Caption = 'Schritte anpassen'
+      Font.CharSet = ANSI_CHARSET
+      Font.Color = clWhite
+      Font.Height = -16
+      Font.Pitch = fpVariable
+      Font.Quality = fqDraft
+      ParentColor = False
+      ParentFont = False
+      ParentShowHint = False
+      ShowHint = True
+      OnMouseDown = adaptStepsShapeMouseDown
     end
   end
   object Timer1: TTimer
