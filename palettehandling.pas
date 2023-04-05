@@ -815,7 +815,7 @@ PROCEDURE T_workspacePalette.reassignEntry(CONST gate: P_abstractGate;
 
 FUNCTION T_workspacePalette.addBoard(CONST board: P_visualBoard; subPaletteIndex: longint; CONST subPaletteName: string): P_visualBoard;
   VAR i:longint;
-      visualIndex:longint=0;
+      minVisualIndex:longint=maxLongint;
   begin
     if subPaletteIndex<0 then for i:=0 to length(paletteNames)-1 do if paletteNames[i]=subPaletteName then subPaletteIndex:=i;
     if subPaletteIndex<0 then begin
@@ -825,8 +825,11 @@ FUNCTION T_workspacePalette.addBoard(CONST board: P_visualBoard; subPaletteIndex
     end else begin
       for i:=0 to length(paletteEntries)-1 do
       if (paletteEntries[i].subPaletteIndex=subPaletteIndex) and
-          (visualIndex< 1+paletteEntries[i].visualSorting)
-      then visualIndex:=1+paletteEntries[i].visualSorting;
+          (minVisualIndex> paletteEntries[i].visualSorting)
+      then minVisualIndex:=paletteEntries[i].visualSorting;
+      for i:=0 to length(paletteEntries)-1 do
+      if (paletteEntries[i].subPaletteIndex=subPaletteIndex)
+      then paletteEntries[i].visualSorting+=1-minVisualIndex;
     end;
     i:=length(paletteEntries);
     setLength(paletteEntries,i+1);
@@ -835,7 +838,7 @@ FUNCTION T_workspacePalette.addBoard(CONST board: P_visualBoard; subPaletteIndex
     paletteEntries[i].prototype      :=board^.cloneAsTrueCopy;
     result:=paletteEntries[i].prototype;
     paletteEntries[i].subPaletteIndex:=subPaletteIndex;
-    paletteEntries[i].visualSorting  :=visualIndex;
+    paletteEntries[i].visualSorting  :=0;
     reindex;
     filter:=-1;
   end;
