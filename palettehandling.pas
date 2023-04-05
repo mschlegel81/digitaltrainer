@@ -720,12 +720,16 @@ PROCEDURE T_workspacePalette.ensureVisualPaletteItems;
     setLength(items,0);
     k:=0;
     for i:=0 to length(paletteEntries)-1 do
-    if (paletteEntries[i].subPaletteIndex=lastSubPaletteIndex) and not(excludedByFilter(i)) then begin
+    if (paletteEntries[i].subPaletteIndex=lastSubPaletteIndex) then begin
       if paletteEntries[i].entryType=gt_compound
       then behavior:=paletteEntries[i].prototype^.extractBehavior
       else behavior:=newBaseGate(paletteEntries[i].entryType);
+
       setLength(items,k+1);
-      new(items[k].visualItem,create(behavior));
+      if excludedByFilter(i)
+      then new(items[k].visualItem,createForDisabledPaletteItem(behavior))
+      else new(items[k].visualItem,create(behavior));
+
       items[k].visualItem^.uiAdapter:=ui;
       items[k].entryIndex:=i;
       items[k].visualSorting:=paletteEntries[i].visualSorting;

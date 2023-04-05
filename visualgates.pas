@@ -43,6 +43,7 @@ TYPE
       uiAdapter:P_uiAdapter;
 
       CONSTRUCTOR create(CONST behavior_:P_abstractGate);
+      CONSTRUCTOR createForDisabledPaletteItem(CONST behavior_:P_abstractGate);
       DESTRUCTOR destroy;
       PROCEDURE setupVisuals;
 
@@ -62,7 +63,9 @@ TYPE
       PROPERTY getGridHeight:longint read gridHeight;
       FUNCTION isAtGridPos(CONST p:T_point; OUT info:T_hoverInfo):boolean;
       PROCEDURE flipInputBits;
+      FUNCTION isMarkedAsDisabled:boolean;
   end;
+
 {$undef includeInterface}
 IMPLEMENTATION
 USES visuals;
@@ -111,6 +114,12 @@ CONSTRUCTOR T_visualGate.create(CONST behavior_: P_abstractGate);
     ioLocations:=behavior^.getIoLocations;
     outputMark:=iom_none;
     setupVisuals;
+  end;
+
+CONSTRUCTOR T_visualGate.createForDisabledPaletteItem(CONST behavior_:P_abstractGate);
+  begin
+    create(behavior_);
+    outputMark:=iom_disabled;
   end;
 
 DESTRUCTOR T_visualGate.destroy;
@@ -172,7 +181,8 @@ PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST zoom: longint);
       gt_7segmentDummy:
         get7SegmentSprite(behavior^.getInput(0),marked)^.renderAt(Canvas,zoom,canvasPos);
       else begin
-        getBlockSprite  (behavior^.getCaption,gridWidth,gridHeight,marked)^.renderAt(Canvas,zoom,canvasPos);
+        getBlockSprite  (behavior^.getCaption,gridWidth,gridHeight,marked,outputMark)^.renderAt(Canvas,zoom,canvasPos);
+        if outputMark=iom_disabled then exit;
       end;
     end;
 
@@ -287,6 +297,11 @@ PROCEDURE T_visualGate.flipInputBits;
     uiAdapter^.repaintImage;
     uiAdapter^.callback.boardModifiedCallback();
     uiAdapter^.hideIoEdit;
+  end;
+
+FUNCTION T_visualGate.isMarkedAsDisabled:boolean;
+  begin
+    result:=outputMark=iom_disabled;
   end;
 
 end.

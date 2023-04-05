@@ -1361,7 +1361,9 @@ PROCEDURE T_visualBoard.boardMouseMove(Sender: TObject; Shift: TShiftState; X,
           //Check hover over palette gates
           g:=P_visualGate(associatedPalette^.getGateAtScreenPosition(x,y));
           if g<>nil then begin
-            ui^.uiElement.boardImage.Hint:=g^.getBehavior^.getDescription;
+            if g^.isMarkedAsDisabled
+            then ui^.uiElement.boardImage.Hint:='[Wegen Bearbeitung gesperrt]'+LineEnding+g^.getBehavior^.getDescription
+            else ui^.uiElement.boardImage.Hint:=                                          g^.getBehavior^.getDescription;
             ui^.uiElement.boardImage.Cursor:=crHandPoint;
           end else ui^.uiElement.boardImage.Cursor:=crCross;
           ui^.uiElement.boardImage.ShowHint:=(g<>nil);
@@ -1564,7 +1566,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
     if x<ui^.paletteWidth then begin
       gridPos:=pointOf(round(x/ui^.getZoom),
                        round((y-ui^.paletteYOffset)/ui^.getZoom));
-      if ui^.callback.paletteItemAt(gridPos,g) then begin
+      if ui^.callback.paletteItemAt(gridPos,g) and not(g^.isMarkedAsDisabled) then begin
         if button=mbLeft then begin
           g:=g^.clone;
           g^.setupVisuals;

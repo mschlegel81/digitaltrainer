@@ -12,7 +12,7 @@ CONST
 TYPE
   P_sprite=^T_sprite;
 
-  T_ioMark=(iom_none,iom_correctOutput,iom_incorrectOutput);
+  T_ioMark=(iom_none,iom_correctOutput,iom_incorrectOutput,iom_disabled);
 
   { T_sprite }
 
@@ -47,10 +47,11 @@ TYPE
       caption:shortstring;
       width,height:longint;
       marked:boolean;
+      ioMark:T_ioMark;
     protected
-      PROCEDURE initBaseShape(CONST zoom:longint; CONST ioMark:T_ioMark=iom_none);
+      PROCEDURE initBaseShape(CONST zoom:longint);
     public
-      CONSTRUCTOR create(CONST caption_:string; CONST gridWidth,gridHeight:longint; CONST marked_:boolean);
+      CONSTRUCTOR create(CONST caption_:string; CONST gridWidth,gridHeight:longint; CONST marked_:boolean; CONST ioMark_:T_ioMark);
       PROCEDURE setZoom(CONST zoom:longint); virtual;
   end;
 
@@ -59,7 +60,6 @@ TYPE
   T_ioBlockSprite=object(T_blockSprite)
     private
       inIdx:longint;
-      ioMark:T_ioMark;
     public
       CONSTRUCTOR create(CONST caption_:string; CONST inputIndex:longint; CONST marked_:boolean; CONST ioMark_:T_ioMark);
       PROCEDURE setZoom(CONST zoom:longint); virtual;
@@ -123,7 +123,7 @@ TYPE
 PROCEDURE textOut(CONST CanvasBGRA:TBGRACanvas; CONST s:string; CONST x0,y0,x1,y1:longint; CONST textColor:longint; CONST autoRotate:boolean=true);
 
 FUNCTION getIoSprite(CONST pos:T_ioDirection; CONST wireValue:T_wireValue; CONST caption:string):P_sprite;
-FUNCTION getBlockSprite(CONST caption:shortstring; CONST gridWidth,gridHeight:longint; CONST marked:boolean):P_sprite;
+FUNCTION getBlockSprite(CONST caption:shortstring; CONST gridWidth,gridHeight:longint; CONST marked:boolean; CONST ioMark:T_ioMark=iom_none):P_sprite;
 FUNCTION getIoBlockSprite(CONST caption:shortstring; CONST inputIndex:longint; CONST marked:boolean; CONST ioMark:T_ioMark=iom_none):P_sprite;
 FUNCTION getIoTextSprite(CONST wireValue:T_wireValue; mode:T_multibitWireRepresentation):P_sprite;
 FUNCTION get7SegmentSprite(CONST wireValue: T_wireValue; CONST marked:boolean):P_sprite;
@@ -244,12 +244,17 @@ FUNCTION getIoSprite(CONST pos: T_ioDirection; CONST wireValue:T_wireValue; CONS
     result^.lastUsed:=now;
   end;
 
-FUNCTION getBlockSprite(CONST caption: shortstring; CONST gridWidth, gridHeight: longint; CONST marked: boolean): P_sprite;
+FUNCTION getBlockSprite(CONST caption: shortstring; CONST gridWidth, gridHeight: longint; CONST marked: boolean; CONST ioMark:T_ioMark=iom_none): P_sprite;
   VAR key:string;
   begin
     key:=caption+' '+intToStr(gridWidth)+' '+intToStr(gridHeight)+BoolToStr(marked,'M','');
+    case ioMark of
+      iom_incorrectOutput: key+='_mC';
+      iom_correctOutput  : key+='_mI';
+      iom_disabled       : key+='_dis';
+    end;
     if not blockSpriteMap.containsKey(key,result) then begin
-      new(P_blockSprite(result),create(caption,gridWidth,gridHeight,marked));
+      new(P_blockSprite(result),create(caption,gridWidth,gridHeight,marked,ioMark));
       blockSpriteMap.put(key,result);
       spriteAllocated;
     end;
@@ -264,6 +269,7 @@ FUNCTION getIoBlockSprite(CONST caption: shortstring; CONST inputIndex:longint; 
     case ioMark of
       iom_incorrectOutput: key+='_mC';
       iom_correctOutput  : key+='_mI';
+      iom_disabled       : key+='_dis';
     end;
     if not ioBlockSpriteMap.containsKey(key,result) then begin
       new(P_ioBlockSprite(result),create(caption,inputIndex,marked,ioMark));
@@ -544,7 +550,7 @@ PROCEDURE T_watcherSprite.setZoom(CONST zoom: longint);
 
 CONSTRUCTOR T_7SegmentSprite.create(CONST a: byte; CONST marked_: boolean);
   begin
-    inherited create('',4,6,marked_);
+    inherited create('',4,6,marked_,iom_none);
     active:=a;
   end;
 
@@ -630,7 +636,7 @@ PROCEDURE T_7SegmentSprite.setZoom(CONST zoom: longint);
 
 CONSTRUCTOR T_ioTextSprite.create(CONST wireMode: T_multibitWireRepresentation; CONST value: shortstring);
   begin
-    inherited create(value,4,4,false);
+    inherited create(value,4,4,false,iom_none);
     wireModeText:=C_multibitWireRepresentationName[wireMode];
   end;
 
@@ -663,9 +669,8 @@ PROCEDURE T_ioTextSprite.setZoom(CONST zoom: longint);
 
 CONSTRUCTOR T_ioBlockSprite.create(CONST caption_: string; CONST inputIndex:longint; CONST marked_: boolean; CONST ioMark_:T_ioMark);
   begin
-    inherited create(caption_,4,4,marked_);
+    inherited create(caption_,4,4,marked_,ioMark_);
     inIdx:=inputIndex;
-    ioMark:=ioMark_;
   end;
 
 { T_ioSprite }
@@ -906,7 +911,7 @@ PROCEDURE textOut(CONST CanvasBGRA:TBGRACanvas; CONST s: string; CONST x0, y0, x
 
   end;
 
-PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint; CONST ioMark:T_ioMark);
+PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint);
   VAR newWidth,newHeight:longint;
   PROCEDURE drawGlowingFrame(CONST FrameColor:longint);
     VAR i:longint;
@@ -945,7 +950,7 @@ PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint; CONST ioMark:T_ioMark
     end;
 
   begin
-    if not marked and (ioMark=iom_none)
+    if not marked and (ioMark in [iom_none,iom_disabled])
     then screenOffset:=pointOf(-3,-3)
     else screenOffset:=pointOf(0,0);
 
@@ -959,9 +964,10 @@ PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint; CONST ioMark:T_ioMark
     Bitmap.CanvasBGRA.Pen.style:=psClear;
     Bitmap.CanvasBGRA.Rectangle(0,0,newWidth+1,newHeight+1);
 
-    Bitmap.CanvasBGRA.Brush.color:=colorScheme.GATE_COLOR;
+    if ioMark=iom_disabled
+    then Bitmap.CanvasBGRA.Brush.color:=colorScheme.BOARD_COLOR
+    else Bitmap.CanvasBGRA.Brush.color:=colorScheme.GATE_COLOR;
     Bitmap.CanvasBGRA.Pen.style:=psSolid;
-
     Bitmap.CanvasBGRA.Pen.color:=colorScheme.GATE_BORDER_COLOR;
 
     Bitmap.CanvasBGRA.Rectangle(3+screenOffset[0],
@@ -977,31 +983,38 @@ PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint; CONST ioMark:T_ioMark
     end;
   end;
 
-CONSTRUCTOR T_blockSprite.create(CONST caption_: string; CONST gridWidth, gridHeight: longint; CONST marked_: boolean);
+CONSTRUCTOR T_blockSprite.create(CONST caption_: string; CONST gridWidth, gridHeight: longint; CONST marked_: boolean; CONST ioMark_:T_ioMark);
   begin
     inherited create;
     caption:=caption_;
     width:=gridWidth;
     height:=gridHeight;
     marked:=marked_;
+    ioMark:=ioMark_;
   end;
 
 PROCEDURE T_blockSprite.setZoom(CONST zoom: longint);
+  VAR textColor:longint;
   begin
     initBaseShape(zoom);
     Bitmap.CanvasBGRA.DrawFontBackground:=true;
+
+    if ioMark=iom_disabled
+    then textColor:=colorScheme.SHADOW_COLOR
+    else textColor:=colorScheme.GATE_LABEL_COLOR;
+
     textOut(Bitmap.CanvasBGRA,caption,
             screenOffset[0]            +zoom shr 1,
             screenOffset[1]            +zoom shr 1,
             screenOffset[0]+zoom*width -zoom shr 1,
             screenOffset[1]+zoom*height-zoom shr 1,
-            colorScheme.GATE_LABEL_COLOR);
+            textColor);
     preparedForZoom:=zoom;
   end;
 
 PROCEDURE T_ioBlockSprite.setZoom(CONST zoom: longint);
   begin
-    initBaseShape(zoom,ioMark);
+    initBaseShape(zoom);
     Bitmap.CanvasBGRA.Pen.color:=0;
     Bitmap.CanvasBGRA.MoveTo(screenOffset[0]           +3,screenOffset[1]+(zoom*height   shr 1));
     Bitmap.CanvasBGRA.LineTo(screenOffset[0]+zoom*width-3,screenOffset[1]+(zoom*height   shr 1));
