@@ -22,7 +22,7 @@
       <AutoIncrementBuild Value="True"/>
       <MajorVersionNr Value="2"/>
       <MinorVersionNr Value="2"/>
-      <RevisionNr Value="2"/>
+      <RevisionNr Value="3"/>
       <BuildNr Value="7"/>
       <Language Value="0407"/>
       <StringTable Comments="Digitaltrainer" CompanyName="Martin Schlegel" FileDescription="Ein einfacher Digitaltrainer" LegalCopyright="CC BY-SA 3.0"/>

@@ -1,6 +1,6 @@
 [Setup]
 AppName=Digitaltrainer
-AppVersion=2.2.2
+AppVersion=2.2.3
 WizardStyle=modern
 DefaultDirName={autopf}\Digitaltrainer
 DefaultGroupName=Digitaltrainer
@@ -18,7 +18,7 @@ Name: "de"; MessagesFile: "compiler:Languages\German.isl"
 Source: "..\dt2.exe"; DestDir: "{app}"; DestName: "Digitaltrainer.exe"
 Source: "dt2.workspace"; DestDir: "{localappdata}\Digitaltrainer"; DestName: "workspace" 
 [Icons]
-Name: "{group}\Digitaltrainer"; Filename: "{app}\Digitaltrainer.exe"
+Name: "{userdesktop}\Digitaltrainer"; Filename: "{app}\Digitaltrainer.exe"; Tasks: desktopicon
 [CustomMessages]
 LaunchProgram=Nach Installation starten.
 [Run]

@@ -21,7 +21,7 @@ object AboutDialog: TAboutDialog
     Width = 549
     Alignment = taCenter
     Anchors = [akTop, akLeft, akRight]
-    Caption = 'Digitaltrainer Version 2.2.2'#13#10'© Martin Schlegel, 2023 '
+    Caption = 'Digitaltrainer Version 2.2.3'#13#10'© Martin Schlegel, 2023 '
     Font.CharSet = ANSI_CHARSET
     Font.Color = clWhite
     Font.Height = -16
