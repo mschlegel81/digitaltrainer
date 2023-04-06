@@ -1,4 +1,4 @@
-object AddToPaletteForm: TAddToPaletteForm
+object AddToPaletteDialog: TAddToPaletteDialog
   Left = 753
   Height = 241
   Top = 561

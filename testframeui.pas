@@ -52,6 +52,7 @@ TYPE
     PROCEDURE importTable(CONST fileName:string);
     PROCEDURE exportTable(CONST fileName:string);
     PROCEDURE CopyToClipboard;
+    PROCEDURE initOnCreate;
   end;
 
 IMPLEMENTATION
@@ -61,7 +62,8 @@ USES compoundGates,logicalGates, Graphics,visuals;
 
 { TTestCreationFrame }
 
-PROCEDURE TTestCreationFrame.TestCasesStringGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
+PROCEDURE TTestCreationFrame.TestCasesStringGridValidateEntry(Sender: TObject;
+  aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
   VAR
     newStepCount: longint;
     wireValue: T_wireValue;
@@ -209,7 +211,8 @@ PROCEDURE TTestCreationFrame.fillTable;
 
   end;
 
-PROCEDURE TTestCreationFrame.setTestGenerator(CONST generator: P_testCreator; CONST maxTestCases:longint);
+PROCEDURE TTestCreationFrame.setTestGenerator(CONST generator: P_testCreator;
+  CONST maxTestCases: longint);
   begin
     maximumNumberOfTestCases:=maxTestCases;
     testGenerator:=generator;
@@ -238,13 +241,13 @@ PROCEDURE TTestCreationFrame.TestCaseCountEditEditingDone(Sender: TObject);
     lastUpdatedRow:=-1;
   end;
 
-PROCEDURE TTestCreationFrame.importTable(CONST fileName:string);
+PROCEDURE TTestCreationFrame.importTable(CONST fileName: string);
   begin
     //TODO: This is tricky; we have to find out how the columns are encoded. Read and interpret header?
     //TestCasesStringGrid.LoadFromCSVFile(OpenDialog1.fileName,';',false,1);
   end;
 
-PROCEDURE TTestCreationFrame.exportTable(CONST fileName:string);
+PROCEDURE TTestCreationFrame.exportTable(CONST fileName: string);
   begin
     TestCasesStringGrid.SaveToCSVFile(fileName,';');
   end;
@@ -254,22 +257,32 @@ PROCEDURE TTestCreationFrame.CopyToClipboard;
     TestCasesStringGrid.CopyToClipboard;
   end;
 
+PROCEDURE TTestCreationFrame.initOnCreate;
+  begin
+    addButton(adaptStepsShape,adaptStepsLabel);
+    addButton(generateTestCasesShape,generateTestCasesLabel);
+    addButton(generateTestCasesShape1,generateTestCasesLabel1)
+  end;
+
 PROCEDURE TTestCreationFrame.generateTestCasesShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     lastUpdatedRow:=-1;
     testGenerator^.generateTestCases;
+    buttonClicked(generateTestCasesShape);
   end;
 
 PROCEDURE TTestCreationFrame.generateTestCasesShape1MouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     lastUpdatedRow:=-1;
     testGenerator^.generateTestCases(true,false);
+    buttonClicked(generateTestCasesShape1);
   end;
 
 PROCEDURE TTestCreationFrame.adaptStepsShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
     lastUpdatedRow:=-1;
     testGenerator^.reInitStepCounts;
+    buttonClicked(adaptStepsShape);
   end;
 
 PROCEDURE TTestCreationFrame.StepCountEditEditingDone(Sender: TObject);

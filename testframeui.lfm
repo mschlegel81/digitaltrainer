@@ -9,8 +9,8 @@ object TestCreationFrame: TTestCreationFrame
   ParentBackground = False
   ParentColor = False
   TabOrder = 0
-  DesignLeft = 1182
-  DesignTop = 409
+  DesignLeft = 537
+  DesignTop = 438
   object TestInputsPanel: TPanel
     Left = 4
     Height = 370

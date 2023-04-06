@@ -42,14 +42,62 @@ TYPE  T_shapeAndLabel=record colorIndex:byte; Shape:TShape; labl:TLabel; end;
 
 VAR colorScheme:T_colorScheme;
     cleanupHistoryOnShutdown:longint=0;
+
 FUNCTION getColorSchemeIndex:longint;
 PROCEDURE setColorScheme(CONST index:longint);
 PROCEDURE setEnableButton(Shape:TShape; CONST labl:TLabel; CONST enable:boolean);
 PROCEDURE applyColorScheme(CONST form:TForm);
 PROCEDURE initializeVisuals;
+
+PROCEDURE addButton(Shape:TShape; lab:TLabel);
+PROCEDURE buttonClicked(Shape: TShape);
+PROCEDURE registerAnimationTimer(CONST timer:TTimer);
 IMPLEMENTATION
 USES Controls, Graphics, Grids,ValEdit;
+TYPE T_ridiculousWrapper=object
+       PROCEDURE AnimationTimerTimer(Sender: TObject);
+     end;
 VAR colorSchemeIndex:longint;
+    AnimationTimer: TTimer;
+    Buttons:array of T_shapeAndLabel;
+    ridiculousWrapper:T_ridiculousWrapper;
+
+PROCEDURE T_ridiculousWrapper.AnimationTimerTimer(Sender: TObject);
+  VAR i:longint;
+      anythingDone:boolean=false;
+  begin
+    for i:=0 to length(visuals.Buttons)-1 do with visuals.Buttons[i] do if colorIndex>0 then begin
+      anythingDone:=true;
+      dec(colorIndex);
+      Shape.Brush.color:=colorScheme.buttonColorTable[colorIndex];
+    end;
+    if not(anythingDone) then AnimationTimer.enabled:=false;
+  end;
+
+PROCEDURE registerAnimationTimer(CONST timer:TTimer);
+  begin
+    AnimationTimer:=timer;
+    AnimationTimer.OnTimer:=@ridiculousWrapper.AnimationTimerTimer;
+  end;
+
+PROCEDURE addButton(Shape:TShape; lab:TLabel);
+  VAR k:longint;
+  begin
+    lab.OnMouseDown:=Shape.OnMouseDown;
+    k:=length(Buttons);
+    setLength(Buttons,k+1);
+    Buttons[k].Shape:=Shape;
+    Buttons[k].labl :=lab;
+    Buttons[k].colorIndex:=0;
+    Shape.Tag:=k;
+  end;
+
+PROCEDURE buttonClicked(Shape: TShape);
+  begin
+    Buttons[Shape.Tag].colorIndex:=10;
+    Shape.Brush.color:=colorScheme.buttonColorTable[10];
+    if not(AnimationTimer.enabled) then AnimationTimer.enabled:=true;
+  end;
 
 FUNCTION settingsFileName:string;
   begin
@@ -193,7 +241,7 @@ CONST DEFAULT_SCHEME:T_colorScheme=
         SHADOW_COLOR         :$00001020;
         CORRECT_COLOR        :$00008000;
         INCORRECT_COLOR      :$00000080;
-        WIRE_COLOR           :$00aaaaaa;
+        WIRE_COLOR           :$00AAAAAA;
         BOARD_BOUNDARY_COLOR :$00001020;
         TRUE_COLOR           :$000080ff;
         FALSE_COLOR          :0;

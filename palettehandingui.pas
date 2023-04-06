@@ -9,9 +9,9 @@ USES
   StdCtrls, Menus, paletteHandling,workspaces,visualGates;
 
 TYPE
-  { TPaletteForm }
+  { TPaletteHandlingDialog }
 
-  TPaletteForm = class(TForm)
+  TPaletteHandlingDialog = class(TForm)
     EditBoardLabel: TLabel;
     EditBoardShape: TShape;
     entriesGrid: TStringGrid;
@@ -81,21 +81,21 @@ TYPE
   end;
 
 VAR uiAdapter:P_uiAdapter;
-FUNCTION PaletteForm: TPaletteForm;
+FUNCTION PaletteHandlingDialog: TPaletteHandlingDialog;
 IMPLEMENTATION
 USES visuals,logicalGates,paletteImportUi,duplicateRemovalUi;
 VAR
-  myPaletteForm: TPaletteForm=nil;
+  myPaletteForm: TPaletteHandlingDialog=nil;
 
 {$R *.lfm}
 
-FUNCTION PaletteForm: TPaletteForm;
+FUNCTION PaletteHandlingDialog: TPaletteHandlingDialog;
   begin
-    if myPaletteForm=nil then myPaletteForm:=TPaletteForm.create(nil);
+    if myPaletteForm=nil then myPaletteForm:=TPaletteHandlingDialog.create(nil);
     result:=myPaletteForm;
   end;
 
-PROCEDURE TPaletteForm.entriesGridSelection(Sender: TObject; aCol, aRow: integer);
+PROCEDURE TPaletteHandlingDialog.entriesGridSelection(Sender: TObject; aCol, aRow: integer);
   begin
     lastClicked:=aRow-1;
     if (lastClicked>=0) and (lastClicked<length(sorting.index))
@@ -103,7 +103,7 @@ PROCEDURE TPaletteForm.entriesGridSelection(Sender: TObject; aCol, aRow: integer
     updateButtons;
   end;
 
-PROCEDURE TPaletteForm.entriesGridSelectEditor(Sender: TObject; aCol, aRow: integer; VAR editor: TWinControl);
+PROCEDURE TPaletteHandlingDialog.entriesGridSelectEditor(Sender: TObject; aCol, aRow: integer; VAR editor: TWinControl);
   begin
     if (editor is TPickListCellEditor) then begin
       TPickListCellEditor(editor).color:=colorScheme.editorBackgroundColor;
@@ -114,7 +114,7 @@ PROCEDURE TPaletteForm.entriesGridSelectEditor(Sender: TObject; aCol, aRow: inte
     end;
   end;
 
-PROCEDURE TPaletteForm.entriesGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);
+PROCEDURE TPaletteHandlingDialog.entriesGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);
   begin
     if not(IsColumn) then exit;
     if sorting.byColumn=index then sorting.ascending:=not(sorting.ascending)
@@ -125,7 +125,7 @@ PROCEDURE TPaletteForm.entriesGridHeaderClick(Sender: TObject; IsColumn: boolean
     fillTable(false);
   end;
 
-PROCEDURE TPaletteForm.entriesGridGetCheckboxState(Sender: TObject; aCol, aRow: integer; VAR value: TCheckboxState);
+PROCEDURE TPaletteHandlingDialog.entriesGridGetCheckboxState(Sender: TObject; aCol, aRow: integer; VAR value: TCheckboxState);
   begin
     if (aCol<>3) then exit;
     aRow-=1;
@@ -138,7 +138,7 @@ PROCEDURE TPaletteForm.entriesGridGetCheckboxState(Sender: TObject; aCol, aRow: 
     end else value:=cbGrayed;
   end;
 
-PROCEDURE TPaletteForm.EditBoardShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TPaletteHandlingDialog.EditBoardShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR i:longint;
   begin
     i:=lastClicked;
@@ -150,10 +150,11 @@ PROCEDURE TPaletteForm.EditBoardShapeMouseDown(Sender: TObject; button: TMouseBu
     end;
   end;
 
-PROCEDURE TPaletteForm.DeleteShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TPaletteHandlingDialog.DeleteShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR i:longint;
       selection:TGridRect;
   begin
+    buttonClicked(DeleteShape);
     i:=lastClicked;
     if (i<0) or (i>length(sorting.index)) then exit;
 
@@ -169,7 +170,7 @@ PROCEDURE TPaletteForm.DeleteShapeMouseDown(Sender: TObject; button: TMouseButto
     updateButtons;
   end;
 
-PROCEDURE TPaletteForm.entriesGridSetCheckboxState(Sender: TObject; aCol, aRow: integer; CONST value: TCheckboxState);
+PROCEDURE TPaletteHandlingDialog.entriesGridSetCheckboxState(Sender: TObject; aCol, aRow: integer; CONST value: TCheckboxState);
   begin
     if (aCol<>3) then exit;
     aRow-=1;
@@ -182,7 +183,7 @@ PROCEDURE TPaletteForm.entriesGridSetCheckboxState(Sender: TObject; aCol, aRow: 
     end;
   end;
 
-PROCEDURE TPaletteForm.entriesGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
+PROCEDURE TPaletteHandlingDialog.entriesGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
   VAR editedIdx: longint;
   begin
     dec(aRow);
@@ -200,11 +201,13 @@ PROCEDURE TPaletteForm.entriesGridValidateEntry(Sender: TObject; aCol, aRow: int
     end;
   end;
 
-PROCEDURE TPaletteForm.ExportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
-  begin    if SaveDialog1.execute then palette^.exportSelected(SaveDialog1.fileName);
+PROCEDURE TPaletteHandlingDialog.ExportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+  begin
+    buttonClicked(ExportShape);
+    if SaveDialog1.execute then palette^.exportSelected(SaveDialog1.fileName);
   end;
 
-PROCEDURE TPaletteForm.FormCreate(Sender: TObject);
+PROCEDURE TPaletteHandlingDialog.FormCreate(Sender: TObject);
   begin
     palette:=nil;
     entriesGrid.rowCount:=1;
@@ -212,16 +215,25 @@ PROCEDURE TPaletteForm.FormCreate(Sender: TObject);
     SubPaletteStringGrid.editor.Font.color:=SubPaletteStringGrid.Font.color;
     entriesGrid.editor     .color:=entriesGrid     .color;
     entriesGrid.editor.Font.color:=entriesGrid.Font.color;
+
+    addButton(MoveTaskUpShape,MoveTaskUpLabel);
+    addButton(MoveTaskDownShape,MoveTaskDownLabel);
+    addButton(MarkAllShape,MarkAllLabel);
+    addButton(MarkNoneShape,MarkNoneLabel);
+    addButton(ExportShape,ExportLabel);
+    addButton(ImportShape,ImportLabel);
+    addButton(DeleteShape,DeleteLabel);
   end;
 
-PROCEDURE TPaletteForm.FormShow(Sender: TObject);
+PROCEDURE TPaletteHandlingDialog.FormShow(Sender: TObject);
   begin
     applyColorScheme(self);
     updateButtons;
   end;
 
-PROCEDURE TPaletteForm.ImportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TPaletteHandlingDialog.ImportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
+    buttonClicked(ImportShape);
     createBackupOnce(wht_beforePaletteImport);
     if OpenDialog1.execute then begin
       if PaletteImportForm.ShowModal=mrOk
@@ -231,21 +243,23 @@ PROCEDURE TPaletteForm.ImportShapeMouseDown(Sender: TObject; button: TMouseButto
     fillTable(true);
   end;
 
-PROCEDURE TPaletteForm.MarkAllShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TPaletteHandlingDialog.MarkAllShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
+    buttonClicked(MarkAllShape);
     palette^.markAllEntriesForExport(true);
     fillTable;
     updateButtons;
   end;
 
-PROCEDURE TPaletteForm.MarkNoneShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TPaletteHandlingDialog.MarkNoneShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
+    buttonClicked(MarkNoneShape);
     palette^.markAllEntriesForExport(false);
     fillTable;
     updateButtons;
   end;
 
-PROCEDURE TPaletteForm.miCleanupManuallyClick(Sender: TObject);
+PROCEDURE TPaletteHandlingDialog.miCleanupManuallyClick(Sender: TObject);
   begin
 
     if (lastClicked>=0) and (lastClicked<length(sorting.index))
@@ -255,7 +269,7 @@ PROCEDURE TPaletteForm.miCleanupManuallyClick(Sender: TObject);
     end;
   end;
 
-PROCEDURE TPaletteForm.miRemoveDuplicatesBehaviorClick(Sender: TObject);
+PROCEDURE TPaletteHandlingDialog.miRemoveDuplicatesBehaviorClick(Sender: TObject);
   begin
     createBackupOnce(wht_beforeDuplicateRemoval);
     palette^.removeDuplicates(true);
@@ -263,7 +277,7 @@ PROCEDURE TPaletteForm.miRemoveDuplicatesBehaviorClick(Sender: TObject);
     updateButtons;
   end;
 
-PROCEDURE TPaletteForm.miRemoveDuplicatesExactClick(Sender: TObject);
+PROCEDURE TPaletteHandlingDialog.miRemoveDuplicatesExactClick(Sender: TObject);
   begin
     createBackupOnce(wht_beforeDuplicateRemoval);
     palette^.removeDuplicates(false);
@@ -271,9 +285,10 @@ PROCEDURE TPaletteForm.miRemoveDuplicatesExactClick(Sender: TObject);
     updateButtons;
   end;
 
-PROCEDURE TPaletteForm.MoveTaskDownShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TPaletteHandlingDialog.MoveTaskDownShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR selection:TGridRect;
   begin
+    buttonClicked(MoveTaskDownShape);
     palette^.swapPaletteName(lastClickedSubPalette,false);
     inc(lastClickedSubPalette);
     fillTable;
@@ -282,11 +297,13 @@ PROCEDURE TPaletteForm.MoveTaskDownShapeMouseDown(Sender: TObject; button: TMous
     selection.Left:=0;
     selection.Right:=0;
     SubPaletteStringGrid.selection:=selection;
+    updateButtons;
   end;
 
-PROCEDURE TPaletteForm.MoveTaskUpShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TPaletteHandlingDialog.MoveTaskUpShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR selection:TGridRect;
   begin
+    buttonClicked(MoveTaskUpShape);
     palette^.swapPaletteName(lastClickedSubPalette,true);
     dec(lastClickedSubPalette);
     fillTable;
@@ -295,14 +312,16 @@ PROCEDURE TPaletteForm.MoveTaskUpShapeMouseDown(Sender: TObject; button: TMouseB
     selection.Left:=0;
     selection.Right:=0;
     SubPaletteStringGrid.selection:=selection;
+    updateButtons;
   end;
 
-PROCEDURE TPaletteForm.SubPaletteStringGridSelection(Sender: TObject; aCol, aRow: integer);
+PROCEDURE TPaletteHandlingDialog.SubPaletteStringGridSelection(Sender: TObject; aCol, aRow: integer);
   begin
     lastClickedSubPalette:=aRow-1;
+    updateButtons;
   end;
 
-PROCEDURE TPaletteForm.SubPaletteStringGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
+PROCEDURE TPaletteHandlingDialog.SubPaletteStringGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
   begin
     lastClickedSubPalette:=aRow-1;
     if (lastClickedSubPalette<0) or (lastClickedSubPalette>=length(palette^.paletteNames))
@@ -311,14 +330,14 @@ PROCEDURE TPaletteForm.SubPaletteStringGridValidateEntry(Sender: TObject; aCol, 
     fillTable;
   end;
 
-PROCEDURE TPaletteForm.createBackupOnce(CONST reason: T_workspaceHistorizationTriggerEnum);
+PROCEDURE TPaletteHandlingDialog.createBackupOnce(CONST reason: T_workspaceHistorizationTriggerEnum);
   begin
     if backupCreated then exit;
     addBackup(@workspace,reason);
     backupCreated:=true;
   end;
 
-PROCEDURE TPaletteForm.fillTable(CONST initial: boolean);
+PROCEDURE TPaletteHandlingDialog.fillTable(CONST initial: boolean);
   PROCEDURE updateSorting;
     FUNCTION comesBefore(CONST i,j:longint):boolean;
       begin
@@ -407,7 +426,7 @@ PROCEDURE TPaletteForm.fillTable(CONST initial: boolean);
     updateButtons;
   end;
 
-PROCEDURE TPaletteForm.updateButtons;
+PROCEDURE TPaletteHandlingDialog.updateButtons;
   VAR anyMarked:boolean=false;
       i:longint;
   begin
@@ -420,10 +439,15 @@ PROCEDURE TPaletteForm.updateButtons;
       (lastClicked>=0) and
       (palette^.paletteEntries[sorting.index[lastClicked]].entryType=gt_compound));
     setEnableButton(ExportShape,ExportLabel,anyMarked);
+
+    setEnableButton(MoveTaskUpShape,MoveTaskUpLabel,lastClickedSubPalette>0);
+    setEnableButton(MoveTaskDownShape,MoveTaskDownLabel,(lastClickedSubPalette>=0) and (lastClickedSubPalette<length(palette^.paletteNames)-1));
   end;
 
-PROCEDURE TPaletteForm.showFor(CONST palette_: P_workspacePalette);
+PROCEDURE TPaletteHandlingDialog.showFor(CONST palette_: P_workspacePalette);
   begin
+    lastClicked:=-1;
+    lastClickedSubPalette:=-1;
     backupCreated:=false;
     palette:=palette_;
     sorting.byColumn:=255;

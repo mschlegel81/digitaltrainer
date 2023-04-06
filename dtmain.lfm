@@ -743,7 +743,6 @@ object DigitaltrainerMainForm: TDigitaltrainerMainForm
   object AnimationTimer: TTimer
     Enabled = False
     Interval = 25
-    OnTimer = AnimationTimerTimer
     Left = 170
     Top = 180
   end

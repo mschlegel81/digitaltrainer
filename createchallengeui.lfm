@@ -1,12 +1,13 @@
-object CreateTaskForm: TCreateTaskForm
-  Left = 1098
+object CreateChallengeDialog: TCreateChallengeDialog
+  Left = 609
   Height = 553
-  Top = 254
+  Top = 129
   Width = 767
   Caption = 'Aufgabe erstellen'
   ClientHeight = 553
   ClientWidth = 767
   Color = 8405056
+  OnCreate = FormCreate
   OnShow = FormShow
   Position = poOwnerFormCenter
   LCLVersion = '2.2.2.0'
@@ -113,7 +114,7 @@ object CreateTaskForm: TCreateTaskForm
     AnchorSideTop.Control = TestCreationFrame1
     Left = 4
     Height = 15
-    Top = 242
+    Top = 210
     Width = 74
     BorderSpacing.Left = 4
     Caption = 'Test-Eingaben'
@@ -124,13 +125,13 @@ object CreateTaskForm: TCreateTaskForm
   object RadioPanel1: TPanel
     AnchorSideLeft.Control = Label3
     AnchorSideLeft.Side = asrBottom
-    AnchorSideTop.Control = editTemplateShape
+    AnchorSideTop.Control = DifficultyTrackBar
     AnchorSideTop.Side = asrBottom
     AnchorSideRight.Control = Owner
     AnchorSideRight.Side = asrBottom
     Left = 107
     Height = 88
-    Top = 149
+    Top = 117
     Width = 656
     Anchors = [akTop, akLeft, akRight]
     AutoSize = True
@@ -202,7 +203,7 @@ object CreateTaskForm: TCreateTaskForm
     AnchorSideTop.Control = RadioPanel1
     Left = 4
     Height = 15
-    Top = 149
+    Top = 117
     Width = 36
     BorderSpacing.Left = 4
     Caption = 'Palette'
@@ -221,7 +222,7 @@ object CreateTaskForm: TCreateTaskForm
     Top = 521
     Width = 160
     Anchors = [akRight, akBottom]
-    BorderSpacing.Left = 15
+    BorderSpacing.Left = 5
     BorderSpacing.Top = 4
     BorderSpacing.Right = 4
     BorderSpacing.Bottom = 4
@@ -259,39 +260,54 @@ object CreateTaskForm: TCreateTaskForm
     AnchorSideRight.Side = asrBottom
     AnchorSideBottom.Control = addTaskShape
     Left = 107
-    Height = 274
-    Top = 242
+    Height = 306
+    Top = 210
     Width = 655
     Anchors = [akTop, akLeft, akRight, akBottom]
     BorderSpacing.Top = 5
     BorderSpacing.Right = 5
     BorderSpacing.Bottom = 5
-    ClientHeight = 274
+    ClientHeight = 306
     ClientWidth = 655
     TabOrder = 4
+    DesignLeft = 1182
+    DesignTop = 409
     inherited TestInputsPanel: TPanel
-      Height = 266
+      Height = 298
       Width = 647
       Anchors = [akTop, akRight, akBottom]
-      ClientHeight = 266
+      ClientHeight = 298
       ClientWidth = 647
       inherited TestCasesStringGrid: TStringGrid
-        Height = 214
-        Width = 627
+        Height = 246
       end
       inherited generateTestCasesShape: TShape
-        Left = 508
+        Left = 537
         BorderSpacing.Left = 4
       end
       inherited generateTestCasesLabel: TLabel
-        Left = 540
+        Left = 555
       end
       inherited generateTestCasesShape1: TShape
-        Left = 375
+        Left = 433
         BorderSpacing.Left = 15
       end
       inherited generateTestCasesLabel1: TLabel
-        Left = 401
+        Left = 445
+      end
+      inherited Splitter1: TSplitter
+        Height = 246
+      end
+      inherited TimingGrid: TStringGrid
+        Height = 222
+        Width = 71
+      end
+      inherited ProgressShape: TShape
+        Top = 264
+      end
+      inherited ProgressLabel: TLabel
+        Left = 598
+        Top = 269
       end
     end
   end
@@ -300,14 +316,14 @@ object CreateTaskForm: TCreateTaskForm
     AnchorSideLeft.Side = asrBottom
     AnchorSideTop.Control = DifficultyTrackBar
     AnchorSideTop.Side = asrBottom
-    AnchorSideRight.Control = Owner
-    AnchorSideRight.Side = asrBottom
+    AnchorSideRight.Control = resetTemplateShape
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 292
+    Left = 234
     Height = 28
-    Top = 117
+    Top = 521
     Width = 180
+    Anchors = [akRight, akBottom]
     BorderSpacing.Left = 5
     BorderSpacing.Top = 4
     BorderSpacing.Right = 4
@@ -322,9 +338,9 @@ object CreateTaskForm: TCreateTaskForm
     AnchorSideTop.Control = editTemplateShape
     AnchorSideTop.Side = asrCenter
     AnchorSideRight.Side = asrBottom
-    Left = 314
+    Left = 256
     Height = 21
-    Top = 121
+    Top = 525
     Width = 136
     BorderSpacing.Top = 5
     BorderSpacing.Right = 5
@@ -342,14 +358,14 @@ object CreateTaskForm: TCreateTaskForm
     AnchorSideLeft.Control = DifficultyTrackBar
     AnchorSideTop.Control = DifficultyTrackBar
     AnchorSideTop.Side = asrBottom
-    AnchorSideRight.Control = Owner
-    AnchorSideRight.Side = asrBottom
+    AnchorSideRight.Control = editTemplateShape
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 107
+    Left = 49
     Height = 28
-    Top = 117
+    Top = 521
     Width = 180
+    Anchors = [akRight, akBottom]
     BorderSpacing.Top = 4
     BorderSpacing.Right = 4
     BorderSpacing.Bottom = 4
@@ -363,9 +379,9 @@ object CreateTaskForm: TCreateTaskForm
     AnchorSideTop.Control = editExpectedShape
     AnchorSideTop.Side = asrCenter
     AnchorSideRight.Side = asrBottom
-    Left = 133
+    Left = 75
     Height = 21
-    Top = 121
+    Top = 525
     Width = 129
     BorderSpacing.Top = 5
     BorderSpacing.Right = 5
@@ -384,15 +400,15 @@ object CreateTaskForm: TCreateTaskForm
     AnchorSideLeft.Side = asrBottom
     AnchorSideTop.Control = DifficultyTrackBar
     AnchorSideTop.Side = asrBottom
-    AnchorSideRight.Control = Owner
-    AnchorSideRight.Side = asrBottom
+    AnchorSideRight.Control = addTaskShape
     AnchorSideBottom.Control = Owner
     AnchorSideBottom.Side = asrBottom
-    Left = 477
+    Left = 418
     Height = 28
-    Top = 117
+    Top = 521
     Width = 180
-    BorderSpacing.Left = 5
+    Anchors = [akRight, akBottom]
+    BorderSpacing.Left = 4
     BorderSpacing.Top = 4
     BorderSpacing.Right = 4
     BorderSpacing.Bottom = 4
@@ -406,9 +422,9 @@ object CreateTaskForm: TCreateTaskForm
     AnchorSideTop.Control = resetTemplateShape
     AnchorSideTop.Side = asrCenter
     AnchorSideRight.Side = asrBottom
-    Left = 491
+    Left = 432
     Height = 21
-    Top = 121
+    Top = 525
     Width = 152
     BorderSpacing.Top = 5
     BorderSpacing.Right = 5

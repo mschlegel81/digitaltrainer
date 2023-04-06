@@ -7,8 +7,8 @@ INTERFACE
 USES
   Classes, sysutils, Forms, Controls, Graphics, Dialogs, ExtCtrls, ComCtrls,
   Buttons, StdCtrls, Menus, ValEdit, Grids, visualGates, logicalGates,
-  paletteHandling, gateProperties, addToPaletteDialog, visuals, workspaces,
-  createTaskUnit, taskHandlingUi, taskFinishedUnit, paletteHandingUi,
+  paletteHandling, gateProperties, addToPaletteUi, visuals, workspaces,
+  createChallengeUi, taskHandlingUi, taskFinishedUi, paletteHandingUi,
   challenges, types, LCLType;
 
 TYPE
@@ -87,7 +87,6 @@ TYPE
     ResetShape: TShape;
     PlayPauseShape: TShape;
     SpeedBgShape: TShape;
-    PROCEDURE AnimationTimerTimer(Sender: TObject);
     PROCEDURE BoardImageClick(Sender: TObject);
     PROCEDURE FormCloseQuery(Sender: TObject; VAR CanClose: boolean);
     PROCEDURE FormCreate(Sender: TObject);
@@ -134,13 +133,10 @@ TYPE
     PROCEDURE ZoomInShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE ZoomOutShapeMouseDown(Sender: TObject; button: TMouseButton;  Shift: TShiftState; X, Y: integer);
   private
-    Buttons:array of T_shapeAndLabel;
-
     uiAdapter:T_uiAdapter;
     gateProperties  :T_gatePropertyValues;
     pauseByUser:boolean;
 
-    PROCEDURE buttonClicked(Shape:TShape);
     PROCEDURE propertyValueChanged(Sender: TObject);
     PROCEDURE repositionPropertyEditor(CONST mouseX,mouseY:longint; CONST hideEditor:boolean);
     PROCEDURE showPropertyEditor(CONST gate:P_visualGate; CONST fromBoard:boolean; CONST mouseX,mouseY:longint);
@@ -164,19 +160,9 @@ CONST playPauseGlyph:array[false..true] of string=('⏵','⏸');
 { TDigitaltrainerMainForm }
 
 PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
-  PROCEDURE addButton(Shape:TShape; lab:TLabel);
-    VAR k:longint;
-    begin
-      lab.OnMouseDown:=Shape.OnMouseDown;
-      k:=length(Buttons);
-      setLength(Buttons,k+1);
-      Buttons[k].Shape:=Shape;
-      Buttons[k].labl :=lab;
-      Buttons[k].colorIndex:=0;
-      Shape.Tag:=k;
-    end;
-
   begin
+    visuals.registerAnimationTimer(AnimationTimer);
+
     addButton(ZoomInShape,ZoomInLabel);
     addButton(ZoomOutShape,ZoomOutLabel);
     addButton(ResetShape,ResetLabel);
@@ -199,7 +185,7 @@ PROCEDURE TDigitaltrainerMainForm.FormCreate(Sender: TObject);
                      @boardChanged,
                      @workspace.prototypeUpdated);
 
-    createTaskUnit  .uiAdapter:=@uiAdapter;
+    createChallengeUi  .uiAdapter:=@uiAdapter;
     paletteHandingUi.uiAdapter:=@uiAdapter;
 
     workspace.activePalette^.attachUI(@uiAdapter);
@@ -283,7 +269,7 @@ PROCEDURE TDigitaltrainerMainForm.miAddToPaletteClick(Sender: TObject);
   begin
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
-    if (workspace.state in [editingNewBoard,editingPaletteEntry]) and AddToPaletteForm.showFor(P_workspacePalette(workspace.activePalette),workspace.activeBoard) then begin
+    if (workspace.state in [editingNewBoard,editingPaletteEntry]) and addToPaletteDialog.showFor(P_workspacePalette(workspace.activePalette),workspace.activeBoard) then begin
       repositionPropertyEditor(0,0,true);
       workspace.activePalette^.attachUI(@uiAdapter);
       workspace.activePalette^.checkSizes;
@@ -357,7 +343,7 @@ PROCEDURE TDigitaltrainerMainForm.miEditPaletteClick(Sender: TObject);
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
 
-    PaletteForm.showFor(workspace.getWorkspacePalette);
+    PaletteHandlingDialog.showFor(workspace.getWorkspacePalette);
     workspace.activePalette^.detachUI;
     workspace.activePalette^.attachUI(@uiAdapter);
     updateUiElements;
@@ -385,7 +371,7 @@ PROCEDURE TDigitaltrainerMainForm.miGoBackClick(Sender: TObject);
   begin
     if workspace.canGoBack and ((workspace.state in [editingChallengeSolution,editingChallengeTemplate]) or continueWithOtherBoard) then begin
       workspace.goBack(@uiAdapter,challenge,originalChallengeIndex);
-      if challenge<>nil then CreateTaskForm.reShowFor(challenge,originalChallengeIndex,workspace.getChallenges);
+      if challenge<>nil then CreateChallengeDialog.reShowFor(challenge,originalChallengeIndex,workspace.getChallenges);
     end;
     updateUiElements;
   end;
@@ -435,7 +421,7 @@ PROCEDURE TDigitaltrainerMainForm.miSaveAsTaskClick(Sender: TObject);
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
 
-    if (workspace.state in [editingNewBoard,editingPaletteEntry]) then CreateTaskForm.showForNewChallenge(workspace.activeBoard,workspace.getChallenges);
+    if (workspace.state in [editingNewBoard,editingPaletteEntry]) then CreateChallengeDialog.showForNewChallenge(workspace.activeBoard,workspace.getChallenges);
     infoLabel.caption:=workspace.getInfoLabelText(uiAdapter.getState=uas_initial);
     updateUiElements;
 
@@ -475,9 +461,9 @@ PROCEDURE TDigitaltrainerMainForm.miTasksClick(Sender: TObject);
     timerEnabledBefore:=SimulationTimer.enabled;
     SimulationTimer.enabled:=false;
 
-    if SelectTaskForm.startTaskAfterShowing(workspace.getChallenges) and
+    if ChallengeHandlingDialog.startTaskAfterShowing(workspace.getChallenges) and
        continueWithOtherBoard and
-       workspace.startChallenge(SelectTaskForm.selectedChallengeIndex) then begin
+       workspace.startChallenge(ChallengeHandlingDialog.selectedChallengeIndex) then begin
       workspace.activePalette^.attachUI(@uiAdapter);
       workspace.activeBoard  ^.attachUI(@uiAdapter);
       workspace.activeBoard  ^.reset(true);
@@ -768,13 +754,6 @@ PROCEDURE TDigitaltrainerMainForm.ZoomOutShapeMouseDown(Sender: TObject; button:
     uiAdapter.repaintImage;
   end;
 
-PROCEDURE TDigitaltrainerMainForm.buttonClicked(Shape: TShape);
-  begin
-    Buttons[Shape.Tag].colorIndex:=10;
-    Shape.Brush.color:=colorScheme.buttonColorTable[10];
-    if not(AnimationTimer.enabled) then AnimationTimer.enabled:=true;
-  end;
-
 PROCEDURE TDigitaltrainerMainForm.propertyValueChanged(Sender: TObject);
   begin
     setEnableButton(propOkShape,propOkLabel,true);
@@ -838,7 +817,7 @@ PROCEDURE TDigitaltrainerMainForm.boardChanged;
 
 PROCEDURE TDigitaltrainerMainForm.testFinished;
   begin
-    case TaskFinishedForm.showAfterTest(workspace.getActiveChallenge^.testSucceeded,workspace.nextUncompletedChallenge>=0) of
+    case TaskFinishedDialog.showAfterTest(workspace.getActiveChallenge^.testSucceeded,workspace.nextUncompletedChallenge>=0) of
       fr_backToFreeEdit: miNewBoardClick(nil);
       fr_restartTask   : begin
         workspace.restartChallenge;
@@ -912,23 +891,11 @@ FUNCTION TDigitaltrainerMainForm.continueWithOtherBoard: boolean;
       then P_workspacePalette(workspace.activePalette)^.updateEntry(workspace.activeBoard)
       else begin
         workspace.goBack(@uiAdapter,challenge,originalChallengeIndex);
-        if challenge<>nil then CreateTaskForm.reShowFor(challenge,originalChallengeIndex,workspace.getChallenges);
+        if challenge<>nil then CreateChallengeDialog.reShowFor(challenge,originalChallengeIndex,workspace.getChallenges);
       end;
     end;
     SimulationTimer.enabled:=simulationEnabledBefore;
     result:=mr<>mrCancel;
-  end;
-
-PROCEDURE TDigitaltrainerMainForm.AnimationTimerTimer(Sender: TObject);
-  VAR i:longint;
-      anythingDone:boolean=false;
-  begin
-    for i:=0 to length(Buttons)-1 do with Buttons[i] do if colorIndex>0 then begin
-      anythingDone:=true;
-      dec(colorIndex);
-      Shape.Brush.color:=colorScheme.buttonColorTable[colorIndex];
-    end;
-    if not(anythingDone) then AnimationTimer.enabled:=false;
   end;
 
 PROCEDURE TDigitaltrainerMainForm.BoardImageClick(Sender: TObject);

@@ -1,4 +1,4 @@
-object PaletteForm: TPaletteForm
+object PaletteHandlingDialog: TPaletteHandlingDialog
   Left = 964
   Height = 590
   Top = 224

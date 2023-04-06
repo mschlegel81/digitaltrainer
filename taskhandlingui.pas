@@ -10,9 +10,9 @@ USES
 
 TYPE
 
-  { TSelectTaskForm }
+  { TChallengeHandlingDialog }
 
-  TSelectTaskForm = class(TForm)
+  TChallengeHandlingDialog = class(TForm)
     ChallengesMemo: TMemo;
     ChallengesGrid: TStringGrid;
     DeleteTaskLabel: TLabel;
@@ -39,16 +39,13 @@ TYPE
     PROCEDURE ChallengesGridSetCheckboxState(Sender: TObject; aCol, aRow: integer; CONST value: TCheckboxState);
     PROCEDURE DeleteTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE EditTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
-    PROCEDURE ExportShapeMouseDown(Sender: TObject; button: TMouseButton;
-      Shift: TShiftState; X, Y: integer);
+    PROCEDURE ExportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE FormShow(Sender: TObject);
     PROCEDURE ChallengesGridSelection(Sender: TObject; aCol, aRow: integer);
-    PROCEDURE ImportShapeMouseDown(Sender: TObject; button: TMouseButton;
-      Shift: TShiftState; X, Y: integer);
-    PROCEDURE MarkAllShapeMouseDown(Sender: TObject; button: TMouseButton;
-      Shift: TShiftState; X, Y: integer);
-    PROCEDURE MarkNoneShapeMouseDown(Sender: TObject; button: TMouseButton;
-      Shift: TShiftState; X, Y: integer);
+    PROCEDURE ImportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE MarkAllShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE MarkNoneShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE MoveTaskDownShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE MoveTaskUpShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE StartTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
@@ -62,42 +59,37 @@ TYPE
     FUNCTION startTaskAfterShowing(CONST cSet:P_challengeSet):boolean;
   end;
 
-FUNCTION SelectTaskForm: TSelectTaskForm;
+FUNCTION ChallengeHandlingDialog: TChallengeHandlingDialog;
 
 IMPLEMENTATION
-USES visuals,createTaskUnit;
-VAR mySelectTaskForm:TSelectTaskForm=nil;
-FUNCTION SelectTaskForm: TSelectTaskForm;
+USES visuals,createChallengeUi;
+VAR mySelectTaskForm:TChallengeHandlingDialog=nil;
+FUNCTION ChallengeHandlingDialog: TChallengeHandlingDialog;
   begin
-    if mySelectTaskForm=nil then mySelectTaskForm:=TSelectTaskForm.create(nil);
+    if mySelectTaskForm=nil then mySelectTaskForm:=TChallengeHandlingDialog.create(nil);
     result:=mySelectTaskForm;
   end;
 
 {$R *.lfm}
 
-{ TSelectTaskForm }
+{ TChallengeHandlingDialog }
 
-PROCEDURE TSelectTaskForm.createBackupOnce(CONST reason:T_workspaceHistorizationTriggerEnum);
+PROCEDURE TChallengeHandlingDialog.createBackupOnce(CONST reason:T_workspaceHistorizationTriggerEnum);
   begin
     if backupCreated then exit;
     addBackup(@workspace,reason);
     backupCreated:=true;
   end;
 
-PROCEDURE TSelectTaskForm.FormShow(Sender: TObject);
+PROCEDURE TChallengeHandlingDialog.FormShow(Sender: TObject);
   begin
     applyColorScheme(self);
   end;
 
-PROCEDURE TSelectTaskForm.DeleteTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TChallengeHandlingDialog.DeleteTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR i:longint;
   begin
-    //if exporting then begin
-    //  if SaveDialog1.execute then begin
-    //    challengeSet^.exportSelected(SaveDialog1.fileName,false);
-    //    ModalResult:=mrOk;
-    //  end;
-    //end else begin
+    buttonClicked(DeleteTaskShape);
     if (selectedChallengeIndex<0) then exit;
     createBackupOnce(wht_beforeDeletingTask);
     dispose(challengeSet^.challenge[selectedChallengeIndex],destroy);
@@ -107,10 +99,9 @@ PROCEDURE TSelectTaskForm.DeleteTaskShapeMouseDown(Sender: TObject; button: TMou
     setLength(challengeSet^.challenge,length(challengeSet^.challenge)-1);
     workspace.challengeDeleted(selectedChallengeIndex);
     updateTable;
-    //end;
   end;
 
-PROCEDURE TSelectTaskForm.ChallengesGridGetCheckboxState(Sender: TObject; aCol, aRow: integer; VAR value: TCheckboxState);
+PROCEDURE TChallengeHandlingDialog.ChallengesGridGetCheckboxState(Sender: TObject; aCol, aRow: integer; VAR value: TCheckboxState);
   begin
     dec(aRow);
     if (tutorial.equals(challengeSet^.challenge[aRow]))
@@ -122,7 +113,7 @@ PROCEDURE TSelectTaskForm.ChallengesGridGetCheckboxState(Sender: TObject; aCol, 
     end;
   end;
 
-PROCEDURE TSelectTaskForm.ChallengesGridSetCheckboxState(Sender: TObject; aCol, aRow: integer; CONST value: TCheckboxState);
+PROCEDURE TChallengeHandlingDialog.ChallengesGridSetCheckboxState(Sender: TObject; aCol, aRow: integer; CONST value: TCheckboxState);
   VAR i: integer;
       anySelected:boolean=false;
   begin
@@ -137,21 +128,36 @@ PROCEDURE TSelectTaskForm.ChallengesGridSetCheckboxState(Sender: TObject; aCol, 
     setEnableButton(ExportShape,ExportLabel,anySelected);
   end;
 
-PROCEDURE TSelectTaskForm.EditTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TChallengeHandlingDialog.EditTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR
     closeImmediately: boolean;
   begin
-    closeImmediately:=CreateTaskForm.showForExistingChallenge(selectedChallengeIndex,challengeSet);
+    buttonClicked(EditTaskShape);
+    closeImmediately:=CreateChallengeDialog.showForExistingChallenge(selectedChallengeIndex,challengeSet);
     if closeImmediately then ModalResult:=mrYes else updateTable;
   end;
 
-PROCEDURE TSelectTaskForm.ExportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TChallengeHandlingDialog.ExportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
+    buttonClicked(ExportShape);
     if SaveDialog1.execute then challengeSet^.exportSelected(SaveDialog1.fileName,true);
     //TODO: Show notification "export successful"
   end;
 
-PROCEDURE TSelectTaskForm.ChallengesGridSelection(Sender: TObject; aCol, aRow: integer);
+PROCEDURE TChallengeHandlingDialog.FormCreate(Sender: TObject);
+  begin
+    addButton(MarkAllShape,MarkAllLabel);
+    addButton(MarkNoneShape,MarkNoneLabel);
+    addButton(MoveTaskDownShape,MoveTaskDownLabel);
+    addButton(MoveTaskUpShape,MoveTaskUpLabel);
+    addButton(ExportShape,ExportLabel);
+    addButton(ImportShape,ImportLabel);
+    addButton(DeleteTaskShape,DeleteTaskLabel);
+    addButton(EditTaskShape,EditTaskLabel);
+    addButton(StartTaskShape,StartTaskLabel);
+  end;
+
+PROCEDURE TChallengeHandlingDialog.ChallengesGridSelection(Sender: TObject; aCol, aRow: integer);
   begin
     aRow-=1; //ignore header
     if (aRow<0) or (aRow>=length(challengeSet^.challenge)) then exit;
@@ -164,34 +170,38 @@ PROCEDURE TSelectTaskForm.ChallengesGridSelection(Sender: TObject; aCol, aRow: i
     setEnableButton(DeleteTaskShape,DeleteTaskLabel,not(tutorial.equals(challengeSet^.challenge[aRow])));
   end;
 
-PROCEDURE TSelectTaskForm.ImportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TChallengeHandlingDialog.ImportShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
+    buttonClicked(ImportShape);
     if OpenDialog1.execute then begin
       challengeSet^.importChallenges(OpenDialog1.fileName,false);
       updateTable;
     end;
   end;
 
-PROCEDURE TSelectTaskForm.MarkAllShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TChallengeHandlingDialog.MarkAllShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR i:longint;
   begin
+    buttonClicked(MarkAllShape);
     for i:=0 to length(challengeSet^.challenge)-1 do if not(tutorial.equals(challengeSet^.challenge[i])) then challengeSet^.challenge[i]^.marked:=true;
     //there is still the tutorial, so...
     setEnableButton(ExportShape,ExportLabel,length(challengeSet^.challenge)>1);
     updateTable;
   end;
 
-PROCEDURE TSelectTaskForm.MarkNoneShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TChallengeHandlingDialog.MarkNoneShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR i:longint;
   begin
+    buttonClicked(MarkNoneShape);
     for i:=0 to length(challengeSet^.challenge)-1 do challengeSet^.challenge[i]^.marked:=false;
     setEnableButton(ExportShape,ExportLabel,false);
     updateTable;
   end;
 
-PROCEDURE TSelectTaskForm.MoveTaskDownShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TChallengeHandlingDialog.MoveTaskDownShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR newSelection: TGridRect;
   begin
+    buttonClicked(MoveTaskDownShape);
     newSelection:=ChallengesGrid.selection;
     challengeSet^.moveChallenge(selectedChallengeIndex,false);
     newSelection.top   :=selectedChallengeIndex+1+1;
@@ -201,9 +211,10 @@ PROCEDURE TSelectTaskForm.MoveTaskDownShapeMouseDown(Sender: TObject; button: TM
     ChallengesGridSelection(Sender,0,newSelection.top);
   end;
 
-PROCEDURE TSelectTaskForm.MoveTaskUpShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TChallengeHandlingDialog.MoveTaskUpShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   VAR newSelection: TGridRect;
   begin
+    buttonClicked(MoveTaskUpShape);
     newSelection:=ChallengesGrid.selection;
     challengeSet^.moveChallenge(selectedChallengeIndex,true);
     newSelection.top   :=selectedChallengeIndex-1+1;
@@ -213,13 +224,13 @@ PROCEDURE TSelectTaskForm.MoveTaskUpShapeMouseDown(Sender: TObject; button: TMou
     ChallengesGridSelection(Sender,0,newSelection.top);
   end;
 
-PROCEDURE TSelectTaskForm.StartTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+PROCEDURE TChallengeHandlingDialog.StartTaskShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
   begin
-
+    buttonClicked(StartTaskShape);
     ModalResult:=mrOk;
   end;
 
-PROCEDURE TSelectTaskForm.updateTable;
+PROCEDURE TChallengeHandlingDialog.updateTable;
   VAR i:longint;
   begin
     ChallengesMemo.text:='';
@@ -239,7 +250,7 @@ PROCEDURE TSelectTaskForm.updateTable;
     selectedChallengeIndex:=-1;
   end;
 
-FUNCTION TSelectTaskForm.startTaskAfterShowing(CONST cSet: P_challengeSet): boolean;
+FUNCTION TChallengeHandlingDialog.startTaskAfterShowing(CONST cSet: P_challengeSet): boolean;
   begin
     EditTaskShape  .visible:=not(workspace.simplisticUi);
     EditTaskLabel  .visible:=not(workspace.simplisticUi);

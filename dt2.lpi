@@ -23,7 +23,7 @@
       <MajorVersionNr Value="2"/>
       <MinorVersionNr Value="2"/>
       <RevisionNr Value="2"/>
-      <BuildNr Value="6"/>
+      <BuildNr Value="7"/>
       <Language Value="0407"/>
       <StringTable Comments="Digitaltrainer" CompanyName="Martin Schlegel" FileDescription="Ein einfacher Digitaltrainer" LegalCopyright="CC BY-SA 3.0"/>
     </VersionInfo>
@@ -119,12 +119,12 @@
         <IsPartOfProject Value="True"/>
       </Unit>
       <Unit>
-        <Filename Value="addtopalettedialog.pas"/>
+        <Filename Value="addtopaletteui.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="AddToPaletteForm"/>
+        <ComponentName Value="AddToPaletteDialog"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UnitName Value="addToPaletteDialog"/>
+        <UnitName Value="addToPaletteUi"/>
       </Unit>
       <Unit>
         <Filename Value="visuals.pas"/>
@@ -140,12 +140,12 @@
         <UnitName Value="wiringUtil"/>
       </Unit>
       <Unit>
-        <Filename Value="createtaskunit.pas"/>
+        <Filename Value="createchallengeui.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="CreateTaskForm"/>
+        <ComponentName Value="CreateChallengeDialog"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UnitName Value="createTaskUnit"/>
+        <UnitName Value="createChallengeUi"/>
       </Unit>
       <Unit>
         <Filename Value="sprites.pas"/>
@@ -167,18 +167,18 @@
       <Unit>
         <Filename Value="taskhandlingui.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="SelectTaskForm"/>
+        <ComponentName Value="ChallengeHandlingDialog"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="taskHandlingUi"/>
       </Unit>
       <Unit>
-        <Filename Value="taskfinishedunit.pas"/>
+        <Filename Value="taskfinishedui.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="TaskFinishedForm"/>
+        <ComponentName Value="TaskFinishedDialog"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UnitName Value="taskFinishedUnit"/>
+        <UnitName Value="taskFinishedUi"/>
       </Unit>
       <Unit>
         <Filename Value="romeditorunit.pas"/>
@@ -191,7 +191,7 @@
       <Unit>
         <Filename Value="palettehandingui.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="PaletteForm"/>
+        <ComponentName Value="PaletteHandlingDialog"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="paletteHandingUi"/>

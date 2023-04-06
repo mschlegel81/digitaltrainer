@@ -1,12 +1,13 @@
-object SelectTaskForm: TSelectTaskForm
-  Left = 759
+object ChallengeHandlingDialog: TChallengeHandlingDialog
+  Left = 736
   Height = 413
-  Top = 591
+  Top = 330
   Width = 850
   Caption = 'Aufgaben'
   ClientHeight = 413
   ClientWidth = 850
   Color = 7354424
+  OnCreate = FormCreate
   OnShow = FormShow
   Position = poOwnerFormCenter
   LCLVersion = '2.2.2.0'
