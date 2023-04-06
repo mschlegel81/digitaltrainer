@@ -187,7 +187,7 @@ CONST DEFAULT_SCHEME:T_colorScheme=
        MULTIBIT_COLOR       :$00B0B0B0;
        SEVEN_SEGMENT_COLOR  :($00F0F0F0,$00000000);
 
-       buttonColorTable:($00FFFFFF,$00EEEEEE,$00DDDDDD,$00CCCCCC,$00BBBBBB,$00AAAAAA,$00999999,$00888888,$00777777,$00666666,$00555555);
+       buttonColorTable:($00F4F4F4,$00EEEEEE,$00DDDDDD,$00CCCCCC,$00BBBBBB,$00AAAAAA,$00999999,$00888888,$00777777,$00666666,$00555555);
 
        tableColor     :$00FFFFFF;
        tableFixedColor:$00E0E0E0;
@@ -204,10 +204,10 @@ CONST DEFAULT_SCHEME:T_colorScheme=
        ENABLED_TEXT_COLOR   :$0000FF00;
        DISABLED_TEXT_COLOR  :$00808000;
        GATE_COLOR           :$00804000;
-       GATE_LABEL_COLOR     :$00000000;
+       GATE_LABEL_COLOR     :$000060FF;
        MARK_COLOR           :$0000FFFF;
-       BOARD_COLOR          :$00000000;
-       SHADOW_COLOR         :$00800000;
+       BOARD_COLOR          :$00200000;
+       SHADOW_COLOR         :$00600000;
        CORRECT_COLOR        :$0000FF00;
        INCORRECT_COLOR      :$000000ff;
        WIRE_COLOR           :$0000FF00;
@@ -225,9 +225,9 @@ CONST DEFAULT_SCHEME:T_colorScheme=
        tableAlternativeColor:$00000000;
        editorBackgroundColor:$00000000;
        secondaryFormColor: $00600000;
-       panelColor:$00700000;
-       GATE_BORDER_COLOR:$00FF0000;
-       MENU_BORDER_COLOR:$00FF0000);
+       panelColor:$00400000;
+       GATE_BORDER_COLOR:$00A05000;
+       MENU_BORDER_COLOR:$00A00000);
 
        RUST_SCHEME:T_colorScheme=
        (ENABLED_BUTTON_COLOR :$00004080;

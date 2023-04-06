@@ -686,7 +686,7 @@ CONSTRUCTOR T_ioSprite.create(CONST pos: T_ioDirection; CONST s: T_ioState; CONS
 PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
   VAR radius:longint;
       c:longint;
-      r,g,b:word;
+      r,g,b,alpha:word;
       baseR,baseG,baseB:word;
       transparentCol:TBGRAPixel;
 
@@ -702,14 +702,8 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
         level:longint;
     begin
       dtc:=sqrt(fx*fx+fy*fy);
-      if dtc>radius then begin
-        case position of
-          io_left  : if fx<0 then addCol(colorScheme.GATE_COLOR) else addCol(colorScheme.BOARD_COLOR);
-          io_right : if fx<0 then addCol(colorScheme.BOARD_COLOR) else addCol(colorScheme.GATE_COLOR);
-          io_top   : if fy<0 then addCol(colorScheme.GATE_COLOR) else addCol(colorScheme.BOARD_COLOR);
-          io_bottom: if fy<0 then addCol(colorScheme.BOARD_COLOR) else addCol(colorScheme.GATE_COLOR);
-        end;
-      end else if dtc>radius-1.5 then begin
+      if dtc>radius then exit;
+      if dtc>radius-1.5 then begin
         case position of
           io_left  : dtc:= fx/radius;
           io_right : dtc:=-fx/radius;
@@ -718,6 +712,7 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
         end;
         if dtc<0 then level:=0 else level:=round(dtc*256);
         if level<0 then level:=0 else if level>256 then level:=256;
+        alpha+=255;
         r+=((256-level)*( colorScheme.GATE_BORDER_COLOR         and 255)+level*( colorScheme.WIRE_COLOR         and 255)) shr 8;
         g+=((256-level)*((colorScheme.GATE_BORDER_COLOR shr  8) and 255)+level*((colorScheme.WIRE_COLOR shr  8) and 255)) shr 8;
         b+=((256-level)*((colorScheme.GATE_BORDER_COLOR shr 16) and 255)+level*((colorScheme.WIRE_COLOR shr 16) and 255)) shr 8;
@@ -730,6 +725,7 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
             +fz*dtc* 0.8164965809277261 ;
         dtc:=sqr(sqr(sqr(sqr(dtc))));
 
+        alpha+=255;
         r+=round(baseR*(1-dtc)+dtc*255);
         g+=round(baseG*(1-dtc)+dtc*255);
         b+=round(baseB*(1-dtc)+dtc*255);
@@ -780,8 +776,9 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
     for y:=0 to radius*2 do begin
       px:=PCardinal(Bitmap.ScanLine[y]);
       for x:=0 to radius*2 do begin
-        r:=0; g:=0; b:=0;
+        r:=0; g:=0; b:=0; alpha:=0;
         for subX in sub do for subY in sub do getColorAt(x+subX-c,y+subY-c);
+        alpha:=alpha shr 6;
         b:=b shr 6;
         g:=g shr 6;
         r:=r shr 6;
@@ -795,7 +792,8 @@ PROCEDURE T_ioSprite.setZoom(CONST zoom: longint);
         end;
         px^:=(b       ) or
              (g shl  8) or
-             (r shl 16);
+             (r shl 16) or
+             (alpha shl 24);
         inc(px);
       end;
     end;
@@ -945,7 +943,7 @@ PROCEDURE T_blockSprite.initBaseShape(CONST zoom: longint);
 
         Bitmap.CanvasBGRA.MoveTo(3+i         +screenOffset[0],newHeight-4+i                );
         Bitmap.CanvasBGRA.LineTo(newWidth-4+i                ,newHeight-4+i                );
-        Bitmap.CanvasBGRA.LineTo(newWidth-4+i                ,          3+i+screenOffset[1]);
+        Bitmap.CanvasBGRA.LineTo(newWidth-4+i                ,          2+i+screenOffset[1]);
       end;
     end;
 
@@ -1074,7 +1072,7 @@ PROCEDURE T_sprite.renderAt(CONST Canvas: TCanvas; CONST zoom: longint; CONST sc
        (screenPosition[1]-screenOffset[1]+Bitmap.height<0) then exit;
     Bitmap.draw(Canvas,
                 screenPosition[0]-screenOffset[0],
-                screenPosition[1]-screenOffset[1],true);
+                screenPosition[1]-screenOffset[1],false);
   end;
 
 FUNCTION T_sprite.isAtPixel(CONST p: T_point): boolean;
