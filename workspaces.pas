@@ -261,6 +261,7 @@ FUNCTION tryRestoreBackup(CONST workspace:P_workspace; CONST entry:T_workspaceHi
 
     workspace^.clear;
     result:=workspace^.loadFromStream(streamWrapper);
+    if result then workspace^.initCurrentState;
     streamWrapper.destroy;
     memoryStream.destroy;
   end;
