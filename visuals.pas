@@ -204,7 +204,7 @@ CONST DEFAULT_SCHEME:T_colorScheme=
        ENABLED_TEXT_COLOR   :$0000FF00;
        DISABLED_TEXT_COLOR  :$00808000;
        GATE_COLOR           :$00804000;
-       GATE_LABEL_COLOR     :$000060FF;
+       GATE_LABEL_COLOR     :$000060ff;
        MARK_COLOR           :$0000FFFF;
        BOARD_COLOR          :$00200000;
        SHADOW_COLOR         :$00600000;

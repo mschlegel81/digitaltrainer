@@ -182,7 +182,6 @@ PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST zoom: longint);
         get7SegmentSprite(behavior^.getInput(0),marked)^.renderAt(Canvas,zoom,canvasPos);
       else begin
         getBlockSprite  (behavior^.getCaption,gridWidth,gridHeight,marked,outputMark)^.renderAt(Canvas,zoom,canvasPos);
-        if outputMark=iom_disabled then exit;
       end;
     end;
 
