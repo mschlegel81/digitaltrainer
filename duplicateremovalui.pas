@@ -38,16 +38,12 @@ TYPE
     TestCaseCountEdit: TEdit;
     Timer1: TTimer;
     PROCEDURE CandidateStringGridSelection(Sender: TObject; aCol, aRow: integer);
-    PROCEDURE deleteAShapeMouseDown(Sender: TObject; button: TMouseButton;
-      Shift: TShiftState; X, Y: integer);
-    PROCEDURE deleteBShapeMouseDown(Sender: TObject; button: TMouseButton;
-      Shift: TShiftState; X, Y: integer);
+    PROCEDURE deleteAShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE deleteBShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE FormResize(Sender: TObject);
     PROCEDURE FormShow(Sender: TObject);
-    PROCEDURE generateTestCasesShape1MouseDown(Sender: TObject;
-      button: TMouseButton; Shift: TShiftState; X, Y: integer);
-    PROCEDURE generateTestCasesShapeMouseDown(Sender: TObject;
-      button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE generateTestCasesShape1MouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
+    PROCEDURE generateTestCasesShapeMouseDown(Sender: TObject; button: TMouseButton; Shift: TShiftState; X, Y: integer);
     PROCEDURE StepCountEditEditingDone(Sender: TObject);
     PROCEDURE TestCaseCountEditEditingDone(Sender: TObject);
     PROCEDURE TestCasesStringGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);
@@ -93,23 +89,6 @@ PROCEDURE TDuplicateRemovalDialog.TestCaseCountEditEditingDone(Sender: TObject);
     if testerB<>nil then testerB^.copyTestInputs(testerA);
     lastUpdatedA:=-1;
     lastUpdatedB:=-1;
-  end;
-
-PROCEDURE TDuplicateRemovalDialog.TestCasesStringGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);
-  CONST nextMode:array[T_multibitWireRepresentation] of T_multibitWireRepresentation=(wr_decimal,wr_2complement,wr_binary);
-  begin
-    if not(IsColumn) then exit;
-    if index<length(testerA^.Interfaces.inputs) then begin
-      testerA^.Interfaces.inputs[index].representation:=nextMode[testerA^.Interfaces.inputs[index].representation];
-      fillTable;
-      exit;
-    end;
-    dec(index,1+length(testerA^.Interfaces.inputs));
-    if index<0 then exit;
-    index:=index mod length(testerA^.Interfaces.outputs);
-
-    testerA^.Interfaces.outputs[index].representation:=nextMode[testerA^.Interfaces.outputs[index].representation];
-    fillTable;
   end;
 
 PROCEDURE TDuplicateRemovalDialog.TestCasesStringGridValidateEntry(Sender: TObject; aCol, aRow: integer; CONST oldValue: string; VAR newValue: string);
@@ -252,12 +231,39 @@ PROCEDURE TDuplicateRemovalDialog.generateTestCasesShapeMouseDown(Sender: TObjec
     lastUpdatedB:=-1;
   end;
 
+PROCEDURE TDuplicateRemovalDialog.TestCasesStringGridHeaderClick(Sender: TObject; IsColumn: boolean; index: integer);
+  CONST nextMode:array[T_multibitWireRepresentation] of T_multibitWireRepresentation=(wr_decimal,wr_2complement,wr_binary);
+  begin
+    if not(IsColumn) then exit;
+    if index<length(testerA^.Interfaces.inputs) then begin
+      testerA^.Interfaces.inputs[index].representation:=nextMode[testerA^.Interfaces.inputs[index].representation];
+      fillTable;
+      exit;
+    end;
+    dec(index,1+length(testerA^.Interfaces.inputs));
+    if index<0 then exit;
+    if index>length(testerA^.Interfaces.outputs) then dec(index,length(testerA^.Interfaces.outputs)+1);
+    if index<0 then exit;
+    testerA^.Interfaces.outputs[index].representation:=nextMode[testerA^.Interfaces.outputs[index].representation];
+    fillTable;
+  end;
+
 PROCEDURE TDuplicateRemovalDialog.fillTable;
   VAR i,j,k:longint;
       gateInterface: T_gateInterface;
+  FUNCTION bothEqualAt(CONST j:longint):string;
+    VAR k:longint;
+    begin
+      if (testerB=nil) or (j<0) or (j>=length(testerA^.tests)) or (j>length(testerB^.tests)) then exit('');
+      for k:=0 to length(testerA^.tests[j].outputs)-1 do
+        if testerA^.tests[j].outputs[k]<>testerB^.tests[j].outputs[k]
+        then exit(' ');
+      result:='x';
+    end;
+
   begin
     TestCasesStringGrid.rowCount:=1+length(testerA^.tests);
-    k:=length(testerA^.Interfaces.inputs)+length(testerA^.Interfaces.outputs)*2+3;
+    k:=length(testerA^.Interfaces.inputs)+length(testerA^.Interfaces.outputs)*2+4;
     while TestCasesStringGrid.Columns.count>k do TestCasesStringGrid.Columns.delete(TestCasesStringGrid.Columns.count-1);
     while TestCasesStringGrid.Columns.count<k do TestCasesStringGrid.Columns.add;
 
@@ -268,17 +274,28 @@ PROCEDURE TDuplicateRemovalDialog.fillTable;
     //Header
     i:=0;
     for gateInterface in testerA^.Interfaces.inputs do begin
+      TestCasesStringGrid.Columns[i].ButtonStyle:=cbsAuto;
       TestCasesStringGrid.Columns[i].color:=colorScheme.tableColor;
       if gateInterface.wireWidth<=1
       then TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name
       else TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name+' ('+ C_multibitWireRepresentationName[gateInterface.representation]+')';
       inc(i);
     end;
-
+    TestCasesStringGrid.Columns[i].ButtonStyle:=cbsAuto;
     TestCasesStringGrid.Columns[i].color:=colorScheme.tableAlternativeColor;
     TestCasesStringGrid.Columns[i].title.caption:='Schritte';
     inc(i);
+
+    TestCasesStringGrid.Columns[i].color:=colorScheme.tableAlternativeColor;
+    TestCasesStringGrid.Columns[i].title.caption:='=';
+    TestCasesStringGrid.Columns[i].readonly:=true;
+    TestCasesStringGrid.Columns[i].ButtonStyle:=cbsCheckboxColumn;
+    TestCasesStringGrid.Columns[i].ValueChecked:='x';
+    TestCasesStringGrid.Columns[i].ValueUnchecked:=' ';
+    inc(i);
+
     for gateInterface in testerA^.Interfaces.outputs do begin
+      TestCasesStringGrid.Columns[i].ButtonStyle:=cbsAuto;
       TestCasesStringGrid.Columns[i].color:=colorScheme.tableColor;
       if gateInterface.wireWidth<=1
       then TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name
@@ -286,16 +303,19 @@ PROCEDURE TDuplicateRemovalDialog.fillTable;
       TestCasesStringGrid.Columns[i].readonly:=true;
       inc(i);
     end;
+    TestCasesStringGrid.Columns[i].ButtonStyle:=cbsAuto;
     TestCasesStringGrid.Columns[i].color:=colorScheme.tableColor;
     TestCasesStringGrid.Columns[i].title.caption:='aktiv für';
     TestCasesStringGrid.Columns[i].readonly:=true;
     inc(i);
-
     if testerB=nil then for gateInterface in testerA^.Interfaces.outputs do begin
+      TestCasesStringGrid.Columns[i].ButtonStyle:=cbsAuto;
       TestCasesStringGrid.Columns[i].color:=colorScheme.tableAlternativeColor;
       TestCasesStringGrid.Columns[i].title.caption:='';
       TestCasesStringGrid.Columns[i].readonly:=true;
+      inc(i);
     end else for gateInterface in testerB^.Interfaces.outputs do begin
+      TestCasesStringGrid.Columns[i].ButtonStyle:=cbsAuto;
       TestCasesStringGrid.Columns[i].color:=colorScheme.tableAlternativeColor;
       if gateInterface.wireWidth<=1
       then TestCasesStringGrid.Columns[i].title.caption:=gateInterface.name
@@ -303,6 +323,7 @@ PROCEDURE TDuplicateRemovalDialog.fillTable;
       TestCasesStringGrid.Columns[i].readonly:=true;
       inc(i);
     end;
+    TestCasesStringGrid.Columns[i].ButtonStyle:=cbsAuto;
     TestCasesStringGrid.Columns[i].color:=colorScheme.tableAlternativeColor;
     TestCasesStringGrid.Columns[i].title.caption:='aktiv für';
     TestCasesStringGrid.Columns[i].readonly:=true;
@@ -316,6 +337,8 @@ PROCEDURE TDuplicateRemovalDialog.fillTable;
         inc(i);
       end;
       TestCasesStringGrid.Cells[i,j+1]:=intToStr(testerA^.tests[j].maxTotalSteps);
+      inc(i);
+      TestCasesStringGrid.Cells[i,j+1]:=bothEqualAt(j);
       inc(i);
       k:=0;
       for gateInterface in testerA^.Interfaces.outputs do begin

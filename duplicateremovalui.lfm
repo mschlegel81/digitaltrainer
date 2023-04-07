@@ -92,7 +92,6 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       Top = 66
       Width = 600
       Anchors = [akTop, akLeft, akRight, akBottom]
-      AutoFillColumns = True
       BorderSpacing.Left = 5
       BorderSpacing.Top = 8
       BorderSpacing.Right = 5
@@ -103,7 +102,7 @@ object DuplicateRemovalDialog: TDuplicateRemovalDialog
       FixedCols = 0
       Flat = True
       Font.Color = clWhite
-      Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goEditing, goSmoothScroll]
+      Options = [goFixedVertLine, goFixedHorzLine, goVertLine, goHorzLine, goColSizing, goEditing, goDblClickAutoSize, goSmoothScroll]
       ParentFont = False
       TabOrder = 0
       OnHeaderClick = TestCasesStringGridHeaderClick
