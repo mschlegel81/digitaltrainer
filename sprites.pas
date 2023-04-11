@@ -57,10 +57,9 @@ TYPE
 
   { T_adapterSprite }
   P_adapterSprite=^T_adapterSprite;
-  T_adapterSprite=object(T_sprite)
+  T_adapterSprite=object(T_blockSprite)
     private
       inCount,outCount,inWidth,outWidth:byte;
-      marked:boolean;
     public
     CONSTRUCTOR create(CONST inWireWidth,outWireWidth:byte; CONST marked_:boolean);
     PROCEDURE setZoom(CONST zoom:longint); virtual;
@@ -453,36 +452,15 @@ CONSTRUCTOR T_adapterSprite.create(CONST inWireWidth, outWireWidth: byte; CONST 
       outCount:=1;
       inCount:=outWidth div inWidth;
     end;
-    marked:=marked_;
+    inherited create('',4,2*max(inCount,outCount),marked_,iom_none);
+
   end;
 
 PROCEDURE T_adapterSprite.setZoom(CONST zoom: longint);
-  CONST iTab:array[0..16] of double=(0.0,0.009607359798384784,0.03806023374435663,0.08426519384872732,0.1464466094067262,0.22221488349019886,0.30865828381745508,0.40245483899193585,0.49999999999999994,0.5975451610080641,0.6913417161825448,0.777785116509801,0.8535533905932737,0.91573480615127267,0.96193976625564337,0.9903926402016152,1.0);
-  VAR newWidth,newHeight:longint;
-      px: PCardinal;
-      x,y,k,j:longint;
+  VAR k:longint;
       startY,endY:longint;
-
-      poly: array of TPoint;
-
   begin
-    screenOffset:=pointOf(0,0);
-
-    newWidth :=4*zoom+screenOffset[0];
-    newHeight:=2*max(inCount,outCount)*zoom+screenOffset[1];
-    if Bitmap=nil
-    then Bitmap:=TBGRABitmap.create(newWidth,newHeight,0)
-    else Bitmap.setSize(newWidth,newHeight);
-
-    //Fill all transparent
-    for y:=0 to newHeight-1 do begin
-      px:=PCardinal(Bitmap.ScanLine[y]);
-      for x:=0 to newWidth-1 do begin
-        px^:=0;
-        inc(px);
-      end;
-    end;
-
+    initBaseShape(zoom);
     if marked
     then Bitmap.CanvasBGRA.Pen.color:=colorScheme.MARK_COLOR
     else Bitmap.CanvasBGRA.Pen.color:=colorScheme.WIRE_COLOR;
@@ -496,11 +474,16 @@ PROCEDURE T_adapterSprite.setZoom(CONST zoom: longint);
          else  Bitmap.CanvasBGRA.Pen.width:=(4*zoom) shr 4;
       end;
       for k:=0 to outCount-1 do begin
-        startY:=(newHeight div 2);
-        endY:=(k*2-(outCount-1)+outCount)*zoom;
-        setLength(poly,17);
-        for j:=0 to 16 do poly[j]:=point(round((newWidth-1)*j/16),round(startY+(endY-startY)*iTab[j]));
-        Bitmap.CanvasBGRA.Polyline(poly);
+        startY:=max(inCount,outCount)*zoom+screenOffset[1];
+        endY:=(k*2-(outCount-1)+outCount)*zoom+screenOffset[1];
+        if startY<endY
+        then begin
+          Bitmap.CanvasBGRA.Arc65536(-zoom*2+screenOffset[0],startY,zoom*2+screenOffset[0],endY,    0,16384,[]);
+          Bitmap.CanvasBGRA.Arc65536( zoom*2+screenOffset[0],startY,zoom*6+screenOffset[0],endY,32768,49152,[]);
+        end else begin
+          Bitmap.CanvasBGRA.Arc65536(-zoom*2+screenOffset[0],startY,zoom*2+screenOffset[0],endY,49152,65536,[]);
+          Bitmap.CanvasBGRA.Arc65536( zoom*2+screenOffset[0],startY,zoom*6+screenOffset[0],endY,16384,32768,[]);
+        end;
       end;
     end else begin
       case inWidth of
@@ -511,10 +494,15 @@ PROCEDURE T_adapterSprite.setZoom(CONST zoom: longint);
       end;
       for k:=0 to inCount-1 do begin
         startY:=(k*2-(inCount-1)+inCount)*zoom;
-        endY:=(newHeight div 2);
-        setLength(poly,17);
-        for j:=0 to 16 do poly[j]:=point(round((newWidth-1)*j/16),round(startY+(endY-startY)*iTab[j]));
-        Bitmap.CanvasBGRA.Polyline(poly);
+        endY:=max(inCount,outCount)*zoom+screenOffset[1];
+        if startY<endY
+        then begin
+          Bitmap.CanvasBGRA.Arc65536(-zoom*2+screenOffset[0],startY,zoom*2+screenOffset[0],endY,    0,16384,[]);
+          Bitmap.CanvasBGRA.Arc65536( zoom*2+screenOffset[0],startY,zoom*6+screenOffset[0],endY,32768,49152,[]);
+        end else begin
+          Bitmap.CanvasBGRA.Arc65536(-zoom*2+screenOffset[0],startY,zoom*2+screenOffset[0],endY,49152,65536,[]);
+          Bitmap.CanvasBGRA.Arc65536( zoom*2+screenOffset[0],startY,zoom*6+screenOffset[0],endY,16384,32768,[]);
+        end;
       end;
     end;
     preparedForZoom:=zoom;

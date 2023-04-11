@@ -80,7 +80,7 @@ CONST
   {gt_orGate}     '≥1',
   {gt_xorGate}    '=1',
   {gt_nandGate}   '¬&',
-  {gt_norGate}    '≤1',
+  {gt_norGate}    '=0',
   {gt_nxorGate}   '≠1',
   {gt_input}      'input',
   {gt_output}     'output',
