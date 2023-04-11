@@ -55,6 +55,28 @@ TYPE
       PROCEDURE setZoom(CONST zoom:longint); virtual;
   end;
 
+  { T_adapterSprite }
+  P_adapterSprite=^T_adapterSprite;
+  T_adapterSprite=object(T_sprite)
+    private
+      inCount,outCount,inWidth,outWidth:byte;
+      marked:boolean;
+    public
+    CONSTRUCTOR create(CONST inWireWidth,outWireWidth:byte; CONST marked_:boolean);
+    PROCEDURE setZoom(CONST zoom:longint); virtual;
+  end;
+
+  { T_clockSprite }
+  P_clockSprite=^T_clockSprite;
+  T_clockSprite=object(T_blockSprite)
+    private
+      prog:longint;
+      trueOut:boolean;
+    public
+    CONSTRUCTOR create(CONST doubleWidth,tick:boolean; CONST progress:longint; CONST marked_:boolean);
+    PROCEDURE setZoom(CONST zoom:longint); virtual;
+  end;
+
   { T_blockSprite }
   P_ioBlockSprite=^T_ioBlockSprite;
   T_ioBlockSprite=object(T_blockSprite)
@@ -128,6 +150,8 @@ FUNCTION getIoBlockSprite(CONST caption:shortstring; CONST inputIndex:longint; C
 FUNCTION getIoTextSprite(CONST wireValue:T_wireValue; mode:T_multibitWireRepresentation):P_sprite;
 FUNCTION get7SegmentSprite(CONST wireValue: T_wireValue; CONST marked:boolean):P_sprite;
 FUNCTION getWatcherSprite(CONST ioLabel_:shortstring; CONST ioIndex:longint; CONST wireValue:T_wireValue; CONST isInput,leftOrRight:boolean):P_sprite;
+FUNCTION getClockSprite(CONST gated,tick:boolean; CONST interval,counter:longint; CONST marked:boolean):P_sprite;
+FUNCTION getAdapterSprite(CONST inWireWidth,outWireWidth:byte; CONST marked_:boolean):P_sprite;
 PROCEDURE clearSpriteCaches;
 VAR gradientSprite:T_gradientSprite;
     binSprite:T_binSprite;
@@ -138,7 +162,9 @@ VAR ioSpriteMap,
     ioBlockSpriteMap,
     ioTextSpriteMap,
     sevSegSpriteMap,
-    watcherSpriteMap:T_spriteMap;
+    watcherSpriteMap,
+    adapterSpriteMap,
+    clockSpriteMap:T_spriteMap;
     allocationCounter:longint=0;
     lastCleanupTime:double=0;
 CONST oneMinute=1/(24*60);
@@ -179,6 +205,8 @@ PROCEDURE init;
     ioTextSpriteMap .create(@disposeSprite);
     sevSegSpriteMap .create(@disposeSprite);
     watcherSpriteMap.create(@disposeSprite);
+    adapterSpriteMap.create(@disposeSprite);
+    clockSpriteMap  .create(@disposeSprite);
   end;
 
 PROCEDURE finalize;
@@ -189,6 +217,8 @@ PROCEDURE finalize;
     ioTextSpriteMap .destroy;
     sevSegSpriteMap .destroy;
     watcherSpriteMap.destroy;
+    adapterSpriteMap.destroy;
+    clockSpriteMap  .destroy;
   end;
 
 PROCEDURE clearSpriteCaches;
@@ -200,7 +230,8 @@ PROCEDURE clearSpriteCaches;
     ioTextSpriteMap .clear;
     sevSegSpriteMap .clear;
     watcherSpriteMap.clear;
-
+    adapterSpriteMap.clear;
+    clockSpriteMap  .clear;
     gradientSprite.preparedForZoom:=-1;
     binSprite     .preparedForZoom:=-1;
   end;
@@ -337,6 +368,156 @@ FUNCTION getWatcherSprite(CONST ioLabel_: shortstring; CONST ioIndex:longint; CO
       spriteAllocated;
     end;
     result^.lastUsed:=now;
+  end;
+
+FUNCTION getClockSprite(CONST gated,tick:boolean; CONST interval,counter:longint; CONST marked:boolean):P_sprite;
+  VAR key:string;
+      progress:longint;
+  begin
+    progress:=(counter shl 8 div interval);
+    if progress>255 then progress:=255 else if progress<0 then progress:=0;
+
+    key:=intToStr(progress);
+    if tick then key+='_1' else key+='_0';
+    if marked then key+='M';
+    if gated then key+='G';
+
+    if not(clockSpriteMap.containsKey(key,result)) then begin
+      new(P_clockSprite(result),create(gated,tick,progress,marked));
+      clockSpriteMap.put(key,result);
+      spriteAllocated;
+    end;
+    result^.lastUsed:=now;
+  end;
+
+FUNCTION getAdapterSprite(CONST inWireWidth,outWireWidth:byte; CONST marked_:boolean):P_sprite;
+  VAR key:string;
+  begin
+    key:=intToStr(inWireWidth)+'_'+intToStr(outWireWidth);
+    if marked_ then key+='M';
+
+    if not(adapterSpriteMap.containsKey(key,result)) then begin
+      new(P_adapterSprite(result),create(inWireWidth,outWireWidth,marked_));
+      adapterSpriteMap.put(key,result);
+      spriteAllocated;
+    end;
+    result^.lastUsed:=now;
+  end;
+
+{ T_clockSprite }
+
+CONSTRUCTOR T_clockSprite.create(CONST doubleWidth,tick:boolean; CONST progress:longint; CONST marked_:boolean);
+  VAR w:longint=2;
+  begin
+    if doubleWidth then w:=4;
+    inherited create('',w,2,marked_,iom_none);
+    prog:=progress*256;
+    trueOut:=tick;
+  end;
+
+PROCEDURE T_clockSprite.setZoom(CONST zoom: longint);
+  VAR centerX,centerY,extend:longint;
+  begin
+    initBaseShape(zoom);
+
+    centerX:=(width *zoom) div 2+screenOffset[0];
+    centerY:=(height*zoom) div 2+screenOffset[1];
+    extend :=round(0.75*zoom);
+
+    Bitmap.CanvasBGRA.Pen.color:=colorScheme.GATE_BORDER_COLOR;
+    if trueOut
+    then Bitmap.CanvasBGRA.Brush.color:=colorScheme.TRUE_COLOR
+    else Bitmap.CanvasBGRA.Brush.color:=colorScheme.FALSE_COLOR;
+    Bitmap.CanvasBGRA.Brush.style:=bsClear;
+
+    Bitmap.CanvasBGRA.Arc65536(centerX-extend,centerY-extend,
+                               centerX+extend,centerY+extend,0,65535,[aoClosePath]);
+    Bitmap.CanvasBGRA.Brush.style:=bsSolid;
+
+    Bitmap.CanvasBGRA.Arc65536(centerX-extend,centerY-extend,
+                               centerX+extend,centerY+extend,
+                               16384,16384-prog,[aoPie,aoFillPath]);
+    preparedForZoom:=zoom;
+  end;
+
+{ T_adapterSprite }
+
+CONSTRUCTOR T_adapterSprite.create(CONST inWireWidth, outWireWidth: byte; CONST marked_:boolean);
+  begin
+    inWidth:=inWireWidth;
+    outWidth:=outWireWidth;
+    if inWidth>outWidth then begin
+      inCount:=1;
+      outCount:=inWidth div outWidth;
+    end else begin
+      outCount:=1;
+      inCount:=outWidth div inWidth;
+    end;
+    marked:=marked_;
+  end;
+
+PROCEDURE T_adapterSprite.setZoom(CONST zoom: longint);
+  CONST iTab:array[0..16] of double=(0.0,0.009607359798384784,0.03806023374435663,0.08426519384872732,0.1464466094067262,0.22221488349019886,0.30865828381745508,0.40245483899193585,0.49999999999999994,0.5975451610080641,0.6913417161825448,0.777785116509801,0.8535533905932737,0.91573480615127267,0.96193976625564337,0.9903926402016152,1.0);
+  VAR newWidth,newHeight:longint;
+      px: PCardinal;
+      x,y,k,j:longint;
+      startY,endY:longint;
+
+      poly: array of TPoint;
+
+  begin
+    screenOffset:=pointOf(0,0);
+
+    newWidth :=4*zoom+screenOffset[0];
+    newHeight:=2*max(inCount,outCount)*zoom+screenOffset[1];
+    if Bitmap=nil
+    then Bitmap:=TBGRABitmap.create(newWidth,newHeight,0)
+    else Bitmap.setSize(newWidth,newHeight);
+
+    //Fill all transparent
+    for y:=0 to newHeight-1 do begin
+      px:=PCardinal(Bitmap.ScanLine[y]);
+      for x:=0 to newWidth-1 do begin
+        px^:=0;
+        inc(px);
+      end;
+    end;
+
+    if marked
+    then Bitmap.CanvasBGRA.Pen.color:=colorScheme.MARK_COLOR
+    else Bitmap.CanvasBGRA.Pen.color:=colorScheme.WIRE_COLOR;
+    Bitmap.CanvasBGRA.Pen.style:=psSolid;
+
+    if inCount=1 then begin
+      case outWidth of
+         1..3: Bitmap.CanvasBGRA.Pen.width:=(1*zoom) shr 4;
+         4..7: Bitmap.CanvasBGRA.Pen.width:=(2*zoom) shr 4;
+        8..15: Bitmap.CanvasBGRA.Pen.width:=(3*zoom) shr 4;
+         else  Bitmap.CanvasBGRA.Pen.width:=(4*zoom) shr 4;
+      end;
+      for k:=0 to outCount-1 do begin
+        startY:=(newHeight div 2);
+        endY:=(k*2-(outCount-1)+outCount)*zoom;
+        setLength(poly,17);
+        for j:=0 to 16 do poly[j]:=point(round((newWidth-1)*j/16),round(startY+(endY-startY)*iTab[j]));
+        Bitmap.CanvasBGRA.Polyline(poly);
+      end;
+    end else begin
+      case inWidth of
+         1..3: Bitmap.CanvasBGRA.Pen.width:=(1*zoom) shr 4;
+         4..7: Bitmap.CanvasBGRA.Pen.width:=(2*zoom) shr 4;
+        8..15: Bitmap.CanvasBGRA.Pen.width:=(3*zoom) shr 4;
+         else  Bitmap.CanvasBGRA.Pen.width:=(4*zoom) shr 4;
+      end;
+      for k:=0 to inCount-1 do begin
+        startY:=(k*2-(inCount-1)+inCount)*zoom;
+        endY:=(newHeight div 2);
+        setLength(poly,17);
+        for j:=0 to 16 do poly[j]:=point(round((newWidth-1)*j/16),round(startY+(endY-startY)*iTab[j]));
+        Bitmap.CanvasBGRA.Polyline(poly);
+      end;
+    end;
+    preparedForZoom:=zoom;
   end;
 
 { T_binSprite }

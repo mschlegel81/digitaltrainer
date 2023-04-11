@@ -74,6 +74,28 @@ CONST
                     'ROM',
                     '7seg');
 
+  C_gateTypeCaption:array[T_gateType] of string=
+  {gt_notGate}   ('¬',
+  {gt_andGate}    '&',
+  {gt_orGate}     '≥1',
+  {gt_xorGate}    '=1',
+  {gt_nandGate}   '¬&',
+  {gt_norGate}    '≤1',
+  {gt_nxorGate}   '≠1',
+  {gt_input}      'input',
+  {gt_output}     'output',
+  {gt_compound}   '<compound>',
+  {gt_clock}      'clock',
+  {gt_adapter}    'adapter',
+  {gt_true}       'constant true',
+  {gt_false}      'constant false',
+  {gt_gatedClock} 'gated clock',
+  {gt_un....true} 'tend to true',
+  {gt_un...false} 'tend to false',
+                  'RAM',
+                  'ROM',
+                  '7seg');
+
 TYPE
   T_triStateValue=(tsv_false,tsv_undetermined,tsv_true);
 
@@ -1681,7 +1703,7 @@ PROCEDURE T_notGate.reset;
   begin input:=tsv_undetermined; output:=tsv_undetermined; end;
 
 FUNCTION T_abstractGate.getCaption: shortstring;
-  begin result:=C_gateTypeName[gateType]; end;
+  begin result:=C_gateTypeCaption[gateType]; end;
 
 FUNCTION T_notGate.numberOfInputs: longint;
   begin  result:=1; end;

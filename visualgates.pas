@@ -180,6 +180,10 @@ PROCEDURE T_visualGate.paintAll(CONST Canvas: TCanvas; CONST zoom: longint);
       end;
       gt_7segmentDummy:
         get7SegmentSprite(behavior^.getInput(0),marked)^.renderAt(Canvas,zoom,canvasPos);
+      gt_clock,gt_gatedClock:
+        getClockSprite(behavior^.gateType=gt_gatedClock,P_clock(behavior)^.tick,P_clock(behavior)^.interval,P_clock(behavior)^.counter,marked)^.renderAt(Canvas,zoom,canvasPos);
+      gt_adapter:
+        getAdapterSprite(behavior^.inputWidth(0),behavior^.outputWidth(0),marked)^.renderAt(Canvas,zoom,canvasPos);
       else begin
         getBlockSprite  (behavior^.getCaption,gridWidth,gridHeight,marked,outputMark)^.renderAt(Canvas,zoom,canvasPos);
       end;
