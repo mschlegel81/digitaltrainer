@@ -410,32 +410,41 @@ CONSTRUCTOR T_clockSprite.create(CONST doubleWidth,tick:boolean; CONST progress:
   begin
     if doubleWidth then w:=4;
     inherited create('',w,2,marked_,iom_none);
-    prog:=progress*256;
+    prog:=progress*128;
+    if tick then prog+=32768;
     trueOut:=tick;
   end;
 
 PROCEDURE T_clockSprite.setZoom(CONST zoom: longint);
-  VAR centerX,centerY,extend:longint;
+  VAR centerX,centerY,extend,innerEx:longint;
   begin
     initBaseShape(zoom);
-
     centerX:=(width *zoom) div 2+screenOffset[0];
     centerY:=(height*zoom) div 2+screenOffset[1];
     extend :=round(0.75*zoom);
-
+    innerEx:=round(0.5*zoom);
     Bitmap.CanvasBGRA.Pen.color:=colorScheme.GATE_BORDER_COLOR;
+    Bitmap.CanvasBGRA.Brush.style:=bsSolid;
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.TRUE_COLOR;
+    Bitmap.CanvasBGRA.Arc65536(centerX-extend,centerY-extend,
+                               centerX+extend,centerY+extend,16384,49152,[aoFillPath]);
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.FALSE_COLOR;
+    Bitmap.CanvasBGRA.Arc65536(centerX-extend,centerY-extend,
+                               centerX+extend,centerY+extend,49152,16384,[aoFillPath]);
+
+    Bitmap.CanvasBGRA.Brush.color:=colorScheme.GATE_COLOR;
+    Bitmap.CanvasBGRA.Pen.color:=colorScheme.GATE_COLOR;
+    Bitmap.CanvasBGRA.Arc65536(centerX-innerEx,centerY-innerEx,
+                               centerX+innerEx,centerY+innerEx,0,65535,[aoFillPath]);
+
     if trueOut
     then Bitmap.CanvasBGRA.Brush.color:=colorScheme.TRUE_COLOR
     else Bitmap.CanvasBGRA.Brush.color:=colorScheme.FALSE_COLOR;
-    Bitmap.CanvasBGRA.Brush.style:=bsClear;
+    Bitmap.CanvasBGRA.Pen.color:=Bitmap.CanvasBGRA.Brush.color;
 
-    Bitmap.CanvasBGRA.Arc65536(centerX-extend,centerY-extend,
-                               centerX+extend,centerY+extend,0,65535,[aoClosePath]);
-    Bitmap.CanvasBGRA.Brush.style:=bsSolid;
-
-    Bitmap.CanvasBGRA.Arc65536(centerX-extend,centerY-extend,
-                               centerX+extend,centerY+extend,
-                               16384,16384-prog,[aoPie,aoFillPath]);
+    Bitmap.CanvasBGRA.Arc65536(centerX-extend+2,centerY-extend+2,
+                               centerX+extend-2,centerY+extend-2,
+                               16384-prog-512,16384-prog+512,[aoPie,aoFillPath]);
     preparedForZoom:=zoom;
   end;
 
@@ -452,20 +461,29 @@ CONSTRUCTOR T_adapterSprite.create(CONST inWireWidth, outWireWidth: byte; CONST 
       outCount:=1;
       inCount:=outWidth div inWidth;
     end;
-    inherited create('',4,2*max(inCount,outCount),marked_,iom_none);
+    inherited create('Adapter '+intToStr(inWireWidth)+'→'+intToStr(outWireWidth),4,2*max(inCount,outCount),marked_,iom_none);
 
   end;
 
 PROCEDURE T_adapterSprite.setZoom(CONST zoom: longint);
-  VAR k:longint;
+  CONST xTab:array[0..16] of double=(0,0.09980701170952077,0.19762808521908887,0.28003732550840094,0.3412714874946232,0.38729633120523604,0.42743449462932426,0.4644090098356542,0.5000004768371582,0.53559190862806827,0.5725663872555563,0.61270466521797728,0.65872964026516456,0.7199638756285448,0.8023728933200015,0.90019348247662878,1);
+        yTab:array[0..16] of double=(0,0.0014656458228474722,0.021330923565097359,0.078961843334802717,0.15872999090330236,0.24095249223852566,0.32620355132116474,0.4128136062044595,0.5000011765485287,0.5871886113589848,0.6737984361708965,0.7590494801920233,0.8412717951214279,0.9210393884355061,0.9786694823143469,0.998534382952748,1);
+  VAR k,j:longint;
       startY,endY:longint;
+      path:array [0..16] of TPoint;
   begin
     initBaseShape(zoom);
-    if marked
-    then Bitmap.CanvasBGRA.Pen.color:=colorScheme.MARK_COLOR
-    else Bitmap.CanvasBGRA.Pen.color:=colorScheme.WIRE_COLOR;
-    Bitmap.CanvasBGRA.Pen.style:=psSolid;
 
+    Bitmap.CanvasBGRA.DrawFontBackground:=true;
+    textOut(Bitmap.CanvasBGRA,caption,
+            screenOffset[0]            +zoom shr 1,
+            screenOffset[1]            +zoom shr 1,
+            screenOffset[0]+zoom*width -zoom shr 1,
+            screenOffset[1]+zoom*height-zoom shr 1,
+            colorScheme.SHADOW_COLOR);
+
+    Bitmap.CanvasBGRA.Pen.color:=colorScheme.WIRE_COLOR;
+    Bitmap.CanvasBGRA.Pen.style:=psSolid;
     if inCount=1 then begin
       case outWidth of
          1..3: Bitmap.CanvasBGRA.Pen.width:=(1*zoom) shr 4;
@@ -473,17 +491,11 @@ PROCEDURE T_adapterSprite.setZoom(CONST zoom: longint);
         8..15: Bitmap.CanvasBGRA.Pen.width:=(3*zoom) shr 4;
          else  Bitmap.CanvasBGRA.Pen.width:=(4*zoom) shr 4;
       end;
+      startY:=max(inCount,outCount)*zoom+screenOffset[1];
       for k:=0 to outCount-1 do begin
-        startY:=max(inCount,outCount)*zoom+screenOffset[1];
-        endY:=(k*2-(outCount-1)+outCount)*zoom+screenOffset[1];
-        if startY<endY
-        then begin
-          Bitmap.CanvasBGRA.Arc65536(-zoom*2+screenOffset[0],startY,zoom*2+screenOffset[0],endY,    0,16384,[]);
-          Bitmap.CanvasBGRA.Arc65536( zoom*2+screenOffset[0],startY,zoom*6+screenOffset[0],endY,32768,49152,[]);
-        end else begin
-          Bitmap.CanvasBGRA.Arc65536(-zoom*2+screenOffset[0],startY,zoom*2+screenOffset[0],endY,49152,65536,[]);
-          Bitmap.CanvasBGRA.Arc65536( zoom*2+screenOffset[0],startY,zoom*6+screenOffset[0],endY,16384,32768,[]);
-        end;
+        endY  :=(k*2-(outCount-1)+outCount)*zoom+screenOffset[1];
+        for j:=0 to 16 do path[j]:=point(round(zoom*4*xTab[j])+screenOffset[0],round(startY+(endY-startY)*yTab[j]));
+        Bitmap.CanvasBGRA.PolyBezier(path);
       end;
     end else begin
       case inWidth of
@@ -492,17 +504,11 @@ PROCEDURE T_adapterSprite.setZoom(CONST zoom: longint);
         8..15: Bitmap.CanvasBGRA.Pen.width:=(3*zoom) shr 4;
          else  Bitmap.CanvasBGRA.Pen.width:=(4*zoom) shr 4;
       end;
+      endY:=max(inCount,outCount)*zoom+screenOffset[1];
       for k:=0 to inCount-1 do begin
-        startY:=(k*2-(inCount-1)+inCount)*zoom;
-        endY:=max(inCount,outCount)*zoom+screenOffset[1];
-        if startY<endY
-        then begin
-          Bitmap.CanvasBGRA.Arc65536(-zoom*2+screenOffset[0],startY,zoom*2+screenOffset[0],endY,    0,16384,[]);
-          Bitmap.CanvasBGRA.Arc65536( zoom*2+screenOffset[0],startY,zoom*6+screenOffset[0],endY,32768,49152,[]);
-        end else begin
-          Bitmap.CanvasBGRA.Arc65536(-zoom*2+screenOffset[0],startY,zoom*2+screenOffset[0],endY,49152,65536,[]);
-          Bitmap.CanvasBGRA.Arc65536( zoom*2+screenOffset[0],startY,zoom*6+screenOffset[0],endY,16384,32768,[]);
-        end;
+        startY:=(k*2-(inCount-1)+inCount)*zoom+screenOffset[1];
+        for j:=0 to 16 do path[j]:=point(round(zoom*4*xTab[j])+screenOffset[0],round(startY+(endY-startY)*yTab[j]));
+        Bitmap.CanvasBGRA.PolyBezier(path);
       end;
     end;
     preparedForZoom:=zoom;

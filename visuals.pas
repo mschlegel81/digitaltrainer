@@ -204,7 +204,7 @@ CONST DEFAULT_SCHEME:T_colorScheme=
        ENABLED_TEXT_COLOR   :$0000FF00;
        DISABLED_TEXT_COLOR  :$00808000;
        GATE_COLOR           :$00804000;
-       GATE_LABEL_COLOR     :$000060ff;
+       GATE_LABEL_COLOR     :$0040C0ff;
        MARK_COLOR           :$0000FFFF;
        BOARD_COLOR          :$00200000;
        SHADOW_COLOR         :$00600000;
@@ -213,7 +213,7 @@ CONST DEFAULT_SCHEME:T_colorScheme=
        WIRE_COLOR           :$0000FF00;
        BOARD_BOUNDARY_COLOR :$00FF0000;
        TRUE_COLOR           :$0000FF00;
-       FALSE_COLOR          :$003000A0;
+       FALSE_COLOR          :$003000ff;
        UNDETERMINED_COLOR   :$00808080;
        MULTIBIT_COLOR       :$00500000;
        SEVEN_SEGMENT_COLOR  :($00300000,$0000FF00);
