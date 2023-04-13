@@ -85,7 +85,7 @@ T_visualBoard=object(T_captionedAndIndexed)
     PROCEDURE enumerateIo;
 
     FUNCTION getWireGraph(CONST dropExistingWires:boolean):P_wireGraph;
-    PROCEDURE rewire(CONST forced:boolean);
+    PROCEDURE rewire(CONST replaceExisting,expensiveScan:boolean);
     PROCEDURE updateWiresFromTask;
     PROCEDURE paintWires(CONST init:boolean=true; CONST draw:boolean=true);
     PROCEDURE forceWireRepaint;
@@ -276,7 +276,7 @@ PROCEDURE T_visualBoard.checkBoardExtend(CONST movingLeft,
     end;
     if ((gridX1<>oldGridX1) or (gridY1<>oldGridY1)) and (ui<>nil) then begin
       ui^.updateBoardScrollbars;
-      rewire(false);
+      rewire(false,true);
     end;
     wiresUpToDate:=false;
   end;
@@ -305,7 +305,7 @@ PROCEDURE T_visualBoard.attachUI(CONST uiAdapter: P_uiAdapter);
     for e in outputs do begin e^.uiAdapter:=uiAdapter; end;
     for e in gates   do begin e^.uiAdapter:=uiAdapter; end;
     checkBoardExtend(false,false);
-    rewire(false); //only missing wires...
+    rewire(false,true); //only missing wires...
     ui^.resetState;
     ui^.uiElement.boardImage.OnMouseMove:=@boardMouseMove;
     ui^.uiElement.boardImage.OnMouseDown:=@boardMouseDown;
@@ -471,7 +471,7 @@ PROCEDURE T_visualBoard.repositionElement(CONST elements: T_visualGateArray;
       inc(elementIndex);
     end;
     checkBoardExtend(false,false);
-    rewire(true);
+    rewire(true,true);
     enumerateIo;
     ui^.paintAll;
     ui^.uiElement.boardImage.repaint;
@@ -515,7 +515,7 @@ PROCEDURE T_visualBoard.remove(CONST elements: T_visualGateArray;
       j:=0; for i:=0 to length(gates  )-1 do if gates  [i]=element then dispose(gates  [i],destroy) else begin gates  [j]:=gates  [i]; inc(j); end; setLength(gates  ,j);
     end;
     enumerateIo;
-    rewire(true);
+    rewire(true,true);
     ui^.callback.boardModifiedCallback();
   end;
 
@@ -962,7 +962,7 @@ FUNCTION T_visualBoard.getWireGraph(CONST dropExistingWires: boolean
     result:=graph;
   end;
 
-PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
+PROCEDURE T_visualBoard.rewire(CONST replaceExisting,expensiveScan: boolean);
   PROCEDURE dropWiresReferringToNonexitentPorts;
     VAR io, i, jo, j: integer;
     begin
@@ -1066,7 +1066,7 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
         startPoint:=wires[i].source^.getOutputPositionInGridSize(wires[i].sourceOutputIndex)+wires[i].source^.gridPos;
         setLength(endPoints,length(wires[i].sink));
         for j:=0 to length(endPoints)-1 do endPoints[j]:=wires[i].sink[j].gate^.getInputPositionInGridSize(wires[i].sink[j].gateInputIndex)+wires[i].sink[j].gate^.gridPos;
-        wireNeedsUpdate[i]:=false;
+        wireNeedsUpdate[i]:=replaceExisting;
         for j:=0 to length(wires[i].sink)-1 do
           wireNeedsUpdate[i]:=wireNeedsUpdate[i]
             or (length(wires[i].sink[j].path)<1)
@@ -1092,16 +1092,37 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
 
   PROCEDURE startBackgroundTask;
     VAR i,j: longint;
+        graph: P_wireGraph;
+        wireNeedsUpdate: array of boolean;
+        startPoint: T_point;
+        endPoints: T_wirePath;
+
     begin
       if (gridX1<4) or (gridY1<4) then exit; //Grid is too small anyway...
       if (ui=nil) then exit; //Nobody will care for the result in this case...
 
-      new(wiringTask,create(getWireGraph(false),@updateWiresFromTask));
+      graph:=getWireGraph(false);
+      setLength(wireNeedsUpdate,length(wires));
       for i:=0 to length(wires)-1 do begin
+        startPoint:=wires[i].source^.getOutputPositionInGridSize(wires[i].sourceOutputIndex)+wires[i].source^.gridPos;
+        setLength(endPoints,length(wires[i].sink));
+        for j:=0 to length(endPoints)-1 do endPoints[j]:=wires[i].sink[j].gate^.getInputPositionInGridSize(wires[i].sink[j].gateInputIndex)+wires[i].sink[j].gate^.gridPos;
+        wireNeedsUpdate[i]:=replaceExisting;
+        for j:=0 to length(wires[i].sink)-1 do
+          wireNeedsUpdate[i]:=wireNeedsUpdate[i]
+            or (length(wires[i].sink[j].path)<1)
+            or (wires[i].sink[j].path[0]<>startPoint)
+            or (wires[i].sink[j].path[length(wires[i].sink[j].path)-1]<>endPoints[j]);
+
+        if not(wireNeedsUpdate[i]) then for j:=0 to length(wires[i].sink)-1 do graph^.dropWire(wires[i].sink[j].path,true);
+      end;
+      new(wiringTask,create(graph,@updateWiresFromTask));
+      for i:=0 to length(wires)-1 do if wireNeedsUpdate[i] then begin
         wiringTask^.addStartPoint(i,wires[i].source^.getOutputPositionInGridSize(wires[i].sourceOutputIndex)+wires[i].source^.gridPos);
         for j:=0 to length(wires[i].sink)-1 do
           wiringTask^.addEndPoint(wires[i].sink[j].gate^.getInputPositionInGridSize(wires[i].sink[j].gateInputIndex)+wires[i].sink[j].gate^.gridPos);
       end;
+
       if ui^.wiringInBackground
       then wiringTask^.executeInBackground
       else begin
@@ -1119,7 +1140,7 @@ PROCEDURE T_visualBoard.rewire(CONST forced: boolean);
     enterCriticalSection(wiresCs);
     dropWiresReferringToNonexitentPorts;
     sortWires;
-    if forced
+    if expensiveScan
     then startBackgroundTask
     else updateWirePaths;
     leaveCriticalSection(wiresCs);
@@ -1153,11 +1174,11 @@ PROCEDURE T_visualBoard.paintWires(CONST init: boolean; CONST draw: boolean);
   VAR i:longint;
       Canvas: TBGRACanvas;
       canvasWidth,canvasHeight, zoom:longint;
-      startTicks:qword;
+      {$ifdef debugMode}startTicks:qword;{$endif}
   begin
     if not(wiresUpToDate and not(wiresHaveChangedInBackground)) and init then begin
       enterCriticalSection(wiresCs);
-      startTicks:=GetTickCount64;
+      {$ifdef debugMode}startTicks:=GetTickCount64;{$endif}
       wiresHaveChangedInBackground:=false;
       //setup
       zoom:=ui^.getZoom;
@@ -1217,7 +1238,7 @@ PROCEDURE T_visualBoard.reshapeGrid(CONST newGridX1, newGridY1: longint;
     gridX1:=newGridX1;
     gridY1:=newGridY1;
     checkBoardExtend(movingLeft,movingBottom);
-    rewire(false);
+    rewire(false,true);
   end;
 
 PROCEDURE T_visualBoard.dropWatchersAssociatedWith(CONST gate: P_visualGate);
@@ -1605,7 +1626,7 @@ PROCEDURE T_visualBoard.boardMouseDown(Sender: TObject; button: TMouseButton; Sh
         end;
       end;
       setLength(wires,j);
-      rewire(false);
+      rewire(false,true);
       paintBoard;
       ui^.repaintImage;
       ui^.callback.boardModifiedCallback();
@@ -1732,7 +1753,7 @@ PROCEDURE T_visualBoard.afterGatePropertiesEdited(CONST editedGate: P_visualGate
       checkBoardExtend(false,false);
       modified:=true;
     end;
-    rewire(true);
+    rewire(true,true);
   end;
 
 FUNCTION T_visualBoard.isInputConnected(CONST gate: P_visualGate;
@@ -1769,7 +1790,7 @@ PROCEDURE T_visualBoard.addWire(CONST sourceGate: P_visualGate;
     setLength(wires[i].sink,j+1);
     wires[i].sink[j].gate:=sinkGate;
     wires[i].sink[j].gateInputIndex:=sinkInputIndex;
-    rewire(false);
+    rewire(false,true);
     if ui<>nil then ui^.callback.boardModifiedCallback();
   end;
 
@@ -1915,7 +1936,7 @@ PROCEDURE T_visualBoard.prototypeUpdated(CONST oldPrototype, newPrototype: P_cap
         anyGateUpdated:=true;
       end else P_compoundGate(g^.behavior)^.prototypeUpdated(oldPrototype,newPrototype);
     end;
-    if anyGateUpdated and (ui<>nil) then rewire(true);
+    if anyGateUpdated and (ui<>nil) then rewire(true,true);
   end;
 
 PROCEDURE addGate(VAR arr:T_visualGateArray; CONST toAdd:P_visualGate);
