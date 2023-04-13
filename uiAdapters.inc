@@ -148,7 +148,7 @@ CONSTRUCTOR T_uiAdapter.create(CONST selectionShape: TShape;
     callback.boardModifiedCallback:=boardModifiedCallback;
     callback.workspacePrototypeUpdated:=workspacePrototypeUpdated;
     uiElement.boardImage.OnMouseWheel:=@boardImageMouseWheel;
-    zoom:=30;
+    zoom:=25;
     state:=uas_initial;
     wiringInBackground:=true;
   end;
