@@ -19,6 +19,7 @@ TYPE
     miExport: TMenuItem;
     SaveDialog1: TSaveDialog;
     TestCreationFrame1: TTestCreationFrame;
+    PROCEDURE FormCreate(Sender: TObject);
     PROCEDURE FormShow(Sender: TObject);
     PROCEDURE miExportToClipboardClick(Sender: TObject);
     PROCEDURE miExportToCsvClick(Sender: TObject);
@@ -55,6 +56,11 @@ PROCEDURE TBoardTestForm.miExportToClipboardClick(Sender: TObject);
 PROCEDURE TBoardTestForm.FormShow(Sender: TObject);
   begin
     applyColorScheme(self);
+  end;
+
+PROCEDURE TBoardTestForm.FormCreate(Sender: TObject);
+  begin
+    TestCreationFrame1.initOnCreate;
   end;
 
 PROCEDURE TBoardTestForm.showForBoard(CONST board: P_visualBoard);

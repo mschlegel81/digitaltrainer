@@ -1145,7 +1145,7 @@ PROCEDURE T_visualBoard.rewire(CONST replaceExisting,expensiveScan: boolean);
     else updateWirePaths;
     leaveCriticalSection(wiresCs);
     wiresUpToDate:=false;
-    {$ifdef debugMode} writeln('Rewiring (',forced,') took ',GetTickCount64-startTicks,' ticks'); {$endif}
+    {$ifdef debugMode} writeln('Rewiring (',replaceExisting,',',expensiveScan,') took ',GetTickCount64-startTicks,' ticks'); {$endif}
   end;
 
 PROCEDURE T_visualBoard.updateWiresFromTask;

@@ -2,40 +2,58 @@ object BoardTestForm: TBoardTestForm
   Left = 757
   Height = 393
   Top = 577
-  Width = 645
+  Width = 823
   Caption = 'Schaltung testen'
   ClientHeight = 373
-  ClientWidth = 645
+  ClientWidth = 823
   Menu = MainMenu1
+  OnCreate = FormCreate
   OnShow = FormShow
   Position = poOwnerFormCenter
   LCLVersion = '2.2.2.0'
   inline TestCreationFrame1: TTestCreationFrame
     Height = 373
-    Width = 645
+    Width = 823
     Align = alClient
     ClientHeight = 373
-    ClientWidth = 645
+    ClientWidth = 823
     inherited TestInputsPanel: TPanel
       Height = 365
-      Width = 637
+      Width = 815
       ClientHeight = 365
-      ClientWidth = 637
+      ClientWidth = 815
       inherited TestCasesStringGrid: TStringGrid
         Height = 313
-        Width = 617
+        Width = 634
       end
       inherited generateTestCasesShape: TShape
-        Left = 498
+        Left = 705
       end
       inherited generateTestCasesLabel: TLabel
-        Left = 530
+        Left = 723
       end
       inherited generateTestCasesShape1: TShape
-        Left = 365
+        Left = 601
       end
       inherited generateTestCasesLabel1: TLabel
-        Left = 391
+        Left = 613
+      end
+      inherited Splitter1: TSplitter
+        Left = 648
+        Height = 313
+      end
+      inherited TimingGrid: TStringGrid
+        Left = 653
+        Height = 289
+        Width = 151
+      end
+      inherited ProgressShape: TShape
+        Left = 653
+        Top = 331
+      end
+      inherited ProgressLabel: TLabel
+        Left = 726
+        Top = 336
       end
     end
   end

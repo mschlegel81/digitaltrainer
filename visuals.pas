@@ -70,6 +70,9 @@ PROCEDURE T_ridiculousWrapper.AnimationTimerTimer(Sender: TObject);
       anythingDone:=true;
       dec(colorIndex);
       Shape.Brush.color:=colorScheme.buttonColorTable[colorIndex];
+      {$ifdef debugMode}
+      writeln('Button animation: ',i,':',colorIndex);
+      {$endif}
     end;
     if not(anythingDone) then AnimationTimer.enabled:=false;
   end;
@@ -387,6 +390,9 @@ PROCEDURE initializeVisuals;
   begin
     loadSettings;
   end;
+
+INITIALIZATION
+  setLength(Buttons,0);
 
 FINALIZATION
   saveSettins;
