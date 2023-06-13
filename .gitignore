@@ -3,12 +3,8 @@
 /digitaltrainer.lps
 *.res
 /lib/*
-*.workspace
-
 /dt2.lps
-
 *.backup
-
 *.backups
 *.visuals
 *.settings

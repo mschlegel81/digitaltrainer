@@ -1,6 +1,7 @@
 LAZ_BUILD:='..\lazarus64\lazbuild.exe';
 LPI:='dt2.lpi';
 BUILD_MODE:='--bm=opt';
+DELP:=allFiles(LAZ_BUILD.extractFileDirectory,'delp.exe')[0];
 
 memoized getVersionFromLPI->
   begin
@@ -62,6 +63,8 @@ main->begin
 
   log('Creating Tag...');
   teeExec('git',['tag','V'&getVersionFromLPI]);
+
+  DELP.isVoid ? void : exec(DELP,['-r','.']);
 
   log("Done.\n",
       'Please review the generated changes before comitting.');
