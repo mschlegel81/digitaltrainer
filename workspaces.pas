@@ -78,9 +78,19 @@ TYPE
     FUNCTION firstStart:boolean;
     FUNCTION canGoBack:boolean;
     PROCEDURE goBack(CONST uiAdapter: P_uiAdapter; OUT challenge:P_challenge; OUT originalChallengeIndex:longint);
+
+    PROCEDURE updatePaletteEntry(CONST board:P_visualBoard);
   end;
 
-  T_workspaceHistorizationTriggerEnum=(wht_onStartup,wht_beforeDeletingEntry,wht_beforeDuplicateRemoval,wht_beforeTaskImport,wht_beforePaletteImport,wht_beforeDeletingTask,wht_beforeRestore);
+  T_workspaceHistorizationTriggerEnum=(
+    wht_onStartup,
+    wht_beforeDeletingEntry,
+    wht_beforeDuplicateRemoval,
+    wht_beforeTaskImport,
+    wht_beforePaletteImport,
+    wht_beforeDeletingTask,
+    wht_beforeRestore,
+    wht_beforeEditingEntry);
 
   P_workspaceHistoryEntryMetaData=^T_workspaceHistoryEntryMetaData;
   T_workspaceHistoryEntryMetaData=record
@@ -105,7 +115,8 @@ CONST C_workspaceHistorizationTrigger:array[T_workspaceHistorizationTriggerEnum]
     {wht_beforeTaskImport}      'vor Importieren von Aufgaben',
     {wht_beforePaletteImport}   'vor Importieren einer Palette',
     {wht_beforeDeletingTask}    'vor Entfernen einer Aufgabe',
-    {wht_beforeRestore}         'vor Wiederherstellung');
+    {wht_beforeRestore}         'vor Wiederherstellung',
+    {wht_beforeEditingEntry}    'vor Bearbeiten eines Paletteneintrags');
 FUNCTION workspaceFilename:string;
 FUNCTION addBackup(CONST workspace:P_workspace; CONST reason:T_workspaceHistorizationTriggerEnum):T_workspaceHistoryEntryMetaData;
 FUNCTION getBackupsIndex:T_workspaceHistoryEntryIndex;
@@ -520,7 +531,8 @@ PROCEDURE T_workspace.stateTransition(CONST newState: T_workspaceStateEnum);
      currentState.paletteIndex               :=0;
   end;
 
-PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT challenge: P_challenge; OUT originalChallengeIndex: longint);
+PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT
+  challenge: P_challenge; OUT originalChallengeIndex: longint);
   begin
     challenge             :=currentState.challenge;
     originalChallengeIndex:=currentState.originalChallengeIndex;
@@ -577,6 +589,16 @@ PROCEDURE T_workspace.goBack(CONST uiAdapter: P_uiAdapter; OUT challenge: P_chal
       end;
     else assert(false,'Not implemented.');
     end;
+  end;
+
+PROCEDURE T_workspace.updatePaletteEntry(CONST board: P_visualBoard);
+  VAR i: SizeInt;
+  begin
+    if board^.underlyingPrototype<>nil then
+    for i:=length(previousState)-2 downto 0 do
+    if (previousState[i].state in [editingNewBoard,editingPaletteEntry,editingChallengeSolution]) and (previousState[i].newBoard<>nil) then
+        previousState[i].newBoard^.prototypeUpdated(board^.underlyingPrototype,board);
+    workspacePalette^.updateEntry(board);
   end;
 
 CONSTRUCTOR T_workspace.create;
@@ -641,7 +663,8 @@ FUNCTION T_workspace.getSerialVersion: dword;
     result:=serialVersionOf('T_workspace',2);
   end;
 
-FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper): boolean;
+FUNCTION T_workspace.loadFromStream(VAR stream: T_bufferedInputStreamWrapper
+  ): boolean;
   begin
     result:=inherited and challenges^.loadFromStream(stream);
     activeChallengeIndex:=stream.readLongint;
@@ -744,10 +767,11 @@ FUNCTION T_workspace.isEditingNewChallenge: boolean;
     result:=(currentState.state in [editingChallengeSolution,editingChallengeTemplate]) and (currentState.originalChallengeIndex<0);
   end;
 
-PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard; CONST uiAdapter: P_uiAdapter);
+PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard;
+  CONST uiAdapter: P_uiAdapter);
   begin
     if activeChallenge<>nil then exit;
-
+    addBackup(@self, wht_beforeEditingEntry);
     stateTransition(editingPaletteEntry);
     currentState.prototypeInWorkspacePalette:=prototype;
     currentState.paletteAssociation:=workspacePalette^.lastSubPaletteIndex;
@@ -760,7 +784,8 @@ PROCEDURE T_workspace.editPaletteEntry(CONST prototype: P_visualBoard; CONST uiA
     uiAdapter^.paintAll;
   end;
 
-PROCEDURE T_workspace.prototypeUpdated(CONST oldPrototype, newPrototype: P_visualBoard);
+PROCEDURE T_workspace.prototypeUpdated(CONST oldPrototype,
+  newPrototype: P_visualBoard);
   PROCEDURE update(VAR entry:T_workspaceState);
     begin
       if   entry.prototypeInWorkspacePalette =oldPrototype

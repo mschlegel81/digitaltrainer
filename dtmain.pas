@@ -888,7 +888,7 @@ FUNCTION TDigitaltrainerMainForm.continueWithOtherBoard: boolean;
        (workspace.activeBoard^.getIndexInPalette>=0)
     then begin
       if workspace.state=editingPaletteEntry
-      then P_workspacePalette(workspace.activePalette)^.updateEntry(workspace.activeBoard)
+      then workspace.updatePaletteEntry(workspace.activeBoard)
       else begin
         workspace.goBack(@uiAdapter,challenge,originalChallengeIndex);
         if challenge<>nil then CreateChallengeDialog.reShowFor(challenge,originalChallengeIndex,workspace.getChallenges);
